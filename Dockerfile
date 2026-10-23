@@ -23,7 +23,7 @@ USER node
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
 
-# API/worker are pure compiled JS; neither needs Next.js or dev dependencies.
+# API/worker are compiled JS; worker has production-only BullMQ/Redis deps.
 FROM node:22-bookworm-slim AS service-runtime
 WORKDIR /workspace
 ENV NODE_ENV=production
@@ -37,6 +37,18 @@ COPY --from=builder --chown=node:node /workspace/apps/api/dist ./apps/api/dist
 EXPOSE 4000
 CMD ["node", "apps/api/dist/index.js"]
 
+# Install only the worker's runtime dependencies, excluding dev and Next.js.
+FROM node:22-bookworm-slim AS worker-deps
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/worker/package.json apps/worker/package.json
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund --workspace @vns/worker --workspace @vns/shared
+
 FROM service-runtime AS worker
+COPY --from=worker-deps --chown=node:node /workspace/node_modules ./node_modules
+COPY --from=builder --chown=node:node /workspace/apps/worker/package.json ./apps/worker/package.json
 COPY --from=builder --chown=node:node /workspace/apps/worker/dist ./apps/worker/dist
 CMD ["node", "apps/worker/dist/index.js"]
