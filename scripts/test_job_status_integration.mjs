@@ -125,22 +125,20 @@ try {
   console.log("PASS: real BullMQ active -> completed snapshots update PG exactly to terminal done");
 
   const failure = await create("ci-lifecycle-failed");
-  let failEvent;
-  const failed = new Promise((resolve) => {
-    failEvent = resolve;
-  });
+  // Dispatcher deliberately sets attempts=3. One failed processor invocation
+  // should result in a delayed retry, not a premature terminal failure.
+  const terminal = failure.job.waitUntilFinished(events, 25000);
   const failingWorker = await makeWorker(async (job) => {
     assert.equal(job.data.jobId, failure.id);
     throw new Error("ci-synthetic-failure-never-persist-raw");
   });
-  failingWorker.on("failed", () => failEvent());
   try {
-    await failed;
+    await assert.rejects(terminal, /ci-synthetic-failure/);
     assert.equal(await failure.job.getState(), "failed");
     assert.equal((await sync()).updated, 1);
     assert.deepEqual(await status(failure.id), {
       status: "failed",
-      attempt_count: 1,
+      attempt_count: 3,
       error_code: "bullmq_failed",
     });
     assert.equal((await sync()).updated, 0);
