@@ -40,6 +40,12 @@ BEGIN
 
   created_job_id := vns.create_job_with_outbox('render', 'ci-restore-job', story_id, 3);
   PERFORM vns.create_research_request('ci-restore-research-topic', 'Historical public transit infrastructure funding');
+  INSERT INTO vns.research_evidence
+      (job_id, source_url, publisher, headline, claim_text)
+    SELECT id, 'https://www.example.org/public-transit-report',
+      'Example Transport Institute', 'Report on transport infrastructure',
+      'The public transit report describes budgeted infrastructure plans.'
+    FROM vns.jobs WHERE idempotency_key = 'ci-restore-research-topic';
   UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = created_job_id;
   UPDATE vns.job_outbox AS ob
     SET delivery_state = 'enqueued', dispatch_attempts = 1,
