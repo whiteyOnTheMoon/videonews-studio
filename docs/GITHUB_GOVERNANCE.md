@@ -77,3 +77,18 @@ If protection is supported, configure it under `Settings → Branches` or `Setti
 - [ ] Execute governance script; verify labels/milestones on GitHub
 - [ ] Confirm branch protection capability and enable required checks when available
 - [ ] Formal CI and status requirements completed in P1-08
+
+
+## Verifizierte Einschränkung im GitHub-Konto (23.10.2026)
+
+Die Betreiberprüfung mit authentifizierter GitHub CLI auf dem VPS hat ergeben:
+
+- \`gh api user --jq '.plan.name'\` lieferte \`nicht angezeigt\`; daraus lässt sich kein Tarifname ableiten.
+- \`GET /repos/whiteyOnTheMoon/videonews-studio/branches/main/protection\` lieferte **HTTP 403** mit dem Hinweis: \`Upgrade to GitHub Pro or make this repository public to enable this feature.\`
+- \`GET /repos/whiteyOnTheMoon/videonews-studio/rulesets\` lieferte **HTTP 403** mit demselben Hinweis. Der tatsächliche Ruleset-Bestand lässt sich aufgrund der verweigerten API-Abfrage nicht auslesen.
+
+**Betreiberentscheidung aus P0:** Das Repository bleibt privat, und es gibt ohne gesonderte ausdrückliche Freigabe keine neuen kostenpflichtigen Dienste oder Tarif-Upgrades.
+
+**Konsequenz:** Verpflichtende PR-Reviews, Statuschecks und Branch-Schutz können aktuell nicht als aktiv oder technisch erzwungen ausgewiesen werden. Die Issue-First-/PR-/Test-/Review-Regeln gelten als manuelle Arbeitsanweisung. Kein PR darf ohne dokumentierte Testnachweise und unabhängigen Review als abgenommen gekennzeichnet werden.
+
+**P1-02 Restpunkt:** Branch-Schutz bleibt wegen Tarifbeschränkung offen. Vor einer formalen Erledigung entweder eine von der Betreiberseite ausdrücklich akzeptierte Abweichung dokumentieren oder eine zulässige kostenlose technische Absicherung nachweisen. Kein automatisches Upgrade; kein Wechsel zu Public.
