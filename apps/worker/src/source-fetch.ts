@@ -45,21 +45,29 @@ export interface SourceFetchDependencies {
 
 function validHostname(host: string): boolean {
   if (!/^(?:[a-z0-9-]+\.)+[a-z]{2,}$/.test(host) || host.length > 253) return false;
-  return !host.split(".").some((label) => label.length > 63 || label.startsWith("-") ||
-    label.endsWith("-") || label.startsWith("xn--"));
+  return !host
+    .split(".")
+    .some(
+      (label) =>
+        label.length > 63 ||
+        label.startsWith("-") ||
+        label.endsWith("-") ||
+        label.startsWith("xn--"),
+    );
 }
 
-export function readApprovedFetchPolicy(
-  env: NodeJS.ProcessEnv = process.env,
-): ApprovedFetchPolicy {
+export function readApprovedFetchPolicy(env: NodeJS.ProcessEnv = process.env): ApprovedFetchPolicy {
   if (env.VNS_SOURCE_FETCH_ENABLED !== "true") {
     throw new Error("External source fetching is disabled");
   }
   const raw = env.VNS_ALLOWED_SOURCE_HOSTS ?? "";
   const hosts = raw.split(",").map((host) => host.trim());
-  if (hosts.length < 1 || hosts.length > 5 ||
-      hosts.some((host) => !validHostname(host) || host !== host.toLowerCase()) ||
-      new Set(hosts).size !== hosts.length) {
+  if (
+    hosts.length < 1 ||
+    hosts.length > 5 ||
+    hosts.some((host) => !validHostname(host) || host !== host.toLowerCase()) ||
+    new Set(hosts).size !== hosts.length
+  ) {
     throw new Error("Explicit HTTPS source host allowlist required");
   }
   return { enabled: true, hosts };
@@ -74,21 +82,30 @@ export function isPublicIPv4(address: string): boolean {
   if (isIP(address) !== 4) return false;
   const parts = address.split(".").map(Number);
   const [a, b, c] = parts;
-  if (a === 0 || a === 10 || a === 127 || a >= 224 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && (b === 0 || b === 168 || (b === 88 && c === 99))) ||
-      (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
-      (a === 203 && b === 0 && c === 113)) return false;
+  if (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    a >= 224 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && (b === 0 || b === 168 || (b === 88 && c === 99))) ||
+    (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+    (a === 203 && b === 0 && c === 113)
+  )
+    return false;
   return true;
 }
 
 function parseApprovedUrl(input: string, policy: ApprovedFetchPolicy): URL {
   if (!isPlausiblePublicSourceUrl(input)) throw new Error("Source URL denied");
   const url = new URL(input);
-  if (url.toString() !== input || !validHostname(url.hostname) ||
-      !policy.hosts.includes(url.hostname)) {
+  if (
+    url.toString() !== input ||
+    !validHostname(url.hostname) ||
+    !policy.hosts.includes(url.hostname)
+  ) {
     throw new Error("Source host is not explicitly approved");
   }
   return url;
@@ -147,8 +164,10 @@ async function defaultPinnedRequest(url: URL, ip: string): Promise<RawSourceResp
       const contentType = response.headers["content-type"];
       const contentEncoding = response.headers["content-encoding"];
       const lengthHeader = response.headers["content-length"];
-      if (typeof lengthHeader === "string" &&
-          (!/^\d+$/.test(lengthHeader) || Number(lengthHeader) > MAX_BYTES)) {
+      if (
+        typeof lengthHeader === "string" &&
+        (!/^\d+$/.test(lengthHeader) || Number(lengthHeader) > MAX_BYTES)
+      ) {
         response.destroy();
         rejectOnce();
         return;
@@ -213,12 +232,14 @@ export async function fetchApprovedSourceDocument(
   } catch {
     throw new Error("Approved source retrieval failed");
   }
-  if (response.status !== 200 ||
-      response.contentEncoding && response.contentEncoding.toLowerCase() !== "identity" ||
-      !response.contentType ||
-      !MEDIA_TYPES.has(response.contentType.split(";")[0].trim().toLowerCase()) ||
-      !Buffer.isBuffer(response.body) ||
-      response.body.length > MAX_BYTES) {
+  if (
+    response.status !== 200 ||
+    (response.contentEncoding && response.contentEncoding.toLowerCase() !== "identity") ||
+    !response.contentType ||
+    !MEDIA_TYPES.has(response.contentType.split(";")[0].trim().toLowerCase()) ||
+    !Buffer.isBuffer(response.body) ||
+    response.body.length > MAX_BYTES
+  ) {
     throw new Error("Source response refused");
   }
   let content: string;
