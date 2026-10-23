@@ -1,0 +1,19 @@
+name: P1-05 PostgreSQL migration integration
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/**"
+      - ".github/workflows/p1-05-migrations.yml"
+permissions:
+  contents: read
+jobs:
+  migration-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply, test and revert schema in disposable offline PostgreSQL
+        run: bash db/scripts/test_migrations.sh
