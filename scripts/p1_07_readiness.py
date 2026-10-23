@@ -50,6 +50,12 @@ def check(config: dict) -> None:
     if len(command) <= i + 1 or command[i + 1] != "yes":
         raise ValueError("Redis protected mode must stay enabled")
 
+    redis_secrets = [item.get("source") if isinstance(item, dict) else item for item in redis.get("secrets", [])]
+    if "redis_acl" not in redis_secrets or "/run/secrets/redis_acl" not in command:
+        raise ValueError("Redis must require the operator-provisioned ACL secret")
+    if "redis_acl" not in config.get("secrets", {}):
+        raise ValueError("Redis ACL secret must be declared")
+
     # P1-07 must not activate the unfinished worker or an unauthenticated Redis
     # deployment simply by validating the existing base compose configuration.
     if services["worker"].get("restart") not in ("no", "none"):
