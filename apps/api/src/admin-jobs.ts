@@ -6,8 +6,8 @@ import type { AdminAuth } from "./auth.js";
 
 const KEY_PATTERN = /^[a-zA-Z0-9_-]{24,80}$/;
 export function validResearchTopic(value: unknown): value is string {
-  if (typeof value !== "string" || value !== value.trim() ||
-      /[\u0000-\u001f\u007f]/.test(value)) return false;
+  if (typeof value !== "string" || value !== value.trim() || /[\u0000-\u001f\u007f]/.test(value))
+    return false;
   const length = Array.from(value).length;
   return length >= 12 && length <= 160;
 }
@@ -29,7 +29,9 @@ export interface ResearchJobStore {
   close?(): Promise<void>;
 }
 
-export function parseResearchJobRequest(value: unknown): { idempotencyKey: string; topic: string } | null {
+export function parseResearchJobRequest(
+  value: unknown,
+): { idempotencyKey: string; topic: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const body = value as Record<string, unknown>;
   if (
