@@ -1,0 +1,22 @@
+name: P1-01 issue bootstrap tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/import-issues.mjs'
+      - 'scripts/import-issues.test.mjs'
+      - 'backlog/issues.json'
+      - '.github/workflows/p1-01-bootstrap.yml'
+permissions:
+  contents: read
+jobs:
+  issue-import-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run importer unit tests
+        run: node --test scripts/import-issues.test.mjs

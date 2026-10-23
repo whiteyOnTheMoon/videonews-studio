@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Projekt-Roadmap"
+    url: "https://github.com/whiteyOnTheMoon/videonews-studio/issues"
+    about: "Bestehende Projekt-IDs zuerst prüfen, um Dubletten zu vermeiden."
