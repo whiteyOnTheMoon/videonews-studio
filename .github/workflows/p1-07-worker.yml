@@ -33,6 +33,13 @@ jobs:
           git diff --exit-code -- package-lock.json
       - name: Install dependencies from pinned lock
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify formatting and emit reviewable patch if needed
+        run: |
+          npx prettier --write .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
+          echo '===VNS_FORMAT_START==='
+          git diff --no-color -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
+          echo '===VNS_FORMAT_END==='
+          git diff --exit-code -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
       - name: Build and test compiled source
         run: |
           npm run build
