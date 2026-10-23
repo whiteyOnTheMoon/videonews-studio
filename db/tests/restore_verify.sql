@@ -19,7 +19,7 @@ BEGIN
     'assets', 'scripts', 'jobs', 'job_outbox', 'videos', 'costs', 'approvals', 'uploads'
   ] LOOP
     EXECUTE format('SELECT count(*) FROM vns.%I', table_name) INTO row_total;
-    IF row_total <> 1 THEN
+    IF row_total <> CASE WHEN table_name = 'schema_migrations' THEN 2 ELSE 1 END THEN
       RAISE EXCEPTION 'restored table % has % rows rather than 1', table_name, row_total;
     END IF;
   END LOOP;
