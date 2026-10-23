@@ -164,6 +164,8 @@ test("TLS request pins checked IP while retaining approved SNI and Host", async 
   assert.equal((opts.headers as Record<string, string>).Host, HOST);
   assert.equal((opts.headers as Record<string, string>)["Accept-Encoding"], "identity");
   assert.equal(opts.timeout, 5000);
+  assert.ok(opts.signal instanceof AbortSignal);
+  assert.equal(opts.signal.aborted, false);
   assert.equal(opts.maxHeaderSize, 8192);
   assert.ok(opts.lookup);
   await new Promise<void>((resolve, reject) => {
