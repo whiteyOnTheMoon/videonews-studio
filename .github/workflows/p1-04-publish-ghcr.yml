@@ -5,10 +5,26 @@ on:
       approval:
         description: "Operator approval required. Images will be pushed to private GHCR packages."
         required: true
+        default: DO_NOT_PUBLISH
         type: choice
         options:
           - DO_NOT_PUBLISH
           - PUBLISH_PRIVATE_IMAGES
+      expected_sha:
+        description: "Full SHA (40 hex characters) of the specifically approved main commit"
+        required: true
+        type: string
+      visibility_check:
+        description: "Confirm both target GHCR package names have no public package"
+        required: true
+        default: NOT_VERIFIED
+        type: choice
+        options:
+          - NOT_VERIFIED
+          - NO_PUBLIC_PACKAGE
+concurrency:
+  group: vns-ghcr-manual-release
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
@@ -19,14 +35,38 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Confirm allowed repository and release source
+      - name: Fail-closed release approval, SHA and public-package checks
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          VISIBILITY_CHECK: ${{ inputs.visibility_check }}
         run: |
+          set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_REPOSITORY" = whiteyOnTheMoon/videonews-studio
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$EXPECTED_SHA" != "$GITHUB_SHA" ]; then
+            echo "BLOCKED: release SHA must exactly match the explicitly approved main commit" >&2
+            exit 1
+          fi
+          if [ "$VISIBILITY_CHECK" != NO_PUBLIC_PACKAGE ]; then
+            echo "BLOCKED: operator must verify that target packages are not public" >&2
+            exit 1
+          fi
+          # GitHub's public REST endpoint lists publicly visible packages.
+          # An already-public package name must never receive a VNS release.
+          # 404 may mean absent OR private; the operator also checks Package settings.
+          for package in videonews-studio-web videonews-studio-api; do
+            status="$(curl --silent --show-error --location --output /dev/null \
+              --write-out '%{http_code}' --max-time 15 \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/users/whiteyOnTheMoon/packages/container/$package")"
+            case "$status" in
+              404) echo "No public package found under $package; operator visibility check still required" ;;
+              200) echo "BLOCKED: already-public GHCR package $package" >&2; exit 1 ;;
+              *) echo "BLOCKED: cannot verify package visibility (HTTP $status)" >&2; exit 1 ;;
+            esac
+          done
       - name: Build only web and API with commit-specific tags
         run: |
           set -euo pipefail
@@ -74,6 +114,8 @@ jobs:
             fi
           done
       - name: Authenticate to GitHub Container Registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
