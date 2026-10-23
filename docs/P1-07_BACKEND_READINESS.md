@@ -89,3 +89,34 @@ and editorial human review. No external source crawler is enabled; the normal
 worker still processes probe only. A reviewer string in a database record is
 metadata, **not proof of authentication**: production role/authorization gates
 remain outstanding.
+
+
+## Controlled HTTPS retrieval boundary (still disabled)
+
+The new `apps/worker/src/source-fetch.ts` module provides a **separate,
+opt-in** `VNS_SOURCE_FETCH_ENABLED=true` fetch policy requiring an explicit
+comma-separated, exact hostname allowlist in `VNS_ALLOWED_SOURCE_HOSTS`.
+It refuses IP-literal URLs and rejects mixed/private/loopback/link-local/
+reserved DNS answers. Only public IPv4 endpoints may be contacted; the
+checked IP is pinned into the HTTPS socket lookup, while the TLS hostname,
+SNI and certificate validation remain bound to the allowed DNS hostname.
+It uses native TLS, prohibits redirect following, disallows compressed,
+binary or oversized responses, limits the response to 128 KiB, and returns a
+SHA-256 digest with transient, UTF-8-decoded text for further *untrusted*
+processing. No result can mark a factual claim `verified`.
+
+The default production worker remains the **probe-only** entrypoint, and does
+not import, enable or execute this fetcher. The module neither searches for
+news sources nor submits real network requests in CI: tests inject a
+synthetic DNS/response adapter and assert that unsafe hosts and DNS answers
+cannot reach the requester, plus that the TLS options preserve origin
+identity and IP pinning. The allowlist is not enabled in Docker Compose.
+
+Before integration with any live research provider, independently review
+source terms, attribution/copyright, allowed content types, redirected domains
+(explicitly forbidden by current fetcher), health of source publishers,
+network egress, DNS/timeouts, authenticated admin review, and whether a
+brief digest/snippet should be stored as auditable provenance. `SourceDocument`
+contains external untrusted text, not instructions for the assistant or a
+basis for automatic factual validation. Passing the URL policy is not proof
+that a source or its claims are reliable.
