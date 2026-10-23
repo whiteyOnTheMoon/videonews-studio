@@ -1,6 +1,7 @@
 # Development environment (P1-03)
 
 ## Boundaries
+
 - Node.js 22 LTS+ (up to Node.js 24), npm 10+, TypeScript, npm workspaces, Next.js 16.
 - Local development only: no Docker containers, PostgreSQL, Redis, or remote integrations are started by these commands.
 - API uses loopback `127.0.0.1:4000` unless overridden in an explicitly isolated container at P1-04.

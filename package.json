@@ -2,8 +2,13 @@
   "name": "videonews-studio",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*", "apps/*"],
-  "engines": { "node": ">=22 <25" },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22 <25"
+  },
   "scripts": {
     "dev:web": "npm run dev --workspace @vns/web",
     "dev:api": "npm run dev --workspace @vns/api",

@@ -6,8 +6,8 @@ export default function Home() {
       <span className="eyebrow">P1 · Foundation</span>
       <h1>{PRODUCT_NAME}</h1>
       <p>
-        The isolated production studio is being built. Research, rendering, and uploads are
-        not active in this scaffold.
+        The isolated production studio is being built. Research, rendering, and uploads are not
+        active in this scaffold.
       </p>
       <div className="notice" role="status">
         No autonomous publication. Human editorial approval is required.

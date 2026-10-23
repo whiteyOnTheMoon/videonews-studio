@@ -3,13 +3,13 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'apps/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.base.json'
-      - 'eslint.config.mjs'
-      - '.github/workflows/p1-03-monorepo.yml'
+      - "apps/**"
+      - "packages/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "eslint.config.mjs"
+      - ".github/workflows/p1-03-monorepo.yml"
 permissions:
   contents: read
 jobs:
@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NEXT_TELEMETRY_DISABLED: '1'
-      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: "1"
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Compile workspace applications
@@ -32,10 +32,6 @@ jobs:
         run: npm run typecheck
       - name: ESLint
         run: npm run lint
-      - name: Temporary capture of canonical Prettier output
-        run: |
-          npx prettier --write '.github/workflows/p1-03-monorepo.yml' 'apps/api/package.json' 'apps/api/src/server.test.ts' 'apps/web/src/app/globals.css' 'apps/web/src/app/page.tsx' 'apps/worker/package.json' 'docs/DEVELOPMENT.md' 'package.json'
-          node -e 'const fs=require("node:fs");const paths=[".github/workflows/p1-03-monorepo.yml","apps/api/package.json","apps/api/src/server.test.ts","apps/web/src/app/globals.css","apps/web/src/app/page.tsx","apps/worker/package.json","docs/DEVELOPMENT.md","package.json"];for(const [i,p] of paths.entries()){const b=fs.readFileSync(p).toString("base64");for(let k=0;k<b.length;k+=1700)console.log("VNS_FMT_"+i+"_"+String(k/1700).padStart(3,"0")+"="+b.slice(k,k+1700));}'
       - name: Formatting
         run: npm run format:check
       - name: Unit tests

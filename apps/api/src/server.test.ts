@@ -15,7 +15,7 @@ test("health endpoint answers only GET and does not cache responses", async () =
     const ok = await fetch(url + "/healthz");
     assert.equal(ok.status, 200);
     assert.equal(ok.headers.get("cache-control"), "no-store");
-    assert.equal((await ok.json() as { service: string }).service, "api");
+    assert.equal(((await ok.json()) as { service: string }).service, "api");
 
     const missing = await fetch(url + "/missing");
     assert.equal(missing.status, 404);
