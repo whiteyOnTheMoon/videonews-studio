@@ -17,7 +17,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker"
+    "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker && npm run test --workspace @vns/web"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
