@@ -8,13 +8,13 @@ Die API enthält einen ausdrücklich opt-in aktivierbaren lokalen Admin-Zugriff.
 
 Bei expliziter Aktivierung nach einer späteren HTTPS-/Ingress- und Betreiberentscheidung sind vorbereitet:
 
-| Route | Methode | Verhalten |
-| --- | --- | --- |
-| `/auth/login` | POST | Passwort gegen serverseitigen scrypt-Hash prüfen; ausschließlich sichere Sitzung als Cookie |
-| `/auth/logout` | POST | Sitzung ungültig machen und Cookie löschen |
-| `/auth/session` | GET | Nur `authenticated` und ggf. `role`, nie ein Zugriffstoken |
-| `/admin/me` | GET | Nur mit aktiver Admin-Sitzung: `role: admin`; sonst 401 |
-| `/healthz` | GET | Für Docker-Healthchecks ohne Anmeldung erreichbar |
+| Route           | Methode | Verhalten                                                                                   |
+| --------------- | ------- | ------------------------------------------------------------------------------------------- |
+| `/auth/login`   | POST    | Passwort gegen serverseitigen scrypt-Hash prüfen; ausschließlich sichere Sitzung als Cookie |
+| `/auth/logout`  | POST    | Sitzung ungültig machen und Cookie löschen                                                  |
+| `/auth/session` | GET     | Nur `authenticated` und ggf. `role`, nie ein Zugriffstoken                                  |
+| `/admin/me`     | GET     | Nur mit aktiver Admin-Sitzung: `role: admin`; sonst 401                                     |
+| `/healthz`      | GET     | Für Docker-Healthchecks ohne Anmeldung erreichbar                                           |
 
 Sicherheitsschranken: `Secure`, `HttpOnly`, `SameSite=Strict` und `__Host-`-Cookie ohne Domain; 15-Minuten-Lebensdauer; zufällige 256-Bit-Sessiontokens, von denen nur SHA256-Digests im Arbeitsspeicher gespeichert werden; **keine** Tokenwerte im JSON, in URLs oder Logs. Login und Logout verlangen einen **exakten HTTPS-Origin** gegen CSRF. Die Passwörter werden mit Node.js `scrypt` und `timingSafeEqual` anhand eines vorbereiteten Salt-/Hash-Werts überprüft. Fünf fehlgeschlagene Anmeldungen pro IP und fünf Minuten sperren weitere Versuche vorübergehend. Sitzungen und Rate-Limit-Zähler haben Kapazitätsgrenzen.
 

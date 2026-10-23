@@ -6,19 +6,19 @@ Status: draft PR only. The already running internal Web and API containers on th
 
 Migration 0001 creates the separate PostgreSQL namespace vns, a migration ledger and eleven model tables:
 
-| Table | Purpose |
-| --- | --- |
-| sources | Source name, canonical URL, editorial trust |
-| stories | Topics with review status and original source |
-| claims | Verifiable assertions with evidence links and review time |
-| licenses | Descriptions and references for license terms |
-| assets | Media metadata with explicit rights-review status |
-| scripts | Versioned editorial manuscripts |
-| jobs | Job status, retries and idempotency keys (no worker yet) |
-| videos | Video records linked to a script and optional render job |
-| costs | Nonnegative provider cost records |
-| approvals | Human review history for videos |
-| uploads | External platform publication status and IDs |
+| Table     | Purpose                                                   |
+| --------- | --------------------------------------------------------- |
+| sources   | Source name, canonical URL, editorial trust               |
+| stories   | Topics with review status and original source             |
+| claims    | Verifiable assertions with evidence links and review time |
+| licenses  | Descriptions and references for license terms             |
+| assets    | Media metadata with explicit rights-review status         |
+| scripts   | Versioned editorial manuscripts                           |
+| jobs      | Job status, retries and idempotency keys (no worker yet)  |
+| videos    | Video records linked to a script and optional render job  |
+| costs     | Nonnegative provider cost records                         |
+| approvals | Human review history for videos                           |
+| uploads   | External platform publication status and IDs              |
 
 The tables use generated UUIDs, created_at and database-managed updated_at timestamps, explicit statuses, unique constraints and foreign keys with RESTRICT. Claims require a verification date to be marked verified. Asset rights clearance requires both a license and a verification date. Published-upload records require an external identifier and completion date.
 

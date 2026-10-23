@@ -66,7 +66,6 @@ Alle Images sind in diesem Scaffold gleich groß, da der Laufzeitteil des Docker
 
 **Nächste Sicherheitsentscheidung:** Keine lokalen VPS-Builds, kein GHCR-Push, kein Image-Pull und kein Start allein aufgrund der Zahlen. Vor einem späteren Pull den freien Platz neu messen und Reserve für temporären Download sowie entpackte Layer einplanen. Der bisherige Host-Snapshot wies 24 GB freie Platte und 1,4/2,0 GiB Swap-Belegung aus.
 
-
 ## GHCR-Veröffentlichungsfreigabe – zusätzliche Sicherheitsschranken
 
 **Stand: 23.10.2026; vorbereitet, kein Upload genehmigt oder ausgeführt.** Die GitHub-Dokumentation bestätigt, dass neue GHCR-Pakete unter einem persönlichen Konto standardmäßig **privat** sind. Das gilt **nicht automatisch für schon bestehende Pakete**. Ein privates Quell-Repository allein beweist nicht die Paketsichtbarkeit.
@@ -83,7 +82,6 @@ Der geplante manuelle Workflow erfordert daher neben der ausdrücklichen Auswahl
 Die öffentlichen GitHub-Package-API-Abfragen ersetzen keine manuelle Prüfung im eingeloggten GitHub-Konto; sie können private Pakete nicht offenlegen. Die GHCR-Veröffentlichung selbst ist **nicht** Teil der CI-Tests für diesen Draft-PR und wurde nicht simuliert.
 
 **Der VPS bleibt separat:** Kein Registry-Login, Token, Image-Download, Compose-Start, Portfreigabe oder Eingriff in vorhandene Cloudflare-Netze durch diesen Ablauf. Jede dieser Aktionen benötigt eine neue ausdrückliche Betreiberfreigabe. Eine Review-Ausnahme für eine ältere PR gilt nicht automatisch für diese Änderung.
-
 
 ### Erster Veröffentlichungsversuch gescheitert (23.10.2026)
 

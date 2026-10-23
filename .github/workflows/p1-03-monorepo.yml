@@ -34,15 +34,6 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
-      - name: Diagnostic formatter output for project files on failure
-        if: failure()
-        run: |
-          npx prettier --write apps/api/src/auth.ts docs/ADMIN_AUTH.md docs/DATA_MODEL.md docs/IMAGE_DISTRIBUTION.md
-          for file in apps/api/src/auth.ts docs/ADMIN_AUTH.md docs/DATA_MODEL.md docs/IMAGE_DISTRIBUTION.md; do
-            printf 'VNS_FMT_BEGIN:%s\n' "$file"
-            base64 -w0 "$file"
-            printf '\nVNS_FMT_END:%s\n' "$file"
-          done
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch

@@ -149,9 +149,7 @@ export class AdminAuth {
   async handle(request: IncomingMessage, response: ServerResponse): Promise<boolean> {
     const route = request.url;
     const method = request.method;
-    if (
-      !["/auth/login", "/auth/logout", "/auth/session", "/admin/me"].includes(route ?? "")
-    ) {
+    if (!["/auth/login", "/auth/logout", "/auth/session", "/admin/me"].includes(route ?? "")) {
       return false;
     }
 
