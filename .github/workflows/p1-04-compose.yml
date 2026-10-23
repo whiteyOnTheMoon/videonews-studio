@@ -15,6 +15,7 @@ on:
       - scripts/test_preflight_vps.py
       - scripts/test_release_policy.py
       - scripts/check_ghcr_visibility.sh
+      - scripts/test_ghcr_visibility.py
       - docs/INTERNAL_PREVIEW.md
       - .gitignore
       - .github/workflows/p1-04-compose.yml
@@ -37,6 +38,8 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/check_ghcr_visibility.sh
+      - name: Test GHCR private/public/error metadata handling (offline)
+        run: python3 -m unittest discover -s scripts -p 'test_ghcr_visibility.py'
       - name: Ensure Git ignores local credentials
         run: |
           git check-ignore -q secrets/postgres_password
