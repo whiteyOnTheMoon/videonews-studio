@@ -1,8 +1,4 @@
-import {
-  adminProxyConfig,
-  clientAdminCookie,
-  type AdminProxyConfig,
-} from "./admin-proxy";
+import { adminProxyConfig, clientAdminCookie, type AdminProxyConfig } from "./admin-proxy";
 
 export function adminJobsProxyConfig(
   env: Record<string, string | undefined>,
@@ -23,7 +19,9 @@ function reply(status: number, body: object): Response {
 }
 
 async function readResearchRequest(request: Request): Promise<string | null> {
-  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+  if (
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+  ) {
     return null;
   }
   const reader = request.body?.getReader();
@@ -58,7 +56,8 @@ async function readResearchRequest(request: Request): Promise<string | null> {
       object.kind !== "research" ||
       typeof object.idempotencyKey !== "string" ||
       !/^[a-zA-Z0-9_-]{24,80}$/.test(object.idempotencyKey)
-    ) return null;
+    )
+      return null;
     return JSON.stringify({ kind: "research", idempotencyKey: object.idempotencyKey });
   } catch {
     return null;
@@ -103,7 +102,8 @@ export async function adminResearchJobProxy(
         !("jobId" in data) ||
         typeof data.jobId !== "string" ||
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(data.jobId)
-      ) return reply(503, { error: "temporarily_unavailable" });
+      )
+        return reply(503, { error: "temporarily_unavailable" });
       return reply(202, { accepted: true, jobId: data.jobId });
     }
     if (upstream.status === 409) return reply(409, { error: "idempotency_conflict" });
