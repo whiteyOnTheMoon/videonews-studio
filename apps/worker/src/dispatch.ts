@@ -65,8 +65,12 @@ const queue = new Queue(QUEUE_NAME, {
   prefix: QUEUE_PREFIX,
 });
 let enabled = true;
-process.once("SIGTERM", () => { enabled = false; });
-process.once("SIGINT", () => { enabled = false; });
+process.once("SIGTERM", () => {
+  enabled = false;
+});
+process.once("SIGINT", () => {
+  enabled = false;
+});
 queue.on("error", () => console.error("Outbox queue connection error"));
 
 try {
