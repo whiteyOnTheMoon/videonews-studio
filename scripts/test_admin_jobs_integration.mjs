@@ -16,7 +16,10 @@ const ORIGIN = "https://studio.example.invalid";
 const PASS = "ci-only-admin-job-password";
 const SALT = Buffer.alloc(16, 31);
 const HASH = `scrypt$${SALT.toString("hex")}$${scryptSync(PASS, SALT, 64, {
-  N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024,
+  N: 16384,
+  r: 8,
+  p: 1,
+  maxmem: 64 * 1024 * 1024,
 }).toString("hex")}`;
 const KEY = "ci_job_research_transaction_001";
 
@@ -95,7 +98,11 @@ try {
   // No queue dispatcher is activated. Nothing gets sent to Redis.
   const wrongOrigin = await fetch(base + "/admin/jobs", {
     method: "POST",
-    headers: { Origin: "https://evil.example.invalid", Cookie: cookie, "Content-Type": "application/json" },
+    headers: {
+      Origin: "https://evil.example.invalid",
+      Cookie: cookie,
+      "Content-Type": "application/json",
+    },
     body: requestBody,
   });
   assert.equal(wrongOrigin.status, 403);
