@@ -19,5 +19,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node scripts/check_pr.mjs
+      - name: Test PR metadata parser
+        run: node --test scripts/test_check_pr.mjs
       - name: Test GitHub governance planning
         run: python3 -m unittest discover -s scripts -p 'test_github_governance.py'
