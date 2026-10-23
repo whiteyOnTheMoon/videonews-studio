@@ -8,6 +8,7 @@ import {
   AdminJobs,
   adminJobsFromEnv,
   parseResearchJobRequest,
+  validJobSummary,
   type ResearchJobStore,
 } from "./admin-jobs.js";
 import { createApiServer } from "./server.js";
@@ -118,6 +119,7 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
   const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
   let requests = 0;
   const store: ResearchJobStore = {
+    async listRecentResearchJobs() { return []; },
     async createResearchJob() {
       requests += 1;
       return ID;
@@ -144,7 +146,7 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
     );
     assert.equal(
       (await fetch(base + "/admin/jobs", { method: "GET", headers: { Cookie: cookie } })).status,
-      405,
+      200,
     );
   });
   assert.equal(requests, 0);
@@ -155,6 +157,7 @@ test("authenticated idempotent submission returns only a stable UUID; logout blo
   const seen = new Map<string, string>();
   let calls = 0;
   const store: ResearchJobStore = {
+    async listRecentResearchJobs() { return []; },
     async createResearchJob(key) {
       calls += 1;
       if (!seen.has(key)) seen.set(key, ID);
@@ -182,6 +185,7 @@ test("authenticated idempotent submission returns only a stable UUID; logout blo
 test("database failures and incompatible idempotency reuse are sanitized", async () => {
   const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
   const failing: ResearchJobStore = {
+    async listRecentResearchJobs() { throw new Error("secret postgres"); },
     async createResearchJob(key) {
       if (key === KEY)
         throw Object.assign(new Error("secret postgres internal host"), { code: "22023" });
@@ -208,5 +212,51 @@ test("database failures and incompatible idempotency reuse are sanitized", async
     const body = await unavailable.text();
     assert.ok(!body.includes("secret"));
     assert.ok(!body.includes("postgres"));
+  });
+});
+
+test("admin job list is session-protected, bounded, narrow and read-only", async () => {
+  const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
+  const createdAt = "2026-10-23T18:00:00.000Z";
+  const fixture = { id: ID, kind: "research" as const, status: "pending" as const,
+    deliveryState: "pending" as const, createdAt };
+  assert.equal(validJobSummary(fixture), true);
+  assert.equal(validJobSummary({ ...fixture, idempotencyKey: "private" }), false);
+  assert.equal(validJobSummary({ ...fixture, id: "not-a-uuid" }), false);
+  assert.equal(validJobSummary({ ...fixture, deliveryState: "published" }), false);
+  let reads = 0;
+  const store: ResearchJobStore = {
+    async createResearchJob() { return ID; },
+    async listRecentResearchJobs() { reads += 1; return [fixture]; },
+  };
+  await withServer(new AdminJobs(auth, store), auth, async (base, cookie) => {
+    assert.equal((await fetch(base + "/admin/jobs")).status, 401);
+    assert.equal((await fetch(base + "/admin/jobs", { headers: { Cookie: "forged=abc" } })).status, 401);
+    const list = await fetch(base + "/admin/jobs", { headers: { Cookie: cookie } });
+    assert.equal(list.status, 200);
+    assert.equal(list.headers.get("cache-control"), "no-store");
+    assert.deepEqual(await list.json(), { jobs: [fixture] });
+    assert.equal(reads, 1);
+    const badMethod = await fetch(base + "/admin/jobs", { method: "PUT", headers: { Cookie: cookie } });
+    assert.equal(badMethod.status, 405);
+    assert.equal(reads, 1);
+  });
+});
+
+test("job listing failures expose no SQL details or unrestricted rows", async () => {
+  const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
+  const fake: ResearchJobStore = {
+    async createResearchJob() { return ID; },
+    async listRecentResearchJobs() {
+      return Array.from({ length: 21 }, () => ({
+        id: ID, kind: "research", status: "pending", deliveryState: "pending",
+        createdAt: "2026-10-23T18:00:00.000Z",
+      }));
+    },
+  };
+  await withServer(new AdminJobs(auth, fake), auth, async (base, cookie) => {
+    const resp = await fetch(base + "/admin/jobs", { headers: { Cookie: cookie } });
+    assert.equal(resp.status, 503);
+    assert.deepEqual(await resp.json(), { error: "temporarily_unavailable" });
   });
 });
