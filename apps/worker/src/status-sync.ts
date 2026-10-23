@@ -20,7 +20,9 @@ const port = Number(process.env.VNS_POSTGRES_PORT ?? "5432");
 const database = process.env.VNS_POSTGRES_DB ?? "videonews";
 if (
   !["postgres", "127.0.0.1"].includes(host) ||
-  !Number.isInteger(port) || port < 1 || port > 65535 ||
+  !Number.isInteger(port) ||
+  port < 1 ||
+  port > 65535 ||
   !/^[a-z][a-z0-9_]{0,62}$/.test(database)
 ) {
   throw new Error("Status reconciler database endpoint invalid");
@@ -37,7 +39,11 @@ if (password.length < 16) {
 
 const { Pool } = pg;
 const pool = new Pool({
-  host, port, database, user: "vns", password,
+  host,
+  port,
+  database,
+  user: "vns",
+  password,
   max: 1,
   connectionTimeoutMillis: 4000,
   idleTimeoutMillis: 5000,
@@ -55,8 +61,12 @@ const redis = new Redis({
 const queue = new Queue(QUEUE_NAME, { connection: redis, prefix: QUEUE_PREFIX });
 queue.on("error", () => console.error("Job status Redis connection error"));
 let running = true;
-process.once("SIGTERM", () => { running = false; });
-process.once("SIGINT", () => { running = false; });
+process.once("SIGTERM", () => {
+  running = false;
+});
+process.once("SIGINT", () => {
+  running = false;
+});
 
 try {
   while (running) {
