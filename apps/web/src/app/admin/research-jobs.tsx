@@ -67,7 +67,6 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (enabled) void loadJobs();
     // Mounted for the lifetime of the guarded admin dashboard.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
   async function createJob(event: FormEvent<HTMLFormElement>) {
