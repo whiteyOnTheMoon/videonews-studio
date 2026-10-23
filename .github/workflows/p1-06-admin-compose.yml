@@ -1,0 +1,42 @@
+name: P1-06 Admin Compose overlay
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/compose.admin.yaml'
+      - '.github/workflows/p1-06-admin-compose.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-admin-compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolated opt-in overlay without starting containers
+        env:
+          VNS_ADMIN_ORIGIN: https://studio.example.invalid
+        run: |
+          set -euo pipefail
+          mkdir -p secrets
+          trap 'rm -rf secrets' EXIT
+          printf 'dummy-ci-value-not-a-real-secret\n' > secrets/postgres_password
+          printf 'dummy-ci-value-not-a-real-secret\n' > secrets/admin_password_hash
+          docker compose -f compose.yaml -f deploy/compose.admin.yaml --profile preview config --format json > /tmp/vns-admin-config.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/vns-admin-config.json', encoding='utf-8') as fp:
+              data = json.load(fp)
+          web, api = data['services']['web'], data['services']['api']
+          assert web['environment']['VNS_WEB_ADMIN_ENABLED'] == 'true'
+          assert api['environment']['VNS_ADMIN_AUTH_ENABLED'] == 'true'
+          assert api['environment']['VNS_ADMIN_PASSWORD_HASH_FILE'] == '/run/secrets/admin_password_hash'
+          assert 'admin_password_hash' in data['secrets']
+          assert any(x['source'] == 'admin_password_hash' for x in api['secrets'])
+          assert not web.get('ports') and not api.get('ports')
+          print('PASS: admin overlay is opt-in, file-backed and has no published ports')
+          PY
+          rm -f /tmp/vns-admin-config.json
