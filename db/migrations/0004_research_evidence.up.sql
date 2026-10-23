@@ -6,7 +6,7 @@ CREATE TABLE vns.research_evidence (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id uuid NOT NULL REFERENCES vns.research_requests(job_id) ON DELETE RESTRICT,
   source_url text NOT NULL CHECK (char_length(source_url) BETWEEN 16 AND 512)
-    CHECK (source_url ~ '^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+([/?][^[:space:]#]*)?$'),
+    CHECK (source_url ~ '^https://[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+([/?][^[:space:]#]*)?$'),
   publisher text NOT NULL CHECK (char_length(btrim(publisher)) BETWEEN 2 AND 120),
   headline text NOT NULL CHECK (char_length(btrim(headline)) BETWEEN 8 AND 200),
   claim_text text NOT NULL CHECK (char_length(btrim(claim_text)) BETWEEN 12 AND 280),
