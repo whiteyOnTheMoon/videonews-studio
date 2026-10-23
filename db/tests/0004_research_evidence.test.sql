@@ -2,7 +2,7 @@
 BEGIN;
 DO $test$
 DECLARE
-  job_id uuid;
+  created_job_id uuid;
   evidence_id uuid;
   total integer;
 BEGIN
@@ -11,14 +11,14 @@ BEGIN
     RAISE EXCEPTION 'evidence migration ledger missing';
   END IF;
 
-  job_id := vns.create_research_request(
+  created_job_id := vns.create_research_request(
     'ci-source-evidence-job', 'Local public infrastructure accountability research'
   );
 
   INSERT INTO vns.research_evidence
       (job_id, source_url, publisher, headline, claim_text)
   VALUES
-      (job_id, 'https://www.example.org/report/transport',
+      (created_job_id, 'https://www.example.org/report/transport',
        'Example Publisher', 'Annual transport accountability report',
        'The report lists regional transport funding priorities.')
   RETURNING id INTO evidence_id;
@@ -31,7 +31,7 @@ BEGIN
   BEGIN
     INSERT INTO vns.research_evidence
       (job_id, source_url, publisher, headline, claim_text, review_status)
-    VALUES (job_id, 'https://www.example.org/article',
+    VALUES (created_job_id, 'https://www.example.org/article',
       'Example Publisher', 'Another sourced report',
       'A concrete statement requires human review.', 'verified');
     RAISE EXCEPTION 'verified evidence accepted without reviewer';
@@ -46,7 +46,7 @@ BEGIN
   BEGIN
     INSERT INTO vns.research_evidence
       (job_id, source_url, publisher, headline, claim_text)
-    VALUES (job_id, 'http://127.0.0.1/private',
+    VALUES (created_job_id, 'http://127.0.0.1/private',
       'Local Test', 'Unsafe source example title',
       'This invalid evidence candidate should fail.');
     RAISE EXCEPTION 'insecure non-HTTPS source accepted';
@@ -67,7 +67,7 @@ BEGIN
     RAISE EXCEPTION 'reviewed evidence could be rewritten';
   EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
 
-  SELECT count(*) INTO total FROM vns.research_evidence WHERE job_id=job_id;
+  SELECT count(*) INTO total FROM vns.research_evidence WHERE job_id=created_job_id;
   IF total <> 1 THEN RAISE EXCEPTION 'invalid evidence rows were retained'; END IF;
 END;
 $test$;
