@@ -72,9 +72,8 @@ queue.on("error", () => console.error("Outbox queue connection error"));
 try {
   while (enabled) {
     const result = await dispatchOutboxBatch(pool, queue);
-    if (result.examined === 0) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 3000));
-    }
+    // Bound polling even when rows are already enqueued and retained.
+    await new Promise<void>((resolve) => setTimeout(resolve, result.examined > 0 ? 1500 : 3000));
   }
 } catch {
   console.error("Outbox dispatcher failed closed");
