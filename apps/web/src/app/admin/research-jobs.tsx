@@ -76,7 +76,10 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
     if (!enabled || busy) return;
     const normalizedTopic = topic.trim();
     const size = Array.from(normalizedTopic).length;
-    if (size < 12 || size > 160 || /[\u0000-\u001f\u007f]/.test(normalizedTopic)) {
+    if (size < 12 || size > 160 || normalizedTopic.split("").some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      })) {
       setSubmission("Bitte ein Thema mit 12 bis 160 Zeichen ohne Zeilenumbrüche eingeben.");
       return;
     }
