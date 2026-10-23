@@ -47,3 +47,37 @@ jobs:
           done
           docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 768m --memory-swap 768m --cpus 1.0 -e MAX_RENDER_CONCURRENCY=1 --tmpfs /tmp:rw,nosuid,noexec,size=32m vns-ci-worker:check
           echo "Image builds and internal smoke checks passed"
+      - name: Run opt-in Compose preview with private networks only
+        run: |
+          set -eu
+          mkdir -p secrets
+          printf 'ci-only-dummy-password-not-for-deployment\n' > secrets/postgres_password
+          chmod 600 secrets/postgres_password
+          trap 'docker compose --profile preview down --remove-orphans >/dev/null 2>&1 || true; rm -f secrets/postgres_password' EXIT
+
+          # Reuse images from earlier CI build, without another build or registry push.
+          docker tag vns-ci-web:check vns-web:local
+          docker tag vns-ci-api:check vns-api:local
+          docker compose --profile preview up --no-build --detach --wait --wait-timeout 120
+
+          web_id="$(docker compose --profile preview ps -q web)"
+          api_id="$(docker compose --profile preview ps -q api)"
+          test -n "$web_id"
+          test -n "$api_id"
+          test "$(docker ps -q --filter label=com.docker.compose.project=videonews-studio | wc -l | tr -d ' ')" = 2
+
+          for id in "$web_id" "$api_id"; do
+            test "$(docker inspect --format '{{.State.Health.Status}}' "$id")" = healthy
+            test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$id")" = videonews-studio
+            binding="$(docker inspect --format '{{json .HostConfig.PortBindings}}' "$id")"
+            if [ "$binding" != "null" ] && [ "$binding" != "{}" ]; then
+              echo "Unexpected published host port on container $id" >&2
+              exit 1
+            fi
+          done
+
+          test "$(docker inspect --format '{{with index .NetworkSettings.Networks "videonews-studio_frontend"}}ok{{end}}' "$web_id")" = ok
+          test "$(docker inspect --format '{{with index .NetworkSettings.Networks "videonews-studio_frontend"}}ok{{end}}' "$api_id")" = ok
+          test "$(docker inspect --format '{{with index .NetworkSettings.Networks "videonews-studio_backend"}}ok{{end}}' "$api_id")" = ok
+
+          echo "Private Compose preview: 2 healthy containers, project networks only, zero published host ports"
