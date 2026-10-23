@@ -108,7 +108,7 @@ try {
   assert.equal(listing.jobs[0].kind, "research");
   assert.equal(listing.jobs[0].status, "pending");
   assert.equal(listing.jobs[0].deliveryState, "pending");
-  assert.match(listing.jobs[0].createdAt, /^\\d{4}-\\d{2}-\\d{2}T/);
+  assert.match(listing.jobs[0].createdAt, /^\d{4}-\d{2}-\d{2}T/);
   assert.ok(!JSON.stringify(listing).includes(KEY));
   assert.equal((await fetch(base + "/admin/jobs")).status, 401);
 
