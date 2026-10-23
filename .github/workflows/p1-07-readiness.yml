@@ -1,0 +1,26 @@
+name: P1-07 backend readiness (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_07_readiness.py"
+      - "scripts/test_p1_07_readiness.py"
+      - "docs/P1-07_BACKEND_READINESS.md"
+      - "compose.yaml"
+      - ".github/workflows/p1-07-readiness.yml"
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run fail-closed policy unit tests
+        run: python3 -m unittest discover -s scripts -p 'test_p1_07_readiness.py'
+      - name: Validate opt-in Compose topology without launching containers
+        run: |
+          mkdir -p secrets
+          printf 'ci-placeholder-not-for-deployment\n' > secrets/postgres_password
+          chmod 600 secrets/postgres_password
+          docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
