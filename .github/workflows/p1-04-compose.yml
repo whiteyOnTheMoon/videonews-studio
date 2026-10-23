@@ -9,6 +9,10 @@ on:
       - deploy/**
       - scripts/check_compose.py
       - scripts/test_check_compose.py
+      - scripts/preflight_vps.py
+      - scripts/test_preflight_vps.py
+      - docs/INTERNAL_PREVIEW.md
+      - .gitignore
       - .github/workflows/p1-04-compose.yml
 permissions:
   contents: read
@@ -20,6 +24,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run offline Compose policy tests
         run: python3 -m unittest discover -s scripts -p 'test_check_compose.py'
+      - name: Test read-only VPS preflight policy
+        run: python3 -m unittest discover -s scripts -p 'test_preflight_vps.py'
+      - name: Ensure Git ignores local credentials
+        run: |
+          git check-ignore -q secrets/postgres_password
+          git check-ignore -q .env.production
       - name: Validate every Compose profile (no containers started)
         run: |
           mkdir -p secrets

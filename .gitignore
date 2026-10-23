@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# VideoNews Studio: local Compose secret and private key material
+/secrets/
+*.pem
+*.key
+*.p12
+*.pfx

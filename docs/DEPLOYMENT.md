@@ -41,3 +41,10 @@ Im GitHub-Actions-Runner erfolgen Python-Policytests und `docker compose config`
 6. Betreiberfreigabe, Review- und CI-Abnahme dokumentieren.
 
 **Achtung zu Backups:** Off-Site-/kostenpflichtige Backups wurden für die Hobby-Projekte ausdrücklich auf später verschoben. Persistent-Volumes ersetzen kein Backup; bei VPS-Verlust droht Datenverlust. Keine unautorisierten kostenpflichtigen Angebote nutzen.
+
+
+## Interner Preview-Ablauf und Ingress-Entscheidung
+
+Die verbindliche Entscheidungsvorlage und der rein lesende Ressourcen-/Kollisionscheck befinden sich in [INTERNAL_PREVIEW.md](INTERNAL_PREVIEW.md) und `scripts/preflight_vps.py`. CI hat den Docker-Build bereits auf GitHub Actions erfolgreich nachgewiesen; **auf dem VPS ist noch kein Build oder Start erfolgt**. Wegen 24 GB freiem Speicher und deutlich belegtem Swap werden lokale Builds bis zur expliziten Freigabe zurückgestellt. Ein erster Preview-Test wäre ausschließlich Web+API ohne Host-Port-Mappings, aber erst nach Checkout-, Ressourcen- und Sicherheitsprüfung.
+
+**TLS:** Ein öffentlicher HTTPS-Einstieg und eine bestehende Cloudflare-Integration werden hier absichtlich **nicht** als umgesetzt behauptet. Der bestehende Tunnelbestand wird nicht angerührt. Eine spätere externe Freigabe erfordert P1-06-Authentifizierung sowie die dokumentierte TLS-/Zugriffsentscheidung.
