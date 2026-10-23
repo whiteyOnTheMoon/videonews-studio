@@ -113,6 +113,20 @@ function parseApprovedUrl(input: string, policy: ApprovedFetchPolicy): URL {
   return url;
 }
 
+async function withDeadline<T>(promise: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("Source deadline exceeded")), TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function defaultResolveIPv4(host: string): Promise<string[]> {
   const addresses = await lookup(host, { all: true, family: 4 });
   return addresses.map(({ address }) => address);
@@ -129,6 +143,7 @@ export function createPinnedHttpsOptions(url: URL, address: string): https.Reque
     agent: false,
     rejectUnauthorized: true,
     timeout: TIMEOUT_MS,
+    signal: AbortSignal.timeout(TIMEOUT_MS),
     maxHeaderSize: 8192,
     headers: {
       Host: url.hostname,
@@ -221,7 +236,7 @@ export async function fetchApprovedSourceDocument(
   const requestPinned = dependencies.requestPinned ?? defaultPinnedRequest;
   let ips: string[];
   try {
-    ips = await resolveIPv4(url.hostname);
+    ips = await withDeadline(resolveIPv4(url.hostname));
   } catch {
     throw new Error("Approved source DNS resolution failed");
   }
