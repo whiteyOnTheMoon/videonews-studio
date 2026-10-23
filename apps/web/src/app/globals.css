@@ -39,3 +39,36 @@ p {
   border-radius: 12px;
   background: #111b2c;
 }
+
+.admin-form {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 440px;
+  margin-top: 2rem;
+}
+.admin-form input {
+  padding: 0.8rem;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  font: inherit;
+  background: #111b2c;
+  color: #f5f7fb;
+}
+.admin-form button {
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #8fb5ee;
+  color: #0a101b;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.admin-form :focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
