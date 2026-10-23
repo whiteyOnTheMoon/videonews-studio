@@ -10,9 +10,13 @@ BEGIN
     SELECT 1 FROM vns.schema_migrations WHERE version = '0001_editorial_core'
   ) THEN RAISE EXCEPTION 'migration ledger absent after restore'; END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM vns.schema_migrations WHERE version = '0002_job_outbox'
+  ) THEN RAISE EXCEPTION 'outbox migration ledger absent after restore'; END IF;
+
   FOREACH table_name IN ARRAY ARRAY[
     'schema_migrations', 'sources', 'licenses', 'stories', 'claims',
-    'assets', 'scripts', 'jobs', 'videos', 'costs', 'approvals', 'uploads'
+    'assets', 'scripts', 'jobs', 'job_outbox', 'videos', 'costs', 'approvals', 'uploads'
   ] LOOP
     EXECUTE format('SELECT count(*) FROM vns.%I', table_name) INTO row_total;
     IF row_total <> 1 THEN
@@ -29,6 +33,7 @@ BEGIN
       JOIN vns.scripts sc ON sc.story_id = st.id
       JOIN vns.videos vid ON vid.script_id = sc.id
       JOIN vns.jobs j ON j.id = vid.render_job_id AND j.story_id = st.id
+      JOIN vns.job_outbox ob ON ob.job_id = j.id
       JOIN vns.costs c ON c.job_id = j.id
       JOIN vns.approvals ap ON ap.video_id = vid.id
       JOIN vns.uploads up ON up.video_id = vid.id
@@ -37,6 +42,9 @@ BEGIN
       AND cl.verification_status = 'verified' AND cl.verified_at IS NOT NULL
       AND lic.code = 'CI-RESTORE' AND ast.rights_status = 'cleared'
       AND sc.status = 'approved' AND sc.body = 'Fixture script text'
+      AND ob.queue_job_id = 'job-' || replace(j.id::text, '-', '')
+      AND ob.delivery_state = 'enqueued' AND ob.dispatch_attempts = 1
+      AND ob.enqueued_at IS NOT NULL
       AND j.idempotency_key = 'ci-restore-job' AND j.attempt_count = 1
       AND j.max_attempts = 3 AND j.status = 'retry'
       AND vid.duration_ms = 42000 AND vid.storage_key = 'ci/restore-video'
