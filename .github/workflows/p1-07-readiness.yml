@@ -7,6 +7,9 @@ on:
       - "scripts/test_p1_07_readiness.py"
       - "docs/P1-07_BACKEND_READINESS.md"
       - "compose.yaml"
+      - "scripts/provision_redis_secrets.py"
+      - "scripts/test_provision_redis_secrets.py"
+      - "db/scripts/test_redis_acl.sh"
       - ".github/workflows/p1-07-readiness.yml"
 permissions:
   contents: read
@@ -18,9 +21,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run fail-closed policy unit tests
         run: python3 -m unittest discover -s scripts -p 'test_p1_07_readiness.py'
+      - name: Test Redis credential provisioning
+        run: python3 -m unittest discover -s scripts -p 'test_provision_redis_secrets.py'
       - name: Validate opt-in Compose topology without launching containers
         run: |
           mkdir -p secrets
           printf 'ci-placeholder-not-for-deployment\n' > secrets/postgres_password
           chmod 600 secrets/postgres_password
+          python3 scripts/provision_redis_secrets.py secrets
           docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
+      - name: Run disposable Redis authentication and ACL isolation tests
+        env:
+          CI: 'true'
+        run: bash db/scripts/test_redis_acl.sh
