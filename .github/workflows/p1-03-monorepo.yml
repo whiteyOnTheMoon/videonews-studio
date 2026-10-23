@@ -34,5 +34,11 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Verify P1-01 importer on integrated branch
+        run: node --test scripts/import-issues.test.mjs
+      - name: Verify P1-02 governance on integrated branch
+        run: |
+          node --test scripts/test_check_pr.mjs
+          python3 -m unittest discover -s scripts -p 'test_github_governance.py'
       - name: Unit tests
         run: npm test
