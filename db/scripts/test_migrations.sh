@@ -16,15 +16,24 @@ docker run --rm --detach --name "$name" \
   --env POSTGRES_PASSWORD=ci-only-not-real \
   postgres:17-alpine >/dev/null
 
+# The official PostgreSQL image briefly starts a temporary server while
+# initializing its database. pg_isready may succeed during that phase, then
+# fail as the temporary server stops before the final server starts.
+# Wait for a real SQL query to work, and require it to stay available.
 ready=0
-for attempt in $(seq 1 45); do
-  if docker exec "$name" pg_isready -q -U postgres -d vns_schema_test; then
-    ready=1
-    break
+for attempt in $(seq 1 60); do
+  if docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c 'SELECT 1' 2>/dev/null | grep -qx '1'; then
+    sleep 2
+    if docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c 'SELECT 1' 2>/dev/null | grep -qx '1'; then
+      ready=1
+      break
+    fi
   fi
   sleep 1
 done
-test "$ready" -eq 1 || { echo "Postgres not ready"; exit 1; }
+test "$ready" -eq 1 || { echo "Postgres not stably ready"; docker logs "$name" | tail -40; exit 1; }
 
 sql() {
   docker exec -i "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d vns_schema_test
