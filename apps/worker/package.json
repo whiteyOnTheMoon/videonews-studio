@@ -9,7 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "test": "npm run build && node --test dist/*.test.js",
-    "dispatch": "node dist/dispatch.js"
+    "dispatch": "node dist/dispatch.js",
+    "status-sync": "node dist/status-sync.js"
   },
   "dependencies": {
     "@vns/shared": "*",
