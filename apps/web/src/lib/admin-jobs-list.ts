@@ -3,6 +3,7 @@ import { clientAdminCookie, type AdminProxyConfig } from "./admin-proxy";
 export interface ResearchJobOverview {
   id: string;
   kind: "research";
+  topic: string | null;
   status: "pending" | "running" | "retry" | "done" | "failed" | "cancelled";
   deliveryState: "pending" | "enqueued";
   createdAt: string;
@@ -12,10 +13,14 @@ export function isResearchJobOverview(value: unknown): value is ResearchJobOverv
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const job = value as Record<string, unknown>;
   return (
-    Object.keys(job).length === 5 &&
+    Object.keys(job).length === 6 &&
     typeof job.id === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(job.id) &&
     job.kind === "research" &&
+    (job.topic === null || (typeof job.topic === "string" &&
+      job.topic === job.topic.trim() &&
+      !/[\u0000-\u001f\u007f]/.test(job.topic) &&
+      Array.from(job.topic).length >= 12 && Array.from(job.topic).length <= 160)) &&
     typeof job.status === "string" &&
     ["pending", "running", "retry", "done", "failed", "cancelled"].includes(job.status) &&
     (job.deliveryState === "pending" || job.deliveryState === "enqueued") &&
@@ -70,6 +75,7 @@ export async function adminResearchJobsList(
     const jobs: ResearchJobOverview[] = data.jobs.map((job) => ({
       id: job.id,
       kind: job.kind,
+      topic: job.topic,
       status: job.status,
       deliveryState: job.deliveryState,
       createdAt: job.createdAt,
