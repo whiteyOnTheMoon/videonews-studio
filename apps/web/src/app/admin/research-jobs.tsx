@@ -34,6 +34,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
   const [loading, setLoading] = useState(enabled);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [topic, setTopic] = useState("");
+  const topicForRetry = useRef<string | null>(null);
   const [listError, setListError] = useState("");
   const [submission, setSubmission] = useState("");
   const pendingKey = useRef<string | null>(null);
@@ -72,11 +74,32 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
   async function createJob(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!enabled || busy) return;
+    const normalizedTopic = topic.trim();
+    const size = Array.from(normalizedTopic).length;
+    if (
+      size < 12 ||
+      size > 160 ||
+      normalizedTopic.split("").some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
+    ) {
+      setSubmission("Bitte ein Thema mit 12 bis 160 Zeichen ohne Zeilenumbrüche eingeben.");
+      return;
+    }
+    // A retry must preserve both its key AND the associated topic.
+    if (pendingKey.current && topicForRetry.current !== normalizedTopic) {
+      pendingKey.current = null;
+      topicForRetry.current = null;
+    }
     setBusy(true);
     setSubmission("");
     try {
       // Keep the same key across network errors; retries must not create new jobs.
-      if (!pendingKey.current) pendingKey.current = crypto.randomUUID();
+      if (!pendingKey.current) {
+        pendingKey.current = crypto.randomUUID();
+        topicForRetry.current = normalizedTopic;
+      }
       const response = await fetch("/api/admin/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,6 +108,7 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
         body: JSON.stringify({
           kind: "research",
           idempotencyKey: pendingKey.current,
+          topic: topicForRetry.current,
         }),
       });
       if (response.status === 202) {
@@ -100,6 +124,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
         )
           throw new Error("Invalid confirmation");
         pendingKey.current = null;
+        topicForRetry.current = null;
+        setTopic("");
         setSubmission("Auftrag in PostgreSQL vorgemerkt. Eine Recherche wurde nicht gestartet.");
         await loadJobs();
       } else if (response.status === 401) {
@@ -107,9 +133,11 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
       } else if (response.status === 409) {
         // New user action may choose a fresh idempotency key.
         pendingKey.current = null;
+        topicForRetry.current = null;
         setSubmission("Diese Anfrage widerspricht einer früheren Vormerkung.");
       } else if (response.status === 400) {
         pendingKey.current = null;
+        topicForRetry.current = null;
         setSubmission("Ungültige Anfrage. Bitte erneut versuchen.");
       } else {
         setSubmission(
@@ -142,9 +170,23 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
         <>
           <form className="admin-form jobs-form" onSubmit={createJob}>
             <span className="jobs-field-label">Auftragsart: Recherche (nur Vormerkung)</span>
+            <label htmlFor="research-topic">Recherchethema</label>
+            <input
+              id="research-topic"
+              name="topic"
+              type="text"
+              required
+              minLength={12}
+              maxLength={160}
+              value={topic}
+              onChange={(event) => setTopic(event.target.value)}
+              placeholder="Zum Beispiel: Nachhaltige Stadtmobilität in Europa"
+              autoComplete="off"
+              disabled={busy}
+            />
             <p className="jobs-hint">
-              Ein Thema kann noch nicht eingegeben werden. Die tatsächliche Recherche wird in einer
-              späteren Phase implementiert.
+              12–160 Zeichen. Das Thema wird nur gespeichert; eine tatsächliche Recherche oder
+              Quellenprüfung wird damit noch nicht gestartet.
             </p>
             <button type="submit" disabled={busy}>
               {busy ? "Speichere Vormerkung …" : "Neuen Auftrag vormerken"}
@@ -185,6 +227,7 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
                     </time>
                   </div>
                   <span>{deliveryNames[job.deliveryState]}</span>
+                  <span>{job.topic ?? "Ohne Thema (älterer Auftrag)"}</span>
                   <code>{job.id}</code>
                 </li>
               ))}

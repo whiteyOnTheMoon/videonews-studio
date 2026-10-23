@@ -14,6 +14,8 @@ test("dashboard is visibly disabled with no submit control until separate activa
 test("enabled dashboard clearly labels database-only creation and limited listing", () => {
   const html = renderToStaticMarkup(<ResearchJobs enabled={true} />);
   assert.match(html, /Neuen Auftrag vormerken/);
+  assert.match(html, /Recherchethema/);
+  assert.match(html, /minLength="12"/);
   assert.match(html, /PostgreSQL-Vormerkungen/);
   assert.match(html, /keine Anzeige für eine laufende Recherche/);
   assert.match(html, /Letzte 20 Aufträge/);

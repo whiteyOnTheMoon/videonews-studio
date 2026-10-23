@@ -51,5 +51,7 @@ docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
   < "$root/db/migrations/0001_editorial_core.up.sql"
 docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
   < "$root/db/migrations/0002_job_outbox.up.sql"
+docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+  < "$root/db/migrations/0003_research_requests.up.sql"
 node "$root/scripts/test_outbox_integration.mjs"
 node "$root/scripts/test_job_status_integration.mjs"

@@ -8,6 +8,7 @@ const COOKIE = "__Host-vns_session=" + "e".repeat(64);
 const JOB = {
   id: "e8acf570-a11e-4bb9-9139-498abc493b18",
   kind: "research",
+  topic: "Regional transport investment study",
   status: "pending",
   deliveryState: "pending",
   createdAt: "2026-10-23T18:00:00.000Z",
@@ -54,6 +55,8 @@ test("list proxy only relays authenticated narrow rows, never internal details",
   assert.equal(isResearchJobOverview(JOB), true);
   assert.equal(isResearchJobOverview({ ...JOB, privateSql: "secret" }), false);
   assert.equal(isResearchJobOverview({ ...JOB, createdAt: "not-a-date" }), false);
+  assert.equal(isResearchJobOverview({ ...JOB, topic: "short" }), false);
+  assert.equal(isResearchJobOverview({ ...JOB, topic: null }), true);
 });
 
 test("malformed, oversized, unauthorized and unavailable upstream lists fail closed", async () => {

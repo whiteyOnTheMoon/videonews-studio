@@ -5,44 +5,63 @@ import type { Pool } from "pg";
 import type { AdminAuth } from "./auth.js";
 
 const KEY_PATTERN = /^[a-zA-Z0-9_-]{24,80}$/;
+export function validResearchTopic(value: unknown): value is string {
+  if (
+    typeof value !== "string" ||
+    value !== value.trim() ||
+    value.split("").some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  )
+    return false;
+  const length = Array.from(value).length;
+  return length >= 12 && length <= 160;
+}
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export interface ResearchJobSummary {
   id: string;
   kind: "research";
+  topic: string | null;
   status: "pending" | "running" | "retry" | "done" | "failed" | "cancelled";
   deliveryState: "pending" | "enqueued";
   createdAt: string;
 }
 
 export interface ResearchJobStore {
-  createResearchJob(key: string): Promise<string>;
+  createResearchJob(key: string, topic: string): Promise<string>;
   listRecentResearchJobs(): Promise<ResearchJobSummary[]>;
   close?(): Promise<void>;
 }
 
-export function parseResearchJobRequest(value: unknown): string | null {
+export function parseResearchJobRequest(
+  value: unknown,
+): { idempotencyKey: string; topic: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const body = value as Record<string, unknown>;
   if (
-    Object.keys(body).length !== 2 ||
+    Object.keys(body).length !== 3 ||
     body.kind !== "research" ||
     typeof body.idempotencyKey !== "string" ||
-    !KEY_PATTERN.test(body.idempotencyKey)
+    !KEY_PATTERN.test(body.idempotencyKey) ||
+    !validResearchTopic(body.topic)
   ) {
     return null;
   }
-  return body.idempotencyKey;
+  return { idempotencyKey: body.idempotencyKey, topic: body.topic };
 }
 
 export function validJobSummary(value: unknown): value is ResearchJobSummary {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
   return (
-    Object.keys(row).length === 5 &&
+    Object.keys(row).length === 6 &&
     typeof row.id === "string" &&
     UUID_PATTERN.test(row.id) &&
     row.kind === "research" &&
+    (row.topic === null || validResearchTopic(row.topic)) &&
     typeof row.status === "string" &&
     ["pending", "running", "retry", "done", "failed", "cancelled"].includes(row.status) &&
     (row.deliveryState === "pending" || row.deliveryState === "enqueued") &&
@@ -107,13 +126,13 @@ export class AdminJobs {
       respond(response, 403, { error: "forbidden" });
       return;
     }
-    const key = parseResearchJobRequest(await limitedJson(request));
-    if (!key) {
+    const submission = parseResearchJobRequest(await limitedJson(request));
+    if (!submission) {
       respond(response, 400, { error: "invalid_request" });
       return;
     }
     try {
-      const jobId = await this.store.createResearchJob(key);
+      const jobId = await this.store.createResearchJob(submission.idempotencyKey, submission.topic);
       if (!UUID_PATTERN.test(jobId)) throw new Error("Invalid database job identifier");
       // Accepted into PostgreSQL only; no claim of Redis enqueue/completion.
       respond(response, 202, { accepted: true, jobId });
@@ -141,10 +160,10 @@ export class AdminJobs {
 class PostgresResearchJobStore implements ResearchJobStore {
   constructor(private readonly pool: Pool) {}
 
-  async createResearchJob(key: string): Promise<string> {
+  async createResearchJob(key: string, topic: string): Promise<string> {
     const result = await this.pool.query<{ id: string }>(
-      "SELECT vns.create_job_with_outbox('research', $1, NULL, 3) AS id",
-      [key],
+      "SELECT vns.create_research_request($1, $2) AS id",
+      [key, topic],
     );
     const value = result.rows[0]?.id;
     if (typeof value !== "string") throw new Error("Database did not return a job identifier");
@@ -155,14 +174,16 @@ class PostgresResearchJobStore implements ResearchJobStore {
     const result = await this.pool.query<{
       id: string;
       kind: "research";
+      topic: string | null;
       status: ResearchJobSummary["status"];
       deliveryState: ResearchJobSummary["deliveryState"];
       createdAt: Date;
     }>(`
-      SELECT j.id::text AS id, j.kind, j.status,
+      SELECT j.id::text AS id, j.kind, rr.topic, j.status,
              ob.delivery_state AS "deliveryState", j.created_at AS "createdAt"
       FROM vns.jobs j
       JOIN vns.job_outbox ob ON ob.job_id = j.id
+      LEFT JOIN vns.research_requests rr ON rr.job_id = j.id
       WHERE j.kind = 'research'
       ORDER BY j.created_at DESC, j.id DESC
       LIMIT 20
@@ -170,6 +191,7 @@ class PostgresResearchJobStore implements ResearchJobStore {
     return result.rows.map((row) => ({
       id: row.id,
       kind: row.kind,
+      topic: row.topic,
       status: row.status,
       deliveryState: row.deliveryState,
       createdAt: row.createdAt.toISOString(),

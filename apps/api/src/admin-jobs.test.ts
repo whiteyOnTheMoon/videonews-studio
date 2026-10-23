@@ -9,6 +9,7 @@ import {
   adminJobsFromEnv,
   parseResearchJobRequest,
   validJobSummary,
+  validResearchTopic,
   type ResearchJobStore,
 } from "./admin-jobs.js";
 import { createApiServer } from "./server.js";
@@ -23,6 +24,7 @@ const HASH = `scrypt$${SALT.toString("hex")}$${scryptSync(PASSWORD, SALT, 64, {
   maxmem: 64 * 1024 * 1024,
 }).toString("hex")}`;
 const KEY = "ci_research_job_idempotency_001";
+const TOPIC = "Regional mobility projects and public funding";
 const ID = "de8e2702-7697-4113-9de6-6b81d5582d11";
 
 async function withServer(
@@ -72,18 +74,32 @@ function submit(
 }
 
 test("admin research job schema requires a narrow payload and strong idempotency key", () => {
-  assert.equal(parseResearchJobRequest({ kind: "research", idempotencyKey: KEY }), KEY);
+  assert.deepEqual(
+    parseResearchJobRequest({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+    { idempotencyKey: KEY, topic: TOPIC },
+  );
   for (const body of [
     null,
     [],
-    { kind: "render", idempotencyKey: KEY },
+    { kind: "render", idempotencyKey: KEY, topic: TOPIC },
     { kind: "research", idempotencyKey: "short" },
-    { kind: "research", idempotencyKey: KEY, surprise: true },
+    { kind: "research", idempotencyKey: KEY, topic: TOPIC, surprise: true },
+    { kind: "research", idempotencyKey: KEY },
+    { kind: "research", idempotencyKey: KEY, topic: "short" },
+    { kind: "research", idempotencyKey: KEY, topic: "  valid research topic  " },
     { kind: "research", idempotencyKey: "__proto__" },
     { kind: "research" },
   ]) {
     assert.equal(parseResearchJobRequest(body), null);
   }
+});
+
+test("topic validation rejects controls and overlong code point sequences", () => {
+  assert.equal(validResearchTopic(TOPIC), true);
+  assert.equal(validResearchTopic("Long enough\nnew line"), false);
+  assert.equal(validResearchTopic("a".repeat(161)), false);
+  assert.equal(validResearchTopic("  Valid topic length  "), false);
+  assert.equal(validResearchTopic("short"), false);
 });
 
 test("admin job configuration fails closed without both auth and PG secret", () => {
@@ -129,13 +145,18 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
   };
   await withServer(undefined, auth, async (base, cookie) => {
     assert.equal(
-      (await submit(base, cookie, JSON.stringify({ kind: "research", idempotencyKey: KEY })))
-        .status,
+      (
+        await submit(
+          base,
+          cookie,
+          JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+        )
+      ).status,
       404,
     );
   });
   await withServer(new AdminJobs(auth, store), auth, async (base, cookie) => {
-    const body = JSON.stringify({ kind: "research", idempotencyKey: KEY });
+    const body = JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC });
     assert.equal((await submit(base, null, body)).status, 401);
     assert.equal((await submit(base, "forged=abc", body)).status, 401);
     assert.equal((await submit(base, cookie, body, "https://attacker.example")).status, 403);
@@ -143,7 +164,13 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
     assert.equal((await submit(base, cookie, "{broken")).status, 400);
     assert.equal((await submit(base, cookie, "x".repeat(1100))).status, 400);
     assert.equal(
-      (await submit(base, cookie, JSON.stringify({ kind: "upload", idempotencyKey: KEY }))).status,
+      (
+        await submit(
+          base,
+          cookie,
+          JSON.stringify({ kind: "upload", idempotencyKey: KEY, topic: TOPIC }),
+        )
+      ).status,
       400,
     );
     assert.equal(
@@ -169,7 +196,7 @@ test("authenticated idempotent submission returns only a stable UUID; logout blo
     },
   };
   await withServer(new AdminJobs(auth, store), auth, async (base, cookie) => {
-    const body = JSON.stringify({ kind: "research", idempotencyKey: KEY });
+    const body = JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC });
     const first = await submit(base, cookie, body);
     assert.equal(first.status, 202);
     assert.equal(first.headers.get("cache-control"), "no-store");
@@ -202,7 +229,7 @@ test("database failures and incompatible idempotency reuse are sanitized", async
     const conflict = await submit(
       base,
       cookie,
-      JSON.stringify({ kind: "research", idempotencyKey: KEY }),
+      JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
     );
     assert.equal(conflict.status, 409);
     assert.deepEqual(await conflict.json(), { error: "idempotency_conflict" });
@@ -212,6 +239,7 @@ test("database failures and incompatible idempotency reuse are sanitized", async
       JSON.stringify({
         kind: "research",
         idempotencyKey: "ci_research_job_idempotency_002",
+        topic: TOPIC,
       }),
     );
     assert.equal(unavailable.status, 503);
@@ -227,6 +255,7 @@ test("admin job list is session-protected, bounded, narrow and read-only", async
   const fixture = {
     id: ID,
     kind: "research" as const,
+    topic: TOPIC,
     status: "pending" as const,
     deliveryState: "pending" as const,
     createdAt,
@@ -275,6 +304,7 @@ test("job listing failures expose no SQL details or unrestricted rows", async ()
       return Array.from({ length: 21 }, () => ({
         id: ID,
         kind: "research",
+        topic: null,
         status: "pending",
         deliveryState: "pending",
         createdAt: "2026-10-23T18:00:00.000Z",

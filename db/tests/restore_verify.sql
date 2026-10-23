@@ -14,12 +14,16 @@ BEGIN
     SELECT 1 FROM vns.schema_migrations WHERE version = '0002_job_outbox'
   ) THEN RAISE EXCEPTION 'outbox migration ledger absent after restore'; END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM vns.schema_migrations WHERE version = '0003_research_requests'
+  ) THEN RAISE EXCEPTION 'research request migration missing'; END IF;
+
   FOREACH table_name IN ARRAY ARRAY[
     'schema_migrations', 'sources', 'licenses', 'stories', 'claims',
-    'assets', 'scripts', 'jobs', 'job_outbox', 'videos', 'costs', 'approvals', 'uploads'
+    'assets', 'scripts', 'jobs', 'job_outbox', 'research_requests', 'videos', 'costs', 'approvals', 'uploads'
   ] LOOP
     EXECUTE format('SELECT count(*) FROM vns.%I', table_name) INTO row_total;
-    IF row_total <> (CASE WHEN table_name = 'schema_migrations' THEN 2 ELSE 1 END) THEN
+    IF row_total <> (CASE WHEN table_name = 'schema_migrations' THEN 3 WHEN table_name IN ('jobs','job_outbox') THEN 2 ELSE 1 END) THEN
       RAISE EXCEPTION 'restored table % has % rows rather than 1', table_name, row_total;
     END IF;
   END LOOP;
@@ -55,6 +59,16 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'restored editorial relationships or data values invalid';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM vns.research_requests rr
+      JOIN vns.jobs j ON j.id = rr.job_id
+      JOIN vns.job_outbox ob ON ob.job_id = j.id
+    WHERE j.kind = 'research'
+      AND j.idempotency_key = 'ci-restore-research-topic'
+      AND rr.topic = 'Historical public transit infrastructure funding'
+      AND ob.delivery_state = 'pending'
+  ) THEN RAISE EXCEPTION 'research topic lost on restore'; END IF;
 
   -- A restored database must still enforce idempotency and permission checks.
   BEGIN

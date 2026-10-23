@@ -52,13 +52,25 @@ async function readResearchRequest(request: Request): Promise<string | null> {
     if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
     const object = data as Record<string, unknown>;
     if (
-      Object.keys(object).length !== 2 ||
+      Object.keys(object).length !== 3 ||
       object.kind !== "research" ||
       typeof object.idempotencyKey !== "string" ||
-      !/^[a-zA-Z0-9_-]{24,80}$/.test(object.idempotencyKey)
+      !/^[a-zA-Z0-9_-]{24,80}$/.test(object.idempotencyKey) ||
+      typeof object.topic !== "string" ||
+      object.topic !== object.topic.trim() ||
+      object.topic.split("").some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) ||
+      Array.from(object.topic).length < 12 ||
+      Array.from(object.topic).length > 160
     )
       return null;
-    return JSON.stringify({ kind: "research", idempotencyKey: object.idempotencyKey });
+    return JSON.stringify({
+      kind: "research",
+      idempotencyKey: object.idempotencyKey,
+      topic: object.topic,
+    });
   } catch {
     return null;
   }

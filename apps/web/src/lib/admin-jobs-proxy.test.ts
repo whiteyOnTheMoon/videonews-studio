@@ -6,6 +6,7 @@ const ORIGIN = "https://studio.example.invalid";
 const CONFIG = { origin: ORIGIN, api: "http://api:4000" };
 const COOKIE = "__Host-vns_session=" + "d".repeat(64);
 const KEY = "ci_research_job_idempotency_001";
+const TOPIC = "Local journalism and sustainable mobility funding";
 const ID = "e8acf570-a11e-4bb9-9139-498abc493b18";
 
 function request(input: unknown, headers: Record<string, string> = {}): Request {
@@ -48,7 +49,7 @@ test("job proxy rejects anonymous cookies, cross-origin requests and bad payload
     calls += 1;
     return Response.json({ accepted: true, jobId: ID }, { status: 202 });
   };
-  const valid = { kind: "research", idempotencyKey: KEY };
+  const valid = { kind: "research", idempotencyKey: KEY, topic: TOPIC };
   assert.equal((await adminResearchJobProxy(request(valid), null, upstream)).status, 404);
   assert.equal(
     (
@@ -68,7 +69,7 @@ test("job proxy rejects anonymous cookies, cross-origin requests and bad payload
   assert.equal(
     (
       await adminResearchJobProxy(
-        request({ kind: "render", idempotencyKey: KEY }),
+        request({ kind: "render", idempotencyKey: KEY, topic: TOPIC }),
         CONFIG,
         upstream,
       )
@@ -93,6 +94,21 @@ test("job proxy rejects anonymous cookies, cross-origin requests and bad payload
     (await adminResearchJobProxy(request("x".repeat(2000)), CONFIG, upstream)).status,
     400,
   );
+  assert.equal(
+    (
+      await adminResearchJobProxy(
+        request({ kind: "research", idempotencyKey: KEY }),
+        CONFIG,
+        upstream,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await adminResearchJobProxy(request({ ...valid, topic: "too short" }), CONFIG, upstream))
+      .status,
+    400,
+  );
   assert.equal(calls, 0);
 });
 
@@ -108,13 +124,18 @@ test("job proxy forwards only allowlisted payload, cookie and HTTPS Origin", asy
     assert.equal(headers.get("origin"), ORIGIN);
     assert.equal(headers.get("cookie"), COOKIE);
     assert.equal(headers.get("authorization"), null);
-    assert.deepEqual(JSON.parse(init?.body as string), { kind: "research", idempotencyKey: KEY });
+    assert.deepEqual(JSON.parse(init?.body as string), {
+      kind: "research",
+      idempotencyKey: KEY,
+      topic: TOPIC,
+    });
     return Response.json({ accepted: true, jobId: ID, private: "hidden" }, { status: 202 });
   };
   const response = await adminResearchJobProxy(
     request({
       kind: "research",
       idempotencyKey: KEY,
+      topic: TOPIC,
     }),
     CONFIG,
     upstream,
@@ -127,7 +148,7 @@ test("job proxy forwards only allowlisted payload, cookie and HTTPS Origin", asy
 });
 
 test("job proxy sanitizes upstream unavailability, redirects, and invalid responses", async () => {
-  const valid = request({ kind: "research", idempotencyKey: KEY });
+  const valid = request({ kind: "research", idempotencyKey: KEY, topic: TOPIC });
   const invalid: typeof fetch = async () =>
     Response.json({ accepted: true, jobId: "bad" }, { status: 202 });
   assert.equal((await adminResearchJobProxy(valid, CONFIG, invalid)).status, 503);
@@ -135,14 +156,19 @@ test("job proxy sanitizes upstream unavailability, redirects, and invalid respon
     throw new Error("secret internal host");
   };
   assert.equal(
-    (await adminResearchJobProxy(request({ kind: "research", idempotencyKey: KEY }), CONFIG, down))
-      .status,
+    (
+      await adminResearchJobProxy(
+        request({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+        CONFIG,
+        down,
+      )
+    ).status,
     503,
   );
   const conflict: typeof fetch = async () =>
     Response.json({ error: "internal SQL" }, { status: 409 });
   const response = await adminResearchJobProxy(
-    request({ kind: "research", idempotencyKey: KEY }),
+    request({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
     CONFIG,
     conflict,
   );
