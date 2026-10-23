@@ -169,28 +169,31 @@ test("sessions expire and malformed login requests are rejected without secrets"
 
 test("file-backed secret configuration rejects ambiguous, unsafe or missing sources", () => {
   assert.throws(
-    () => adminAuthFromEnv({
-      VNS_ADMIN_AUTH_ENABLED: "true",
-      VNS_ADMIN_ORIGIN: ORIGIN,
-      VNS_ADMIN_PASSWORD_HASH: HASH,
-      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_password_hash",
-    }),
+    () =>
+      adminAuthFromEnv({
+        VNS_ADMIN_AUTH_ENABLED: "true",
+        VNS_ADMIN_ORIGIN: ORIGIN,
+        VNS_ADMIN_PASSWORD_HASH: HASH,
+        VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_password_hash",
+      }),
     /exactly one/,
   );
   assert.throws(
-    () => adminAuthFromEnv({
-      VNS_ADMIN_AUTH_ENABLED: "true",
-      VNS_ADMIN_ORIGIN: ORIGIN,
-      VNS_ADMIN_PASSWORD_HASH_FILE: "/tmp/admin_password_hash",
-    }),
+    () =>
+      adminAuthFromEnv({
+        VNS_ADMIN_AUTH_ENABLED: "true",
+        VNS_ADMIN_ORIGIN: ORIGIN,
+        VNS_ADMIN_PASSWORD_HASH_FILE: "/tmp/admin_password_hash",
+      }),
     /\/run\/secrets/,
   );
   assert.throws(
-    () => adminAuthFromEnv({
-      VNS_ADMIN_AUTH_ENABLED: "true",
-      VNS_ADMIN_ORIGIN: ORIGIN,
-      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/missing_admin_password_hash_file",
-    }),
+    () =>
+      adminAuthFromEnv({
+        VNS_ADMIN_AUTH_ENABLED: "true",
+        VNS_ADMIN_ORIGIN: ORIGIN,
+        VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/missing_admin_password_hash_file",
+      }),
     /unavailable/,
   );
   assert.equal(
@@ -207,14 +210,17 @@ test("valid file-backed secret authenticates with a temporary test file", async 
   const file = join(dir, "admin_hash");
   try {
     writeFileSync(file, HASH + "\n", { mode: 0o400 });
-    const auth = adminAuthFromEnv({
-      VNS_ADMIN_AUTH_ENABLED: "true",
-      VNS_ADMIN_ORIGIN: ORIGIN,
-      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_hash",
-    }, (requestedPath) => {
-      assert.equal(requestedPath, "/run/secrets/admin_hash");
-      return readFileSync(file, "utf8");
-    });
+    const auth = adminAuthFromEnv(
+      {
+        VNS_ADMIN_AUTH_ENABLED: "true",
+        VNS_ADMIN_ORIGIN: ORIGIN,
+        VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_hash",
+      },
+      (requestedPath) => {
+        assert.equal(requestedPath, "/run/secrets/admin_hash");
+        return readFileSync(file, "utf8");
+      },
+    );
     assert.ok(auth);
     await withServer(createApiServer({ auth }), async (base) => {
       const response = await login(base, PASSWORD);
