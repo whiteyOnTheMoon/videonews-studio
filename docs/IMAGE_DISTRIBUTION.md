@@ -50,3 +50,20 @@ Diese Werte sind **nicht** identisch mit den tatsächlichen GHCR-Downloadbytes, 
 1. Erst tatsächliche Größen messen und im Issue P1-04 mit Git-Commit und CI-Run dokumentieren, keine Werte erfinden.
 2. Dann verfügbare Kapazität auf dem VPS **erneut rein lesend** ermitteln und zusätzlich Spielraum für Layer-Download, Entpacken, vorhandene Images und Anwendungen berücksichtigen. Ein grüner Vorabcheck ist noch keine Startfreigabe.
 3. GHCR-Upload, Token-Erstellung, Image-Pull und Containerstart bleiben **jeweils gesondert zu genehmigende** Schritte. Keine unautorisierten Kosten und kein Löschen anderer Docker-Images/Build-Caches.
+
+
+### Gemessener Referenzlauf (GitHub Actions, 23.10.2026)
+
+Quelle: [P1-04 Docker image smoke tests, Run #39913543830](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39913543830), Image-Messung auf Commit `f45b153fc388ee4e6dc326cd5e1ff815e46f62b7`, ohne Push/Download zum VPS.
+
+| Messgröße | Bytes | Rundung |
+| --- | ---: | ---: |
+| Web-Image, `docker image inspect .Size` | 703968042 | 671,4 MiB |
+| API-Image, `docker image inspect .Size` | 703968042 | 671,4 MiB |
+| Worker-Image (nicht für Preview vorgesehen) | 703968042 | 671,4 MiB |
+| Gemeinsamer Web+API-`docker save`-Tarstream | 718111744 | 684,8 MiB |
+| Gemeinsamer Web+API-`docker save`-Stream, `gzip -1` | 263412493 | 251,2 MiB |
+
+Alle Images sind in diesem Scaffold gleich groß, da der Laufzeitteil des Dockerfiles den gesamten gebauten Workspace enthält. Der gemeinsame Export zeigt den Effekt geteilter Schichten. Diese Messung kann sich bei Code-/Abhängigkeitsänderungen ändern und ist **kein Nachweis der tatsächlichen Registry-Downloadgröße, Netzwerkübertragung oder des VPS-Speicherbedarfs**.
+
+**Nächste Sicherheitsentscheidung:** Keine lokalen VPS-Builds, kein GHCR-Push, kein Image-Pull und kein Start allein aufgrund der Zahlen. Vor einem späteren Pull den freien Platz neu messen und Reserve für temporären Download sowie entpackte Layer einplanen. Der bisherige Host-Snapshot wies 24 GB freie Platte und 1,4/2,0 GiB Swap-Belegung aus.
