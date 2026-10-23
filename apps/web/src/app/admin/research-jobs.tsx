@@ -178,8 +178,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
               disabled={busy}
             />
             <p className="jobs-hint">
-              12–160 Zeichen. Das Thema wird nur gespeichert; eine tatsächliche Recherche
-              oder Quellenprüfung wird damit noch nicht gestartet.
+              12–160 Zeichen. Das Thema wird nur gespeichert; eine tatsächliche Recherche oder
+              Quellenprüfung wird damit noch nicht gestartet.
             </p>
             <button type="submit" disabled={busy}>
               {busy ? "Speichere Vormerkung …" : "Neuen Auftrag vormerken"}
