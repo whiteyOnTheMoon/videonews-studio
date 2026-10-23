@@ -3,8 +3,6 @@
 import assert from "node:assert/strict";
 import { scryptSync } from "node:crypto";
 import { once } from "node:events";
-import { readFileSync } from "node:fs";
-import { AddressInfo } from "node:net";
 import pg from "pg";
 import { AdminAuth } from "../apps/api/dist/auth.js";
 import { adminJobsFromEnv } from "../apps/api/dist/admin-jobs.js";
