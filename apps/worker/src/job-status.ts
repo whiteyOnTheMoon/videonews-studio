@@ -32,20 +32,21 @@ const SELECT_JOBS = `
 `;
 
 export function validateCandidate(value: StatusCandidate): void {
-  if (!UUID.test(value.job_id) ||
-      value.queue_job_id !== "job-" + value.job_id.replaceAll("-", "")) {
+  if (
+    !UUID.test(value.job_id) ||
+    value.queue_job_id !== "job-" + value.job_id.replaceAll("-", "")
+  ) {
     throw new Error("Malformed persisted queue job identifier");
   }
-  if (!["research", "script", "render", "upload"].includes(value.kind) ||
-      !["pending", "running", "retry"].includes(value.status)) {
+  if (
+    !["research", "script", "render", "upload"].includes(value.kind) ||
+    !["pending", "running", "retry"].includes(value.status)
+  ) {
     throw new Error("Unsupported editorial job type/state");
   }
 }
 
-export function mapBullState(
-  bullState: string,
-  attemptsMade: number,
-): EditorialJobState | null {
+export function mapBullState(bullState: string, attemptsMade: number): EditorialJobState | null {
   if (!Number.isSafeInteger(attemptsMade) || attemptsMade < 0 || attemptsMade > 20) {
     throw new Error("Invalid queue attempt count");
   }
@@ -70,11 +71,13 @@ export function mapBullState(
 }
 
 function verifyRedisJob(job: Job, row: StatusCandidate): void {
-  if (job.id !== row.queue_job_id ||
-      job.name !== row.kind ||
-      job.data?.kind !== row.kind ||
-      job.data?.jobId !== row.job_id ||
-      Object.keys(job.data ?? {}).length !== 2) {
+  if (
+    job.id !== row.queue_job_id ||
+    job.name !== row.kind ||
+    job.data?.kind !== row.kind ||
+    job.data?.jobId !== row.job_id ||
+    Object.keys(job.data ?? {}).length !== 2
+  ) {
     throw new Error("Redis job conflicts with persisted editorial record");
   }
 }
