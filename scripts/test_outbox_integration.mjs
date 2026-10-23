@@ -86,7 +86,7 @@ try {
 
   // Redis loses a retained job: PostgreSQL ledger permits its reconstruction.
   await (await queue.getJob(bullId(second))).remove();
-  assert.equal(await queue.getJob(bullId(second)), undefined);
+  assert.ok(!(await queue.getJob(bullId(second))));
   assert.equal((await dispatchOutboxBatch(pool, queue)).newlyEnqueued, 1);
   assert.ok(await queue.getJob(bullId(second)));
   console.log("PASS: missing Redis job rebuilt from durable PostgreSQL ledger");
@@ -108,7 +108,7 @@ try {
   await pool.query("UPDATE vns.jobs SET status = 'done' WHERE id = $1", [id]);
   await (await queue.getJob(bullId(id))).remove();
   assert.equal((await dispatchOutboxBatch(pool, queue)).newlyEnqueued, 0);
-  assert.equal(await queue.getJob(bullId(id)), undefined);
+  assert.ok(!(await queue.getJob(bullId(id))));
   console.log("PASS: finished PostgreSQL jobs are not inadvertently replayed");
 } finally {
   await Promise.allSettled([queue.close(), pool.end()]);
