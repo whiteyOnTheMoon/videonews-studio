@@ -14,14 +14,22 @@ test("candidate registration never auto-verifies claims", () => {
     ...candidate,
     reviewStatus: "candidate",
   });
-  assert.throws(() => makeSourceCandidate({
-    ...candidate,
-    reviewStatus: "verified",
-  }), /Invalid source candidate/);
-  assert.throws(() => makeSourceCandidate({
-    ...candidate,
-    claim: "unverified",
-  }), /Invalid source candidate/);
+  assert.throws(
+    () =>
+      makeSourceCandidate({
+        ...candidate,
+        reviewStatus: "verified",
+      }),
+    /Invalid source candidate/,
+  );
+  assert.throws(
+    () =>
+      makeSourceCandidate({
+        ...candidate,
+        claim: "unverified",
+      }),
+    /Invalid source candidate/,
+  );
 });
 
 test("lexical URL checks reject insecure and local-looking addresses", () => {
@@ -45,13 +53,17 @@ test("lexical URL checks reject insecure and local-looking addresses", () => {
 });
 
 test("headline, source and claim fields are bounded and reject extra keys", () => {
-  assert.throws(() => makeSourceCandidate({
-    ...candidate,
-    claim: "A source excerpt\nwith an injected newline",
-  }));
-  assert.throws(() => makeSourceCandidate({
-    ...candidate,
-    unexpected: "<script>alert(1)</script>",
-  }));
+  assert.throws(() =>
+    makeSourceCandidate({
+      ...candidate,
+      claim: "A source excerpt\nwith an injected newline",
+    }),
+  );
+  assert.throws(() =>
+    makeSourceCandidate({
+      ...candidate,
+      unexpected: "<script>alert(1)</script>",
+    }),
+  );
   assert.throws(() => makeSourceCandidate({ ...candidate, headline: "short" }));
 });
