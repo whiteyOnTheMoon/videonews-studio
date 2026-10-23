@@ -58,7 +58,10 @@ async function readResearchRequest(request: Request): Promise<string | null> {
       !/^[a-zA-Z0-9_-]{24,80}$/.test(object.idempotencyKey) ||
       typeof object.topic !== "string" ||
       object.topic !== object.topic.trim() ||
-      /[\u0000-\u001f\u007f]/.test(object.topic) ||
+      object.topic.split("").some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) ||
       Array.from(object.topic).length < 12 ||
       Array.from(object.topic).length > 160
     )
