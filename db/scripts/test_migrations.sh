@@ -42,10 +42,13 @@ for iteration in 1 2; do
   echo "Migration cycle $iteration"
   sql < "$root/db/migrations/0001_editorial_core.up.sql"
   sql < "$root/db/tests/0001_editorial_core.test.sql"
+  sql < "$root/db/migrations/0002_job_outbox.up.sql"
+  sql < "$root/db/tests/0002_job_outbox.test.sql"
+  sql < "$root/db/migrations/0002_job_outbox.down.sql"
   sql < "$root/db/migrations/0001_editorial_core.down.sql"
   left="$(docker exec "$name" psql -X -A -t -v ON_ERROR_STOP=1 \
     -U postgres -d vns_schema_test \
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible migration and model constraints twice"
+echo "PASS: 0001 + 0002 reversible migration and outbox constraints twice"
