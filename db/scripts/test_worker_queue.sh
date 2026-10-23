@@ -21,3 +21,4 @@ for i in $(seq 1 30); do
 done
 export VNS_TEST_REDIS_PASSWORD_FILE="$tmp/redis_password"
 node "$root/scripts/test_worker_integration.mjs"
+node "$root/scripts/test_worker_recovery.mjs"
