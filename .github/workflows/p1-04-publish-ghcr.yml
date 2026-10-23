@@ -1,0 +1,93 @@
+name: P1-04 manual private GHCR image publication
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: "Operator approval required. Images will be pushed to private GHCR packages."
+        required: true
+        type: choice
+        options:
+          - DO_NOT_PUBLISH
+          - PUBLISH_PRIVATE_IMAGES
+permissions:
+  contents: read
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.approval == 'PUBLISH_PRIVATE_IMAGES'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm allowed repository and release source
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REPOSITORY" = whiteyOnTheMoon/videonews-studio
+      - name: Build only web and API with commit-specific tags
+        run: |
+          set -euo pipefail
+          repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          prefix="ghcr.io/$repo_lower"
+          version="sha-$GITHUB_SHA"
+          for target in web api; do
+            docker build --target "$target" \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --tag "${prefix}-${target}:${version}" .
+          done
+      - name: Verify internal HTTP endpoints without host exposure
+        run: |
+          set -euo pipefail
+          repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          prefix="ghcr.io/$repo_lower"
+          version="sha-$GITHUB_SHA"
+          trap 'docker rm -f vns-private-release-web vns-private-release-api >/dev/null 2>&1 || true' EXIT
+          docker run -d --name vns-private-release-web --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges --memory 640m --memory-swap 640m \
+            --cpus 0.75 --pids-limit 128 \
+            --tmpfs /tmp:rw,nosuid,noexec,size=32m \
+            --tmpfs /workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000 \
+            "${prefix}-web:${version}"
+          docker run -d --name vns-private-release-api --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges --memory 192m --memory-swap 192m \
+            --cpus 0.35 --pids-limit 128 --tmpfs /tmp:rw,nosuid,noexec,size=32m \
+            -e API_HOST=0.0.0.0 -e API_PORT=4000 \
+            "${prefix}-api:${version}"
+          for entry in 'vns-private-release-web|http://127.0.0.1:3000/' 'vns-private-release-api|http://127.0.0.1:4000/healthz'; do
+            container="${entry%%|*}"
+            url="${entry#*|}"
+            healthy=false
+            for attempt in $(seq 1 30); do
+              if docker exec "$container" node -e 'fetch(process.argv[1]).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))' "$url" >/dev/null 2>&1; then
+                healthy=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$healthy" != true ]; then
+              echo "Healthcheck failed for $container" >&2
+              exit 1
+            fi
+          done
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Publish two images and record exact digests
+        run: |
+          set -euo pipefail
+          repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          prefix="ghcr.io/$repo_lower"
+          version="sha-$GITHUB_SHA"
+          for target in web api; do
+            image="${prefix}-${target}:${version}"
+            docker push "$image"
+            digest="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}')"
+            test -n "$digest"
+            printf '%s image: %s\n' "$target" "$digest" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "Images were published. Verify both packages remain private before any pull or deployment." >> "$GITHUB_STEP_SUMMARY"

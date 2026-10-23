@@ -74,3 +74,8 @@ Der neue Workflow [P1-04 Docker image smoke tests, Run #39902644659](https://git
 Zusätzlich bestanden [Compose-Sicherheit und Preflight-Unit-Tests #39902644706](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644706) und [PR-Policy #39902644671](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644671).
 
 **Nicht nachgewiesen:** RAM-Verbrauch und Stabilität auf dem bestehenden VPS, dauerhafter Betrieb, Verteilung der getesteten Images, TLS/HTTPS, echte Datenbank- und Queue-Anbindung sowie öffentliche Zugriffskontrolle. Ein grüner CI-Lauf ersetzt keine neue Betreiberfreigabe für ein VPS-Deployment.
+
+
+## Image-Distribution ohne lokalen VPS-Build
+
+Der getrennte, rein vorbereitete Ablauf für private GHCR-Pakete, manuelle Veröffentlichung nach gesonderter Betreiberfreigabe und ein digest-gebundenes Vorschau-Override ist in [IMAGE_DISTRIBUTION.md](IMAGE_DISTRIBUTION.md) festgehalten. **Es wurden bislang keinerlei Images in eine Registry übertragen oder auf dem VPS heruntergeladen.**

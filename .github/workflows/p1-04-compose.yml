@@ -7,6 +7,8 @@ on:
       - Dockerfile
       - .dockerignore
       - deploy/**
+      - docs/IMAGE_DISTRIBUTION.md
+      - .github/workflows/p1-04-publish-ghcr.yml
       - scripts/check_compose.py
       - scripts/test_check_compose.py
       - scripts/preflight_vps.py
@@ -37,3 +39,11 @@ jobs:
           chmod 600 secrets/postgres_password
           docker compose --profile preview --profile data --profile worker --profile ingress config --quiet
           docker compose --profile preview --profile data --profile worker --profile ingress config --format json | python3 scripts/check_compose.py
+      - name: Verify digest-only image override has no build or host ports
+        env:
+          VNS_WEB_IMAGE: ghcr.io/whiteyonthemoon/videonews-studio-web@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          VNS_API_IMAGE: ghcr.io/whiteyonthemoon/videonews-studio-api@sha256:1111111111111111111111111111111111111111111111111111111111111111
+        run: |
+          docker compose -f compose.yaml -f deploy/compose.images.yaml --profile preview config --format json > /tmp/vns-preview-config.json
+          python3 scripts/check_compose.py < /tmp/vns-preview-config.json
+          python3 -c 'import json; cfg=json.load(open("/tmp/vns-preview-config.json")); s=cfg["services"]; assert all("build" not in s[n] and not s[n].get("ports") and s[n]["pull_policy"] == "never" and "@sha256:" in s[n]["image"] for n in ("web","api")); print("Digest override: no build and no published ports")'

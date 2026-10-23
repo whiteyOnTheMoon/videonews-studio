@@ -1,0 +1,11 @@
+# Optional preview-only registry override. Never publish host ports here.
+# Use only with explicitly approved, digest-pinned private GHCR images.
+services:
+  web:
+    image: ${VNS_WEB_IMAGE:?Set digest-pinned private web image}
+    build: !reset null
+    pull_policy: never
+  api:
+    image: ${VNS_API_IMAGE:?Set digest-pinned private API image}
+    build: !reset null
+    pull_policy: never
