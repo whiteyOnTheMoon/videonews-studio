@@ -62,6 +62,7 @@ start_disposable_pg "$source_name" "$source_db"
 run_sql "$source_name" "$source_db" "$root/db/migrations/0001_editorial_core.up.sql"
 run_sql "$source_name" "$source_db" "$root/db/migrations/0002_job_outbox.up.sql"
 run_sql "$source_name" "$source_db" "$root/db/migrations/0003_research_requests.up.sql"
+run_sql "$source_name" "$source_db" "$root/db/migrations/0004_research_evidence.up.sql"
 run_sql "$source_name" "$source_db" "$root/db/tests/restore_seed.sql"
 run_sql "$source_name" "$source_db" "$root/db/tests/restore_verify.sql"
 
