@@ -24,11 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies (temporary until lockfile is committed)
-        run: npm install --no-audit --no-fund
-      - name: Emit generated lockfile chunks for versioning
-        run: |
-          node -e 'const fs=require("node:fs");const b64=fs.readFileSync("package-lock.json").toString("base64");for(let i=0;i<b64.length;i+=1800)console.log("VNS_LOCK_PART_"+String(i/1800).padStart(5,"0")+"="+b64.slice(i,i+1800));'
+      - name: Install exact locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Compile workspace applications
         run: npm run build
       - name: Type-check all workspaces
