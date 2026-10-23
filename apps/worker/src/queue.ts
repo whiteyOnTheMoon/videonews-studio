@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { Worker, type Job } from "bullmq";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 export const QUEUE_NAME = "vns-jobs";
 export const QUEUE_PREFIX = "bull:vns";
