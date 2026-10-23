@@ -98,7 +98,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
           !("jobId" in data) ||
           typeof data.jobId !== "string" ||
           !/^[0-9a-f-]{36}$/.test(data.jobId)
-        ) throw new Error("Invalid confirmation");
+        )
+          throw new Error("Invalid confirmation");
         pendingKey.current = null;
         setSubmission("Auftrag in PostgreSQL vorgemerkt. Eine Recherche wurde nicht gestartet.");
         await loadJobs();
@@ -112,10 +113,14 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
         pendingKey.current = null;
         setSubmission("Ungültige Anfrage. Bitte erneut versuchen.");
       } else {
-        setSubmission("Vormerkung nicht bestätigt. Erneut versuchen verwendet dieselbe Anfragekennung.");
+        setSubmission(
+          "Vormerkung nicht bestätigt. Erneut versuchen verwendet dieselbe Anfragekennung.",
+        );
       }
     } catch {
-      setSubmission("Verbindung unterbrochen. Ein erneuter Versuch verwendet dieselbe Anfragekennung.");
+      setSubmission(
+        "Verbindung unterbrochen. Ein erneuter Versuch verwendet dieselbe Anfragekennung.",
+      );
     } finally {
       setBusy(false);
     }
@@ -125,8 +130,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
     <section className="jobs-section" aria-labelledby="jobs-title">
       <h2 id="jobs-title">Rechercheaufträge</h2>
       <p>
-        Diese Übersicht zeigt ausschließlich PostgreSQL-Vormerkungen und deren Queue-Zustellung.
-        Sie ist keine Anzeige für eine laufende Recherche oder Videoerstellung.
+        Diese Übersicht zeigt ausschließlich PostgreSQL-Vormerkungen und deren Queue-Zustellung. Sie
+        ist keine Anzeige für eine laufende Recherche oder Videoerstellung.
       </p>
       {!enabled ? (
         <div className="notice" role="status">
@@ -139,13 +144,17 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
           <form className="admin-form jobs-form" onSubmit={createJob}>
             <span className="jobs-field-label">Auftragsart: Recherche (nur Vormerkung)</span>
             <p className="jobs-hint">
-              Ein Thema kann noch nicht eingegeben werden. Die tatsächliche Recherche wird in
-              einer späteren Phase implementiert.
+              Ein Thema kann noch nicht eingegeben werden. Die tatsächliche Recherche wird in einer
+              späteren Phase implementiert.
             </p>
             <button type="submit" disabled={busy}>
               {busy ? "Speichere Vormerkung …" : "Neuen Auftrag vormerken"}
             </button>
-            {submission ? <p role="status" aria-live="polite">{submission}</p> : null}
+            {submission ? (
+              <p role="status" aria-live="polite">
+                {submission}
+              </p>
+            ) : null}
           </form>
           <div className="jobs-heading">
             <h3>Letzte 20 Aufträge</h3>
