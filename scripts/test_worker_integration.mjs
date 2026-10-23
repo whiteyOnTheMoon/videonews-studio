@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Queue, QueueEvents } from "bullmq";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import { createProbeWorker, QUEUE_NAME, QUEUE_PREFIX } from "../apps/worker/dist/queue.js";
 
 if (process.env.GITHUB_ACTIONS !== "true" || process.env.CI !== "true") {
