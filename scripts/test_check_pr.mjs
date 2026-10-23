@@ -20,3 +20,7 @@ test("rejects missing title ID", () => {
 test("rejects PR without issue reference", () => {
   assert.notEqual(check("[P1-02] Governance", "Some description").status, 0);
 });
+
+test("accepts an issue reference without closing a still-open task", () => {
+  assert.equal(check("[P1-02] Governance", "Refs #2").status, 0);
+});
