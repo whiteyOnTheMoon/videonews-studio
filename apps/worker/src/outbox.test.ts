@@ -18,21 +18,12 @@ test("valid outbox rows require fixed deterministic Redis IDs", () => {
     () => validateOutboxRow({ ...valid, queue_job_id: "arbitrary" }),
     /deterministic queue ID/,
   );
-  assert.throws(
-    () => validateOutboxRow({ ...valid, kind: "probe" }),
-    /Unsupported editorial/,
-  );
-  assert.throws(
-    () => validateOutboxRow({ ...valid, max_attempts: 21 }),
-    /retry count/,
-  );
+  assert.throws(() => validateOutboxRow({ ...valid, kind: "probe" }), /Unsupported editorial/);
+  assert.throws(() => validateOutboxRow({ ...valid, max_attempts: 21 }), /retry count/);
 });
 
 test("reconciler rejects unbounded batch sizes before touching Postgres", async () => {
   for (const limit of [0, 11, -1, 1.2, Number.NaN]) {
-    await assert.rejects(
-      dispatchOutboxBatch({} as Pool, {} as Queue, limit),
-      /batch limit/,
-    );
+    await assert.rejects(dispatchOutboxBatch({} as Pool, {} as Queue, limit), /batch limit/);
   }
 });
