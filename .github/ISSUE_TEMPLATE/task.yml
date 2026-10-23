@@ -1,0 +1,50 @@
+name: "Task / Arbeitspaket"
+description: "Geplante Entwicklungsaufgabe mit eindeutiger Projekt-ID."
+title: "[P?-??] "
+body:
+  - type: markdown
+    attributes:
+      value: "Vor der Programmierung ein Issue anlegen. Die Projekt-ID im Titel muss aus der Roadmap stammen (z. B. P1-03)."
+  - type: input
+    id: project-id
+    attributes:
+      label: "Projekt-ID"
+      description: "Dauerhafte Projektkennung im Format P1-03; auch im Issue-Titel eintragen."
+      placeholder: "P1-03"
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: "Ziel / Lieferumfang"
+      description: "Was wird konkret umgesetzt, und was nicht?"
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: "Abhängigkeiten"
+      placeholder: "P1-01, P1-02 oder —"
+    validations:
+      required: true
+  - type: input
+    id: estimate
+    attributes:
+      label: "Aufwandsschätzung"
+      placeholder: "5–9 Agentenstunden (Schätzung)"
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: "Messbare Abnahmekriterien"
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: "Sicherheits-, Rechte- und Budgetauswirkungen"
+      description: "Keine neuen kostenpflichtigen Dienste, unklaren Medienrechte oder Secrets ohne Freigabe."
+    validations:
+      required: true
