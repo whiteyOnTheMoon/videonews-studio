@@ -90,7 +90,6 @@ worker still processes probe only. A reviewer string in a database record is
 metadata, **not proof of authentication**: production role/authorization gates
 remain outstanding.
 
-
 ## Controlled HTTPS retrieval boundary (still disabled)
 
 The new `apps/worker/src/source-fetch.ts` module provides a **separate,
@@ -102,7 +101,7 @@ checked IP is pinned into the HTTPS socket lookup, while the TLS hostname,
 SNI and certificate validation remain bound to the allowed DNS hostname.
 It uses native TLS, prohibits redirect following, disallows compressed,
 binary or oversized responses, limits the response to 128 KiB, and returns a
-SHA-256 digest with transient, UTF-8-decoded text for further *untrusted*
+SHA-256 digest with transient, UTF-8-decoded text for further _untrusted_
 processing. No result can mark a factual claim `verified`.
 
 The default production worker remains the **probe-only** entrypoint, and does
