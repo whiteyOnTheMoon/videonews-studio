@@ -40,10 +40,7 @@ const workerConnections = new Set();
 events.on("error", () => console.error("CI job status event connection error"));
 
 async function create(key) {
-  const { rows } = await db.query(
-    "SELECT vns.create_job_with_outbox('research', $1) AS id",
-    [key],
-  );
+  const { rows } = await db.query("SELECT vns.create_job_with_outbox('research', $1) AS id", [key]);
   const id = rows[0].id;
   assert.equal((await dispatchOutboxBatch(db, producer, 10)).newlyEnqueued, 1);
   const job = await producer.getJob("job-" + id.replaceAll("-", ""));
@@ -64,7 +61,9 @@ async function makeWorker(processor) {
   const connection = new Redis({ ...connectionSettings, maxRetriesPerRequest: null });
   workerConnections.add(connection);
   const worker = new Worker(QUEUE_NAME, processor, {
-    connection, prefix: QUEUE_PREFIX, concurrency: 1,
+    connection,
+    prefix: QUEUE_PREFIX,
+    concurrency: 1,
   });
   worker.on("error", () => console.error("CI status worker error"));
   workers.add(worker);
@@ -86,13 +85,19 @@ try {
 
   const first = await create("ci-lifecycle-success");
   assert.deepEqual(await status(first.id), {
-    status: "pending", attempt_count: 0, error_code: null,
+    status: "pending",
+    attempt_count: 0,
+    error_code: null,
   });
   assert.equal((await sync()).updated, 0);
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   let active;
-  const claimed = new Promise((resolve) => { active = resolve; });
+  const claimed = new Promise((resolve) => {
+    active = resolve;
+  });
   const worker = await makeWorker(async (job) => {
     assert.equal(job.name, "research");
     assert.equal(job.data.jobId, first.id);
@@ -121,7 +126,9 @@ try {
 
   const failure = await create("ci-lifecycle-failed");
   let failEvent;
-  const failed = new Promise((resolve) => { failEvent = resolve; });
+  const failed = new Promise((resolve) => {
+    failEvent = resolve;
+  });
   const failingWorker = await makeWorker(async (job) => {
     assert.equal(job.data.jobId, failure.id);
     throw new Error("ci-synthetic-failure-never-persist-raw");
@@ -132,7 +139,9 @@ try {
     assert.equal(await failure.job.getState(), "failed");
     assert.equal((await sync()).updated, 1);
     assert.deepEqual(await status(failure.id), {
-      status: "failed", attempt_count: 1, error_code: "bullmq_failed",
+      status: "failed",
+      attempt_count: 1,
+      error_code: "bullmq_failed",
     });
     assert.equal((await sync()).updated, 0);
   } finally {
@@ -143,7 +152,9 @@ try {
   const retry = await create("ci-lifecycle-retry");
   let attempts = 0;
   let signalFirstFailure;
-  const firstFailure = new Promise((resolve) => { signalFirstFailure = resolve; });
+  const firstFailure = new Promise((resolve) => {
+    signalFirstFailure = resolve;
+  });
   const retryWorker = await makeWorker(async (job) => {
     assert.equal(job.data.jobId, retry.id);
     attempts += 1;
@@ -161,7 +172,9 @@ try {
     assert.equal(pendingRetry, "delayed");
     assert.equal((await sync()).updated, 1);
     assert.deepEqual(await status(retry.id), {
-      status: "retry", attempt_count: 1, error_code: null,
+      status: "retry",
+      attempt_count: 1,
+      error_code: null,
     });
     assert.deepEqual(await done, { testOnly: true });
     assert.equal(attempts, 2);
@@ -182,15 +195,21 @@ try {
 
   const mismatch = await create("ci-lifecycle-collision");
   await mismatch.job.remove();
-  await producer.add("probe", { kind: "probe", jobId: mismatch.id }, {
-    jobId: "job-" + mismatch.id.replaceAll("-", ""),
-    removeOnComplete: false,
-  });
+  await producer.add(
+    "probe",
+    { kind: "probe", jobId: mismatch.id },
+    {
+      jobId: "job-" + mismatch.id.replaceAll("-", ""),
+      removeOnComplete: false,
+    },
+  );
   await assert.rejects(sync(), /reconciliation failed/);
   assert.equal((await status(mismatch.id)).status, "pending");
   console.log("PASS: incompatible Redis job fails closed and DB status remains intact");
 } finally {
   await Promise.allSettled([...workers].map((worker) => worker.close()));
   await Promise.allSettled([events.close(), producer.close(), db.end()]);
-  await Promise.allSettled([...workerConnections, redis, eventsConnection].map((conn) => conn.quit()));
+  await Promise.allSettled(
+    [...workerConnections, redis, eventsConnection].map((conn) => conn.quit()),
+  );
 }
