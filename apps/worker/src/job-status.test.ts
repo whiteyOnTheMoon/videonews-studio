@@ -15,7 +15,10 @@ test("status reconciliation verifies persisted job ID and task kind", () => {
   assert.doesNotThrow(() => validateCandidate(candidate));
   assert.throws(() => validateCandidate({ ...candidate, queue_job_id: "untrusted" }), /identifier/);
   assert.throws(() => validateCandidate({ ...candidate, kind: "probe" }), /Unsupported/);
-  assert.throws(() => validateCandidate({ ...candidate, status: "done" as "pending" }), /Unsupported/);
+  assert.throws(
+    () => validateCandidate({ ...candidate, status: "done" as "pending" }),
+    /Unsupported/,
+  );
 });
 
 test("BullMQ state maps explicitly without guessing on missing jobs", () => {
