@@ -1,0 +1,1180 @@
+{
+  "project": "VideoNews Studio",
+  "snapshot_date": "2026-10-22",
+  "note": "VORLAGE, keine bereits angelegten GitHub-Issues; GitHub-Repo und Autorisierung werden für Import benötigt.",
+  "issues": [
+    {
+      "id": "P0-01",
+      "title": "[P0-01] Projektziele, Budgetdeckel und Nicht-Ziele fixieren",
+      "description": "PRD v1: 1 Kanal, 1 Sprache, 1 Video/Tag, 8–12 Minuten nur bei ausreichendem Inhalt, Freigabe vor Veröffentlichung.",
+      "acceptance": "PRD enthält messbare Kennzahlen, 3 Budgetobergrenzen und explizite Nicht-Ziele.",
+      "dependencies": "—",
+      "estimate_hours_min": 3,
+      "estimate_hours_max": 5,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:plan",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nPRD v1: 1 Kanal, 1 Sprache, 1 Video/Tag, 8–12 Minuten nur bei ausreichendem Inhalt, Freigabe vor Veröffentlichung.\n\n## Abhängigkeiten\n—\n\n## Aufwandsschätzung\n3–5 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] PRD enthält messbare Kennzahlen, 3 Budgetobergrenzen und explizite Nicht-Ziele.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P0-02",
+      "title": "[P0-02] VPS-Audit und 1080p-Renderbenchmark",
+      "description": "CPU/RAM/SSD/Bandbreite/OS/Backup prüfen; zehnminütigen Render-Test simulieren.",
+      "acceptance": "Messbericht mit Renderdauer, RAM-Spitze, freiem Speicher und Hostingentscheidung.",
+      "dependencies": "P0-01",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 8,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nCPU/RAM/SSD/Bandbreite/OS/Backup prüfen; zehnminütigen Render-Test simulieren.\n\n## Abhängigkeiten\nP0-01\n\n## Aufwandsschätzung\n4–8 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Messbericht mit Renderdauer, RAM-Spitze, freiem Speicher und Hostingentscheidung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P0-03",
+      "title": "[P0-03] YouTube-, Quellen- und Lizenz-Risikomatrix",
+      "description": "Regeln zu authentischen Inhalten, KI-Offenlegung, erlaubter Quellnutzung und Stock-Rechten dokumentieren.",
+      "acceptance": "Risikomatrix mit Rot/Gelb/Grün, jeweils Quelle und Prüfdatum.",
+      "dependencies": "P0-01",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:legal",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nRegeln zu authentischen Inhalten, KI-Offenlegung, erlaubter Quellnutzung und Stock-Rechten dokumentieren.\n\n## Abhängigkeiten\nP0-01\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Risikomatrix mit Rot/Gelb/Grün, jeweils Quelle und Prüfdatum.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P0-04",
+      "title": "[P0-04] Mindestens fünf Nischen nach Scorecard vergleichen",
+      "description": "Nischen anhand Themenfrequenz, Visualisierbarkeit, Mediensicherheit, TTS und Kosten beurteilen.",
+      "acceptance": "Reproduzierbares Scoring; Gewinner samt Risiken und Alternativnische.",
+      "dependencies": "P0-01, P0-03",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:research",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nNischen anhand Themenfrequenz, Visualisierbarkeit, Mediensicherheit, TTS und Kosten beurteilen.\n\n## Abhängigkeiten\nP0-01, P0-03\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Reproduzierbares Scoring; Gewinner samt Risiken und Alternativnische.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P0-05",
+      "title": "[P0-05] Drei redaktionelle Testkonzepte ohne Vollrendering",
+      "description": "Für Top-Nischen je ein Storyboard mit 12–18 Szenen und Medienverfügbarkeitsprobe.",
+      "acceptance": "Für jede Probe grobe Kosten, Medienquoten, Qualitätsrisiken erfasst.",
+      "dependencies": "P0-04",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:research",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nFür Top-Nischen je ein Storyboard mit 12–18 Szenen und Medienverfügbarkeitsprobe.\n\n## Abhängigkeiten\nP0-04\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Für jede Probe grobe Kosten, Medienquoten, Qualitätsrisiken erfasst.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P0-06",
+      "title": "[P0-06] MVP-Gate und Architekturentscheidungen dokumentieren",
+      "description": "ADR/Entscheidungsprotokoll, Go/No-Go für erste Nische und MVP-Scope.",
+      "acceptance": "Festgelegte Nische (konfigurierbar), kostenfreie Medienstrategie, freigegebenes MVP.",
+      "dependencies": "P0-02, P0-05",
+      "estimate_hours_min": 3,
+      "estimate_hours_max": 5,
+      "milestone": "P0",
+      "labels": [
+        "type:task",
+        "area:plan",
+        "priority:P1",
+        "phase:P0"
+      ],
+      "body": "## Ziel / Lieferumfang\nADR/Entscheidungsprotokoll, Go/No-Go für erste Nische und MVP-Scope.\n\n## Abhängigkeiten\nP0-02, P0-05\n\n## Aufwandsschätzung\n3–5 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Festgelegte Nische (konfigurierbar), kostenfreie Medienstrategie, freigegebenes MVP.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-01",
+      "title": "[P1-01] GitHub-Repository und Issue-Bootstrap einrichten",
+      "description": "Privates Repo; Issues aktivieren; CSV/JSON-Backlog importieren; idempotenten Issue-Importer anlegen.",
+      "acceptance": "Jede offene Programmieraufgabe besitzt 1 GitHub-Issue; Doppelerstellung ausgeschlossen.",
+      "dependencies": "P0-01",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:github",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nPrivates Repo; Issues aktivieren; CSV/JSON-Backlog importieren; idempotenten Issue-Importer anlegen.\n\n## Abhängigkeiten\nP0-01\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Jede offene Programmieraufgabe besitzt 1 GitHub-Issue; Doppelerstellung ausgeschlossen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-02",
+      "title": "[P1-02] Labels, Meilensteine, Templates und PR-Regeln konfigurieren",
+      "description": "Labels area/priority/type/status; Issue-/PR-Vorlagen; Branch-Schutz und CODEOWNERS/Review-Regeln.",
+      "acceptance": "Issue enthält Aufwand, Abhängigkeit, Kriterien; PR referenziert Issue; Merge nur mit grüner CI.",
+      "dependencies": "P1-01",
+      "estimate_hours_min": 3,
+      "estimate_hours_max": 6,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:github",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nLabels area/priority/type/status; Issue-/PR-Vorlagen; Branch-Schutz und CODEOWNERS/Review-Regeln.\n\n## Abhängigkeiten\nP1-01\n\n## Aufwandsschätzung\n3–6 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Issue enthält Aufwand, Abhängigkeit, Kriterien; PR referenziert Issue; Merge nur mit grüner CI.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-03",
+      "title": "[P1-03] TypeScript-Monorepo und Qualitätschecks erstellen",
+      "description": "Next.js, Node Worker, gemeinsame Typen, ESLint, Formatter, Umgebungsbeispiele.",
+      "acceptance": "Lokales Setup reproduzierbar, Typprüfung und Lint bestehen in CI.",
+      "dependencies": "P1-01",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:backend",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nNext.js, Node Worker, gemeinsame Typen, ESLint, Formatter, Umgebungsbeispiele.\n\n## Abhängigkeiten\nP1-01\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Lokales Setup reproduzierbar, Typprüfung und Lint bestehen in CI.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-04",
+      "title": "[P1-04] Docker-Compose-Stack für VPS bereitstellen",
+      "description": "Web, API, Worker, Postgres, Redis, Caddy; Volumes und Gesundheitsprüfungen.",
+      "acceptance": "Ein Startkommando; HTTPS; nur Web/Proxy öffentlich, interne Dienste privat.",
+      "dependencies": "P0-02, P1-03",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nWeb, API, Worker, Postgres, Redis, Caddy; Volumes und Gesundheitsprüfungen.\n\n## Abhängigkeiten\nP0-02, P1-03\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Ein Startkommando; HTTPS; nur Web/Proxy öffentlich, interne Dienste privat.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-05",
+      "title": "[P1-05] Datenmodell + Migrationen anlegen",
+      "description": "Tabellen für sources, stories, claims, assets, licenses, scripts, jobs, videos, costs, approvals, uploads.",
+      "acceptance": "Migration up/down getestet; Eindeutigkeitsregeln und Zeitstempel vorhanden.",
+      "dependencies": "P1-03",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 11,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:backend",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nTabellen für sources, stories, claims, assets, licenses, scripts, jobs, videos, costs, approvals, uploads.\n\n## Abhängigkeiten\nP1-03\n\n## Aufwandsschätzung\n7–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Migration up/down getestet; Eindeutigkeitsregeln und Zeitstempel vorhanden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-06",
+      "title": "[P1-06] Admin-Login und Secrets sicher verwalten",
+      "description": "Admin-Sitzungen, RBAC minimal, geschützte Secrets, CSRF/Rate-Limits wo relevant.",
+      "acceptance": "Unautorisierte Zugriffe scheitern; Tokens nie in Logs oder Frontend-Antworten.",
+      "dependencies": "P1-04, P1-05",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:security",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nAdmin-Sitzungen, RBAC minimal, geschützte Secrets, CSRF/Rate-Limits wo relevant.\n\n## Abhängigkeiten\nP1-04, P1-05\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Unautorisierte Zugriffe scheitern; Tokens nie in Logs oder Frontend-Antworten.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-07",
+      "title": "[P1-07] BullMQ-Jobqueue, Retries und Statusmodell bauen",
+      "description": "Job-Dauerzustände, Idempotenz, exponential backoff, Dead-Letter/Fehleransicht.",
+      "acceptance": "Abgebrochene Jobs werden kontrolliert fortgesetzt, keine Endlosschleifen.",
+      "dependencies": "P1-04, P1-05",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:backend",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nJob-Dauerzustände, Idempotenz, exponential backoff, Dead-Letter/Fehleransicht.\n\n## Abhängigkeiten\nP1-04, P1-05\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Abgebrochene Jobs werden kontrolliert fortgesetzt, keine Endlosschleifen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-08",
+      "title": "[P1-08] CI für Unit-, Integration- und Build-Tests einrichten",
+      "description": "GitHub Actions mit Budgetkontrolle und Testcontainer; Dependabot optional.",
+      "acceptance": "Test-PR scheitert bei kaputtem Build; auf main darf nicht ungeprüft gemergt werden.",
+      "dependencies": "P1-03",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 8,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nGitHub Actions mit Budgetkontrolle und Testcontainer; Dependabot optional.\n\n## Abhängigkeiten\nP1-03\n\n## Aufwandsschätzung\n4–8 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Test-PR scheitert bei kaputtem Build; auf main darf nicht ungeprüft gemergt werden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P1-09",
+      "title": "[P1-09] Backups, Healthchecks und Kosten-Telemetrie MVP",
+      "description": "Offsite-Datenbankbackup, Speicheralarme, Fehlerlogs, pro Job erfasste Tokens/Kosten.",
+      "acceptance": "Restore-Test dokumentiert; Volllauf-Speicherwarnung funktioniert.",
+      "dependencies": "P1-04, P1-05",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P1",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P1"
+      ],
+      "body": "## Ziel / Lieferumfang\nOffsite-Datenbankbackup, Speicheralarme, Fehlerlogs, pro Job erfasste Tokens/Kosten.\n\n## Abhängigkeiten\nP1-04, P1-05\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Restore-Test dokumentiert; Volllauf-Speicherwarnung funktioniert.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-01",
+      "title": "[P2-01] Quellenregister mit Freigabestatus und Nutzungsbedingungen",
+      "description": "Quellen nur per Allowlist; Zugriffsart, Abfrageintervall, Lizenzeinschränkungen dokumentieren.",
+      "acceptance": "Nicht freigegebene Quellen werden vom Scheduler ignoriert.",
+      "dependencies": "P1-05, P0-03",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nQuellen nur per Allowlist; Zugriffsart, Abfrageintervall, Lizenzeinschränkungen dokumentieren.\n\n## Abhängigkeiten\nP1-05, P0-03\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Nicht freigegebene Quellen werden vom Scheduler ignoriert.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-02",
+      "title": "[P2-02] RSS-/offizielle Feed-Adapter mit Respekt für Limits",
+      "description": "Polling von 3–5 erlaubten Quellen; ETag/Cache/Rate-Limit/Fehlerprotokoll.",
+      "acceptance": "Neue Meldungen ingestiert, Duplikatabrufe vermieden, TOS beachtet.",
+      "dependencies": "P2-01, P1-07",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nPolling von 3–5 erlaubten Quellen; ETag/Cache/Rate-Limit/Fehlerprotokoll.\n\n## Abhängigkeiten\nP2-01, P1-07\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Neue Meldungen ingestiert, Duplikatabrufe vermieden, TOS beachtet.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-03",
+      "title": "[P2-03] Artikel-Normalisierung und Ereignis-Deduplikation",
+      "description": "Metadaten, kanonische URLs, Zeitstempel, Ähnlichkeit und Ursprungsquellen gruppieren.",
+      "acceptance": "Mehrfach veröffentlichte Agenturmeldung wird als 1 Ereignis erkannt.",
+      "dependencies": "P2-02",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nMetadaten, kanonische URLs, Zeitstempel, Ähnlichkeit und Ursprungsquellen gruppieren.\n\n## Abhängigkeiten\nP2-02\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Mehrfach veröffentlichte Agenturmeldung wird als 1 Ereignis erkannt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-04",
+      "title": "[P2-04] Themenselektion, Sperrliste und Nachrichtenranking",
+      "description": "Gewichte für Neuigkeit, Relevanz, Erklärwert, Visualisierbarkeit und Risiko.",
+      "acceptance": "Jeder Vorschlag hat Score plus Begründung; gesperrte Themen fallen aus.",
+      "dependencies": "P2-03",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nGewichte für Neuigkeit, Relevanz, Erklärwert, Visualisierbarkeit und Risiko.\n\n## Abhängigkeiten\nP2-03\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Jeder Vorschlag hat Score plus Begründung; gesperrte Themen fallen aus.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-05",
+      "title": "[P2-05] Claim-Evidence-Modell und Quellenbezug",
+      "description": "Jede überprüfbare Aussage erhält Beleglink, Zeitstempel und Verifikationsstatus.",
+      "acceptance": "Keine zentrale Aussage ohne Beleg/Unsicherheitsmarkierung.",
+      "dependencies": "P2-03",
+      "estimate_hours_min": 8,
+      "estimate_hours_max": 14,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nJede überprüfbare Aussage erhält Beleglink, Zeitstempel und Verifikationsstatus.\n\n## Abhängigkeiten\nP2-03\n\n## Aufwandsschätzung\n8–14 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Keine zentrale Aussage ohne Beleg/Unsicherheitsmarkierung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-06",
+      "title": "[P2-06] Aktualitätsprüfung vor Veröffentlichungsfreigabe",
+      "description": "Prüfen ob Aussagen seit Skripterstellung überholt sind; Aktualitäts-Schwellen pro Nische.",
+      "acceptance": "Überholte kritische Meldungen blockieren die Veröffentlichung.",
+      "dependencies": "P2-05",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nPrüfen ob Aussagen seit Skripterstellung überholt sind; Aktualitäts-Schwellen pro Nische.\n\n## Abhängigkeiten\nP2-05\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Überholte kritische Meldungen blockieren die Veröffentlichung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-07",
+      "title": "[P2-07] Skriptgenerator mit drei unterschiedlichen Formaten",
+      "description": "News-Briefing, Einordnung, Erklärvideo; je eigener Dramaturgie- und Stilprompt.",
+      "acceptance": "Drei nachvollziehbar unterschiedliche Testskripte mit Quellenverzeichnis.",
+      "dependencies": "P2-04, P2-05",
+      "estimate_hours_min": 8,
+      "estimate_hours_max": 14,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:ai",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nNews-Briefing, Einordnung, Erklärvideo; je eigener Dramaturgie- und Stilprompt.\n\n## Abhängigkeiten\nP2-04, P2-05\n\n## Aufwandsschätzung\n8–14 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Drei nachvollziehbar unterschiedliche Testskripte mit Quellenverzeichnis.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-08",
+      "title": "[P2-08] Zweiter Agent prüft Skript auf Belege und Eigenleistung",
+      "description": "Prüfung auf Widersprüche, repetitive Passagen, unzulässige Behauptungen, Fremdtextnähe.",
+      "acceptance": "Testskripte mit erfundenen Zahlen werden geblockt; begrenzte Revisionsschleife.",
+      "dependencies": "P2-07",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nPrüfung auf Widersprüche, repetitive Passagen, unzulässige Behauptungen, Fremdtextnähe.\n\n## Abhängigkeiten\nP2-07\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Testskripte mit erfundenen Zahlen werden geblockt; begrenzte Revisionsschleife.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-09",
+      "title": "[P2-09] Nischenprofil und Sprachen als Konfiguration",
+      "description": "Quelle, Risikoklasse, Keywords, Videostruktur und Freigabemodus als Profile.",
+      "acceptance": "Nischenwechsel ohne Quellcodeänderung möglich.",
+      "dependencies": "P1-05, P2-04",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:backend",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nQuelle, Risikoklasse, Keywords, Videostruktur und Freigabemodus als Profile.\n\n## Abhängigkeiten\nP1-05, P2-04\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Nischenwechsel ohne Quellcodeänderung möglich.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P2-10",
+      "title": "[P2-10] Redaktionelles Produktionsprotokoll und Export",
+      "description": "Pro Video Quellen, Prüfentscheidungen, Skriptversionen und abgelehnte Aussagen exportieren.",
+      "acceptance": "Export enthält vollständige Quellen- und Entscheidungs-Timeline.",
+      "dependencies": "P2-05, P2-08",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P2",
+      "labels": [
+        "type:task",
+        "area:editorial",
+        "priority:P1",
+        "phase:P2"
+      ],
+      "body": "## Ziel / Lieferumfang\nPro Video Quellen, Prüfentscheidungen, Skriptversionen und abgelehnte Aussagen exportieren.\n\n## Abhängigkeiten\nP2-05, P2-08\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Export enthält vollständige Quellen- und Entscheidungs-Timeline.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-01",
+      "title": "[P3-01] Asset-Katalog mit Herkunft und Belegen",
+      "description": "origin_url, creator, license_url, license_snapshot, attribution, rights_flags, hash, used_in.",
+      "acceptance": "Asset ohne Herkunft gilt als BLOCKED und kann nicht gerendert werden.",
+      "dependencies": "P1-05, P0-03",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\norigin_url, creator, license_url, license_snapshot, attribution, rights_flags, hash, used_in.\n\n## Abhängigkeiten\nP1-05, P0-03\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Asset ohne Herkunft gilt als BLOCKED und kann nicht gerendert werden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-02",
+      "title": "[P3-02] Lizenzregelwerk für kommerzielle Nutzung",
+      "description": "Regeln: CC0, CC BY zulässig mit Credits; CC BY-SA nur nach Einzelprüfung; NC/unklar sperren.",
+      "acceptance": "Testfälle für CC BY, NC, ND, Marken/Personen und unbekannte Lizenz bestehen.",
+      "dependencies": "P3-01",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:legal",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nRegeln: CC0, CC BY zulässig mit Credits; CC BY-SA nur nach Einzelprüfung; NC/unklar sperren.\n\n## Abhängigkeiten\nP3-01\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Testfälle für CC BY, NC, ND, Marken/Personen und unbekannte Lizenz bestehen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-03",
+      "title": "[P3-03] Pexels-Foto/Video-Adapter nur bei erlaubtem Zugriff",
+      "description": "Anbieterbedingungen/API prüfen; lizenzierte Metadaten speichern; Abrufe cachen.",
+      "acceptance": "Assets besitzen erlaubte kommerzielle Nutzung und nachvollziehbare Quelle.",
+      "dependencies": "P3-02",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nAnbieterbedingungen/API prüfen; lizenzierte Metadaten speichern; Abrufe cachen.\n\n## Abhängigkeiten\nP3-02\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Assets besitzen erlaubte kommerzielle Nutzung und nachvollziehbare Quelle.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-04",
+      "title": "[P3-04] Pixabay-Adapter für Bilder und Clips",
+      "description": "Lizenzprüfung, Nutzungseinschränkungen und Provenienz wie bei Pexels.",
+      "acceptance": "Ungeklärte Personen-/Markenfälle lösen manuelle Prüfung aus.",
+      "dependencies": "P3-02",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nLizenzprüfung, Nutzungseinschränkungen und Provenienz wie bei Pexels.\n\n## Abhängigkeiten\nP3-02\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Ungeklärte Personen-/Markenfälle lösen manuelle Prüfung aus.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-05",
+      "title": "[P3-05] Wikimedia-Commons-Auswahl mit CC-Metadaten",
+      "description": "Dateiseite, Autor, Lizenzversion, Änderungen und Credittext erfassen.",
+      "acceptance": "CC BY-Credits vollständig; ND/NC-Sonderfälle nicht stillschweigend genutzt.",
+      "dependencies": "P3-02",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nDateiseite, Autor, Lizenzversion, Änderungen und Credittext erfassen.\n\n## Abhängigkeiten\nP3-02\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] CC BY-Credits vollständig; ND/NC-Sonderfälle nicht stillschweigend genutzt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-06",
+      "title": "[P3-06] Mixkit/Unsplash als kuratierte Ergänzung",
+      "description": "Mixkit nur Free-Video-Lizenz; Unsplash nur Free-Fotos; Anbieter- und Assetbedingungen prüfen.",
+      "acceptance": "Restricted-Stock wird geblockt; Foto-/Videotyp korrekt erkannt.",
+      "dependencies": "P3-02",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 7,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nMixkit nur Free-Video-Lizenz; Unsplash nur Free-Fotos; Anbieter- und Assetbedingungen prüfen.\n\n## Abhängigkeiten\nP3-02\n\n## Aufwandsschätzung\n4–7 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Restricted-Stock wird geblockt; Foto-/Videotyp korrekt erkannt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-07",
+      "title": "[P3-07] Eigene Grafiken als Standard-Fallback",
+      "description": "Sicherer Fallback mit Karten, Tabellen, Zeitleisten, Diagrammen und Textkarten statt teurer Gen-Video-Clips.",
+      "acceptance": "Storyboard kann ohne fremdes Footage sinnvoll visualisiert werden.",
+      "dependencies": "P3-01, P2-09",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:media",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nSicherer Fallback mit Karten, Tabellen, Zeitleisten, Diagrammen und Textkarten statt teurer Gen-Video-Clips.\n\n## Abhängigkeiten\nP3-01, P2-09\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Storyboard kann ohne fremdes Footage sinnvoll visualisiert werden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P3-08",
+      "title": "[P3-08] Credits, Lizenzhinweise und Publikationssperre",
+      "description": "Automatische Credit-Zeilen pro Video, Lizenz-Export, Lizenz-Snapshot je Download.",
+      "acceptance": "Ein ungeprüftes Asset blockiert Render-Freigabe und Upload.",
+      "dependencies": "P3-03, P3-04, P3-05, P3-06",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P3",
+      "labels": [
+        "type:task",
+        "area:legal",
+        "priority:P1",
+        "phase:P3"
+      ],
+      "body": "## Ziel / Lieferumfang\nAutomatische Credit-Zeilen pro Video, Lizenz-Export, Lizenz-Snapshot je Download.\n\n## Abhängigkeiten\nP3-03, P3-04, P3-05, P3-06\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Ein ungeprüftes Asset blockiert Render-Freigabe und Upload.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-01",
+      "title": "[P4-01] Storyboard-JSON und Szenen-Timeline aus Skript",
+      "description": "Typisierte Szenen, Dauer, Quellen, Visual-Plan, Sprechertext.",
+      "acceptance": "Jeder Skriptteil hat eine passende Szene und Zeitzuordnung.",
+      "dependencies": "P2-07, P3-07",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nTypisierte Szenen, Dauer, Quellen, Visual-Plan, Sprechertext.\n\n## Abhängigkeiten\nP2-07, P3-07\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Jeder Skriptteil hat eine passende Szene und Zeitzuordnung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-02",
+      "title": "[P4-02] TTS-Schnittstelle und preiswerten Anbieter benchmarken",
+      "description": "Mindestens lokal/offen und API-basiert vergleichen, Stimmenlizenz je Modell prüfen.",
+      "acceptance": "2 Stimmproben mit Kosten, Tempo und Aussprache bewertet.",
+      "dependencies": "P4-01",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:audio",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nMindestens lokal/offen und API-basiert vergleichen, Stimmenlizenz je Modell prüfen.\n\n## Abhängigkeiten\nP4-01\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] 2 Stimmproben mit Kosten, Tempo und Aussprache bewertet.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-03",
+      "title": "[P4-03] TTS-Audio erzeugen und normalisieren",
+      "description": "Sprachaussprache-Lexikon, Lautheit, Pausen, Dateivalidierung.",
+      "acceptance": "Audio vollständig und ohne grobe technische Mängel.",
+      "dependencies": "P4-02",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:audio",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nSprachaussprache-Lexikon, Lautheit, Pausen, Dateivalidierung.\n\n## Abhängigkeiten\nP4-02\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Audio vollständig und ohne grobe technische Mängel.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-04",
+      "title": "[P4-04] Untertitel und Wort-/Segment-Timestamps generieren",
+      "description": "SRT/VTT mit Times und Prüfung der tatsächlichen Audiodauer.",
+      "acceptance": "Untertitel stimmen im Testvideo ausreichend mit Audio überein.",
+      "dependencies": "P4-03",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:audio",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nSRT/VTT mit Times und Prüfung der tatsächlichen Audiodauer.\n\n## Abhängigkeiten\nP4-03\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Untertitel stimmen im Testvideo ausreichend mit Audio überein.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-05",
+      "title": "[P4-05] Remotion-Grundthema + 6 modulare Szenentypen",
+      "description": "Titel, Foto, Textkarte, Split, Statistik, Timeline; Responsive Layout.",
+      "acceptance": "Szenen funktionieren in 1920×1080 ohne Abschneiden.",
+      "dependencies": "P1-03, P4-01",
+      "estimate_hours_min": 12,
+      "estimate_hours_max": 20,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nTitel, Foto, Textkarte, Split, Statistik, Timeline; Responsive Layout.\n\n## Abhängigkeiten\nP1-03, P4-01\n\n## Aufwandsschätzung\n12–20 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Szenen funktionieren in 1920×1080 ohne Abschneiden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-06",
+      "title": "[P4-06] Sanfte Bildanimation und Bild-/Textregeln",
+      "description": "Ken-Burns, sichere Ränder, Kontraste, kürzere Zeilen, Bewegung ohne Flickern.",
+      "acceptance": "QA-Screenshots zeigen lesbare Inhalte und ruhige Übergänge.",
+      "dependencies": "P4-05, P3-07",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nKen-Burns, sichere Ränder, Kontraste, kürzere Zeilen, Bewegung ohne Flickern.\n\n## Abhängigkeiten\nP4-05, P3-07\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] QA-Screenshots zeigen lesbare Inhalte und ruhige Übergänge.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-07",
+      "title": "[P4-07] Infografiken aus strukturierten Daten rendern",
+      "description": "Tabellen, Vergleiche und Diagramme ohne externe Bildrechte erzeugen.",
+      "acceptance": "Datenpunkte aus geprüften Fakten abgeleitet und visuell lesbar.",
+      "dependencies": "P4-05",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nTabellen, Vergleiche und Diagramme ohne externe Bildrechte erzeugen.\n\n## Abhängigkeiten\nP4-05\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Datenpunkte aus geprüften Fakten abgeleitet und visuell lesbar.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-08",
+      "title": "[P4-08] Audio-Mix und genehmigte freie Musik",
+      "description": "Optionale Musik nur nach eindeutiger Musiklizenz; sonst Stimme ohne Musik.",
+      "acceptance": "Sprachverständlichkeit priorisiert; Musikquelle auditierbar.",
+      "dependencies": "P4-03, P3-08",
+      "estimate_hours_min": 4,
+      "estimate_hours_max": 8,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:audio",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nOptionale Musik nur nach eindeutiger Musiklizenz; sonst Stimme ohne Musik.\n\n## Abhängigkeiten\nP4-03, P3-08\n\n## Aufwandsschätzung\n4–8 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Sprachverständlichkeit priorisiert; Musikquelle auditierbar.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-09",
+      "title": "[P4-09] Video-Worker mit Remotion/FFmpeg-Rendering",
+      "description": "1080p H.264 MP4 rendern; Zwischenergebnisse, Timeout, Speicherlimit.",
+      "acceptance": "10-Minuten-Testvideo rendert stabil, ohne Webapp zu blockieren.",
+      "dependencies": "P4-05, P4-03, P1-07",
+      "estimate_hours_min": 10,
+      "estimate_hours_max": 18,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\n1080p H.264 MP4 rendern; Zwischenergebnisse, Timeout, Speicherlimit.\n\n## Abhängigkeiten\nP4-05, P4-03, P1-07\n\n## Aufwandsschätzung\n10–18 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] 10-Minuten-Testvideo rendert stabil, ohne Webapp zu blockieren.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-10",
+      "title": "[P4-10] Renderoptimierung, Caching und Datei-Lifecycle",
+      "description": "Audio/Assets cachen, temporäre Dateien säubern, Re-Renders nur bei Änderungen.",
+      "acceptance": "Zweiter Durchlauf spart unnötige externe Aufrufe; Storage begrenzt.",
+      "dependencies": "P4-09",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nAudio/Assets cachen, temporäre Dateien säubern, Re-Renders nur bei Änderungen.\n\n## Abhängigkeiten\nP4-09\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Zweiter Durchlauf spart unnötige externe Aufrufe; Storage begrenzt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-11",
+      "title": "[P4-11] Thumbnail + Titel/Beschreibung/Kapitel generieren",
+      "description": "2 Thumbnail-Varianten, Quellenverzeichnis, klare Titel, keine irreführende Clickbait-Grafik.",
+      "acceptance": "Ausgabe vollständig, editierbar und ohne unlizenzierte Motive.",
+      "dependencies": "P4-05, P2-10",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:video",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\n2 Thumbnail-Varianten, Quellenverzeichnis, klare Titel, keine irreführende Clickbait-Grafik.\n\n## Abhängigkeiten\nP4-05, P2-10\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Ausgabe vollständig, editierbar und ohne unlizenzierte Motive.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P4-12",
+      "title": "[P4-12] Videoprüfer: Schwarzbilder, Ton, Lesbarkeit, Rechte",
+      "description": "ffprobe, Frame-Sampling, Untertitelprüfung, Quellen-/Asset-Gates.",
+      "acceptance": "Defekte Dateien und fehlende Lizenzbelege führen zu BLOCKED.",
+      "dependencies": "P4-09, P3-08, P2-08",
+      "estimate_hours_min": 9,
+      "estimate_hours_max": 16,
+      "milestone": "P4",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P4"
+      ],
+      "body": "## Ziel / Lieferumfang\nffprobe, Frame-Sampling, Untertitelprüfung, Quellen-/Asset-Gates.\n\n## Abhängigkeiten\nP4-09, P3-08, P2-08\n\n## Aufwandsschätzung\n9–16 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Defekte Dateien und fehlende Lizenzbelege führen zu BLOCKED.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-01",
+      "title": "[P5-01] Dashboard mit Pipeline-Status und To-do-Box",
+      "description": "Aktueller Jobstatus, Fehler, Tagesbudget, anstehende Freigaben.",
+      "acceptance": "In unter 60 Sekunden erkennbar, was Aufmerksamkeit braucht.",
+      "dependencies": "P1-06, P1-07",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:frontend",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nAktueller Jobstatus, Fehler, Tagesbudget, anstehende Freigaben.\n\n## Abhängigkeiten\nP1-06, P1-07\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] In unter 60 Sekunden erkennbar, was Aufmerksamkeit braucht.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-02",
+      "title": "[P5-02] News- und Projektliste mit Filtern",
+      "description": "Quellenansicht, Suchfunktion, Status, Verlauf und Ausschlussgründe.",
+      "acceptance": "Fehlerhaftes Thema kann nachvollziehbar zurückgestellt werden.",
+      "dependencies": "P5-01, P2-04",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:frontend",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nQuellenansicht, Suchfunktion, Status, Verlauf und Ausschlussgründe.\n\n## Abhängigkeiten\nP5-01, P2-04\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Fehlerhaftes Thema kann nachvollziehbar zurückgestellt werden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-03",
+      "title": "[P5-03] Video-Detailseite mit Quellen-/Lizenzreport",
+      "description": "Player, Skript, Storyboard, Credits, Kosten, QA-Protokoll.",
+      "acceptance": "Ein Reviewer findet vor Freigabe alle notwendigen Informationen.",
+      "dependencies": "P5-01, P3-08, P2-10",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:frontend",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nPlayer, Skript, Storyboard, Credits, Kosten, QA-Protokoll.\n\n## Abhängigkeiten\nP5-01, P3-08, P2-10\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Ein Reviewer findet vor Freigabe alle notwendigen Informationen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-04",
+      "title": "[P5-04] Nischen-, Format- und Kosten-Einstellungen",
+      "description": "Konfigurierbare Quelle, Intervalle, Stimme, Videolänge, Kostendeckel.",
+      "acceptance": "Änderung ohne Neustart; sensible Einstellungen geschützt.",
+      "dependencies": "P5-01, P2-09",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:frontend",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nKonfigurierbare Quelle, Intervalle, Stimme, Videolänge, Kostendeckel.\n\n## Abhängigkeiten\nP5-01, P2-09\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Änderung ohne Neustart; sensible Einstellungen geschützt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-05",
+      "title": "[P5-05] Harte Freigabesystematik vor Upload",
+      "description": "Status QA_PASS -> READY -> APPROVED; kritische Fehler als Blocker.",
+      "acceptance": "Kein privater/öffentlicher Upload ohne die erforderliche Freigabe.",
+      "dependencies": "P5-03, P4-12",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:security",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nStatus QA_PASS -> READY -> APPROVED; kritische Fehler als Blocker.\n\n## Abhängigkeiten\nP5-03, P4-12\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Kein privater/öffentlicher Upload ohne die erforderliche Freigabe.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-06",
+      "title": "[P5-06] YouTube OAuth und Token-Speicherung",
+      "description": "OAuth mit kleinsten nötigen Scopes; Refresh-Fehler und Widerruf behandeln.",
+      "acceptance": "Test-YouTube-Kanal autorisiert, Secrets nie geloggt.",
+      "dependencies": "P1-06",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:youtube",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nOAuth mit kleinsten nötigen Scopes; Refresh-Fehler und Widerruf behandeln.\n\n## Abhängigkeiten\nP1-06\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Test-YouTube-Kanal autorisiert, Secrets nie geloggt.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-07",
+      "title": "[P5-07] Privater resumierbarer Upload mit Duplikatschutz",
+      "description": "Video/Thumbnail/Metadaten übertragen; Upload-Idempotenz-Key, Status-Abgleich.",
+      "acceptance": "Netzunterbrechung erzeugt kein zweites öffentliches Video.",
+      "dependencies": "P5-05, P5-06",
+      "estimate_hours_min": 9,
+      "estimate_hours_max": 15,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:youtube",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nVideo/Thumbnail/Metadaten übertragen; Upload-Idempotenz-Key, Status-Abgleich.\n\n## Abhängigkeiten\nP5-05, P5-06\n\n## Aufwandsschätzung\n9–15 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Netzunterbrechung erzeugt kein zweites öffentliches Video.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-08",
+      "title": "[P5-08] Veröffentlichungsplaner und KI-Disclosure",
+      "description": "Scheduling für erstmalig private Videos, synthetic-media Status prüfen/setzen.",
+      "acceptance": "In Testumgebung korrekt geplante Veröffentlichung; kritische Aktualität blockiert.",
+      "dependencies": "P5-07, P2-06",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:youtube",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nScheduling für erstmalig private Videos, synthetic-media Status prüfen/setzen.\n\n## Abhängigkeiten\nP5-07, P2-06\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] In Testumgebung korrekt geplante Veröffentlichung; kritische Aktualität blockiert.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P5-09",
+      "title": "[P5-09] Kleines Analytics-Panel + Wochenbericht",
+      "description": "YouTube-Views/Watchtime wo verfügbar; historische Daten und einfache Trends.",
+      "acceptance": "Korrekte API-Daten mit Quelle/Zeitraum; fehlende Revenue-Daten nicht erfunden.",
+      "dependencies": "P5-06, P5-01",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P5",
+      "labels": [
+        "type:task",
+        "area:analytics",
+        "priority:P1",
+        "phase:P5"
+      ],
+      "body": "## Ziel / Lieferumfang\nYouTube-Views/Watchtime wo verfügbar; historische Daten und einfache Trends.\n\n## Abhängigkeiten\nP5-06, P5-01\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Korrekte API-Daten mit Quelle/Zeitraum; fehlende Revenue-Daten nicht erfunden.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-01",
+      "title": "[P6-01] E2E-Tests mit synthetischen Beispielnachrichten",
+      "description": "Fake-News-Testdaten offline einspeisen, Pipeline bis privatem Upload simulieren.",
+      "acceptance": "Mindestens 3 unterschiedliche Formate bestehen den E2E-Lauf.",
+      "dependencies": "P4-12, P5-07",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 12,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nFake-News-Testdaten offline einspeisen, Pipeline bis privatem Upload simulieren.\n\n## Abhängigkeiten\nP4-12, P5-07\n\n## Aufwandsschätzung\n7–12 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Mindestens 3 unterschiedliche Formate bestehen den E2E-Lauf.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-02",
+      "title": "[P6-02] Lizenz- und Inhalts-Blocker gezielt testen",
+      "description": "NC-Asset, fehlender Autor, unbestätigte Behauptung, abgelaufene Quelle.",
+      "acceptance": "Alle Negativfälle stoppen Veröffentlichung.",
+      "dependencies": "P3-08, P5-05",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nNC-Asset, fehlender Autor, unbestätigte Behauptung, abgelaufene Quelle.\n\n## Abhängigkeiten\nP3-08, P5-05\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Alle Negativfälle stoppen Veröffentlichung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-03",
+      "title": "[P6-03] Sicherheitsprüfung: Prompt Injection, Zugriff, SSRF",
+      "description": "News-Seitentext bleibt Dateninput, keine Agentensystembefehle; URL-Allowlist.",
+      "acceptance": "Angriffstest darf weder Secrets lesen noch unerlaubte URL öffnen.",
+      "dependencies": "P1-06, P2-02",
+      "estimate_hours_min": 7,
+      "estimate_hours_max": 13,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:security",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nNews-Seitentext bleibt Dateninput, keine Agentensystembefehle; URL-Allowlist.\n\n## Abhängigkeiten\nP1-06, P2-02\n\n## Aufwandsschätzung\n7–13 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Angriffstest darf weder Secrets lesen noch unerlaubte URL öffnen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-04",
+      "title": "[P6-04] Backup-Restore-, Neustart- und Failover-Test",
+      "description": "Gezielt Container stoppen; Restore durchspielen; Datenintegrität messen.",
+      "acceptance": "Recovery-Runbook und tatsächlich erfolgter Restore.",
+      "dependencies": "P1-09, P1-07",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nGezielt Container stoppen; Restore durchspielen; Datenintegrität messen.\n\n## Abhängigkeiten\nP1-09, P1-07\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Recovery-Runbook und tatsächlich erfolgter Restore.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-05",
+      "title": "[P6-05] Retry- und Duplikat-Härtung der gesamten Pipeline",
+      "description": "Defekte API-Antworten, Timeout, Re-Render, Upload-Timeout gezielt simulieren.",
+      "acceptance": "Kein endloser Retry; Jobs sind nachvollziehbar und idempotent.",
+      "dependencies": "P6-01",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nDefekte API-Antworten, Timeout, Re-Render, Upload-Timeout gezielt simulieren.\n\n## Abhängigkeiten\nP6-01\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Kein endloser Retry; Jobs sind nachvollziehbar und idempotent.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-06",
+      "title": "[P6-06] Harte Monats- und Pro-Video-Kostenlimits",
+      "description": "Budget-Wächter für Tokens, TTS, Speicher; teure Fallbacks nur nach Freigabe.",
+      "acceptance": "Simulierte Überschreitung stoppt weitere kostenpflichtige Schritte.",
+      "dependencies": "P1-09, P4-10",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nBudget-Wächter für Tokens, TTS, Speicher; teure Fallbacks nur nach Freigabe.\n\n## Abhängigkeiten\nP1-09, P4-10\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Simulierte Überschreitung stoppt weitere kostenpflichtige Schritte.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-07",
+      "title": "[P6-07] VPS-Lasttest mit 1 Video täglich",
+      "description": "CPU/RAM/Storage/Zeit während drei Komplettproduktionen messen.",
+      "acceptance": "Keine Systemüberlastung; Rechenweg für optionalen externen Renderworker.",
+      "dependencies": "P4-10, P6-01",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 11,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\nCPU/RAM/Storage/Zeit während drei Komplettproduktionen messen.\n\n## Abhängigkeiten\nP4-10, P6-01\n\n## Aufwandsschätzung\n6–11 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Keine Systemüberlastung; Rechenweg für optionalen externen Renderworker.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P6-08",
+      "title": "[P6-08] Abnahmepaket: 3 private vollständige Videos",
+      "description": "3 Genres/Formate inklusive Quellen, Credits, QA-Protokollen und Freigabe.",
+      "acceptance": "Reviewer akzeptiert 3 Videos oder erstellt gezielte Nacharbeitsissues.",
+      "dependencies": "P6-02, P6-03, P6-07",
+      "estimate_hours_min": 6,
+      "estimate_hours_max": 10,
+      "milestone": "P6",
+      "labels": [
+        "type:task",
+        "area:qa",
+        "priority:P1",
+        "phase:P6"
+      ],
+      "body": "## Ziel / Lieferumfang\n3 Genres/Formate inklusive Quellen, Credits, QA-Protokollen und Freigabe.\n\n## Abhängigkeiten\nP6-02, P6-03, P6-07\n\n## Aufwandsschätzung\n6–10 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Reviewer akzeptiert 3 Videos oder erstellt gezielte Nacharbeitsissues.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-01",
+      "title": "[P7-01] 14-Tage-Pilot mit täglicher Produktionskontrolle",
+      "description": "Echte oder private Produktionen je nach Inhaltsrisiko; Fehler, Zeit und Kosten erfassen.",
+      "acceptance": "Mindestens 10 geeignete Produktionen und vollständiger Pilotbericht.",
+      "dependencies": "P6-08",
+      "estimate_hours_min": 10,
+      "estimate_hours_max": 18,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:pilot",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nEchte oder private Produktionen je nach Inhaltsrisiko; Fehler, Zeit und Kosten erfassen.\n\n## Abhängigkeiten\nP6-08\n\n## Aufwandsschätzung\n10–18 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Mindestens 10 geeignete Produktionen und vollständiger Pilotbericht.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-02",
+      "title": "[P7-02] Video- und Kosten-KPIs im Dashboard",
+      "description": "Erfolgsquote, Minuten Rendering, Kosten pro veröffentlichtem Video, QC-Gates.",
+      "acceptance": "7-Tage-Auswertung zeigt Engpässe und Trend.",
+      "dependencies": "P7-01, P5-09",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:analytics",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nErfolgsquote, Minuten Rendering, Kosten pro veröffentlichtem Video, QC-Gates.\n\n## Abhängigkeiten\nP7-01, P5-09\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] 7-Tage-Auswertung zeigt Engpässe und Trend.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-03",
+      "title": "[P7-03] Größte 3 Qualitätsmängel beheben",
+      "description": "Priorisierte Bugs aus Pilot, Audio, Visuals oder Redaktionslogik optimieren.",
+      "acceptance": "Vorher/Nachher-Beispiele und Regressionstests dokumentiert.",
+      "dependencies": "P7-01",
+      "estimate_hours_min": 8,
+      "estimate_hours_max": 15,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:pilot",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nPriorisierte Bugs aus Pilot, Audio, Visuals oder Redaktionslogik optimieren.\n\n## Abhängigkeiten\nP7-01\n\n## Aufwandsschätzung\n8–15 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Vorher/Nachher-Beispiele und Regressionstests dokumentiert.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-04",
+      "title": "[P7-04] Bedingten Autopublish-Modus nur für risikoarme Inhalte",
+      "description": "Allowlist für Formate, zusätzliche Stoppregeln, Stichproben, Kill Switch.",
+      "acceptance": "10 trockene Testläufe ohne unzulässige Veröffentlichung.",
+      "dependencies": "P7-01, P6-02",
+      "estimate_hours_min": 8,
+      "estimate_hours_max": 15,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:youtube",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nAllowlist für Formate, zusätzliche Stoppregeln, Stichproben, Kill Switch.\n\n## Abhängigkeiten\nP7-01, P6-02\n\n## Aufwandsschätzung\n8–15 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] 10 trockene Testläufe ohne unzulässige Veröffentlichung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-05",
+      "title": "[P7-05] 2-Videos/Tag-Kapazität testen (nicht direkt aktivieren)",
+      "description": "Zeitbudget, Kosten und Themenangebot im Dry Run prüfen.",
+      "acceptance": "Skalierungsentscheid anhand Qualität, Kosten und tatsächlichem Bedarf.",
+      "dependencies": "P7-03, P6-07",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nZeitbudget, Kosten und Themenangebot im Dry Run prüfen.\n\n## Abhängigkeiten\nP7-03, P6-07\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Skalierungsentscheid anhand Qualität, Kosten und tatsächlichem Bedarf.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-06",
+      "title": "[P7-06] Wöchentlicher Agenten-Betriebsbericht",
+      "description": "1-Seiten-Bericht: veröffentlicht, gestoppt, Kosten, Probleme, Entscheidungen.",
+      "acceptance": "Nur relevante Ausnahmefälle erzeugen Benutzerbenachrichtigung.",
+      "dependencies": "P7-02",
+      "estimate_hours_min": 3,
+      "estimate_hours_max": 6,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:ops",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\n1-Seiten-Bericht: veröffentlicht, gestoppt, Kosten, Probleme, Entscheidungen.\n\n## Abhängigkeiten\nP7-02\n\n## Aufwandsschätzung\n3–6 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Nur relevante Ausnahmefälle erzeugen Benutzerbenachrichtigung.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    },
+    {
+      "id": "P7-07",
+      "title": "[P7-07] Runbook, Wartung und Übergabe an Coding-Agenten",
+      "description": "README, Betriebs-SOP, Restore, API-Checks, Issue-Workflow, Architekturentscheidungen.",
+      "acceptance": "Neuer Agent kann Setup und Testpipeline nur anhand Doku ausführen.",
+      "dependencies": "P7-03, P7-06",
+      "estimate_hours_min": 5,
+      "estimate_hours_max": 9,
+      "milestone": "P7",
+      "labels": [
+        "type:task",
+        "area:plan",
+        "priority:P2",
+        "phase:P7"
+      ],
+      "body": "## Ziel / Lieferumfang\nREADME, Betriebs-SOP, Restore, API-Checks, Issue-Workflow, Architekturentscheidungen.\n\n## Abhängigkeiten\nP7-03, P7-06\n\n## Aufwandsschätzung\n5–9 Agenten-Arbeitsstunden (Schätzung; inklusive Implementierung und erster Tests).\n\n## Abnahmekriterien\n- [ ] Neuer Agent kann Setup und Testpipeline nur anhand Doku ausführen.\n- [ ] Automatisierte Tests ergänzt bzw. nachvollziehbar begründet, warum nicht anwendbar.\n- [ ] Dokumentation aktualisiert.\n- [ ] Pull Request referenziert dieses Issue; Review und CI bestanden.\n\n## Sicherheits-/Budgetregel\nKeine ungeprüften Lizenz-Assets; keine Secrets in Logs; keine neuen kostenpflichtigen Dienste ohne Budgetfreigabe.\n"
+    }
+  ]
+}
