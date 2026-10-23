@@ -23,7 +23,12 @@ export function readQueueConfig(
   }
   const host = env.VNS_REDIS_HOST ?? "redis";
   const port = Number(env.VNS_REDIS_PORT ?? "6379");
-  if (!["redis", "127.0.0.1"].includes(host) || !Number.isInteger(port) || port < 1 || port > 65535) {
+  if (
+    !["redis", "127.0.0.1"].includes(host) ||
+    !Number.isInteger(port) ||
+    port < 1 ||
+    port > 65535
+  ) {
     throw new Error("Worker Redis connection configuration invalid");
   }
   let password: string;
@@ -41,8 +46,7 @@ export function readQueueConfig(
 export async function processProbeJob(job: Job): Promise<{ ok: true }> {
   // P1-07 intentionally has *no* render, research, upload or editorial effects.
   // Unknown job kinds fail rather than being silently marked complete.
-  if (job.name !== "probe" || job.data?.kind !== "probe" ||
-      Object.keys(job.data).length !== 1) {
+  if (job.name !== "probe" || job.data?.kind !== "probe" || Object.keys(job.data).length !== 1) {
     throw new Error("Unsupported worker job");
   }
   return { ok: true };
