@@ -22,6 +22,31 @@ jobs:
           docker build --target web --tag vns-ci-web:check .
           docker build --target api --tag vns-ci-api:check .
           docker build --target worker --tag vns-ci-worker:check .
+      - name: Measure local image footprint (no publish or VPS access)
+        shell: bash
+        run: |
+          set -euo pipefail
+          web_bytes="$(docker image inspect --format '{{.Size}}' vns-ci-web:check)"
+          api_bytes="$(docker image inspect --format '{{.Size}}' vns-ci-api:check)"
+          worker_bytes="$(docker image inspect --format '{{.Size}}' vns-ci-worker:check)"
+          # docker save combines shared layers; numbers are local tar export sizes,
+          # NOT predictions of compressed GHCR layer transfer or VPS storage.
+          combined_tar_bytes="$(docker save vns-ci-web:check vns-ci-api:check | wc -c | tr -d '[:space:]')"
+          combined_gzip1_bytes="$(docker save vns-ci-web:check vns-ci-api:check | gzip -1 | wc -c | tr -d '[:space:]')"
+          printf 'VNS_IMAGE_BYTES web=%s api=%s worker=%s combined_tar=%s combined_gzip1=%s\n' \
+            "$web_bytes" "$api_bytes" "$worker_bytes" "$combined_tar_bytes" "$combined_gzip1_bytes"
+          {
+            echo '### P1-04 Docker image footprint (GitHub runner; no registry push)'
+            echo '| Measurement | Bytes |'
+            echo '| --- | ---: |'
+            printf '| Web uncompressed image | %s |\n' "$web_bytes"
+            printf '| API uncompressed image | %s |\n' "$api_bytes"
+            printf '| Worker uncompressed image (not intended for preview transfer) | %s |\n' "$worker_bytes"
+            printf '| Web+API combined Docker tar export | %s |\n' "$combined_tar_bytes"
+            printf '| Web+API combined tar piped through gzip -1 | %s |\n' "$combined_gzip1_bytes"
+            echo
+            echo 'These are runner-local reference measurements, not GHCR downloads, actual network bytes or guaranteed VPS disk needs. Shared layers and decompression space matter. No images were uploaded.'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Smoke test with no host port publications
         run: |
           set -eu

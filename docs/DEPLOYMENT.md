@@ -18,12 +18,12 @@
 
 ## Profile (Definitionen, keine Startfreigabe)
 
-| Profil | Dienste | Zweck |
-| --- | --- | --- |
-| `preview` | web, api | Interne Entwicklungsansicht |
-| `data` | postgres, redis | Datenbasis erst nach Freigabe |
-| `ingress` | web, caddy | Interner HTTP-Proxy, noch kein HTTPS |
-| `worker` | worker | Einmaliger Platzhalterprozess, **nicht produktiv** |
+| Profil    | Dienste         | Zweck                                              |
+| --------- | --------------- | -------------------------------------------------- |
+| `preview` | web, api        | Interne Entwicklungsansicht                        |
+| `data`    | postgres, redis | Datenbasis erst nach Freigabe                      |
+| `ingress` | web, caddy      | Interner HTTP-Proxy, noch kein HTTPS               |
+| `worker`  | worker          | Einmaliger Platzhalterprozess, **nicht produktiv** |
 
 Erst nach VPS-Prüfung, unabhängiger/ausdrücklich genehmigter PR-Abnahme und schriftlicher Freigabe für genau diesen Stack darf ein Startkommando ausgeführt werden. Ein in Zukunft zulässiger Start wäre etwa `docker compose --profile preview up --build -d` im eigenen Projektverzeichnis, **aber noch nicht jetzt ausführen**.
 
@@ -41,7 +41,6 @@ Im GitHub-Actions-Runner erfolgen Python-Policytests und `docker compose config`
 6. Betreiberfreigabe, Review- und CI-Abnahme dokumentieren.
 
 **Achtung zu Backups:** Off-Site-/kostenpflichtige Backups wurden für die Hobby-Projekte ausdrücklich auf später verschoben. Persistent-Volumes ersetzen kein Backup; bei VPS-Verlust droht Datenverlust. Keine unautorisierten kostenpflichtigen Angebote nutzen.
-
 
 ## Interner Preview-Ablauf und Ingress-Entscheidung
 
