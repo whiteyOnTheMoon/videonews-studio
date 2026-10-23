@@ -1,0 +1,176 @@
+# P1-04 scaffold; no host ports are published. Not yet approved for VPS deployment.
+name: videonews-studio
+
+x-node-hardening: &node-hardening
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+  pids_limit: 128
+  stop_grace_period: 20s
+  tmpfs:
+    - /tmp:rw,nosuid,noexec,size=32m
+
+services:
+  web:
+    <<: *node-hardening
+    profiles: [preview, ingress]
+    image: vns-web:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    mem_limit: 640m
+    memswap_limit: 640m
+    cpus: 0.75
+    networks: [frontend]
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=32m
+      - /workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 8s
+      retries: 3
+      start_period: 50s
+
+  api:
+    <<: *node-hardening
+    profiles: [preview]
+    image: vns-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: "4000"
+    mem_limit: 192m
+    memswap_limit: 192m
+    cpus: 0.35
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 6s
+      retries: 3
+      start_period: 15s
+
+  # Disabled by default: existing worker only logs and exits. BullMQ arrives in P1-07.
+  worker:
+    <<: *node-hardening
+    profiles: [worker]
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      MAX_RENDER_CONCURRENCY: "1"
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 1.0
+    pids_limit: 96
+    networks: [backend]
+
+  postgres:
+    profiles: [data]
+    image: postgres:17-alpine
+    init: true
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vns
+      POSTGRES_DB: videonews
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    secrets: [postgres_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 320m
+    memswap_limit: 320m
+    cpus: 0.4
+    pids_limit: 96
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vns -d videonews"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Not accessible to other containers until P1-07 enables authenticated Redis.
+  # Protected mode stays ON; never disable it as a shortcut.
+  redis:
+    profiles: [data]
+    image: redis:7-alpine
+    init: true
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction", "--protected-mode", "yes"]
+    volumes:
+      - redis_data:/data
+    networks: [backend]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 144m
+    memswap_limit: 144m
+    cpus: 0.3
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Ingress is disabled by default. HTTP-only inside project network.
+  # HTTPS/Cloudflare routing must be decided after the VPS audit; no host ports.
+  caddy:
+    profiles: [ingress]
+    image: caddy:2-alpine
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    pids_limit: 48
+    mem_limit: 96m
+    memswap_limit: 96m
+    cpus: 0.25
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m
+      - /config:rw,nosuid,size=16m
+      - /data:rw,nosuid,size=32m
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [frontend]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  frontend: {}
+  backend:
+    internal: true
+
+volumes:
+  postgres_data: {}
+  redis_data: {}
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password

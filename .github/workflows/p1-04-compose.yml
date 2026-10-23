@@ -1,0 +1,49 @@
+name: P1-04 Compose security
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - compose.yaml
+      - Dockerfile
+      - .dockerignore
+      - deploy/**
+      - docs/IMAGE_DISTRIBUTION.md
+      - .github/workflows/p1-04-publish-ghcr.yml
+      - scripts/check_compose.py
+      - scripts/test_check_compose.py
+      - scripts/preflight_vps.py
+      - scripts/test_preflight_vps.py
+      - docs/INTERNAL_PREVIEW.md
+      - .gitignore
+      - .github/workflows/p1-04-compose.yml
+permissions:
+  contents: read
+jobs:
+  compose-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline Compose policy tests
+        run: python3 -m unittest discover -s scripts -p 'test_check_compose.py'
+      - name: Test read-only VPS preflight policy
+        run: python3 -m unittest discover -s scripts -p 'test_preflight_vps.py'
+      - name: Ensure Git ignores local credentials
+        run: |
+          git check-ignore -q secrets/postgres_password
+          git check-ignore -q .env.production
+      - name: Validate every Compose profile (no containers started)
+        run: |
+          mkdir -p secrets
+          printf 'ci-only-dummy-password-not-for-deployment\n' > secrets/postgres_password
+          chmod 600 secrets/postgres_password
+          docker compose --profile preview --profile data --profile worker --profile ingress config --quiet
+          docker compose --profile preview --profile data --profile worker --profile ingress config --format json | python3 scripts/check_compose.py
+      - name: Verify digest-only image override has no build or host ports
+        env:
+          VNS_WEB_IMAGE: ghcr.io/whiteyonthemoon/videonews-studio-web@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          VNS_API_IMAGE: ghcr.io/whiteyonthemoon/videonews-studio-api@sha256:1111111111111111111111111111111111111111111111111111111111111111
+        run: |
+          docker compose -f compose.yaml -f deploy/compose.images.yaml --profile preview --profile data --profile worker --profile ingress config --format json > /tmp/vns-preview-config.json
+          python3 scripts/check_compose.py < /tmp/vns-preview-config.json
+          python3 -c 'import json; cfg=json.load(open("/tmp/vns-preview-config.json")); s=cfg["services"]; assert all("build" not in s[n] and not s[n].get("ports") and s[n]["pull_policy"] == "never" and "@sha256:" in s[n]["image"] for n in ("web","api")); print("Digest override: no build and no published ports")'

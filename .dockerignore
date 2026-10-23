@@ -1,0 +1,17 @@
+# Build context minimization and secret isolation
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+**/.next
+coverage
+.env
+.env.*
+!.env.example
+secrets
+**/*secret*
+*.pem
+*.key
+*.log
+docs
