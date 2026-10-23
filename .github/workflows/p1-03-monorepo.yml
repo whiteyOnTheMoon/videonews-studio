@@ -1,0 +1,36 @@
+name: P1-03 monorepo checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.base.json'
+      - 'eslint.config.mjs'
+      - '.github/workflows/p1-03-monorepo.yml'
+permissions:
+  contents: read
+jobs:
+  monorepo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies (temporary until lockfile is committed)
+        run: npm install --no-audit --no-fund
+      - name: Compile workspace applications
+        run: npm run build
+      - name: Type-check all workspaces
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
