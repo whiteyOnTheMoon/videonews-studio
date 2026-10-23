@@ -22,6 +22,7 @@ const HASH = `scrypt$${SALT.toString("hex")}$${scryptSync(PASS, SALT, 64, {
   maxmem: 64 * 1024 * 1024,
 }).toString("hex")}`;
 const KEY = "ci_job_research_transaction_001";
+const TOPIC = "A public transit policy funding comparison";
 
 const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
 const adminJobs = adminJobsFromEnv(
@@ -52,7 +53,7 @@ try {
   await once(server, "listening");
   const port = server.address().port;
   const base = `http://127.0.0.1:${port}`;
-  const requestBody = JSON.stringify({ kind: "research", idempotencyKey: KEY });
+  const requestBody = JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC });
   const send = (cookie, body = requestBody) =>
     fetch(base + "/admin/jobs", {
       method: "POST",
@@ -83,14 +84,16 @@ try {
   assert.equal(data1.jobId, data2.jobId);
 
   const db = await pool.query(
-    `SELECT j.id::text AS id, j.kind, j.status, ob.delivery_state, ob.queue_job_id
+    `SELECT j.id::text AS id, j.kind, j.status, ob.delivery_state, ob.queue_job_id, rr.topic
      FROM vns.jobs j JOIN vns.job_outbox ob ON ob.job_id = j.id
+     JOIN vns.research_requests rr ON rr.job_id = j.id
      WHERE j.idempotency_key = $1`,
     [KEY],
   );
   assert.equal(db.rowCount, 1);
   assert.equal(db.rows[0].id, data1.jobId);
   assert.equal(db.rows[0].kind, "research");
+  assert.equal(db.rows[0].topic, TOPIC);
   assert.equal(db.rows[0].status, "pending");
   assert.equal(db.rows[0].delivery_state, "pending");
   assert.equal(db.rows[0].queue_job_id, "job-" + data1.jobId.replaceAll("-", ""));
@@ -106,6 +109,7 @@ try {
   assert.equal(listing.jobs.length, 1);
   assert.equal(listing.jobs[0].id, data1.jobId);
   assert.equal(listing.jobs[0].kind, "research");
+  assert.equal(listing.jobs[0].topic, TOPIC);
   assert.equal(listing.jobs[0].status, "pending");
   assert.equal(listing.jobs[0].deliveryState, "pending");
   assert.match(listing.jobs[0].createdAt, /^\d{4}-\d{2}-\d{2}T/);
@@ -123,8 +127,12 @@ try {
     body: requestBody,
   });
   assert.equal(wrongOrigin.status, 403);
-  const wrongKind = await send(cookie, JSON.stringify({ kind: "render", idempotencyKey: KEY }));
+  const wrongKind = await send(cookie, JSON.stringify({ kind: "render", idempotencyKey: KEY, topic: TOPIC }));
   assert.equal(wrongKind.status, 400);
+  const changedTopic = await send(cookie, JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: "A different city transit research investigation" }));
+  assert.equal(changedTopic.status, 409);
+  const stillOne = await pool.query("SELECT count(*)::int AS count FROM vns.research_requests");
+  assert.equal(stillOne.rows[0].count, 1);
 
   const logout = await fetch(base + "/auth/logout", {
     method: "POST",
