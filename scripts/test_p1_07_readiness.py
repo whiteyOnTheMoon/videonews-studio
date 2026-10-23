@@ -15,9 +15,10 @@ def valid():
     })
     services["redis"].update({
         "networks": {"backend": None},
-        "command": ["redis-server", "--protected-mode", "yes"],
+        "command": ["redis-server", "--aclfile", "/run/secrets/redis_acl", "--protected-mode", "yes"],
+        "secrets": [{"source": "redis_acl"}],
     })
-    return {"services": services, "networks": {"backend": {"internal": True}}}
+    return {"services": services, "networks": {"backend": {"internal": True}}, "secrets": {"redis_acl": {}}}
 
 
 class ReadinessTests(unittest.TestCase):
@@ -58,6 +59,12 @@ class ReadinessTests(unittest.TestCase):
         data = valid()
         data["services"]["redis"]["command"][-1] = "no"
         with self.assertRaisesRegex(ValueError, "protected mode"):
+            check(data)
+
+    def test_no_redis_acl_file(self):
+        data = valid()
+        data["services"]["redis"]["command"].remove("/run/secrets/redis_acl")
+        with self.assertRaisesRegex(ValueError, "ACL"):
             check(data)
 
     def test_worker_must_not_autorestart(self):

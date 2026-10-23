@@ -120,8 +120,8 @@ services:
       retries: 5
       start_period: 30s
 
-  # Not accessible to other containers until P1-07 enables authenticated Redis.
-  # Protected mode stays ON; never disable it as a shortcut.
+  # P1-07: opt-in Redis requires an operator-provisioned ACL secret.
+  # No host ports; default user disabled; no Redis start without ACL.
   redis:
     profiles: [data]
     image: redis:7-alpine
@@ -136,9 +136,12 @@ services:
         "96mb",
         "--maxmemory-policy",
         "noeviction",
+        "--aclfile",
+        "/run/secrets/redis_acl",
         "--protected-mode",
         "yes",
       ]
+    secrets: [redis_acl]
     volumes:
       - redis_data:/data
     networks: [backend]
@@ -148,7 +151,8 @@ services:
     cpus: 0.3
     pids_limit: 64
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # Redis must reject unauthenticated PING (authenticated checks are in CI).
+      test: ["CMD-SHELL", "redis-cli ping 2>&1 | grep -q NOAUTH"]
       interval: 20s
       timeout: 5s
       retries: 3
@@ -197,3 +201,5 @@ volumes:
 secrets:
   postgres_password:
     file: ./secrets/postgres_password
+  redis_acl:
+    file: ./secrets/redis_acl

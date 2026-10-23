@@ -10,6 +10,7 @@ on:
       - docs/IMAGE_DISTRIBUTION.md
       - .github/workflows/p1-04-publish-ghcr.yml
       - scripts/check_compose.py
+      - scripts/provision_redis_secrets.py
       - scripts/test_check_compose.py
       - scripts/preflight_vps.py
       - scripts/test_preflight_vps.py
@@ -43,12 +44,15 @@ jobs:
       - name: Ensure Git ignores local credentials
         run: |
           git check-ignore -q secrets/postgres_password
+          git check-ignore -q secrets/redis_acl
+          git check-ignore -q secrets/redis_password
           git check-ignore -q .env.production
       - name: Validate every Compose profile (no containers started)
         run: |
           mkdir -p secrets
           printf 'ci-only-dummy-password-not-for-deployment\n' > secrets/postgres_password
           chmod 600 secrets/postgres_password
+          python3 scripts/provision_redis_secrets.py secrets
           docker compose --profile preview --profile data --profile worker --profile ingress config --quiet
           docker compose --profile preview --profile data --profile worker --profile ingress config --format json | python3 scripts/check_compose.py
       - name: Verify digest-only image override has no build or host ports
