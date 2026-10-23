@@ -63,7 +63,11 @@ async function readResearchRequest(request: Request): Promise<string | null> {
       Array.from(object.topic).length > 160
     )
       return null;
-    return JSON.stringify({ kind: "research", idempotencyKey: object.idempotencyKey, topic: object.topic });
+    return JSON.stringify({
+      kind: "research",
+      idempotencyKey: object.idempotencyKey,
+      topic: object.topic,
+    });
   } catch {
     return null;
   }
