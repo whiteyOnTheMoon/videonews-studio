@@ -17,10 +17,12 @@ export function isResearchJobOverview(value: unknown): value is ResearchJobOverv
     typeof job.id === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(job.id) &&
     job.kind === "research" &&
-    (job.topic === null || (typeof job.topic === "string" &&
-      job.topic === job.topic.trim() &&
-      !/[\u0000-\u001f\u007f]/.test(job.topic) &&
-      Array.from(job.topic).length >= 12 && Array.from(job.topic).length <= 160)) &&
+    (job.topic === null ||
+      (typeof job.topic === "string" &&
+        job.topic === job.topic.trim() &&
+        !/[\u0000-\u001f\u007f]/.test(job.topic) &&
+        Array.from(job.topic).length >= 12 &&
+        Array.from(job.topic).length <= 160)) &&
     typeof job.status === "string" &&
     ["pending", "running", "retry", "done", "failed", "cancelled"].includes(job.status) &&
     (job.deliveryState === "pending" || job.deliveryState === "enqueued") &&
