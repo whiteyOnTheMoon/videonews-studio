@@ -8,7 +8,7 @@ DECLARE
   license_id uuid;
   story_id uuid;
   script_id uuid;
-  job_id uuid;
+  created_job_id uuid;
   video_id uuid;
 BEGIN
   INSERT INTO vns.sources (name, canonical_url, trust_status)
@@ -38,19 +38,19 @@ BEGIN
     VALUES (story_id, 1, 'Fixture script text', 'approved')
     RETURNING id INTO script_id;
 
-  job_id := vns.create_job_with_outbox('render', 'ci-restore-job', story_id, 3);
-  UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = job_id;
+  created_job_id := vns.create_job_with_outbox('render', 'ci-restore-job', story_id, 3);
+  UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = created_job_id;
   UPDATE vns.job_outbox AS ob
     SET delivery_state = 'enqueued', dispatch_attempts = 1,
         enqueued_at = now(), last_attempt_at = now()
-    WHERE ob.job_id = job_id;
+    WHERE ob.job_id = created_job_id;
 
   INSERT INTO vns.videos (script_id, render_job_id, storage_key, duration_ms, status)
-    VALUES (script_id, job_id, 'ci/restore-video', 42000, 'rendered')
+    VALUES (script_id, created_job_id, 'ci/restore-video', 42000, 'rendered')
     RETURNING id INTO video_id;
 
   INSERT INTO vns.costs (job_id, provider, metric, quantity, amount, currency)
-    VALUES (job_id, 'ci-only', 'tokens', 42, 0.001234, 'USD');
+    VALUES (created_job_id, 'ci-only', 'tokens', 42, 0.001234, 'USD');
 
   INSERT INTO vns.approvals (video_id, reviewer, decision, comment)
     VALUES (video_id, 'ci-reviewer', 'approved', 'No real publication');
