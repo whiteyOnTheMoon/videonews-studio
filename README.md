@@ -14,10 +14,10 @@ Private, editorially supervised platform for producing sourced explainer videos.
 
 ## Quick start
 
-Requires Node.js 22+ and npm 10+. At this stage, package lockfile generation and CI install verification are pending; see the development guide.
+Requires Node.js 22+ and npm 10+. The committed lockfile is used for deterministic installations.
 
 ```bash
-npm install
+npm ci
 npm run build
 npm run typecheck
 npm run lint
