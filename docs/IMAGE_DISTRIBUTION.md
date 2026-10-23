@@ -65,3 +65,21 @@ Quelle: [P1-04 Docker image smoke tests, Run #39913543830](https://github.com/wh
 Alle Images sind in diesem Scaffold gleich groß, da der Laufzeitteil des Dockerfiles den gesamten gebauten Workspace enthält. Der gemeinsame Export zeigt den Effekt geteilter Schichten. Diese Messung kann sich bei Code-/Abhängigkeitsänderungen ändern und ist **kein Nachweis der tatsächlichen Registry-Downloadgröße, Netzwerkübertragung oder des VPS-Speicherbedarfs**.
 
 **Nächste Sicherheitsentscheidung:** Keine lokalen VPS-Builds, kein GHCR-Push, kein Image-Pull und kein Start allein aufgrund der Zahlen. Vor einem späteren Pull den freien Platz neu messen und Reserve für temporären Download sowie entpackte Layer einplanen. Der bisherige Host-Snapshot wies 24 GB freie Platte und 1,4/2,0 GiB Swap-Belegung aus.
+
+
+## GHCR-Veröffentlichungsfreigabe – zusätzliche Sicherheitsschranken
+
+**Stand: 23.10.2026; vorbereitet, kein Upload genehmigt oder ausgeführt.** Die GitHub-Dokumentation bestätigt, dass neue GHCR-Pakete unter einem persönlichen Konto standardmäßig **privat** sind. Das gilt **nicht automatisch für schon bestehende Pakete**. Ein privates Quell-Repository allein beweist nicht die Paketsichtbarkeit.
+
+Der geplante manuelle Workflow erfordert daher neben der ausdrücklichen Auswahl `PUBLISH_PRIVATE_IMAGES`:
+
+1. **Verifizierter Quellstand:** Der Betreiber gibt den **exakten 40-stelligen Git-Commit-SHA von `main`** separat frei und trägt ihn in `expected_sha` ein. Jede Abweichung von `GITHUB_SHA` führt vor dem Build zum Abbruch.
+2. **Paketstatus vor dem Lauf manuell kontrollieren:** Im GitHub-Profil `whiteyOnTheMoon` unter **Packages** prüfen, ob `videonews-studio-web` und `videonews-studio-api` bereits existieren. Falls vorhanden, muss **jedes** Paket sichtbar als **Private** gekennzeichnet sein; bei bereits öffentlich sichtbaren Paketnamen niemals diesen Workflow nutzen. Das Auswahlfeld `visibility_check = NO_PUBLIC_PACKAGE` darf nur nach dieser Prüfung gesetzt werden.
+3. **Zweite automatische Sichtbarkeitsschranke:** Vor dem Build prüft der Workflow anonym die öffentlichen GitHub-Package-Endpunkte für beide Namen. Ein als öffentlich gefundenes Paket oder ein nicht interpretierbarer HTTP-Status blockiert. **HTTP 404 beweist nicht, dass es kein privates Paket gibt**; die manuelle Prüfung bleibt zwingend.
+4. **Kostenfreigabe:** Vor dem Lauf die GitHub-Billing-Ansicht auf verbleibende GitHub-Actions-Minuten, Usage und Budgetgrenze prüfen. GHCR-Container-Image-Speicherung und -Bandbreite sind laut GitHub derzeit kostenfrei, **private Actions-Minuten jedoch nicht unbegrenzt**. Kein kostenpflichtiges Upgrade, kein Überschreiten des bewilligten Limits.
+5. **Veröffentlichen nur nach neuer ausdrücklicher Zustimmung:** `workflow_dispatch` im `main`-Branch starten; Standardwahl ist `DO_NOT_PUBLISH`, der Job läuft nur bei `PUBLISH_PRIVATE_IMAGES`. Läufe werden seriell ausgeführt. Der ausgehende Push verwendet nur den kurzlebigen `GITHUB_TOKEN` mit `packages: write` und versieht die beiden Images mit commitgebundenen Tags und Digest-Nachweis.
+6. **Nach dem Lauf erneut prüfen:** Unter **Packages** bei beiden neuen Images explizit `Private` bestätigen, Repository-Zuordnung und Actions-Berechtigungen kontrollieren und erst anschließend die exakten Digests aus der Workflow-Zusammenfassung festhalten. Bei Teilerfolg (z. B. Web gepusht, API fehlgeschlagen) **keine** automatische Fortsetzung auf dem VPS; erst Zustand prüfen.
+
+Die öffentlichen GitHub-Package-API-Abfragen ersetzen keine manuelle Prüfung im eingeloggten GitHub-Konto; sie können private Pakete nicht offenlegen. Die GHCR-Veröffentlichung selbst ist **nicht** Teil der CI-Tests für diesen Draft-PR und wurde nicht simuliert.
+
+**Der VPS bleibt separat:** Kein Registry-Login, Token, Image-Download, Compose-Start, Portfreigabe oder Eingriff in vorhandene Cloudflare-Netze durch diesen Ablauf. Jede dieser Aktionen benötigt eine neue ausdrückliche Betreiberfreigabe. Eine Review-Ausnahme für eine ältere PR gilt nicht automatisch für diese Änderung.
