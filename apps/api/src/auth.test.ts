@@ -163,3 +163,38 @@ test("sessions expire and malformed login requests are rejected without secrets"
     assert.equal((await fetch(base + "/auth/login", { method: "GET" })).status, 405);
   });
 });
+
+test("file-backed secret configuration rejects ambiguous, unsafe or missing sources", () => {
+  assert.throws(
+    () => adminAuthFromEnv({
+      VNS_ADMIN_AUTH_ENABLED: "true",
+      VNS_ADMIN_ORIGIN: ORIGIN,
+      VNS_ADMIN_PASSWORD_HASH: HASH,
+      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_password_hash",
+    }),
+    /exactly one/,
+  );
+  assert.throws(
+    () => adminAuthFromEnv({
+      VNS_ADMIN_AUTH_ENABLED: "true",
+      VNS_ADMIN_ORIGIN: ORIGIN,
+      VNS_ADMIN_PASSWORD_HASH_FILE: "/tmp/admin_password_hash",
+    }),
+    /\/run\/secrets/,
+  );
+  assert.throws(
+    () => adminAuthFromEnv({
+      VNS_ADMIN_AUTH_ENABLED: "true",
+      VNS_ADMIN_ORIGIN: ORIGIN,
+      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/missing_admin_password_hash_file",
+    }),
+    /unavailable/,
+  );
+  assert.equal(
+    adminAuthFromEnv({
+      VNS_ADMIN_AUTH_ENABLED: "false",
+      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/missing_admin_password_hash_file",
+    }),
+    undefined,
+  );
+});
