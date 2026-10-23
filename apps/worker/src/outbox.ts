@@ -63,8 +63,11 @@ export async function dispatchOutboxBatch(
       validateOutboxRow(row);
       const current = await queue.getJob(row.queue_job_id);
       if (current) {
-        if (current.name !== row.kind || current.data?.kind !== row.kind ||
-            current.data?.jobId !== row.job_id) {
+        if (
+          current.name !== row.kind ||
+          current.data?.kind !== row.kind ||
+          current.data?.jobId !== row.job_id
+        ) {
           throw new Error("Existing Redis job conflicts with PostgreSQL outbox");
         }
       } else {
