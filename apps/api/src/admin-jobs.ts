@@ -38,15 +38,18 @@ export function parseResearchJobRequest(value: unknown): string | null {
 export function validJobSummary(value: unknown): value is ResearchJobSummary {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
-  return Object.keys(row).length === 5 &&
-    typeof row.id === "string" && UUID_PATTERN.test(row.id) &&
+  return (
+    Object.keys(row).length === 5 &&
+    typeof row.id === "string" &&
+    UUID_PATTERN.test(row.id) &&
     row.kind === "research" &&
     typeof row.status === "string" &&
     ["pending", "running", "retry", "done", "failed", "cancelled"].includes(row.status) &&
     (row.deliveryState === "pending" || row.deliveryState === "enqueued") &&
     typeof row.createdAt === "string" &&
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(row.createdAt) &&
-    !Number.isNaN(Date.parse(row.createdAt));
+    !Number.isNaN(Date.parse(row.createdAt))
+  );
 }
 
 async function limitedJson(request: IncomingMessage): Promise<unknown> {
