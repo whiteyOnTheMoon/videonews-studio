@@ -1,0 +1,31 @@
+{
+  "name": "videonews-studio",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "dev:web": "npm run dev --workspace @vns/web",
+    "dev:api": "npm run dev --workspace @vns/api",
+    "build": "npm run build --workspace @vns/shared && npm run build --workspace @vns/api && npm run build --workspace @vns/worker && npm run build --workspace @vns/web",
+    "typecheck": "npm run build --workspace @vns/shared && npm run typecheck --workspaces --if-present",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.18.0",
+    "eslint": "^9.39.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
+}

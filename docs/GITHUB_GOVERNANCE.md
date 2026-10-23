@@ -78,7 +78,6 @@ If protection is supported, configure it under `Settings → Branches` or `Setti
 - [ ] Confirm branch protection capability and enable required checks when available
 - [ ] Formal CI and status requirements completed in P1-08
 
-
 ## Verifizierte Einschränkung im GitHub-Konto (23.10.2026)
 
 Die Betreiberprüfung mit authentifizierter GitHub CLI auf dem VPS hat ergeben:

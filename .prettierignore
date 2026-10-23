@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+package-lock.json
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Preserve canonical imported issue snapshot without reformatting
+backlog/issues.json
