@@ -95,11 +95,18 @@ test("job proxy rejects anonymous cookies, cross-origin requests and bad payload
     400,
   );
   assert.equal(
-    (await adminResearchJobProxy(request({ kind: "research", idempotencyKey: KEY }), CONFIG, upstream)).status,
+    (
+      await adminResearchJobProxy(
+        request({ kind: "research", idempotencyKey: KEY }),
+        CONFIG,
+        upstream,
+      )
+    ).status,
     400,
   );
   assert.equal(
-    (await adminResearchJobProxy(request({ ...valid, topic: "too short" }), CONFIG, upstream)).status,
+    (await adminResearchJobProxy(request({ ...valid, topic: "too short" }), CONFIG, upstream))
+      .status,
     400,
   );
   assert.equal(calls, 0);
@@ -117,13 +124,18 @@ test("job proxy forwards only allowlisted payload, cookie and HTTPS Origin", asy
     assert.equal(headers.get("origin"), ORIGIN);
     assert.equal(headers.get("cookie"), COOKIE);
     assert.equal(headers.get("authorization"), null);
-    assert.deepEqual(JSON.parse(init?.body as string), { kind: "research", idempotencyKey: KEY, topic: TOPIC });
+    assert.deepEqual(JSON.parse(init?.body as string), {
+      kind: "research",
+      idempotencyKey: KEY,
+      topic: TOPIC,
+    });
     return Response.json({ accepted: true, jobId: ID, private: "hidden" }, { status: 202 });
   };
   const response = await adminResearchJobProxy(
     request({
       kind: "research",
-      idempotencyKey: KEY, topic: TOPIC,
+      idempotencyKey: KEY,
+      topic: TOPIC,
     }),
     CONFIG,
     upstream,
@@ -144,8 +156,13 @@ test("job proxy sanitizes upstream unavailability, redirects, and invalid respon
     throw new Error("secret internal host");
   };
   assert.equal(
-    (await adminResearchJobProxy(request({ kind: "research", idempotencyKey: KEY, topic: TOPIC }), CONFIG, down))
-      .status,
+    (
+      await adminResearchJobProxy(
+        request({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+        CONFIG,
+        down,
+      )
+    ).status,
     503,
   );
   const conflict: typeof fetch = async () =>
