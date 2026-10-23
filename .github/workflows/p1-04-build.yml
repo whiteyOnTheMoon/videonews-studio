@@ -1,0 +1,49 @@
+name: P1-04 Docker image smoke tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package-lock.json
+      - apps/**
+      - packages/**
+      - .github/workflows/p1-04-build.yml
+permissions:
+  contents: read
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build application images on GitHub runner
+        run: |
+          docker build --target web --tag vns-ci-web:check .
+          docker build --target api --tag vns-ci-api:check .
+          docker build --target worker --tag vns-ci-worker:check .
+      - name: Smoke test with no host port publications
+        run: |
+          set -eu
+          trap 'docker rm -f vns-ci-web vns-ci-api >/dev/null 2>&1 || true' EXIT
+          docker run -d --name vns-ci-web --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 640m --memory-swap 640m --cpus 0.75 --pids-limit 128 --tmpfs /tmp:rw,nosuid,noexec,size=32m --tmpfs /workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000 vns-ci-web:check
+          docker run -d --name vns-ci-api --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 192m --memory-swap 192m --cpus 0.35 --pids-limit 128 -e API_HOST=0.0.0.0 -e API_PORT=4000 --tmpfs /tmp:rw,nosuid,noexec,size=32m vns-ci-api:check
+          for spec in 'vns-ci-web|http://127.0.0.1:3000/' 'vns-ci-api|http://127.0.0.1:4000/healthz'; do
+            name="${spec%%|*}"
+            url="${spec#*|}"
+            ready=false
+            for attempt in $(seq 1 30); do
+              if docker exec "$name" node -e 'fetch(process.argv[1]).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))' "$url" >/dev/null 2>&1; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ready" != true ]; then
+              echo "Internal HTTP smoke test failed: $name" >&2
+              docker logs --tail 30 "$name" >&2
+              exit 1
+            fi
+          done
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 768m --memory-swap 768m --cpus 1.0 -e MAX_RENDER_CONCURRENCY=1 --tmpfs /tmp:rw,nosuid,noexec,size=32m vns-ci-worker:check
+          echo "Image builds and internal smoke checks passed"
