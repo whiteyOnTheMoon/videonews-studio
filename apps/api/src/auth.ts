@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -235,18 +236,47 @@ export class AdminAuth {
   }
 }
 
-export function adminAuthFromEnv(env: NodeJS.ProcessEnv): AdminAuth | undefined {
+function adminPasswordHashFromEnv(
+  env: NodeJS.ProcessEnv,
+  readSecret: (path: string) => string,
+): string | null {
+  const path = env.VNS_ADMIN_PASSWORD_HASH_FILE;
+  // Prevent accidentally weakening the deployment by configuring competing sources.
+  if (path && env.VNS_ADMIN_PASSWORD_HASH) {
+    throw new Error("Choose exactly one admin hash source");
+  }
+  if (path) {
+    if (!path.startsWith("/run/secrets/") || path.includes("..")) {
+      throw new Error("Admin hash file must be within /run/secrets");
+    }
+    try {
+      const value = readSecret(path);
+      if (value.length > 256) throw new Error("Admin hash file is invalid");
+      return value.trimEnd();
+    } catch {
+      // Fail closed, without revealing paths, file contents or OS error details.
+      throw new Error("Admin hash secret unavailable or invalid");
+    }
+  }
+  return env.VNS_ADMIN_PASSWORD_HASH ?? null;
+}
+
+export function adminAuthFromEnv(
+  env: NodeJS.ProcessEnv,
+  readSecret: (path: string) => string = (path) => readFileSync(path, "utf8"),
+): AdminAuth | undefined {
   if (env.VNS_ADMIN_AUTH_ENABLED === undefined || env.VNS_ADMIN_AUTH_ENABLED === "false") {
     return undefined;
   }
   if (env.VNS_ADMIN_AUTH_ENABLED !== "true") {
     throw new Error("Invalid admin auth enabled flag");
   }
-  if (!env.VNS_ADMIN_PASSWORD_HASH || !env.VNS_ADMIN_ORIGIN) {
+  const passwordHash = adminPasswordHashFromEnv(env, readSecret);
+  if (!passwordHash || !env.VNS_ADMIN_ORIGIN) {
     throw new Error("Admin auth configuration is incomplete");
   }
   return new AdminAuth({
-    passwordHash: env.VNS_ADMIN_PASSWORD_HASH,
+    passwordHash,
     origin: env.VNS_ADMIN_ORIGIN,
   });
 }
