@@ -37,3 +37,16 @@ Für einen reinen Konfigurationstest kann ein CI-Runner **syntaktische Dummy-Dig
 - Caddy/Cloudflare/HTTPS veröffentlichen, bevor P1-06-Authentifizierung und Ingress-Prüfung abgeschlossen sind
 
 Die Ausnahme vom unabhängigen Review für die alten PRs #70–#72 gilt **nicht** für PR #73.
+
+
+## Größenmessung vor jeder Übertragung
+
+**Messung nur auf GitHub Actions:** Der Workflow `.github/workflows/p1-04-build.yml` protokolliert für die lokal erstellten Docker-Images Web, API und Worker die mit `docker image inspect .Size` ermittelten entpackten Größen. Für **Web und API gemeinsam** werden zusätzlich (1) die unkomprimierte Bytezahl eines gemeinsamen `docker save`-Exports und (2) die Bytezahl eines beispielhaften `gzip -1`-Streams berichtet. Die Ergebnisse stehen ausschließlich im GitHub-Actions-Jobprotokoll und seiner Job-Zusammenfassung. **Es wird dabei kein Image in GHCR veröffentlicht und kein Artefakt zum VPS übertragen.**
+
+Diese Werte sind **nicht** identisch mit den tatsächlichen GHCR-Downloadbytes, deduplizierten Docker-Layergrößen, persistenter VPS-Plattenbelegung oder temporär benötigtem Speicher beim Pull. Insbesondere darf man die beiden Einzelwerte der Images nicht unbesehen addieren, weil Schichten gemeinsam genutzt werden können.
+
+**Sicherheitsgrenze vor einem späteren Transfer:**
+
+1. Erst tatsächliche Größen messen und im Issue P1-04 mit Git-Commit und CI-Run dokumentieren, keine Werte erfinden.
+2. Dann verfügbare Kapazität auf dem VPS **erneut rein lesend** ermitteln und zusätzlich Spielraum für Layer-Download, Entpacken, vorhandene Images und Anwendungen berücksichtigen. Ein grüner Vorabcheck ist noch keine Startfreigabe.
+3. GHCR-Upload, Token-Erstellung, Image-Pull und Containerstart bleiben **jeweils gesondert zu genehmigende** Schritte. Keine unautorisierten Kosten und kein Löschen anderer Docker-Images/Build-Caches.
