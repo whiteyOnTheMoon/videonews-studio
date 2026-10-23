@@ -77,16 +77,24 @@ try {
   await queue.waitUntilReady();
 
   // A second enqueue with the same retained jobId must not create a second job.
-  const first = await queue.add("probe", { kind: "probe" }, {
-    jobId: "ci-dedupe-probe",
-    attempts: 1,
-    removeOnComplete: false,
-  });
-  const duplicate = await queue.add("probe", { kind: "probe" }, {
-    jobId: "ci-dedupe-probe",
-    attempts: 1,
-    removeOnComplete: false,
-  });
+  const first = await queue.add(
+    "probe",
+    { kind: "probe" },
+    {
+      jobId: "ci-dedupe-probe",
+      attempts: 1,
+      removeOnComplete: false,
+    },
+  );
+  const duplicate = await queue.add(
+    "probe",
+    { kind: "probe" },
+    {
+      jobId: "ci-dedupe-probe",
+      attempts: 1,
+      removeOnComplete: false,
+    },
+  );
   assert.equal(first.id, duplicate.id);
   assert.equal(await queue.getWaitingCount(), 1);
   const standard = createProbeWorker(settings);
@@ -119,13 +127,17 @@ try {
   workers.add(retryWorker);
   try {
     await retryWorker.waitUntilReady();
-    const retryJob = await queue.add("probe", { kind: "probe" }, {
-      jobId: "ci-retry-probe",
-      attempts: 2,
-      backoff: { type: "fixed", delay: 200 },
-      removeOnComplete: false,
-      removeOnFail: false,
-    });
+    const retryJob = await queue.add(
+      "probe",
+      { kind: "probe" },
+      {
+        jobId: "ci-retry-probe",
+        attempts: 2,
+        backoff: { type: "fixed", delay: 200 },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    );
     assert.deepEqual(await retryJob.waitUntilFinished(events, 20000), { ok: true });
     assert.equal(calls, 2);
     assert.equal(await retryJob.getState(), "completed");
@@ -152,12 +164,16 @@ try {
   const ready = waitForLine(crashChild, lines, "READY");
   await ready;
   const claimed = waitForLine(crashChild, lines, "CLAIMED");
-  const crashedJob = await queue.add("probe", { kind: "probe" }, {
-    jobId: "ci-crash-probe",
-    attempts: 1,
-    removeOnComplete: false,
-    removeOnFail: false,
-  });
+  const crashedJob = await queue.add(
+    "probe",
+    { kind: "probe" },
+    {
+      jobId: "ci-crash-probe",
+      attempts: 1,
+      removeOnComplete: false,
+      removeOnFail: false,
+    },
+  );
   await claimed;
   const ended = once(crashChild, "exit");
   crashChild.kill("SIGKILL");
