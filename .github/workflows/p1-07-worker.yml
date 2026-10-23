@@ -9,6 +9,7 @@ on:
       - "package-lock.json"
       - "db/scripts/test_worker_queue.sh"
       - "scripts/test_worker_integration.mjs"
+      - "scripts/provision_redis_secrets.py"
       - ".github/workflows/p1-07-worker.yml"
 permissions:
   contents: read
