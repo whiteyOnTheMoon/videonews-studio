@@ -95,6 +95,23 @@ try {
   assert.equal(db.rows[0].delivery_state, "pending");
   assert.equal(db.rows[0].queue_job_id, "job-" + data1.jobId.replaceAll("-", ""));
 
+  // A real read-only admin list must reflect the database without secrets.
+  const list = await fetch(base + "/admin/jobs", {
+    headers: { Cookie: cookie },
+    cache: "no-store",
+  });
+  assert.equal(list.status, 200);
+  assert.equal(list.headers.get("cache-control"), "no-store");
+  const listing = await list.json();
+  assert.equal(listing.jobs.length, 1);
+  assert.equal(listing.jobs[0].id, data1.jobId);
+  assert.equal(listing.jobs[0].kind, "research");
+  assert.equal(listing.jobs[0].status, "pending");
+  assert.equal(listing.jobs[0].deliveryState, "pending");
+  assert.match(listing.jobs[0].createdAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.ok(!JSON.stringify(listing).includes(KEY));
+  assert.equal((await fetch(base + "/admin/jobs")).status, 401);
+
   // No queue dispatcher is activated. Nothing gets sent to Redis.
   const wrongOrigin = await fetch(base + "/admin/jobs", {
     method: "POST",
@@ -115,6 +132,7 @@ try {
   });
   assert.equal(logout.status, 200);
   assert.equal((await send(cookie)).status, 401);
+  assert.equal((await fetch(base + "/admin/jobs", { headers: { Cookie: cookie } })).status, 401);
   console.log("PASS: real admin session, atomic job+outbox, repeated idempotency, CSRF and logout");
 } finally {
   await pool.end();

@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { adminProxyConfig, isAdminAuthorized } from "../../lib/admin-proxy";
+import { adminJobsProxyConfig } from "../../lib/admin-jobs-proxy";
 import SignOut from "./sign-out";
+import ResearchJobs from "./research-jobs";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ export default async function AdminPage() {
         Redaktionsfunktionen und veröffentlicht keine Inhalte.
       </p>
       <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
+      <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );

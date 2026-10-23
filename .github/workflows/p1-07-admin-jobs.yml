@@ -5,6 +5,9 @@ on:
     paths:
       - "apps/api/**"
       - "apps/web/src/lib/admin-jobs-proxy*"
+      - "apps/web/src/lib/admin-jobs-list*"
+      - "apps/web/src/app/admin/**"
+      - "apps/web/src/app/globals.css"
       - "apps/web/src/app/api/admin/jobs/**"
       - "apps/web/package.json"
       - "Dockerfile"
@@ -37,11 +40,11 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify formatting and capture style patch
         run: |
-          npx prettier --write apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs
+          npx prettier --write apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs apps/web/src/lib/admin-jobs-list.ts apps/web/src/lib/admin-jobs-list.test.ts apps/web/src/app/admin/research-jobs.tsx apps/web/src/app/admin/research-jobs.test.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/globals.css
           echo '===VNS_FORMAT_START==='
-          git diff --no-color -- apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs
+          git diff --no-color -- apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs apps/web/src/lib/admin-jobs-list.ts apps/web/src/lib/admin-jobs-list.test.ts apps/web/src/app/admin/research-jobs.tsx apps/web/src/app/admin/research-jobs.test.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/globals.css
           echo '===VNS_FORMAT_END==='
-          git diff --exit-code -- apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs
+          git diff --exit-code -- apps/api/src/admin-jobs.ts apps/api/src/admin-jobs.test.ts apps/api/src/auth.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/admin-jobs-proxy.ts apps/web/src/lib/admin-jobs-proxy.test.ts apps/web/src/app/api/admin/jobs/route.ts .github/workflows/p1-07-admin-jobs.yml scripts/test_admin_jobs_integration.mjs apps/web/src/lib/admin-jobs-list.ts apps/web/src/lib/admin-jobs-list.test.ts apps/web/src/app/admin/research-jobs.tsx apps/web/src/app/admin/research-jobs.test.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/globals.css
       - name: Build and run isolated workspace tests
         run: |
           npm run build
