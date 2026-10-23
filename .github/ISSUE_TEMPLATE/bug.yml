@@ -1,0 +1,44 @@
+name: "Bug / Fehler"
+description: "Reproduzierbaren Fehler vor einem Fix dokumentieren."
+title: "[BUG] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Fehlerbeschreibung"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Schritte zur Reproduktion"
+      placeholder: "1. ...\n2. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Erwartetes Verhalten"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Tatsächliches Verhalten"
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: "Betroffener Bereich / Version"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Akzeptanzkriterien / Regressionstest"
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: "Risiken (Datenschutz, Secrets, Kosten, Rechte)"
+      description: "Keine sensiblen Tokens, Passwörter oder personenbezogenen Daten in Issues posten."

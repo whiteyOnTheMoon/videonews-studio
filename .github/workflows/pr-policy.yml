@@ -1,0 +1,25 @@
+name: PR metadata policy
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  pr-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify PR links an issue and uses a project ID
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check_pr.mjs
+      - name: Test PR metadata parser
+        run: node --test scripts/test_check_pr.mjs
+      - name: Test GitHub governance planning
+        run: python3 -m unittest discover -s scripts -p 'test_github_governance.py'
