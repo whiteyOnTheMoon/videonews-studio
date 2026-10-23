@@ -9,7 +9,9 @@ test("parses only stable project IDs at start of issue titles", () => {
 });
 
 test("the canonical backlog contains 69 unique, valid issues", async () => {
-  const source = JSON.parse(await readFile(new URL("../backlog/issues.json", import.meta.url), "utf8"));
+  const source = JSON.parse(
+    await readFile(new URL("../backlog/issues.json", import.meta.url), "utf8"),
+  );
   const issues = validateBacklog(source);
   assert.equal(issues.length, 69);
   assert.equal(new Set(issues.map((issue) => issue.id)).size, 69);
@@ -18,7 +20,10 @@ test("the canonical backlog contains 69 unique, valid issues", async () => {
 test("rejects duplicate IDs and wrong title prefixes", () => {
   const item = { id: "P1-01", title: "[P1-01] Test", body: "Test" };
   assert.throws(() => validateBacklog({ issues: [item, item] }), /Duplicate backlog ID/);
-  assert.throws(() => validateBacklog({ issues: [{ ...item, title: "[P1-02] Test" }] }), /Invalid backlog issue/);
+  assert.throws(
+    () => validateBacklog({ issues: [{ ...item, title: "[P1-02] Test" }] }),
+    /Invalid backlog issue/,
+  );
 });
 
 test("only missing issues are planned; repeated imports plan zero", () => {
@@ -27,7 +32,10 @@ test("only missing issues are planned; repeated imports plan zero", () => {
     { id: "P1-02", title: "[P1-02] Two", body: "Two" },
   ];
   const remote = [{ title: "[P1-01] One" }];
-  assert.deepEqual(planImport(source, remote).map((issue) => issue.id), ["P1-02"]);
+  assert.deepEqual(
+    planImport(source, remote).map((issue) => issue.id),
+    ["P1-02"],
+  );
   assert.deepEqual(planImport(source, [...remote, { title: "[P1-02] Two" }]), []);
 });
 

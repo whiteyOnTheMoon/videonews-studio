@@ -7,7 +7,7 @@ const ID_PATTERN = /^P[0-7]-\d{2}$/;
 const TITLE_PATTERN = /^\[(P[0-7]-\d{2})\]\s/;
 
 export function issueIdFromTitle(title) {
-  return typeof title === "string" ? TITLE_PATTERN.exec(title)?.[1] ?? null : null;
+  return typeof title === "string" ? (TITLE_PATTERN.exec(title)?.[1] ?? null) : null;
 }
 
 export function validateBacklog(backlog) {
@@ -16,10 +16,14 @@ export function validateBacklog(backlog) {
   }
   const seen = new Set();
   for (const issue of backlog.issues) {
-    if (!issue || typeof issue.id !== "string" ||
-        !ID_PATTERN.test(issue.id) ||
-        issueIdFromTitle(issue.title) !== issue.id ||
-        typeof issue.body !== "string" || !issue.body.trim()) {
+    if (
+      !issue ||
+      typeof issue.id !== "string" ||
+      !ID_PATTERN.test(issue.id) ||
+      issueIdFromTitle(issue.title) !== issue.id ||
+      typeof issue.body !== "string" ||
+      !issue.body.trim()
+    ) {
       throw new Error("Invalid backlog issue: " + String(issue?.id));
     }
     if (seen.has(issue.id)) throw new Error("Duplicate backlog ID: " + issue.id);
@@ -60,7 +64,8 @@ async function readExistingIssues(repo, token) {
   const result = [];
   for (let page = 1; ; page++) {
     const chunk = await githubRequest(
-      "/repos/" + repo + "/issues?state=all&per_page=100&page=" + page, token
+      "/repos/" + repo + "/issues?state=all&per_page=100&page=" + page,
+      token,
     );
     if (!Array.isArray(chunk)) throw new Error("Invalid GitHub issue list.");
     result.push(...chunk);
@@ -107,5 +112,8 @@ async function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 }
