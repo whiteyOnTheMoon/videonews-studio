@@ -64,7 +64,6 @@ A separate `apps/worker/src/dispatch.ts` process refuses startup unless explicit
 
 The disposable GitHub Actions suite runs against PostgreSQL 17 and ACL-protected Redis, exercising idempotent queue creation, lost acknowledgements, Redis job disappearance, mismatched queue payload rejection, and terminal-job exclusion. These tests provide **at-least-once queue delivery**, not exactly-once processing. Redis/queue retention, actual research execution, least-privilege DB roles, explicit backup/restore procedures and data-profile deployment approval remain outstanding.
 
-
 ## Status reconciliation (CI-tested, not deployed)
 
 The independently opt-in `apps/worker/src/status-sync.ts` polls retained BullMQ jobs and updates nonterminal PostgreSQL `vns.jobs` records under row locks. It maps Redis waiting to pending, active to running, delayed attempts to retry, completed to done, and terminal failed to failed. The attempt counter never decreases; raw stack traces and error details are never persisted (only `bullmq_failed`). Missing Redis jobs or mismatched job identifiers fail closed rather than inventing a success. Terminal PostgreSQL records cannot be overwritten by later queue snapshots. The last-20 authenticated dashboard listing already reads the `vns.jobs` statuses.
