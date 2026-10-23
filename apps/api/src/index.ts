@@ -1,3 +1,4 @@
+import { adminAuthFromEnv } from "./auth.js";
 import { createApiServer } from "./server.js";
 
 const host = process.env.API_HOST ?? "127.0.0.1";
@@ -7,7 +8,9 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error("API_PORT must be an integer from 1 to 65535.");
 }
 
-const server = createApiServer();
+// Explicit opt-in only. Invalid secrets or a non-HTTPS origin prevent startup.
+const auth = adminAuthFromEnv(process.env);
+const server = createApiServer({ auth });
 server.listen(port, host, () => {
   console.log(`VideoNews Studio API ready at http://${host}:${port}`);
 });
