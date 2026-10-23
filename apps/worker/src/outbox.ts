@@ -23,8 +23,8 @@ const SELECT_PENDING = `
   JOIN vns.jobs j ON j.id = ob.job_id
   WHERE j.status IN ('pending', 'retry')
   ORDER BY ob.created_at, ob.job_id
-  FOR UPDATE OF ob SKIP LOCKED
   LIMIT $1
+  FOR UPDATE OF ob SKIP LOCKED
 `;
 
 export function validateOutboxRow(row: OutboxDelivery): void {
