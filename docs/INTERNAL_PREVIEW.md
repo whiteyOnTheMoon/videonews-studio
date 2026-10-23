@@ -60,3 +60,17 @@ Erst nach P1-06 (Authentifizierung), P1-07 (Queue/Sicherheitsprüfung), HTTPS-/I
 - GitHub Actions testet den isolierten Containerstart, aber keinen Compose-Start aller Profile auf dem VPS.
 - Der Hoster hat keine laufenden automatisierten Backups; dieses Risiko ist bewusst vertagt. Persistente Volumes sind **keine** Backups.
 - Die einmalige Betreiber-Ausnahme für die früheren PRs #70–#72 gilt **nicht** automatisch für PR #73.
+
+
+## Nachweis: echte Compose-Vorschau auf GitHub Actions
+
+Der neue Workflow [P1-04 Docker image smoke tests, Run #39902644659](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644659) hat nach dem Image-Build eine **echte Compose-Vorschau mit dem Profil `preview`** auf einem GitHub-gehosteten Runner gestartet und erfolgreich beendet:
+
+- `docker compose --profile preview up --no-build --detach --wait --wait-timeout 120` startete Web und API ausschließlich mit bereits zuvor lokal gebauten Test-Images.
+- Es liefen genau **zwei** Projektcontainer, beide mit Docker-Healthstatus **healthy**. Es gab **keine** veröffentlichten Host-Port-Bindings.
+- Die Netzwerke waren projektspezifisch (`videonews-studio_frontend` für Web und API, `videonews-studio_backend` für API); Datenbank, Redis, Caddy und Worker gehörten **nicht** zur gestarteten Preview.
+- Das Runner-Projekt wurde anschließend durch einen Cleanup-Trap wieder beendet; auf dem VPS erfolgte weiterhin **kein** Start, Build, Netzwerkeingriff oder Prune.
+
+Zusätzlich bestanden [Compose-Sicherheit und Preflight-Unit-Tests #39902644706](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644706) und [PR-Policy #39902644671](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644671).
+
+**Nicht nachgewiesen:** RAM-Verbrauch und Stabilität auf dem bestehenden VPS, dauerhafter Betrieb, Verteilung der getesteten Images, TLS/HTTPS, echte Datenbank- und Queue-Anbindung sowie öffentliche Zugriffskontrolle. Ein grüner CI-Lauf ersetzt keine neue Betreiberfreigabe für ein VPS-Deployment.
