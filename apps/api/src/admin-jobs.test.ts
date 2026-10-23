@@ -74,7 +74,10 @@ function submit(
 }
 
 test("admin research job schema requires a narrow payload and strong idempotency key", () => {
-  assert.deepEqual(parseResearchJobRequest({ kind: "research", idempotencyKey: KEY, topic: TOPIC }), { idempotencyKey: KEY, topic: TOPIC });
+  assert.deepEqual(
+    parseResearchJobRequest({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+    { idempotencyKey: KEY, topic: TOPIC },
+  );
   for (const body of [
     null,
     [],
@@ -142,8 +145,13 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
   };
   await withServer(undefined, auth, async (base, cookie) => {
     assert.equal(
-      (await submit(base, cookie, JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC })))
-        .status,
+      (
+        await submit(
+          base,
+          cookie,
+          JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: TOPIC }),
+        )
+      ).status,
       404,
     );
   });
@@ -156,7 +164,13 @@ test("admin mutation rejects anonymous sessions, CSRF, unsafe inputs and disable
     assert.equal((await submit(base, cookie, "{broken")).status, 400);
     assert.equal((await submit(base, cookie, "x".repeat(1100))).status, 400);
     assert.equal(
-      (await submit(base, cookie, JSON.stringify({ kind: "upload", idempotencyKey: KEY, topic: TOPIC }))).status,
+      (
+        await submit(
+          base,
+          cookie,
+          JSON.stringify({ kind: "upload", idempotencyKey: KEY, topic: TOPIC }),
+        )
+      ).status,
       400,
     );
     assert.equal(
