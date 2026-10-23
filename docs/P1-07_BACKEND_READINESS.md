@@ -29,7 +29,7 @@ python3 -m unittest discover -s scripts -p 'test_p1_07_readiness.py'
 docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
 ```
 
-This guard checks only the *existing offline topology*. A PASS does **not** certify production Redis security, BullMQ functionality, PostgreSQL durability or VPS deployment readiness.
+This guard checks only the _existing offline topology_. A PASS does **not** certify production Redis security, BullMQ functionality, PostgreSQL durability or VPS deployment readiness.
 
 ## VPS rollback constraints
 
