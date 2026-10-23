@@ -239,6 +239,7 @@ test("database failures and incompatible idempotency reuse are sanitized", async
       JSON.stringify({
         kind: "research",
         idempotencyKey: "ci_research_job_idempotency_002",
+        topic: TOPIC,
       }),
     );
     assert.equal(unavailable.status, 503);
