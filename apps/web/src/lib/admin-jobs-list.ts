@@ -20,7 +20,10 @@ export function isResearchJobOverview(value: unknown): value is ResearchJobOverv
     (job.topic === null ||
       (typeof job.topic === "string" &&
         job.topic === job.topic.trim() &&
-        !/[\u0000-\u001f\u007f]/.test(job.topic) &&
+        !job.topic.split("").some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) &&
         Array.from(job.topic).length >= 12 &&
         Array.from(job.topic).length <= 160)) &&
     typeof job.status === "string" &&
