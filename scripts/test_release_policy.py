@@ -28,10 +28,17 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn('"$EXPECTED_SHA" != "$GITHUB_SHA"', self.data)
         self.assertIn("refs/heads/main", self.data)
 
-    def test_public_package_check_is_fail_closed(self):
-        self.assertIn("api.github.com/users/whiteyOnTheMoon/packages/container/$package", self.data)
-        self.assertIn('200) echo "BLOCKED: already-public GHCR package', self.data)
-        self.assertIn('*) echo "BLOCKED: cannot verify package visibility', self.data)
+    def test_authenticated_public_package_check_is_fail_closed(self):
+        check = (WORKFLOW.parent.parent.parent / "scripts" / "check_ghcr_visibility.sh").read_text(encoding="utf-8")
+        self.assertIn("bash scripts/check_ghcr_visibility.sh", self.data)
+        self.assertIn("GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}", self.data)
+        self.assertIn("Authorization: Bearer ${GHCR_TOKEN}", check)
+        self.assertIn("api.github.com/users/whiteyOnTheMoon/packages/container/", check)
+        for code in ("200)", "404)", "*)"):
+            self.assertIn(code, check)
+        self.assertIn("exit 1", check)
+        self.assertNotIn("docker push", check)
+        self.assertNotIn("docker login", check)
 
     def test_immutable_tags_and_minimal_credential_access(self):
         self.assertIn('version="sha-$GITHUB_SHA"', self.data)

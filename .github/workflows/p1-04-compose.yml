@@ -14,11 +14,13 @@ on:
       - scripts/preflight_vps.py
       - scripts/test_preflight_vps.py
       - scripts/test_release_policy.py
+      - scripts/check_ghcr_visibility.sh
       - docs/INTERNAL_PREVIEW.md
       - .gitignore
       - .github/workflows/p1-04-compose.yml
 permissions:
   contents: read
+  packages: read
 jobs:
   compose-validate:
     runs-on: ubuntu-latest
@@ -31,6 +33,10 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_preflight_vps.py'
       - name: Check manual GHCR workflow safety gates (no uploads)
         run: python3 -m unittest discover -s scripts -p 'test_release_policy.py'
+      - name: Read-only authenticated GHCR check (no upload)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/check_ghcr_visibility.sh
       - name: Ensure Git ignores local credentials
         run: |
           git check-ignore -q secrets/postgres_password
