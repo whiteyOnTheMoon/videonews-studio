@@ -4,15 +4,15 @@
 
 ## Aktuelle Ausgangslage (vom Betreiber gemessen)
 
-| Merkmal | Wert |
-| --- | --- |
-| Laufende Container | 37 |
-| Arbeitsspeicher | 7,8 GiB gesamt; 2,9 GiB verfügbar |
-| Swap | 2,0 GiB gesamt; 1,4 GiB bereits belegt |
-| Root-Dateisystem | 116 GB gesamt; 24 GB frei, 80 % belegt |
-| Docker-Images | 371; Docker meldet 31,46 GB als freigebbar |
-| Build-Cache | 1195 Einträge; Docker meldet 17,11 GB als freigebbar |
-| Projektordner | vorhanden, zum Messzeitpunkt leer |
+| Merkmal            | Wert                                                 |
+| ------------------ | ---------------------------------------------------- |
+| Laufende Container | 37                                                   |
+| Arbeitsspeicher    | 7,8 GiB gesamt; 2,9 GiB verfügbar                    |
+| Swap               | 2,0 GiB gesamt; 1,4 GiB bereits belegt               |
+| Root-Dateisystem   | 116 GB gesamt; 24 GB frei, 80 % belegt               |
+| Docker-Images      | 371; Docker meldet 31,46 GB als freigebbar           |
+| Build-Cache        | 1195 Einträge; Docker meldet 17,11 GB als freigebbar |
+| Projektordner      | vorhanden, zum Messzeitpunkt leer                    |
 
 Die Docker-Freigabewerte sind **nicht additiv**. Ein `docker system prune`, `docker builder prune` oder Löschen fremder Images/Volumes ist untersagt, solange dafür keine gesonderte ausdrückliche Entscheidung getroffen wurde.
 
@@ -24,7 +24,7 @@ Cloudflared von Kurvenfunk ist an seinen jeweiligen Dev-/Staging-/Prod-Netzen an
 2. **Keine Daten- oder Medienverarbeitung:** `postgres` und `redis` bleiben im Profil `data` deaktiviert. `worker` ist unter `worker` opt-in und beendet sich derzeit erwartungsgemäß sofort. Nicht als Dauerworker starten.
 3. **Ingress abgeschaltet:** `caddy` ist intern nur HTTP auf 8080. Das ist **kein öffentliches HTTPS**, und die P1-04-Anforderung „HTTPS“ ist noch nicht erfüllt.
 4. **Keine Admin-Sitzung:** Die Web-App ist aktuell ein Placeholder ohne Anmeldeschutz. Die spätere Admin-Authentifizierung (P1-06) ist vor jeder öffentlichen Freischaltung verpflichtend.
-5. **TLS-Entscheidung nach P1-06:** Vorzugsweise einen *separaten* VideoNews-Studio-Tunnel beziehungsweise isolierten Ingress prüfen, ohne bestehende Cloudflare-Konfiguration oder andere Compose-Netze zu verändern. Ob Cloudflare TLS am Edge terminiert und HTTP über einen geschützten internen Pfad genutzt wird oder TLS bis zum Origin erforderlich ist, muss vorher explizit entschieden und getestet werden. Noch **keine Domain, Tunnel-Route, Zertifikatsverwaltung oder DNS-Änderung** beschließen.
+5. **TLS-Entscheidung nach P1-06:** Vorzugsweise einen _separaten_ VideoNews-Studio-Tunnel beziehungsweise isolierten Ingress prüfen, ohne bestehende Cloudflare-Konfiguration oder andere Compose-Netze zu verändern. Ob Cloudflare TLS am Edge terminiert und HTTP über einen geschützten internen Pfad genutzt wird oder TLS bis zum Origin erforderlich ist, muss vorher explizit entschieden und getestet werden. Noch **keine Domain, Tunnel-Route, Zertifikatsverwaltung oder DNS-Änderung** beschließen.
 
 ## Freigabestufen
 
@@ -38,7 +38,7 @@ Cloudflared von Kurvenfunk ist an seinen jeweiligen Dev-/Staging-/Prod-Netzen an
 ### Stufe B – VPS-Prüfung ohne Änderung (nächster möglicher Schritt)
 
 - [ ] Code in getrenntes, bisher leeres Zielverzeichnis übernehmen **erst nach Entscheidung, wie Branch und Image-Artefakte freigegeben werden**.
-- [ ] Das rein lesende Werkzeug `python3 scripts/preflight_vps.py --mode preview --path /home/ap/www/videonews-studio` aus einem *vertrauenswürdig geprüften Checkout* ausführen. Es startet nichts und prüft freien RAM/Platz, Swap und Compose-Projektnamenskollision.
+- [ ] Das rein lesende Werkzeug `python3 scripts/preflight_vps.py --mode preview --path /home/ap/www/videonews-studio` aus einem _vertrauenswürdig geprüften Checkout_ ausführen. Es startet nichts und prüft freien RAM/Platz, Swap und Compose-Projektnamenskollision.
 - [ ] Betriebsüberwachung vorbereiten: `docker stats --no-stream`, `free -h`, `df -h`, `docker system df`, bestehende Dienstgesundheit. Nur lesen; keine Cleanup-Befehle.
 - [ ] Falls ein Kriterium fehlschlägt: **kein Build/Start**; Optionen (kleineres Image, mehr Freiraum, anderer Build-Host) separat besprechen, nicht automatisch eingreifen.
 
@@ -61,7 +61,6 @@ Erst nach P1-06 (Authentifizierung), P1-07 (Queue/Sicherheitsprüfung), HTTPS-/I
 - Der Hoster hat keine laufenden automatisierten Backups; dieses Risiko ist bewusst vertagt. Persistente Volumes sind **keine** Backups.
 - Die einmalige Betreiber-Ausnahme für die früheren PRs #70–#72 gilt **nicht** automatisch für PR #73.
 
-
 ## Nachweis: echte Compose-Vorschau auf GitHub Actions
 
 Der neue Workflow [P1-04 Docker image smoke tests, Run #39902644659](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644659) hat nach dem Image-Build eine **echte Compose-Vorschau mit dem Profil `preview`** auf einem GitHub-gehosteten Runner gestartet und erfolgreich beendet:
@@ -74,7 +73,6 @@ Der neue Workflow [P1-04 Docker image smoke tests, Run #39902644659](https://git
 Zusätzlich bestanden [Compose-Sicherheit und Preflight-Unit-Tests #39902644706](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644706) und [PR-Policy #39902644671](https://github.com/whiteyOnTheMoon/videonews-studio/actions/runs/39902644671).
 
 **Nicht nachgewiesen:** RAM-Verbrauch und Stabilität auf dem bestehenden VPS, dauerhafter Betrieb, Verteilung der getesteten Images, TLS/HTTPS, echte Datenbank- und Queue-Anbindung sowie öffentliche Zugriffskontrolle. Ein grüner CI-Lauf ersetzt keine neue Betreiberfreigabe für ein VPS-Deployment.
-
 
 ## Image-Distribution ohne lokalen VPS-Build
 

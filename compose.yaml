@@ -34,7 +34,13 @@ services:
       - /tmp:rw,nosuid,noexec,size=32m
       - /workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 20s
       timeout: 8s
       retries: 3
@@ -57,7 +63,13 @@ services:
     cpus: 0.35
     networks: [frontend, backend]
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 20s
       timeout: 6s
       retries: 3
@@ -115,7 +127,18 @@ services:
     image: redis:7-alpine
     init: true
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction", "--protected-mode", "yes"]
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory",
+        "96mb",
+        "--maxmemory-policy",
+        "noeviction",
+        "--protected-mode",
+        "yes",
+      ]
     volumes:
       - redis_data:/data
     networks: [backend]
