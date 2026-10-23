@@ -38,10 +38,12 @@ BEGIN
     VALUES (story_id, 1, 'Fixture script text', 'approved')
     RETURNING id INTO script_id;
 
-  INSERT INTO vns.jobs (story_id, kind, status, idempotency_key,
-                        attempt_count, max_attempts)
-    VALUES (story_id, 'render', 'retry', 'ci-restore-job', 1, 3)
-    RETURNING id INTO job_id;
+  job_id := vns.create_job_with_outbox('render', 'ci-restore-job', story_id, 3);
+  UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = job_id;
+  UPDATE vns.job_outbox
+    SET delivery_state = 'enqueued', dispatch_attempts = 1,
+        enqueued_at = now(), last_attempt_at = now()
+    WHERE job_id = job_id;
 
   INSERT INTO vns.videos (script_id, render_job_id, storage_key, duration_ms, status)
     VALUES (script_id, job_id, 'ci/restore-video', 42000, 'rendered')
