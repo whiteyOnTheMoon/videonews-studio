@@ -1,0 +1,29 @@
+name: P1-04 Compose security
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - compose.yaml
+      - Dockerfile
+      - .dockerignore
+      - deploy/**
+      - scripts/check_compose.py
+      - scripts/test_check_compose.py
+      - .github/workflows/p1-04-compose.yml
+permissions:
+  contents: read
+jobs:
+  compose-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline Compose policy tests
+        run: python3 -m unittest discover -s scripts -p 'test_check_compose.py'
+      - name: Validate every Compose profile (no containers started)
+        run: |
+          mkdir -p secrets
+          printf 'ci-only-dummy-password-not-for-deployment\n' > secrets/postgres_password
+          chmod 600 secrets/postgres_password
+          docker compose --profile preview --profile data --profile worker --profile ingress config --quiet
+          docker compose --profile preview --profile data --profile worker --profile ingress config --format json | python3 scripts/check_compose.py
