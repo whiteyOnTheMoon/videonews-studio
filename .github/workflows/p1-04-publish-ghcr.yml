@@ -37,7 +37,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Fail-closed release approval, SHA and public-package checks
+      - name: Fail-closed release SHA and manual package-visibility approval
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           VISIBILITY_CHECK: ${{ inputs.visibility_check }}
@@ -53,20 +53,11 @@ jobs:
             echo "BLOCKED: operator must verify that target packages are not public" >&2
             exit 1
           fi
-          # GitHub's public REST endpoint lists publicly visible packages.
-          # An already-public package name must never receive a VNS release.
-          # 404 may mean absent OR private; the operator also checks Package settings.
-          for package in videonews-studio-web videonews-studio-api; do
-            status="$(curl --silent --show-error --location --output /dev/null \
-              --write-out '%{http_code}' --max-time 15 \
-              -H 'Accept: application/vnd.github+json' \
-              "https://api.github.com/users/whiteyOnTheMoon/packages/container/$package")"
-            case "$status" in
-              404) echo "No public package found under $package; operator visibility check still required" ;;
-              200) echo "BLOCKED: already-public GHCR package $package" >&2; exit 1 ;;
-              *) echo "BLOCKED: cannot verify package visibility (HTTP $status)" >&2; exit 1 ;;
-            esac
-          done
+          echo 'Manual package-visibility confirmation passed'
+      - name: Verify package visibility with authenticated GitHub token (read only)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/check_ghcr_visibility.sh
       - name: Build only web and API with commit-specific tags
         run: |
           set -euo pipefail
