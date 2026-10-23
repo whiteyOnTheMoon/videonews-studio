@@ -1,0 +1,50 @@
+name: P1-07 BullMQ worker integration (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/**"
+      - "deploy/compose.worker.yaml"
+      - "Dockerfile"
+      - "package-lock.json"
+      - "db/scripts/test_worker_queue.sh"
+      - "scripts/test_worker_integration.mjs"
+      - "scripts/provision_redis_secrets.py"
+      - ".github/workflows/p1-07-worker.yml"
+permissions:
+  contents: read
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Ensure package-lock reflects changed production dependencies
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          echo '===VNS_LOCK_START==='
+          git diff --no-color -- package-lock.json
+          echo '===VNS_LOCK_END==='
+          git diff --exit-code -- package-lock.json
+      - name: Install dependencies from pinned lock
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify formatting and emit reviewable patch if needed
+        run: |
+          npx prettier --write .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
+          echo '===VNS_FORMAT_START==='
+          git diff --no-color -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
+          echo '===VNS_FORMAT_END==='
+          git diff --exit-code -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs
+      - name: Build and test compiled source
+        run: |
+          npm run build
+          npm test
+      - name: Run BullMQ probe integration against temporary authenticated Redis
+        run: bash db/scripts/test_worker_queue.sh
+      - name: Verify worker production-image build
+        run: docker build --pull=false --target worker -t vns-p1-07-worker-ci .

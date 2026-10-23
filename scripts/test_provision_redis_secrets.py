@@ -21,7 +21,7 @@ class SecretTests(unittest.TestCase):
             self.assertRegex(acl, r"(?m)^user default off$")
             self.assertRegex(acl, r"(?m)^user vns_worker on #")
             self.assertIn("~bull:vns:*", acl)
-            self.assertIn("-@admin -@dangerous", acl)
+            self.assertIn("-@admin -@dangerous +info", acl)
             self.assertEqual(stat.S_IMODE(folder.stat().st_mode), 0o700)
             self.assertEqual(stat.S_IMODE((folder / "redis_password").stat().st_mode), 0o600)
             self.assertEqual(stat.S_IMODE((folder / "redis_acl").stat().st_mode), 0o644)

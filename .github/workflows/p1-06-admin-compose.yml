@@ -3,8 +3,8 @@ name: P1-06 Admin Compose overlay
 on:
   pull_request:
     paths:
-      - 'deploy/compose.admin.yaml'
-      - '.github/workflows/p1-06-admin-compose.yml'
+      - "deploy/compose.admin.yaml"
+      - ".github/workflows/p1-06-admin-compose.yml"
   workflow_dispatch:
 
 permissions:

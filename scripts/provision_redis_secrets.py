@@ -24,7 +24,7 @@ def provision(directory: Path) -> None:
     digest = sha256(password.encode("ascii")).hexdigest()
     acl = (
         "user default off\n"
-        f"user vns_worker on #{digest} ~bull:vns:* +@all -@admin -@dangerous\n"
+        f"user vns_worker on #{digest} ~bull:vns:* +@all -@admin -@dangerous +info\n"
     )
     created = []
     try:

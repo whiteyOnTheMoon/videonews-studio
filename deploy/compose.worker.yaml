@@ -1,0 +1,17 @@
+# P1-07: explicit opt-in worker. Supply hashed Redis ACL and worker password first.
+# No public ports and no application side effects. Requires --profile data --profile worker.
+services:
+  worker:
+    restart: unless-stopped
+    environment:
+      VNS_WORKER_ENABLED: "true"
+      VNS_REDIS_HOST: redis
+      VNS_REDIS_PORT: "6379"
+      VNS_REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    secrets: [redis_password]
+    depends_on:
+      redis:
+        condition: service_healthy
+secrets:
+  redis_password:
+    file: ./secrets/redis_password

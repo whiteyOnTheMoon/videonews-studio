@@ -70,7 +70,12 @@ jobs:
               exit 1
             fi
           done
-          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 768m --memory-swap 768m --cpus 1.0 -e MAX_RENDER_CONCURRENCY=1 --tmpfs /tmp:rw,nosuid,noexec,size=32m vns-ci-worker:check
+          # P1-07: worker MUST fail closed without explicit enable flag/Redis secret.
+          if docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 768m --memory-swap 768m --cpus 1.0 -e MAX_RENDER_CONCURRENCY=1 --tmpfs /tmp:rw,nosuid,noexec,size=32m vns-ci-worker:check; then
+            echo "Worker incorrectly started without authenticated Redis secret" >&2
+            exit 1
+          fi
+          echo "Worker refused unauthenticated startup as required"
           echo "Image builds and internal smoke checks passed"
       - name: Run opt-in Compose preview with private networks only
         run: |

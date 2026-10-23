@@ -32,5 +32,5 @@ jobs:
           docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
       - name: Run disposable Redis authentication and ACL isolation tests
         env:
-          CI: 'true'
+          CI: "true"
         run: bash db/scripts/test_redis_acl.sh
