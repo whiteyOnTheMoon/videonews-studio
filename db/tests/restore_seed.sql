@@ -39,6 +39,7 @@ BEGIN
     RETURNING id INTO script_id;
 
   created_job_id := vns.create_job_with_outbox('render', 'ci-restore-job', story_id, 3);
+  PERFORM vns.create_research_request('ci-restore-research-topic', 'Historical public transit infrastructure funding');
   UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = created_job_id;
   UPDATE vns.job_outbox AS ob
     SET delivery_state = 'enqueued', dispatch_attempts = 1,
