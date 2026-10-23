@@ -72,3 +72,86 @@ p {
   outline: 3px solid #fff;
   outline-offset: 2px;
 }
+
+/* P1-07 internal job dashboard: accessible, responsive, no production-control UI. */
+.jobs-section {
+  margin-top: 3rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid #42587a;
+}
+.jobs-section h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.6rem;
+}
+.jobs-section h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.jobs-section .notice {
+  margin-top: 1.4rem;
+  line-height: 1.65;
+}
+.jobs-form {
+  margin: 1.5rem 0 2rem;
+}
+.jobs-field-label {
+  font-weight: 700;
+}
+.jobs-hint {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.jobs-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.jobs-refresh {
+  padding: 0.65rem 1rem;
+  background: #233957;
+  color: #f5f7fb;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.jobs-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.jobs-refresh:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+.jobs-list {
+  margin: 1rem 0 2rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.85rem;
+}
+.jobs-entry {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid #42587a;
+  border-radius: 10px;
+  background: #111b2c;
+}
+.jobs-entry-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.jobs-entry time,
+.jobs-entry > span {
+  color: #c3cedf;
+}
+.jobs-entry code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
