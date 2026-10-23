@@ -143,8 +143,12 @@ export class AdminAuth {
     return session;
   }
 
-  private originAllowed(request: IncomingMessage): boolean {
+  originAllowed(request: IncomingMessage): boolean {
     return request.headers.origin === this.origin;
+  }
+
+  hasAdminSession(request: IncomingMessage): boolean {
+    return this.currentSession(request)?.role === "admin";
   }
 
   async handle(request: IncomingMessage, response: ServerResponse): Promise<boolean> {

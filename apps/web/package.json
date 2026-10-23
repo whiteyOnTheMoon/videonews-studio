@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/lib/admin-proxy.test.ts"
+    "test": "tsx --test src/lib/admin-proxy.test.ts src/lib/admin-jobs-proxy.test.ts"
   },
   "dependencies": {
     "@vns/shared": "*",
