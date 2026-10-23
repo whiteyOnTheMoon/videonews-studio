@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Never run on VPS; integration tests are GitHub Actions only.
+set -Eeuo pipefail
+if [[ "${GITHUB_ACTIONS:-}" != true || "${CI:-}" != true ]]; then
+  echo "REFUSED: GitHub Actions runner only" >&2
+  exit 1
+fi
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+name="vns-p1-05-test-${GITHUB_RUN_ID:?}"
+trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+docker run --rm --detach --name "$name" \
+  --network none --memory 512m --memory-swap 512m --cpus 1 --pids-limit 128 \
+  --tmpfs /var/lib/postgresql/data:rw,nosuid,size=256m \
+  --env POSTGRES_DB=vns_schema_test \
+  --env POSTGRES_PASSWORD=ci-only-not-real \
+  postgres:17-alpine >/dev/null
+
+ready=0
+for attempt in $(seq 1 45); do
+  if docker exec "$name" pg_isready -q -U postgres -d vns_schema_test; then
+    ready=1
+    break
+  fi
+  sleep 1
+done
+test "$ready" -eq 1 || { echo "Postgres not ready"; exit 1; }
+
+sql() {
+  docker exec -i "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d vns_schema_test
+}
+for iteration in 1 2; do
+  echo "Migration cycle $iteration"
+  sql < "$root/db/migrations/0001_editorial_core.up.sql"
+  sql < "$root/db/tests/0001_editorial_core.test.sql"
+  sql < "$root/db/migrations/0001_editorial_core.down.sql"
+  left="$(docker exec "$name" psql -X -A -t -v ON_ERROR_STOP=1 \
+    -U postgres -d vns_schema_test \
+    -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
+  test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
+done
+echo "PASS: reversible migration and model constraints twice"
