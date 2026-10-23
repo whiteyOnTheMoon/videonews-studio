@@ -127,9 +127,19 @@ try {
     body: requestBody,
   });
   assert.equal(wrongOrigin.status, 403);
-  const wrongKind = await send(cookie, JSON.stringify({ kind: "render", idempotencyKey: KEY, topic: TOPIC }));
+  const wrongKind = await send(
+    cookie,
+    JSON.stringify({ kind: "render", idempotencyKey: KEY, topic: TOPIC }),
+  );
   assert.equal(wrongKind.status, 400);
-  const changedTopic = await send(cookie, JSON.stringify({ kind: "research", idempotencyKey: KEY, topic: "A different city transit research investigation" }));
+  const changedTopic = await send(
+    cookie,
+    JSON.stringify({
+      kind: "research",
+      idempotencyKey: KEY,
+      topic: "A different city transit research investigation",
+    }),
+  );
   assert.equal(changedTopic.status, 409);
   const stillOne = await pool.query("SELECT count(*)::int AS count FROM vns.research_requests");
   assert.equal(stillOne.rows[0].count, 1);
