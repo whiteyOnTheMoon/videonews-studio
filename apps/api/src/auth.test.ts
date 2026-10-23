@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { scryptSync } from "node:crypto";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { once } from "node:events";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -197,4 +200,28 @@ test("file-backed secret configuration rejects ambiguous, unsafe or missing sour
     }),
     undefined,
   );
+});
+
+test("valid file-backed secret authenticates with a temporary test file", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "vns-secret-test-"));
+  const file = join(dir, "admin_hash");
+  try {
+    writeFileSync(file, HASH + "\n", { mode: 0o400 });
+    const auth = adminAuthFromEnv({
+      VNS_ADMIN_AUTH_ENABLED: "true",
+      VNS_ADMIN_ORIGIN: ORIGIN,
+      VNS_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/admin_hash",
+    }, (requestedPath) => {
+      assert.equal(requestedPath, "/run/secrets/admin_hash");
+      return readFileSync(file, "utf8");
+    });
+    assert.ok(auth);
+    await withServer(createApiServer({ auth }), async (base) => {
+      const response = await login(base, PASSWORD);
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { authenticated: true, role: "admin" });
+    });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
