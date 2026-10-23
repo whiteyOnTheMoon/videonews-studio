@@ -7,8 +7,17 @@ import type { AdminAuth } from "./auth.js";
 const KEY_PATTERN = /^[a-zA-Z0-9_-]{24,80}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+export interface ResearchJobSummary {
+  id: string;
+  kind: "research";
+  status: "pending" | "running" | "retry" | "done" | "failed" | "cancelled";
+  deliveryState: "pending" | "enqueued";
+  createdAt: string;
+}
+
 export interface ResearchJobStore {
   createResearchJob(key: string): Promise<string>;
+  listRecentResearchJobs(): Promise<ResearchJobSummary[]>;
   close?(): Promise<void>;
 }
 
@@ -24,6 +33,20 @@ export function parseResearchJobRequest(value: unknown): string | null {
     return null;
   }
   return body.idempotencyKey;
+}
+
+export function validJobSummary(value: unknown): value is ResearchJobSummary {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  return Object.keys(row).length === 5 &&
+    typeof row.id === "string" && UUID_PATTERN.test(row.id) &&
+    row.kind === "research" &&
+    typeof row.status === "string" &&
+    ["pending", "running", "retry", "done", "failed", "cancelled"].includes(row.status) &&
+    (row.deliveryState === "pending" || row.deliveryState === "enqueued") &&
+    typeof row.createdAt === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(row.createdAt) &&
+    !Number.isNaN(Date.parse(row.createdAt));
 }
 
 async function limitedJson(request: IncomingMessage): Promise<unknown> {
@@ -59,6 +82,18 @@ export class AdminJobs {
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     if (!this.auth.hasAdminSession(request)) {
       respond(response, 401, { error: "unauthorized" });
+      return;
+    }
+    if (request.method === "GET") {
+      try {
+        const jobs = await this.store.listRecentResearchJobs();
+        if (jobs.length > 20 || !jobs.every(validJobSummary)) {
+          throw new Error("Invalid research job list");
+        }
+        respond(response, 200, { jobs });
+      } catch {
+        respond(response, 503, { error: "temporarily_unavailable" });
+      }
       return;
     }
     if (request.method !== "POST") {
@@ -111,6 +146,31 @@ class PostgresResearchJobStore implements ResearchJobStore {
     const value = result.rows[0]?.id;
     if (typeof value !== "string") throw new Error("Database did not return a job identifier");
     return value;
+  }
+
+  async listRecentResearchJobs(): Promise<ResearchJobSummary[]> {
+    const result = await this.pool.query<{
+      id: string;
+      kind: "research";
+      status: ResearchJobSummary["status"];
+      deliveryState: ResearchJobSummary["deliveryState"];
+      createdAt: Date;
+    }>(`
+      SELECT j.id::text AS id, j.kind, j.status,
+             ob.delivery_state AS "deliveryState", j.created_at AS "createdAt"
+      FROM vns.jobs j
+      JOIN vns.job_outbox ob ON ob.job_id = j.id
+      WHERE j.kind = 'research'
+      ORDER BY j.created_at DESC, j.id DESC
+      LIMIT 20
+    `);
+    return result.rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      status: row.status,
+      deliveryState: row.deliveryState,
+      createdAt: row.createdAt.toISOString(),
+    }));
   }
 
   async close(): Promise<void> {
