@@ -236,7 +236,10 @@ export class AdminAuth {
   }
 }
 
-function adminPasswordHashFromEnv(env: NodeJS.ProcessEnv): string | null {
+function adminPasswordHashFromEnv(
+  env: NodeJS.ProcessEnv,
+  readSecret: (path: string) => string,
+): string | null {
   const path = env.VNS_ADMIN_PASSWORD_HASH_FILE;
   // Prevent accidentally weakening the deployment by configuring competing sources.
   if (path && env.VNS_ADMIN_PASSWORD_HASH) {
@@ -247,7 +250,7 @@ function adminPasswordHashFromEnv(env: NodeJS.ProcessEnv): string | null {
       throw new Error("Admin hash file must be within /run/secrets");
     }
     try {
-      const value = readFileSync(path, { encoding: "utf8", flag: "r" });
+      const value = readSecret(path);
       if (value.length > 256) throw new Error("Admin hash file is invalid");
       return value.trimEnd();
     } catch {
@@ -258,14 +261,17 @@ function adminPasswordHashFromEnv(env: NodeJS.ProcessEnv): string | null {
   return env.VNS_ADMIN_PASSWORD_HASH ?? null;
 }
 
-export function adminAuthFromEnv(env: NodeJS.ProcessEnv): AdminAuth | undefined {
+export function adminAuthFromEnv(
+  env: NodeJS.ProcessEnv,
+  readSecret: (path: string) => string = (path) => readFileSync(path, "utf8"),
+): AdminAuth | undefined {
   if (env.VNS_ADMIN_AUTH_ENABLED === undefined || env.VNS_ADMIN_AUTH_ENABLED === "false") {
     return undefined;
   }
   if (env.VNS_ADMIN_AUTH_ENABLED !== "true") {
     throw new Error("Invalid admin auth enabled flag");
   }
-  const passwordHash = adminPasswordHashFromEnv(env);
+  const passwordHash = adminPasswordHashFromEnv(env, readSecret);
   if (!passwordHash || !env.VNS_ADMIN_ORIGIN) {
     throw new Error("Admin auth configuration is incomplete");
   }
