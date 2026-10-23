@@ -22,6 +22,6 @@ Die Datei `deploy/compose.admin.yaml` wird nur wirksam, wenn der Betreiber sie a
 6. Danach Cloudflare Access und zusätzlich den Anwendungs-Login testen: unautorisierter Adminzugriff, korrekte Cookies, CSRF, Ratenbegrenzung, Logout und Neustartverhalten.
 7. Rollback: vorherige Image-Digests und Compose-Dateiauswahl wiederherstellen; keine fremden Container oder Netzwerke verändern.
 
-**Hinweis:** Der Secret-Pfad in der Compose-Datei ist relativ zum Verzeichnis der *ersten* Compose-Datei. Mit der Projektdatei `compose.yaml` im Repository-Stamm zeigt er deshalb auf `./secrets/admin_password_hash`. Der Passwort-Hash ist ein Zugangsschlüssel und sollte trotz Hashing geheim gehalten werden.
+**Hinweis:** Der Secret-Pfad in der Compose-Datei ist relativ zum Verzeichnis der _ersten_ Compose-Datei. Mit der Projektdatei `compose.yaml` im Repository-Stamm zeigt er deshalb auf `./secrets/admin_password_hash`. Der Passwort-Hash ist ein Zugangsschlüssel und sollte trotz Hashing geheim gehalten werden.
 
 Diese Integration prüft nur die Konfiguration. Sie ist keine Freigabe, auf dem VPS Secrets zu erzeugen oder Admin-Zugang öffentlich zu aktivieren.
