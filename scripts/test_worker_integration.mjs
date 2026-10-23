@@ -30,13 +30,17 @@ worker.on("error", () => {
 try {
   await events.waitUntilReady();
   await worker.waitUntilReady();
-  const job = await queue.add("probe", { kind: "probe" }, {
-    jobId: "p107probe",
-    attempts: 2,
-    backoff: { type: "fixed", delay: 500 },
-    removeOnComplete: true,
-    removeOnFail: false,
-  });
+  const job = await queue.add(
+    "probe",
+    { kind: "probe" },
+    {
+      jobId: "p107probe",
+      attempts: 2,
+      backoff: { type: "fixed", delay: 500 },
+      removeOnComplete: true,
+      removeOnFail: false,
+    },
+  );
   const result = await job.waitUntilFinished(events, 15000);
   assert.deepEqual(result, { ok: true });
   assert.equal(worker.opts.concurrency, 1);
