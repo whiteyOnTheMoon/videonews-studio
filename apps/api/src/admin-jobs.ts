@@ -6,10 +6,14 @@ import type { AdminAuth } from "./auth.js";
 
 const KEY_PATTERN = /^[a-zA-Z0-9_-]{24,80}$/;
 export function validResearchTopic(value: unknown): value is string {
-  if (typeof value !== "string" || value !== value.trim() || value.split("").some((character) => {
-        const code = character.charCodeAt(0);
-        return code < 32 || code === 127;
-      }))
+  if (
+    typeof value !== "string" ||
+    value !== value.trim() ||
+    value.split("").some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  )
     return false;
   const length = Array.from(value).length;
   return length >= 12 && length <= 160;
