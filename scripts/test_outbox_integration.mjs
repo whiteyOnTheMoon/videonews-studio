@@ -37,10 +37,7 @@ const redis = new Redis({
 const queue = new Queue(QUEUE_NAME, { connection: redis, prefix: QUEUE_PREFIX });
 
 async function create(kind, key) {
-  const { rows } = await pool.query(
-    "SELECT vns.create_job_with_outbox($1, $2) AS id",
-    [kind, key],
-  );
+  const { rows } = await pool.query("SELECT vns.create_job_with_outbox($1, $2) AS id", [kind, key]);
   return rows[0].id;
 }
 async function outbox(id) {
@@ -93,10 +90,14 @@ try {
 
   // Fail closed instead of accepting a Redis job ID with mismatched content.
   const third = await create("render", "ci-outbox-3");
-  await queue.add("probe", { kind: "probe", jobId: third }, {
-    jobId: bullId(third),
-    removeOnComplete: false,
-  });
+  await queue.add(
+    "probe",
+    { kind: "probe", jobId: third },
+    {
+      jobId: bullId(third),
+      removeOnComplete: false,
+    },
+  );
   await assert.rejects(dispatchOutboxBatch(pool, queue), /safe to retry/);
   assert.equal((await outbox(third)).delivery_state, "pending");
   await (await queue.getJob(bullId(third))).remove();
