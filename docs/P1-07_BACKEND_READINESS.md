@@ -69,3 +69,23 @@ The disposable GitHub Actions suite runs against PostgreSQL 17 and ACL-protected
 The independently opt-in `apps/worker/src/status-sync.ts` polls retained BullMQ jobs and updates nonterminal PostgreSQL `vns.jobs` records under row locks. It maps Redis waiting to pending, active to running, delayed attempts to retry, completed to done, and terminal failed to failed. The attempt counter never decreases; raw stack traces and error details are never persisted (only `bullmq_failed`). Missing Redis jobs or mismatched job identifiers fail closed rather than inventing a success. Terminal PostgreSQL records cannot be overwritten by later queue snapshots. The last-20 authenticated dashboard listing already reads the `vns.jobs` statuses.
 
 Integration tests use **synthetic editorial handlers in CI only**; the production worker still processes **probe only**. The reconciler never performs editorial work or starts automatically. Queue snapshots are eventually consistent, not atomic with PostgreSQL. They do not prove that a published video or external upload is complete, exactly-once side effects, or recovery after simultaneous Redis/PostgreSQL failure. Before activating any persistent infrastructure, apply reviewed least-privilege roles and a tested real backup/restore policy, plus explicit VPS deployment approval.
+
+## Source provenance and manual review (offline)
+
+Migration 0004 introduces `vns.research_evidence`: a citation URL, publisher,
+headline and short claim associated with a specific research request. Its
+initial status is **candidate**, not verified. A transition to `verified`,
+`disputed` or `rejected` requires review metadata (reviewer and timestamp),
+and a reviewed record cannot subsequently have its source or verdict silently
+rewritten. Schema, constraints, evidence provenance and review states are tested
+with disposable PostgreSQL and the restore drill.
+
+`apps/worker/src/source-policy.ts` supplies a **pure, offline** source candidate
+contract. It rejects obviously dangerous or malformed URLs and never verifies
+a fact. These are lexical checks only: they **do not** make a URL safe to fetch.
+Any future fetcher must enforce DNS resolution and IP range checks, redirect
+restrictions, response size limits, timeout budgets, content safety, licensing
+and editorial human review. No external source crawler is enabled; the normal
+worker still processes probe only. A reviewer string in a database record is
+metadata, **not proof of authentication**: production role/authorization gates
+remain outstanding.

@@ -87,3 +87,12 @@ PostgreSQL dump/restore CI now verifies topic persistence.
 execution is enabled by this change.** Any future source connector must
 separately enforce SSRF protections, source provenance, copyright/rights
 constraints and human editorial review before publishing.
+
+## Source references (0004)
+
+Offline migration 0004 adds candidate-only source provenance linked to a
+research topic/job; the separate source-policy module screens metadata without
+network requests. A source is not verified merely because it has an HTTPS URL,
+and no real source fetch, external publication or research worker is active.
+The authoritative reviewer workflow and least-privilege roles must be built
+before any real editorial verification or deployment.
