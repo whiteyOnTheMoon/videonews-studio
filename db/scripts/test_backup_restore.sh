@@ -60,6 +60,7 @@ run_sql() {
 echo "P1-07: initialize source database on isolated tmpfs"
 start_disposable_pg "$source_name" "$source_db"
 run_sql "$source_name" "$source_db" "$root/db/migrations/0001_editorial_core.up.sql"
+run_sql "$source_name" "$source_db" "$root/db/migrations/0002_job_outbox.up.sql"
 run_sql "$source_name" "$source_db" "$root/db/tests/restore_seed.sql"
 run_sql "$source_name" "$source_db" "$root/db/tests/restore_verify.sql"
 
@@ -84,7 +85,7 @@ docker exec -i "$target_name" pg_restore -U postgres -d "$target_db" \
 after="$(sha256sum "$archive" | cut -d ' ' -f 1)"
 test "$before" = "$after"
 run_sql "$target_name" "$target_db" "$root/db/tests/restore_verify.sql"
-echo "PASS: restored data, relationships, schema ledger, triggers and constraints"
+echo "PASS: restored outbox, data, relationships, schema ledger, triggers and constraints"
 
 # Fail-closed: restoring over existing schema must fail, never silently replace it.
 if docker exec -i "$target_name" pg_restore -U postgres -d "$target_db" \
