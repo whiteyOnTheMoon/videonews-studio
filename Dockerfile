@@ -1,4 +1,4 @@
-# Single build with shared dependencies; app targets share the same runtime layers.
+# Reproducible multi-workspace build; production images carry only runtime needs.
 FROM node:22-bookworm-slim AS builder
 WORKDIR /workspace
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -12,21 +12,31 @@ RUN npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
-RUN npm prune --omit=dev --no-audit --no-fund
 
-FROM node:22-bookworm-slim AS runtime
+# Next.js standalone traces Web dependencies, instead of shipping the full workspace.
+FROM node:22-bookworm-slim AS web
 WORKDIR /workspace
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
-COPY --from=builder --chown=node:node /workspace/ /workspace/
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+COPY --from=builder --chown=node:node /workspace/apps/web/.next/standalone/ ./
+COPY --from=builder --chown=node:node /workspace/apps/web/.next/static ./apps/web/.next/static
+USER node
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]
+
+# API/worker are pure compiled JS; neither needs Next.js or dev dependencies.
+FROM node:22-bookworm-slim AS service-runtime
+WORKDIR /workspace
+ENV NODE_ENV=production
+COPY --from=builder --chown=node:node /workspace/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder --chown=node:node /workspace/packages/shared/dist ./packages/shared/dist
+RUN mkdir -p node_modules/@vns && ln -s ../../packages/shared node_modules/@vns/shared
 USER node
 
-FROM runtime AS web
-EXPOSE 3000
-CMD ["node", "node_modules/next/dist/bin/next", "start", "apps/web", "-H", "0.0.0.0", "-p", "3000"]
-
-FROM runtime AS api
+FROM service-runtime AS api
+COPY --from=builder --chown=node:node /workspace/apps/api/dist ./apps/api/dist
 EXPOSE 4000
 CMD ["node", "apps/api/dist/index.js"]
 
-FROM runtime AS worker
+FROM service-runtime AS worker
+COPY --from=builder --chown=node:node /workspace/apps/worker/dist ./apps/worker/dist
 CMD ["node", "apps/worker/dist/index.js"]
