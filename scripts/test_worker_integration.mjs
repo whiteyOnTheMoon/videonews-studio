@@ -22,6 +22,7 @@ const eventConnection = new Redis({ ...settings, maxRetriesPerRequest: null });
 const queue = new Queue(QUEUE_NAME, { connection: producerConnection, prefix: QUEUE_PREFIX });
 const events = new QueueEvents(QUEUE_NAME, { connection: eventConnection, prefix: QUEUE_PREFIX });
 const { worker, connection } = createProbeWorker(settings);
+events.on("error", () => console.error("QueueEvents Redis error"));
 worker.on("error", () => {
   // Do not leak connection configuration or credentials.
   console.error("Worker Redis error");
