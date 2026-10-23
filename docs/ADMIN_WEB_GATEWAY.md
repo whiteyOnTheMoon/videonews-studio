@@ -20,7 +20,7 @@ This remains an **internal security prototype** and is not approved for public o
 
 1. Deploy and test both components together under an HTTPS ingress that is **separately approved**, including Origin validation and proxy behavior; no direct public API exposure, no public plain HTTP.
 2. Arrange secure secret provisioning without putting passwords, salts, session tokens or hashes in Git, chat, JS bundles or logs.
-3. Address the **current API in-memory session/rate-limit** design: web-to-API calls all originate from the web container IP, so the current API's per-IP rate limit becomes *shared across users* and is not a robust per-client distributed limiter. Reevaluate anti-brute-force controls in a reviewed design before production.
+3. Address the **current API in-memory session/rate-limit** design: web-to-API calls all originate from the web container IP, so the current API's per-IP rate limit becomes _shared across users_ and is not a robust per-client distributed limiter. Reevaluate anti-brute-force controls in a reviewed design before production.
 4. Assess persistent sessions, MFA, account recovery, revocation, observability without secrets, and rate limiting at trusted edge; none exists here.
 5. The admin page is a protected **placeholder** and no editorial actions, database mutations, media processing or automatic publication are enabled. Permissions for any future writing API endpoints must be checked on the API server, not merely hidden by a Web UI.
 

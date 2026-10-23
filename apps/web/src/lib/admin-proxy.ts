@@ -8,9 +8,7 @@ export interface AdminProxyConfig {
 const COOKIE_NAME = "__Host-vns_session";
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 
-export function adminProxyConfig(
-  env: Record<string, string | undefined>,
-): AdminProxyConfig | null {
+export function adminProxyConfig(env: Record<string, string | undefined>): AdminProxyConfig | null {
   if (env.VNS_WEB_ADMIN_ENABLED !== "true") return null;
   const origin = env.VNS_ADMIN_ORIGIN;
   const internal = env.VNS_API_INTERNAL_URL;
@@ -58,7 +56,10 @@ export function clientAdminCookie(raw: string | null): string | null {
 export function safeApiSetCookie(raw: string | null, action: "login" | "logout"): string | null {
   // Accept exactly the shape emitted by our API. No arbitrary upstream Set-Cookie passthrough.
   if (!raw) return null;
-  const result = /^__Host-vns_session=([a-f0-9]{64}|); Path=\/; HttpOnly; Secure; SameSite=Strict; Max-Age=(900|0)$/.exec(raw);
+  const result =
+    /^__Host-vns_session=([a-f0-9]{64}|); Path=\/; HttpOnly; Secure; SameSite=Strict; Max-Age=(900|0)$/.exec(
+      raw,
+    );
   if (!result) return null;
   const token = result[1];
   const maxAge = result[2];
@@ -79,7 +80,9 @@ function reply(status: number, body: object, cookie?: string): Response {
 }
 
 async function limitedPassword(request: Request): Promise<string | null> {
-  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+  if (
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+  ) {
     return null;
   }
   const reader = request.body?.getReader();
@@ -146,19 +149,22 @@ export async function adminMutation(
   }
 
   try {
-    const upstream = await fetcher(config.api + (action === "login" ? "/auth/login" : "/auth/logout"), {
-      method: "POST",
-      headers: {
-        Origin: config.origin,
-        ...(action === "login"
-          ? { "Content-Type": "application/json" }
-          : { Cookie: cookie as string }),
+    const upstream = await fetcher(
+      config.api + (action === "login" ? "/auth/login" : "/auth/logout"),
+      {
+        method: "POST",
+        headers: {
+          Origin: config.origin,
+          ...(action === "login"
+            ? { "Content-Type": "application/json" }
+            : { Cookie: cookie as string }),
+        },
+        ...(body ? { body } : {}),
+        cache: "no-store",
+        redirect: "manual",
+        signal: AbortSignal.timeout(5000),
       },
-      ...(body ? { body } : {}),
-      cache: "no-store",
-      redirect: "manual",
-      signal: AbortSignal.timeout(5000),
-    });
+    );
 
     if (upstream.status === 200) {
       const setCookie = safeApiSetCookie(upstream.headers.get("set-cookie"), action);
@@ -197,12 +203,7 @@ export async function isAdminAuthorized(
     });
     if (upstream.status !== 200) return false;
     const data: unknown = await upstream.json();
-    return (
-      typeof data === "object" &&
-      data !== null &&
-      "role" in data &&
-      data.role === "admin"
-    );
+    return typeof data === "object" && data !== null && "role" in data && data.role === "admin";
   } catch {
     return false;
   }

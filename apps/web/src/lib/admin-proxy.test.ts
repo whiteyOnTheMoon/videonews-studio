@@ -12,19 +12,15 @@ const ORIGIN = "https://studio.example.invalid";
 const CONFIG = { origin: ORIGIN, api: "http://api:4000" };
 const TOKEN = "c".repeat(64);
 const COOKIE = "__Host-vns_session=" + TOKEN;
-const COOKIE_SET =
-  COOKIE + "; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=900";
-const COOKIE_CLEAR =
-  "__Host-vns_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0";
+const COOKIE_SET = COOKIE + "; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=900";
+const COOKIE_CLEAR = "__Host-vns_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0";
 
 function request(action: "login" | "logout", origin = ORIGIN, password = "password") {
   return new Request(ORIGIN + "/api/admin/" + action, {
     method: "POST",
     headers: {
       Origin: origin,
-      ...(action === "login"
-        ? { "Content-Type": "application/json" }
-        : { Cookie: COOKIE }),
+      ...(action === "login" ? { "Content-Type": "application/json" } : { Cookie: COOKIE }),
     },
     ...(action === "login" ? { body: JSON.stringify({ password }) } : {}),
   });
@@ -100,8 +96,9 @@ test("web proxy forwards only password to internal API and only validated secure
   assert.equal(calls, 1);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("set-cookie"), COOKIE_SET);
-  assert.deepEqual(await response.json(), { authenticated: true });
-  assert.ok(!(await response.clone().text()).includes(TOKEN));
+  const body = await response.text();
+  assert.deepEqual(JSON.parse(body), { authenticated: true });
+  assert.ok(!body.includes(TOKEN));
   assert.equal(response.headers.get("cache-control"), "no-store");
 });
 
@@ -133,11 +130,7 @@ test("malformed requests, spoofed upstream cookies and API errors fail closed", 
 });
 
 test("logout checks origin, forwards only session cookie, and invalidates browser cookie", async () => {
-  const csrf = await adminMutation(
-    request("logout", "https://attacker.example"),
-    "logout",
-    CONFIG,
-  );
+  const csrf = await adminMutation(request("logout", "https://attacker.example"), "logout", CONFIG);
   assert.equal(csrf.status, 403);
 
   const fake: typeof fetch = async (input, init) => {
