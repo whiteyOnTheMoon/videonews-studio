@@ -29,7 +29,10 @@ test("list proxy is disabled without config and rejects anonymous or forged cook
   assert.equal((await adminResearchJobsList(request(), null, fake)).status, 404);
   assert.equal((await adminResearchJobsList(request(null), CONFIG, fake)).status, 401);
   assert.equal((await adminResearchJobsList(request("other=wrong"), CONFIG, fake)).status, 401);
-  assert.equal((await adminResearchJobsList(request(COOKIE + "; " + COOKIE), CONFIG, fake)).status, 401);
+  assert.equal(
+    (await adminResearchJobsList(request(COOKIE + "; " + COOKIE), CONFIG, fake)).status,
+    401,
+  );
   assert.equal(calls, 0);
 });
 
@@ -57,17 +60,20 @@ test("malformed, oversized, unauthorized and unavailable upstream lists fail clo
   const oversized: typeof fetch = async () =>
     Response.json({ jobs: Array.from({ length: 21 }, () => JOB) });
   assert.equal((await adminResearchJobsList(request(), CONFIG, oversized)).status, 503);
-  const invalid: typeof fetch = async () =>
-    Response.json({ jobs: [{ ...JOB, status: "secret" }] });
+  const invalid: typeof fetch = async () => Response.json({ jobs: [{ ...JOB, status: "secret" }] });
   assert.equal((await adminResearchJobsList(request(), CONFIG, invalid)).status, 503);
   const missing: typeof fetch = async () => new Response("unauthorized", { status: 401 });
   assert.equal((await adminResearchJobsList(request(), CONFIG, missing)).status, 401);
-  const down: typeof fetch = async () => { throw new Error("private host/credentials"); };
+  const down: typeof fetch = async () => {
+    throw new Error("private host/credentials");
+  };
   const unavailable = await adminResearchJobsList(request(), CONFIG, down);
   assert.equal(unavailable.status, 503);
   assert.deepEqual(await unavailable.json(), { error: "temporarily_unavailable" });
-  const redirect: typeof fetch = async () => new Response("", {
-    status: 302, headers: { Location: "https://outside.example.invalid" },
-  });
+  const redirect: typeof fetch = async () =>
+    new Response("", {
+      status: 302,
+      headers: { Location: "https://outside.example.invalid" },
+    });
   assert.equal((await adminResearchJobsList(request(), CONFIG, redirect)).status, 503);
 });
