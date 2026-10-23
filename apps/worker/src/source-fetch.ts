@@ -81,7 +81,9 @@ export function readApprovedFetchPolicy(env: NodeJS.ProcessEnv = process.env): A
 export function isPublicIPv4(address: string): boolean {
   if (isIP(address) !== 4) return false;
   const parts = address.split(".").map(Number);
-  const [a, b, c] = parts;
+  const a = parts[0] ?? -1;
+  const b = parts[1] ?? -1;
+  const c = parts[2] ?? -1;
   if (
     a === 0 ||
     a === 10 ||
@@ -226,17 +228,20 @@ export async function fetchApprovedSourceDocument(
   if (ips.length < 1 || ips.length > 16 || !ips.every(isPublicIPv4)) {
     throw new Error("Source DNS resolved to forbidden addresses");
   }
+  const pinnedIP = ips[0];
+  if (!pinnedIP) throw new Error("No approved source address");
   let response: RawSourceResponse;
   try {
-    response = await requestPinned(url, ips[0]);
+    response = await requestPinned(url, pinnedIP);
   } catch {
     throw new Error("Approved source retrieval failed");
   }
+  const mediaType = response.contentType?.split(";")[0]?.trim().toLowerCase();
   if (
     response.status !== 200 ||
     (response.contentEncoding && response.contentEncoding.toLowerCase() !== "identity") ||
-    !response.contentType ||
-    !MEDIA_TYPES.has(response.contentType.split(";")[0].trim().toLowerCase()) ||
+    !mediaType ||
+    !MEDIA_TYPES.has(mediaType) ||
     !Buffer.isBuffer(response.body) ||
     response.body.length > MAX_BYTES
   ) {
@@ -255,7 +260,7 @@ export async function fetchApprovedSourceDocument(
   return {
     sourceUrl: input,
     fetchedAt: now.toISOString(),
-    mediaType: response.contentType.split(";")[0].trim().toLowerCase(),
+    mediaType,
     sha256: createHash("sha256").update(response.body).digest("hex"),
     text: content,
   };
