@@ -10,7 +10,7 @@ Status: **implemented in Git, disabled by default, not deployed**.
 2. The BFF validates an exact `Origin`, exactly one valid
    `__Host-vns_session` cookie, JSON format, a 1024-byte size limit and
    the strictly allowlisted payload shape:
-   `{"kind":"research","idempotencyKey":"<24-80 ASCII letters/digits/_/->"}`.
+   `{"kind":"research","idempotencyKey":"<24-80 ASCII letters/digits/_/->","topic":"<12-160 characters>"}`.
    It passes only these vetted values to the internal API.
 3. The API route `POST /admin/jobs` is independently disabled unless
    `VNS_ADMIN_JOBS_ENABLED=true`, existing AdminAuth is configured and a
@@ -18,8 +18,8 @@ Status: **implemented in Git, disabled by default, not deployed**.
    enforces an authenticated 15-minute admin session, exact configured HTTPS
    origin, strict payload validation and bound size.
 4. A parameterized PostgreSQL query calls `vns.create_job_with_outbox` to
-   persist an idempotent `research` job and outbox intent in a single
-   transaction. The same idempotency key returns the same job ID.
+   persist an idempotent `research` job, its immutable topic and outbox intent
+   in one transaction via `vns.create_research_request`. The same idempotency key returns the same job ID.
 5. HTTP 202 acknowledges **PostgreSQL persistence only**, not dispatch,
    research execution, video rendering or publication. Error responses never
    expose database connection details.
@@ -34,8 +34,8 @@ routing and live Docker containers are unchanged.
   job intent" form and a read-only last-20 job list. They remain disabled
   until the same explicit Next.js API feature flag is enabled, and display
   their disabled state even when the main admin preview is running.
-  The form does not accept a research topic because editorial execution is
-  not implemented.
+  The form now accepts a validated research topic (12–160 characters).
+  Submitting records a topic, but **does not launch automated research**.
 - The research worker handler is not implemented. Current workers refuse
   editorial task names. No real research or rendering must be triggered.
 - Operator must approve a real PostgreSQL backup destination, restore drill,
@@ -54,20 +54,36 @@ sessions and database constraints. CI does not operate on VPS data.
 With the existing authenticated server-rendered `/admin` page, a new
 `Rechercheaufträge` section displays a gated form and a clear disabled notice.
 Both the form and the API endpoints are disabled by default. When separately
-enabled, the browser generates a random idempotency key and keeps it across
+enabled, the browser generates a random idempotency key and its associated topic and keeps both across
 network retries until a confirmed PostgreSQL `202 Accepted`. The form says
 **vormerken**, never "start research": it stores a database intent only.
 
 `GET /api/admin/jobs` (Next.js BFF) forwards the validated secure admin
 session cookie to the independently authenticated `GET /admin/jobs` API.
 The API reads the 20 most recent research jobs by created time from
-`vns.jobs` joined to `vns.job_outbox`. Only UUID, job kind, persisted
+`vns.jobs` joined to `vns.job_outbox`. Only UUID, job kind, topic (or null for older records), persisted
 job status, outbox delivery state, and ISO timestamp leave the API.
 Idempotency keys, database details and errors are never returned. Neither the
 server nor the BFF caches responses. A missing or expired admin session is
 rejected; no jobs are listed until the explicit feature gates are on.
 
 The displayed delivery state is **not** evidence that the job was actually
-processed. The eventual job lifecycle, real topic input, job cancellation,
+processed. The actual news-research execution, source validation, job cancellation,
 administrative rate limiting, database least-privilege roles, and VPS
 data/service deployment approval remain independent future work.
+
+## Migration 0003 — immutable research topic
+
+The offline-only migration `0003_research_requests` introduces a one-to-one
+`vns.research_requests` record for each new research job, tied to the existing
+`vns.jobs` and outbox row in a single PostgreSQL transaction. Requests without
+an explicit topic are rejected by the new API. On retry, an identical key/topic
+returns the same UUID; the same key with a **different topic** fails with a
+409 conflict and leaves existing data unchanged. The admin list still permits
+`null` topics for earlier draft jobs. The migration is reversible and the
+PostgreSQL dump/restore CI now verifies topic persistence.
+
+**No source scraping, website fetching, fact verification or real research
+execution is enabled by this change.** Any future source connector must
+separately enforce SSRF protections, source provenance, copyright/rights
+constraints and human editorial review before publishing.
