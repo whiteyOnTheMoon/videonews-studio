@@ -7,8 +7,8 @@ if (!match) {
   console.error("PR title must begin with a valid project ID: [P1-02] Summary");
   process.exitCode = 1;
 }
-if (!/\b(?:Closes|Fixes|Resolves)\s+#\d+\b/i.test(body)) {
-  console.error("PR body must refer to an issue using Closes #123 (or Fixes/Resolves).");
+if (!/\b(?:Closes|Fixes|Resolves|Refs)\s+#\d+\b/i.test(body)) {
+  console.error("PR body must reference a GitHub issue: Closes #123 or Refs #123.");
   process.exitCode = 1;
 }
 if (!process.exitCode) {
