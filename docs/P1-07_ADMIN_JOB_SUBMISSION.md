@@ -30,8 +30,12 @@ routing and live Docker containers are unchanged.
 
 ## Limitations before enabling on the VPS
 
-- No UI form for research jobs is included yet; only an intentionally
-  disabled-by-default internal API/BFF endpoint.
+- An internal admin dashboard now includes an optional, idempotent "research
+  job intent" form and a read-only last-20 job list. They remain disabled
+  until the same explicit Next.js API feature flag is enabled, and display
+  their disabled state even when the main admin preview is running.
+  The form does not accept a research topic because editorial execution is
+  not implemented.
 - The research worker handler is not implemented. Current workers refuse
   editorial task names. No real research or rendering must be triggered.
 - Operator must approve a real PostgreSQL backup destination, restore drill,
@@ -44,3 +48,26 @@ routing and live Docker containers are unchanged.
 
 CI tests use disposable PostgreSQL, test-only credentials, real API HTTP
 sessions and database constraints. CI does not operate on VPS data.
+
+## Dashboard and read-only status endpoint
+
+With the existing authenticated server-rendered `/admin` page, a new
+`Rechercheaufträge` section displays a gated form and a clear disabled notice.
+Both the form and the API endpoints are disabled by default. When separately
+enabled, the browser generates a random idempotency key and keeps it across
+network retries until a confirmed PostgreSQL `202 Accepted`. The form says
+**vormerken**, never "start research": it stores a database intent only.
+
+`GET /api/admin/jobs` (Next.js BFF) forwards the validated secure admin
+session cookie to the independently authenticated `GET /admin/jobs` API.
+The API reads the 20 most recent research jobs by created time from
+`vns.jobs` joined to `vns.job_outbox`. Only UUID, job kind, persisted
+job status, outbox delivery state, and ISO timestamp leave the API.
+Idempotency keys, database details and errors are never returned. Neither the
+server nor the BFF caches responses. A missing or expired admin session is
+rejected; no jobs are listed until the explicit feature gates are on.
+
+The displayed delivery state is **not** evidence that the job was actually
+processed. The eventual job lifecycle, real topic input, job cancellation,
+administrative rate limiting, database least-privilege roles, and VPS
+data/service deployment approval remain independent future work.
