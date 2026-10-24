@@ -106,6 +106,7 @@ export function validateInventory(inventory, plan) {
     assert.ok(CATEGORIES.has(record.category) && DISPOSITIONS.has(record.disposition));
     exactFields(record.source, ["path", "anchor"], "Repository evidence pointer");
     assert.match(record.source.path, /^(?:[a-zA-Z0-9_.-]+\/)*[a-zA-Z0-9_.-]+$/);
+    assert.ok(record.source.path.split("/").every((part) => part !== "." && part !== ".."));
     assert.ok(!record.source.path.startsWith("secrets/"));
     assert.ok(typeof record.source.anchor === "string" && record.source.anchor.length >= 6);
     assert.ok(record.source.anchor.length <= 120 && !/[\r\n]/.test(record.source.anchor));
