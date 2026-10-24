@@ -80,8 +80,10 @@ jobs:
         run: |
           npx prettier --write scripts/test_ci_redis_aof_restore.mjs
           git diff --exit-code -- scripts/test_ci_redis_aof_restore.mjs
-      - name: Build queue types for fixture import
-        run: npm run build
+      - name: Build shared and worker packages for isolated Redis fixture
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
       - name: Recover Redis multipart AOF into a fresh container
         run: bash db/scripts/test_redis_aof_restore.sh
       - name: Verify source tree unchanged
