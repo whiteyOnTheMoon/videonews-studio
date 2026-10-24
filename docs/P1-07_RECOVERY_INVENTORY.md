@@ -103,3 +103,47 @@ Admin login, Docker containers or user identities.
 
 See the [full recovery runbook](P1-07_RECOVERY_RUNBOOK.md) and
 [cryptographic custody design](P1-07_BACKUP_KEY_CUSTODY.md).
+
+## Compose drift contract: services, persistence and secrets
+
+The machine-readable
+[`p1-07-compose-recovery-map.json`](p1-07-compose-recovery-map.json)
+records the **current repository scaffold's** six services
+(`web`, `api`, `worker`, `postgres`, `redis`, `caddy`),
+two named stateful volumes (`postgres_data`, `redis_data`),
+two Compose secrets (`postgres_password`, `redis_acl`),
+service profile assignments, every declared service mount and
+every ephemeral `tmpfs` declaration. This is not the VPS runtime
+configuration. It neither exports actual credentials nor marks an
+off-host copy as completed.
+
+The new GitHub Actions job `compose-recovery-drift` parses the **whole
+`compose.yaml` YAML document** using the explicitly declared,
+package-lock-controlled `js-yaml` dependency. It compares services,
+top-level secrets and volumes, each service's profile, mounts and
+secret references against the reviewed mapping and rejects drift.
+Named Docker volumes must map to `data` components with
+`backup-required` classification. File-backed Compose secrets must
+map to independently reissuable credential components; their
+contents are not accessed. A repository bind mount must be read-only
+and refer to the exact checked-in source asset, rather than pretending
+a new data directory is rebuildable. Unexpected bind mounts,
+anonymous volumes, opaque long-form mounts, new `tmpfs` paths,
+host ports, privileged execution and undocumented Compose resources
+fail closed.
+
+Synthetic negative tests exercise newly added media/volume/secret/
+service definitions, removed PostgreSQL/Redis persistence, switched
+deployment profiles, changed mounted paths, unsafe host binds,
+public ports, unrecognized `tmpfs`, fake rebuildable volumes, and
+nonexistent operator approval. Both the Compose definition **and**
+the mapping must be reviewed together whenever actual resources
+change. The mapping remains a closed and reviewable list and is not
+automatically regenerated from a changed Compose file.
+
+This catches **repository configuration drift**, not undisclosed
+VPS resources, external Docker volumes, Cloudflare state, unknown
+media directories or lost real credentials. No real backup or
+recovery infrastructure is configured; all twelve operator release
+gates remain closed. No Docker daemon or Redis/PostgreSQL instance
+is contacted by this new drift test.
