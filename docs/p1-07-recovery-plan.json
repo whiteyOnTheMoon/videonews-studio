@@ -103,13 +103,13 @@
     },
     {
       "id": "reconcile_postgres_outbox",
-      "dependsOn": ["restore_postgres_data","restore_redis_or_rebuild"],
+      "dependsOn": ["restore_postgres_data", "restore_redis_or_rebuild"],
       "area": "queue",
       "purpose": "Compare PostgreSQL job/outbox state against BullMQ; account for retries, duplicates and unacknowledged jobs"
     },
     {
       "id": "reissue_database_logins",
-      "dependsOn": ["restore_configuration_secrets","restore_postgres_data"],
+      "dependsOn": ["restore_configuration_secrets", "restore_postgres_data"],
       "area": "identity",
       "purpose": "Reissue per-service PostgreSQL LOGIN credentials and confirm least privilege plus operator governance"
     },
