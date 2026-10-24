@@ -53,7 +53,12 @@ jobs:
           [[ "$healthy" == 1 ]] || { echo "CI Redis unhealthy"; exit 1; }
           bash scripts/p1_07_worker_canary.sh preflight
           bash scripts/p1_07_worker_canary.sh build
-          bash scripts/p1_07_worker_canary.sh start
+          if ! bash scripts/p1_07_worker_canary.sh start; then
+            echo "CI-only probe worker diagnostic, disposable credential fixture:"
+            docker inspect --format 'exit={{.State.ExitCode}} status={{.State.Status}}' vns-p107-worker-ci-worker-1 || true
+            docker logs --tail 25 vns-p107-worker-ci-worker-1 2>&1 | grep -E 'Error|Worker|worker|Redis|permission|EACCES|MODULE' || true
+            exit 1
+          fi
           bash scripts/p1_07_worker_canary.sh status
           if bash scripts/p1_07_worker_canary.sh start; then
             echo "FAIL: duplicate worker start incorrectly permitted"
