@@ -23,6 +23,8 @@ on:
       - "scripts/test_research_process_integration.mjs"
       - "scripts/ci_outbox_recovery_audit.mjs"
       - "scripts/test_ci_outbox_recovery_audit.mjs"
+      - "scripts/test_ci_redis_aof_restore.mjs"
+      - "db/scripts/test_redis_aof_restore.sh"
       - ".github/workflows/p1-07-worker.yml"
 permissions:
   contents: read
@@ -48,11 +50,11 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify formatting and emit reviewable patch if needed
         run: |
-          npx prettier --write .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_research_process_integration.mjs
+          npx prettier --write .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_ci_redis_aof_restore.mjs scripts/test_research_process_integration.mjs
           echo '===VNS_FORMAT_START==='
-          git diff --no-color -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_research_process_integration.mjs
+          git diff --no-color -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_ci_redis_aof_restore.mjs scripts/test_research_process_integration.mjs
           echo '===VNS_FORMAT_END==='
-          git diff --exit-code -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_research_process_integration.mjs
+          git diff --exit-code -- .github/workflows/p1-06-admin-compose.yml .github/workflows/p1-07-readiness.yml .github/workflows/p1-07-worker.yml apps/worker/src/queue.test.ts apps/worker/src/queue.ts docs/P1_06_COMPOSE_SECRETS.md docs/P1-07_BACKEND_READINESS.md scripts/test_worker_integration.mjs scripts/test_worker_recovery.mjs scripts/ci_stalled_probe_worker.mjs scripts/test_outbox_integration.mjs apps/worker/src/outbox.ts apps/worker/src/outbox.test.ts apps/worker/src/dispatch.ts apps/worker/src/job-status.ts apps/worker/src/job-status.test.ts apps/worker/src/status-sync.ts scripts/test_job_status_integration.mjs apps/worker/src/source-policy.ts apps/worker/src/source-policy.test.ts apps/worker/src/source-fetch.ts apps/worker/src/source-fetch.test.ts apps/worker/src/research-process.ts apps/worker/src/research-process.test.ts scripts/ci_outbox_recovery_audit.mjs scripts/test_ci_outbox_recovery_audit.mjs scripts/test_ci_redis_aof_restore.mjs scripts/test_research_process_integration.mjs
       - name: Build and test compiled source
         run: |
           npm run build
@@ -61,3 +63,28 @@ jobs:
         run: bash db/scripts/test_worker_queue.sh
       - name: Verify worker production-image build
         run: docker build --pull=false --target worker -t vns-p1-07-worker-ci .
+
+  redis-aof-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check AOF fixture source formatting
+        run: |
+          npx prettier --write scripts/test_ci_redis_aof_restore.mjs
+          git diff --exit-code -- scripts/test_ci_redis_aof_restore.mjs
+      - name: Build shared and worker packages for isolated Redis fixture
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Recover Redis multipart AOF into a fresh container
+        run: bash db/scripts/test_redis_aof_restore.sh
+      - name: Verify source tree unchanged
+        run: git diff --exit-code

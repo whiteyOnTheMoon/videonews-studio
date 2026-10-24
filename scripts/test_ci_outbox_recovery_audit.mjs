@@ -58,7 +58,7 @@ async function create(key) {
 async function report() {
   const result = await inspectCiRecovery(readOnly, queue);
   assert.equal(result.operatorApprovalRequired, true);
-  assert.equal(result.scope, "postgres_known_ids_only");
+  assert.equal(result.scope, "bounded_postgres_and_bullmq_inventory");
   return result;
 }
 async function row(id) {
@@ -183,6 +183,33 @@ try {
   await create("ci-recovery-readonly-00002");
   await assert.rejects(inspectCiRecovery(readOnly, queue, 1), /failed closed/);
   await assert.rejects(inspectCiRecovery(readOnly, queue, 0), /Invalid CI audit row limit/);
+  // A Redis job with a deterministic-looking ID but NO PostgreSQL job
+  // must be reported, never treated as an authorized reconstruction.
+  const orphanId = "job-" + "a".repeat(32);
+  await queue.add(
+    "research",
+    { kind: "research", jobId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
+    { jobId: orphanId, removeOnComplete: false },
+  );
+  let orphanReport = await report();
+  assert.equal(orphanReport.redisInspected, 2);
+  assert.equal(orphanReport.hasConflicts, true);
+  assert.equal(
+    orphanReport.records.find((record) => record.jobId === orphanId)?.category,
+    "orphan_redis_job",
+  );
+  const unexpectedId = "ci-unexpected-queue-id";
+  await queue.add("probe", { kind: "probe" }, { jobId: unexpectedId });
+  orphanReport = await report();
+  assert.equal(orphanReport.redisInspected, 3);
+  assert.equal(
+    orphanReport.records.find((record) => record.jobId === unexpectedId)?.category,
+    "unknown_redis_queue_id",
+  );
+  await assert.rejects(inspectCiRecovery(readOnly, queue, 2), /failed closed/);
+  assert.equal((await row(id)).status, before.status);
+  assert.ok(await queue.getJob(orphanId));
+  assert.ok(await queue.getJob(unexpectedId));
 
   console.log(
     "PASS: actual restricted PostgreSQL LOGIN sees PG/Redis mismatches without writes or replay",
@@ -190,9 +217,8 @@ try {
   console.log(
     "PASS: missing Redis, lost acknowledgement, collision, terminal conflict and disconnect fail closed",
   );
-  console.log(
-    "KNOWN LIMIT: only PG-known IDs are inspected; manual operator approval is mandatory",
-  );
+  console.log("PASS: orphan and nonstandard Redis-only job IDs fail closed");
+  console.log("KNOWN LIMIT: bounded Redis states are not complete AOF or side-effect history");
 } finally {
   await Promise.allSettled([readOnly.end(), queue.close()]);
   await redis.quit().catch(() => undefined);

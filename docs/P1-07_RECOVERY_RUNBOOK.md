@@ -179,12 +179,59 @@ inspections leave the job/outbox rows and queue counts unchanged. The
 report always requires operator approval even when it sees no conflicts.
 
 This is not production-ready reconciliation or Redis AOF disaster
-recovery. It scans **only PostgreSQL-known queue IDs**, not extra
-orphaned Redis jobs, untracked deleted keys, or external side effects.
-It is capped to a small CI dataset; exceeding that cap is an error,
+recovery. It scans **only the bounded, enumerated BullMQ states and visible jobs**;
+deleted/expired Redis job keys, jobs from unknown Redis namespaces, and
+external side effects remain unobserved. It is capped to a small CI
+dataset; exceeding that cap is an error,
 not permission to ignore old jobs. Before any worker restart, the
 operator must independently inventory the entire BullMQ queue,
 verify retained Redis AOF or a safe reconstruction plan, address
 completed/failed jobs and duplicate external side effects, and
 explicitly approve a new recovery run. The full-stack backup,
 media, signing, key custody and activation gates remain CLOSED.
+
+## Redis-only orphan inventory and isolated Redis AOF restore rehearsal
+
+The read-only recovery inspection now inventories BOTH sides in the
+disposable worker CI: it compares all PostgreSQL outbox job IDs against
+BullMQ's `waiting`, `paused`, `delayed`, `active`,
+`waiting-children`, `completed` and `failed` job states.
+A Redis job without matching PostgreSQL intent is flagged as an
+**orphan Redis job**, including unexpected/nondeterministic queue IDs.
+The observer checks BullMQ counts against the retrieved inventory and
+**fails closed** if more than 50 jobs exist, if a read is incomplete,
+if an ID occurs twice or if PostgreSQL/Redis becomes unavailable.
+Neither the observer nor its negative tests ever authorize, resume,
+enqueue, delete or mark jobs completed.
+
+The independent `redis-aof-recovery` GitHub Actions job uses two
+ephemeral authenticated Redis 7 containers and a temporary test-only
+bind mount on the **GitHub runner**, not on the VPS. The first process
+stores synthetic waiting and delayed BullMQ jobs using multipart AOF
+with `appendfsync always`, then stops cleanly. After hashing the
+complete stopped AOF archive (including the Redis multipart manifest),
+the test copies it to a clean directory, detects a deliberately
+modified AOF segment via SHA-256, and performs a **two-stage isolated recovery** against the verified
+copy. Redis 7's AOF replay runs commands under the default ACL; with the
+normal `user default off` it may log CRITICAL `NOPERM` errors on
+`MULTI/EXEC`, start successfully, and silently omit queue jobs. The
+test therefore bootstraps the verified AOF with a **CI-only temporary
+recovery ACL** inside a container with `--network none` (no exposed
+port, workers, or integrations), verifies the loaded keys, rewrites the
+AOF into a fresh RDB-base segment, stops that process, then starts
+a **new, authenticated Redis process under the original restrictive
+ACL** and checks the same job IDs, payloads, retry options and queue
+states. The recovery ACL is NEVER mounted into an externally reachable
+CI container or deployed anywhere.
+
+These are **CI recovery rehearsals only**, not production Redis backups.
+A SHA-256 checksum from the same machine is not independently trusted
+or digitally signed. A clean shutdown plus `appendfsync always` does
+not exercise a power-loss window or prove a real RPO, and the test
+does not intentionally boot a corrupted Redis AOF. The probe does not
+prove an atomic PostgreSQL+Redis point-in-time snapshot, observe jobs
+already removed/expired, inventory arbitrary unknown Redis prefixes,
+deduplicate external side effects or recover private credentials.
+Production off-host retention, signing, encryption, independent
+backup/restore, orphan-resolution policy, media, key custody, safe
+worker restart and operator approval remain explicitly **unapproved**.

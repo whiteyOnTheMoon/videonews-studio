@@ -4,6 +4,15 @@
 import assert from "node:assert/strict";
 
 const LIMIT = 50;
+const INVENTORY_STATES = [
+  "waiting",
+  "paused",
+  "delayed",
+  "active",
+  "waiting-children",
+  "completed",
+  "failed",
+];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const JOB_KINDS = new Set(["research", "script", "render", "upload"]);
 const PG_STATES = new Set(["pending", "running", "retry", "done", "failed", "cancelled"]);
@@ -45,9 +54,9 @@ function ciOnly(pool, queue) {
  * BullMQ is not part of the database transaction; any mismatch blocks
  * restart and requires independent operator investigation.
  *
- * Coverage is deliberately incomplete: this checks PG-known IDs only.
- * It CANNOT prove there are no orphan Redis jobs, invisible expired history,
- * duplicate external side effects, compromised Redis, or unfinished uploads.
+ * Coverage is bounded: checks both PG-known IDs and Redis jobs in supported
+ * BullMQ states. It CANNOT prove completeness of removed/expired history,
+ * duplicate external side effects, or jobs in unknown Redis key families.
  */
 export async function inspectCiRecovery(pool, queue, limit = LIMIT) {
   ciOnly(pool, queue);
@@ -123,6 +132,42 @@ export async function inspectCiRecovery(pool, queue, limit = LIMIT) {
         category,
       });
     }
+    // Inventory the opposite direction as well. Without it, a Redis-only
+    // job with no PostgreSQL source-of-truth row would remain invisible.
+    // The cap and count agreement fail closed; never silently truncate.
+    const counts = await queue.getJobCounts(...INVENTORY_STATES);
+    assert.ok(counts !== null && typeof counts === "object");
+    const total = INVENTORY_STATES.reduce((count, state) => {
+      assert.ok(Number.isSafeInteger(counts[state]) && counts[state] >= 0);
+      return count + counts[state];
+    }, 0);
+    assert.ok(total <= limit, "CI Redis inventory exceeds cap");
+    const inventory = await queue.getJobs(INVENTORY_STATES, 0, limit, true);
+    assert.ok(
+      Array.isArray(inventory) && inventory.length === total,
+      "Redis inventory changed or is incomplete",
+    );
+    const knownIds = new Set(result.rows.map((row) => row.queue_job_id));
+    const inventoryIds = new Set();
+    for (const job of inventory) {
+      assert.ok(typeof job?.id === "string" && job.id.length <= 100);
+      assert.ok(!inventoryIds.has(job.id), "Duplicate Redis inventory ID");
+      inventoryIds.add(job.id);
+      if (!knownIds.has(job.id)) {
+        const state = await job.getState();
+        assert.ok(BULL_STATES.has(state), "Unexpected orphan Redis state");
+        records.push({
+          jobId: job.id,
+          pgStatus: null,
+          deliveryState: null,
+          bullState: state,
+          category: /^job-[0-9a-f]{32}$/.test(job.id)
+            ? "orphan_redis_job"
+            : "unknown_redis_queue_id",
+        });
+      }
+    }
+
     await client.query("COMMIT");
     transaction = false;
 
@@ -134,12 +179,15 @@ export async function inspectCiRecovery(pool, queue, limit = LIMIT) {
       "terminal_postgres_job_still_runnable",
       "redis_terminal_postgres_nonterminal",
       "postgres_running_but_queue_not_active",
+      "orphan_redis_job",
+      "unknown_redis_queue_id",
     ]);
     return {
-      inspected: records.length,
+      inspected: result.rows.length,
+      redisInspected: inventory.length,
       hasConflicts: records.some((row) => risk.has(row.category)),
       operatorApprovalRequired: true,
-      scope: "postgres_known_ids_only",
+      scope: "bounded_postgres_and_bullmq_inventory",
       records,
     };
   } catch {

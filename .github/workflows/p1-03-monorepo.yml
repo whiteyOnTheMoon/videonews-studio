@@ -13,6 +13,7 @@ on:
       - "scripts/test_recovery_readiness.mjs"
       - "scripts/ci_outbox_recovery_audit.mjs"
       - "scripts/test_ci_outbox_recovery_audit.mjs"
+      - "scripts/test_ci_redis_aof_restore.mjs"
       - "docs/P1-07_RECOVERY_RUNBOOK.md"
       - "docs/p1-07-recovery-plan.json"
       - "package.json"
