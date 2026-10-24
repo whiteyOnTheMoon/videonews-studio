@@ -5,6 +5,7 @@ on:
     paths:
       - "Dockerfile.worker"
       - "scripts/p1_07_worker_canary.sh"
+      - "scripts/p1_07_live_probe.sh"
       - "docs/P1-07_WORKER_CANARY_RUNBOOK.md"
       - ".github/workflows/p1-07-probe-worker-canary.yml"
       - "apps/worker/**"
@@ -104,6 +105,13 @@ jobs:
           // network sockets without waiting on QueueEvents blocking reads.
           process.exit(passed ? 0 : 1);
           JS
+          bash scripts/p1_07_live_probe.sh
+          # Probe result is retained, so a second invocation must refuse.
+          if bash scripts/p1_07_live_probe.sh; then
+            echo "FAIL: a second live probe with the same ID was accepted"
+            exit 1
+          fi
+          bash scripts/p1_07_worker_canary.sh status
           if bash scripts/p1_07_worker_canary.sh start; then
             echo "FAIL: duplicate worker start incorrectly permitted"
             exit 1
