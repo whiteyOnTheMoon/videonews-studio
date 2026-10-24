@@ -92,7 +92,9 @@ export async function replayVerifiedCiAuditEvents(directory, trustedPublicKey) {
       assert.match(event.id, /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i);
       assert.ok(!ids.has(event.id), "Duplicate audit event during offline replay");
       ids.add(event.id);
-      const ordering = String(event.recorded_at) + "/" + event.id;
+      // PostgreSQL microseconds are serialized as JSON milliseconds. Equal
+      // serialized timestamps must not assert an artificial UUID ordering.
+      const ordering = String(event.recorded_at);
       assert.ok(previous === "" || previous <= ordering, "Audit event order is invalid");
       previous = ordering;
     }
