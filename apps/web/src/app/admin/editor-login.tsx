@@ -70,7 +70,9 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
             "Persönliche Anmeldung bestätigt. Nur Reviewer und Administratoren dürfen Quellen bewerten.",
           );
         } else {
-          setMessage("Anmeldung übermittelt, aber die persönliche Sitzung konnte nicht bestätigt werden.");
+          setMessage(
+            "Anmeldung übermittelt, aber die persönliche Sitzung konnte nicht bestätigt werden.",
+          );
         }
       } else if (result.status === 429) {
         setMessage("Zu viele Anmeldeversuche. Bitte später erneut versuchen.");
