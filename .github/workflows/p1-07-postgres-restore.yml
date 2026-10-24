@@ -9,6 +9,9 @@ on:
       - "db/scripts/test_full_restore.sh"
       - "db/tests/full_restore_*.sql"
       - "docs/P1-07_POSTGRES_RESTORE.md"
+      - "docs/P1-07_RECOVERY_RUNBOOK.md"
+      - "docs/p1-07-recovery-plan.json"
+      - "scripts/test_recovery_readiness.mjs"
       - ".github/workflows/p1-07-postgres-restore.yml"
 permissions:
   contents: read
@@ -43,4 +46,19 @@ jobs:
       - name: Restore PostgreSQL 17 globals, all migrations and audit data
         run: bash db/scripts/test_full_restore.sh
       - name: Confirm no tracked files changed
+        run: git diff --exit-code
+
+  full-stack-readiness-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check recovery gates and failure-path dependency order
+        run: node --test scripts/test_recovery_readiness.mjs
+      - name: Verify validation never changes tracked files
         run: git diff --exit-code
