@@ -17,22 +17,31 @@ function reply(code: number, body: object): Response {
 function validateEvidence(value: unknown): boolean {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
-  return Object.keys(row).length === 8 &&
-    typeof row.id === "string" && UUID.test(row.id) &&
-    typeof row.jobId === "string" && UUID.test(row.jobId) &&
+  return (
+    Object.keys(row).length === 8 &&
+    typeof row.id === "string" &&
+    UUID.test(row.id) &&
+    typeof row.jobId === "string" &&
+    UUID.test(row.jobId) &&
     typeof row.sourceUrl === "string" &&
-    row.sourceUrl.startsWith("https://") && row.sourceUrl.length <= 512 &&
-    typeof row.publisher === "string" && row.publisher.length <= 120 &&
-    typeof row.headline === "string" && row.headline.length <= 200 &&
-    typeof row.claim === "string" && row.claim.length <= 280 &&
+    row.sourceUrl.startsWith("https://") &&
+    row.sourceUrl.length <= 512 &&
+    typeof row.publisher === "string" &&
+    row.publisher.length <= 120 &&
+    typeof row.headline === "string" &&
+    row.headline.length <= 200 &&
+    typeof row.claim === "string" &&
+    row.claim.length <= 280 &&
     ["candidate", ...DECISIONS].includes(row.status as string) &&
-    (row.reviewedAt === null || (
-      typeof row.reviewedAt === "string" && !Number.isNaN(Date.parse(row.reviewedAt))
-    ));
+    (row.reviewedAt === null ||
+      (typeof row.reviewedAt === "string" && !Number.isNaN(Date.parse(row.reviewedAt))))
+  );
 }
 
 async function requestReviewBody(request: Request): Promise<string | null> {
-  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+  if (
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+  ) {
     return null;
   }
   const reader = request.body?.getReader();
@@ -56,9 +65,13 @@ async function requestReviewBody(request: Request): Promise<string | null> {
     const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
     const row = raw as Record<string, unknown>;
-    if (Object.keys(row).length !== 2 ||
-        typeof row.evidenceId !== "string" || !UUID.test(row.evidenceId) ||
-        !DECISIONS.some((decision) => decision === row.decision)) return null;
+    if (
+      Object.keys(row).length !== 2 ||
+      typeof row.evidenceId !== "string" ||
+      !UUID.test(row.evidenceId) ||
+      !DECISIONS.some((decision) => decision === row.decision)
+    )
+      return null;
     return JSON.stringify({ evidenceId: row.evidenceId, decision: row.decision });
   } catch {
     return null;
@@ -90,16 +103,26 @@ export async function listAdminEvidence(
     if (upstream.status === 401) return reply(401, { error: "unauthorized" });
     if (upstream.status !== 200) return reply(503, { error: "temporarily_unavailable" });
     const data: unknown = await upstream.json();
-    if (typeof data !== "object" || data === null || !("evidence" in data) ||
-        !Array.isArray(data.evidence) || data.evidence.length > 20 ||
-        !data.evidence.every(validateEvidence)) {
+    if (
+      typeof data !== "object" ||
+      data === null ||
+      !("evidence" in data) ||
+      !Array.isArray(data.evidence) ||
+      data.evidence.length > 20 ||
+      !data.evidence.every(validateEvidence)
+    ) {
       return reply(503, { error: "temporarily_unavailable" });
     }
     return reply(200, {
       evidence: data.evidence.map((row) => ({
-        id: row.id, jobId: row.jobId, sourceUrl: row.sourceUrl,
-        publisher: row.publisher, headline: row.headline,
-        claim: row.claim, status: row.status, reviewedAt: row.reviewedAt,
+        id: row.id,
+        jobId: row.jobId,
+        sourceUrl: row.sourceUrl,
+        publisher: row.publisher,
+        headline: row.headline,
+        claim: row.claim,
+        status: row.status,
+        reviewedAt: row.reviewedAt,
       })),
     });
   } catch {
