@@ -77,7 +77,7 @@ The expanded drill performs these checks:
 2. Exports both a full `vns` schema **including ownership and GRANT/REVOKE
    ACLs** (`pg_dump --format=custom --schema=vns`) and separate PostgreSQL
    **global roles and role memberships** (`pg_dumpall --globals-only
-   --no-role-passwords`). Global-role passwords are intentionally excluded.
+--no-role-passwords`). Global-role passwords are intentionally excluded.
 3. Validates archive magic, archive catalog and SHA-256 checksums and tests
    that a corrupted archive or truncated catalog is rejected before restore.
 4. Starts an independent clean target with a differently named bootstrap
@@ -131,3 +131,24 @@ the backup destination, access controls, retention, encryption and key
 custody, off-host restore rehearsal, actual role/login secret rotation,
 external dependencies recovery order and measurable recovery objectives.
 Do **not** run this disposable test script against production.
+
+## Recovery readiness remains explicitly blocked
+
+The [P1-07 full-stack recovery runbook](P1-07_RECOVERY_RUNBOOK.md) now
+documents the manual recovery order for PostgreSQL, Redis/BullMQ, uploaded
+media, audit archives, configuration/secrets, internal services and
+operator-controlled ingress. Its versioned
+[`p1-07-recovery-plan.json`](p1-07-recovery-plan.json) records **14**
+ordered milestones and **12** release gates, all closed by default.
+The `full-stack-readiness-contract` CI job tests missing steps and
+dependency ordering and rejects premature profile activation, invented
+RPO/RTO numbers, unsupported destinations and fabricated approval
+evidence.
+
+**Important:** a green plan-validation job is **not** proof of real
+full-stack restoration. The two existing PostgreSQL restore jobs remain
+separately required. There are still no approved off-host backups, budget,
+retention rules, trusted independent archive, restored live media, Redis
+queue reconstruction, measured recovery objectives or VPS cutover
+permission. This change neither selects/purchases storage nor deploys
+anything.
