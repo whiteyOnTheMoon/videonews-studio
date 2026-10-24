@@ -57,9 +57,19 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
   async function review(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const reasonText = reason.trim();
-    if (!decision || !confirmed || busy || item.status !== "candidate" ||
-        Array.from(reasonText).length < 20 || Array.from(reasonText).length > 500 ||
-        reasonText.split("").some((c) => { const code = c.charCodeAt(0); return code < 32 || code === 127; })) return;
+    if (
+      !decision ||
+      !confirmed ||
+      busy ||
+      item.status !== "candidate" ||
+      Array.from(reasonText).length < 20 ||
+      Array.from(reasonText).length > 500 ||
+      reasonText.split("").some((c) => {
+        const code = c.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
+    )
+      return;
     setBusy(true);
     setFeedback("");
     try {
@@ -140,7 +150,10 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
             />
             Ich habe diese Quelle und die konkrete Aussage selbst geprüft.
           </label>
-          <button type="submit" disabled={!decision || !confirmed || busy || Array.from(reason.trim()).length < 20}>
+          <button
+            type="submit"
+            disabled={!decision || !confirmed || busy || Array.from(reason.trim()).length < 20}
+          >
             {busy ? "Speichere Entscheidung …" : "Entscheidung unwiderruflich speichern"}
           </button>
           {feedback ? <p role="status">{feedback}</p> : null}
