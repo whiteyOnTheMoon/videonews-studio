@@ -239,3 +239,34 @@ Outstanding before public or persistent rollout: securely provision named
 editor accounts (there are none by default), password rotation/revocation UI,
 least-privilege database credentials, verified backups, rate/cost controls,
 SSRF-safe real sources and a separate VPS operator approval.
+
+## 0006 – Inactive database role boundaries (Git-only)
+
+Offline migration `0006_offline_role_boundaries` introduces two PostgreSQL
+`NOLOGIN` roles with **no memberships and no passwords**:
+
+- `vns_editor_provisioner` may create **inactive** named editor accounts
+  (insert cannot set `active`), update an existing account's allowed
+  display name, role, password hash or activation state, and inspect only
+  non-secret account metadata. It cannot read stored password hashes,
+  rename or delete identities, or modify editorial evidence or review logs.
+- `vns_audit_reader` may read `vns.evidence_review_events` but cannot
+  read named accounts or write audit records. Independent audit export,
+  off-host retention and access authorization are **not** configured.
+
+The new GitHub-Actions-only SQL integration applies the migration to a
+disposable PostgreSQL instance, tests allowed operations and explicit
+denials under `SET ROLE`, then rolls back; it runs twice to catch leaked
+role grants. The real HTTP auth/job integration also runs against the
+new schema. **No role has a LOGIN credential or a member in this change**,
+and there is no editor account provisioned in any production database.
+
+**Important:** the existing API still connects as the legacy `vns`
+PostgreSQL user and does **not** switch to these roles. These roles are a
+separately verifiable foundation, **not** a claim that least-privilege
+runtime isolation or credential rotation is finished. Before production:
+review database ownership and SECURITY INVOKER/DEFINER boundaries, separate
+API runtime and job-dispatcher privileges, provision login credentials only
+after operator approval, test realistic fail-closed grants, and approve
+backup/restore and account lifecycle controls. The migration and rollback
+must never be run on the VPS without explicit authorization.
