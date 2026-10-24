@@ -41,3 +41,39 @@ test("reconciler refuses invalid batch sizes before connecting", async () => {
     await assert.rejects(reconcileJobStatusBatch({} as Pool, {} as Queue, size), /limit/);
   }
 });
+
+test("status sync fails closed when Redis claims more attempts than PostgreSQL allows", async () => {
+  const queries: string[] = [];
+  let released = false;
+  const client = {
+    query: async (sql: string) => {
+      queries.push(sql);
+      if (sql.includes("SELECT j.id::text")) return { rows: [candidate] };
+      return { rows: [], rowCount: 0 };
+    },
+    release: () => {
+      released = true;
+    },
+  };
+  const pool = { connect: async () => client } as unknown as Pool;
+  const queue = {
+    getJob: async () => ({
+      id: candidate.queue_job_id,
+      name: candidate.kind,
+      data: { kind: candidate.kind, jobId: candidate.job_id },
+      opts: {
+        attempts: candidate.max_attempts,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+      attemptsMade: 4,
+      getState: async () => "failed",
+    }),
+  } as unknown as Queue;
+
+  await assert.rejects(reconcileJobStatusBatch(pool, queue), /reconciliation failed/);
+  assert.ok(queries.some((sql) => sql === "ROLLBACK"));
+  assert.ok(!queries.some((sql) => sql.includes("UPDATE vns.jobs")));
+  assert.equal(released, true);
+});
