@@ -85,7 +85,14 @@ The expanded drill performs these checks:
    the transaction fails, leaving no partial application schema.
 5. Restores global roles first, then restores all `vns` objects and data
    using `pg_restore --single-transaction --exit-on-error`, **without**
-   suppressing owners or privileges.
+   suppressing owners or privileges. PostgreSQL 17 records role-membership
+   grantors in the globals dump: where the original `postgres` grantor cannot
+   re-grant on a fresh independently bootstrapped cluster, the CI restore
+   explicitly reissues the **same memberships and option flags** as its
+   new bootstrap superuser. Only role-grantor provenance changes. Unknown
+   grantor formats fail closed; the original dump is retained and hashed for
+   the duration of the test. A production cutover must separately review
+   grantor provenance and privileged-role membership policy.
 6. Verifies all migration ledger entries, all nine non-login application
    roles, the synthetic role membership, scoped SQL function owners and
    execute permissions, denied API/dispatcher/provisioner privileges, audit
