@@ -26,7 +26,10 @@ export VNS_CI_AOF_DRILL=true
 
 start() {
   local container="$1" volume="$2"
+  # Match the CI runner UID/GID so the Redis entrypoint cannot chown
+  # the private runner-side AOF directory away from the verifier.
   docker run --rm --detach --name "$container" \
+    --user "$(id -u):$(id -g)" \
     --network bridge -p 127.0.0.1:16380:6379 \
     --memory 160m --memory-swap 160m --cpus 0.5 --pids-limit 80 \
     --mount "type=bind,src=$volume,dst=/data" \
