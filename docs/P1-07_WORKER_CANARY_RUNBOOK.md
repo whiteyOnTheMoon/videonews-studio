@@ -31,7 +31,7 @@ git pull --ff-only origin main
 bash scripts/p1_07_worker_canary.sh preflight
 ```
 
-If and only if preflight passes, build the *worker-only* image. Builds can consume CPU, network bandwidth, cache and disk space; monitor the other projects and stop on signs of resource pressure. Do not clear unrelated images or build caches:
+If and only if preflight passes, build the _worker-only_ image. Builds can consume CPU, network bandwidth, cache and disk space; monitor the other projects and stop on signs of resource pressure. Do not clear unrelated images or build caches:
 
 ```bash
 bash scripts/p1_07_worker_canary.sh build
@@ -56,4 +56,4 @@ A stopped worker container is deliberately not recreated by the script. Investig
 
 Share only `PASS`/`REFUSED` messages, the worker's summary status, and sanitized `df -h /` / `free -h` output. Do not share worker Docker environment, full logs, Redis password, hashed ACL, or application database contents. If the build fails or resources fall below the thresholds, **do not retry or prune** without reassessing the disk and memory impact.
 
-This worker is *probe-only*. Later work to connect real editorial events and the administrative status feed is separate, gated and cannot be inferred from successful canary status.
+This worker is _probe-only_. Later work to connect real editorial events and the administrative status feed is separate, gated and cannot be inferred from successful canary status.
