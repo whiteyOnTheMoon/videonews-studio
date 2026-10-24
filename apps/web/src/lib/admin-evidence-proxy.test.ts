@@ -7,21 +7,32 @@ const COOKIE = "__Host-vns_session=" + "f".repeat(64);
 const JOB = "12345678-1234-4123-8123-123456789012";
 const ID = "87654321-4321-4432-8432-210987654321";
 const EVIDENCE = {
-  id: ID, jobId: JOB, sourceUrl: "https://www.example.org/report",
-  publisher: "Example Press", headline: "Report on local investments",
-  claim: "A candidate awaiting editorial review.", status: "candidate", reviewedAt: null,
+  id: ID,
+  jobId: JOB,
+  sourceUrl: "https://www.example.org/report",
+  publisher: "Example Press",
+  headline: "Report on local investments",
+  claim: "A candidate awaiting editorial review.",
+  status: "candidate",
+  reviewedAt: null,
 };
 
 function get(cookie: string | null = COOKIE) {
   return new Request(CONFIG.origin + "/api/admin/evidence?jobId=" + JOB, {
-    method: "GET", headers: cookie ? { Cookie: cookie } : {},
+    method: "GET",
+    headers: cookie ? { Cookie: cookie } : {},
   });
 }
 
-function post(value: unknown, headers: Record<string,string> = {}) {
+function post(value: unknown, headers: Record<string, string> = {}) {
   return new Request(CONFIG.origin + "/api/admin/evidence/review", {
     method: "POST",
-    headers: { Origin: CONFIG.origin, Cookie: COOKIE, "Content-Type": "application/json", ...headers },
+    headers: {
+      Origin: CONFIG.origin,
+      Cookie: COOKIE,
+      "Content-Type": "application/json",
+      ...headers,
+    },
     body: JSON.stringify(value),
   });
 }
@@ -38,7 +49,16 @@ test("read-only evidence proxy forwards only session and strips private metadata
   };
   assert.equal((await listAdminEvidence(get(), null, fake)).status, 404);
   assert.equal((await listAdminEvidence(get(null), CONFIG, fake)).status, 401);
-  assert.equal((await listAdminEvidence(new Request(CONFIG.origin + "/api/admin/evidence?jobId=bogus"), CONFIG, fake)).status, 400);
+  assert.equal(
+    (
+      await listAdminEvidence(
+        new Request(CONFIG.origin + "/api/admin/evidence?jobId=bogus"),
+        CONFIG,
+        fake,
+      )
+    ).status,
+    400,
+  );
   const success = await listAdminEvidence(get(), CONFIG, fake);
   assert.equal(success.status, 200);
   assert.equal(success.headers.get("cache-control"), "no-store");
@@ -47,11 +67,15 @@ test("read-only evidence proxy forwards only session and strips private metadata
 });
 
 test("evidence proxy rejects invalid upstream content and no-store errors", async () => {
-  const invalid: typeof fetch = async () => Response.json({ evidence: [{...EVIDENCE, private: "secret"}] });
+  const invalid: typeof fetch = async () =>
+    Response.json({ evidence: [{ ...EVIDENCE, private: "secret" }] });
   assert.equal((await listAdminEvidence(get(), CONFIG, invalid)).status, 503);
-  const large: typeof fetch = async () => Response.json({ evidence: Array.from({length:21},()=>EVIDENCE) });
+  const large: typeof fetch = async () =>
+    Response.json({ evidence: Array.from({ length: 21 }, () => EVIDENCE) });
   assert.equal((await listAdminEvidence(get(), CONFIG, large)).status, 503);
-  const failed: typeof fetch = async () => { throw new Error("private db host"); };
+  const failed: typeof fetch = async () => {
+    throw new Error("private db host");
+  };
   const reply = await listAdminEvidence(get(), CONFIG, failed);
   assert.deepEqual(await reply.json(), { error: "temporarily_unavailable" });
 });
@@ -68,11 +92,35 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
   };
   const valid = { evidenceId: ID, decision: "verified" };
   assert.equal((await submitAdminEvidenceReview(post(valid), null, fake)).status, 404);
-  assert.equal((await submitAdminEvidenceReview(post(valid, { Origin: "https://evil.invalid" }), CONFIG, fake)).status, 403);
-  assert.equal((await submitAdminEvidenceReview(post(valid, { Cookie: "other=forged" }), CONFIG, fake)).status, 401);
-  assert.equal((await submitAdminEvidenceReview(post({ ...valid, reviewer: "impersonated" }), CONFIG, fake)).status, 400);
-  assert.equal((await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "candidate" }), CONFIG, fake)).status, 400);
-  assert.equal((await submitAdminEvidenceReview(post({ evidenceId: "invalid", decision: "verified" }), CONFIG, fake)).status, 400);
+  assert.equal(
+    (await submitAdminEvidenceReview(post(valid, { Origin: "https://evil.invalid" }), CONFIG, fake))
+      .status,
+    403,
+  );
+  assert.equal(
+    (await submitAdminEvidenceReview(post(valid, { Cookie: "other=forged" }), CONFIG, fake)).status,
+    401,
+  );
+  assert.equal(
+    (await submitAdminEvidenceReview(post({ ...valid, reviewer: "impersonated" }), CONFIG, fake))
+      .status,
+    400,
+  );
+  assert.equal(
+    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "candidate" }), CONFIG, fake))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await submitAdminEvidenceReview(
+        post({ evidenceId: "invalid", decision: "verified" }),
+        CONFIG,
+        fake,
+      )
+    ).status,
+    400,
+  );
   assert.equal(invoked, 0);
   const success = await submitAdminEvidenceReview(post(valid), CONFIG, fake);
   assert.equal(success.status, 200);
@@ -81,9 +129,12 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
 });
 
 test("review conflict is preserved without exposing upstream details", async () => {
-  const conflict: typeof fetch = async () => Response.json({ secret: "SQL credentials" }, { status: 409 });
+  const conflict: typeof fetch = async () =>
+    Response.json({ secret: "SQL credentials" }, { status: 409 });
   const result = await submitAdminEvidenceReview(
-    post({ evidenceId: ID, decision: "rejected" }), CONFIG, conflict,
+    post({ evidenceId: ID, decision: "rejected" }),
+    CONFIG,
+    conflict,
   );
   assert.equal(result.status, 409);
   assert.deepEqual(await result.json(), { error: "already_reviewed" });
