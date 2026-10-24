@@ -4,9 +4,12 @@ import type { AdminAuth } from "./auth.js";
 import type { AdminJobs } from "./admin-jobs.js";
 import type { EditorAuth } from "./editor-auth.js";
 
-export function createApiServer(options: { auth?: AdminAuth; jobs?: AdminJobs; editor?: EditorAuth } = {}): Server {
+export function createApiServer(
+  options: { auth?: AdminAuth; jobs?: AdminJobs; editor?: EditorAuth } = {},
+): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
-  if (options.editor && (!options.auth || !options.jobs)) throw new Error("Editors require admin/data gates");
+  if (options.editor && (!options.auth || !options.jobs))
+    throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -36,15 +39,18 @@ export function createApiServer(options: { auth?: AdminAuth; jobs?: AdminJobs; e
     }
 
     if (request.url?.startsWith("/editor/") && options.editor) {
-      void options.editor.handle(request, response).then((handled) => {
-        if (!handled) {
-          response.writeHead(404);
-          response.end(JSON.stringify({ error: "not_found" }));
-        }
-      }).catch(() => {
-        if (!response.headersSent) response.writeHead(503);
-        response.end(JSON.stringify({ error: "temporarily_unavailable" }));
-      });
+      void options.editor
+        .handle(request, response)
+        .then((handled) => {
+          if (!handled) {
+            response.writeHead(404);
+            response.end(JSON.stringify({ error: "not_found" }));
+          }
+        })
+        .catch(() => {
+          if (!response.headersSent) response.writeHead(503);
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        });
       return;
     }
 
