@@ -17,9 +17,7 @@ function acceptedInput(action) {
   if (!action || typeof action !== "object" || Array.isArray(action)) return false;
   const required = Object.hasOwn(KEYS, action.type) ? KEYS[action.type] : null;
   if (!required || !USERNAME.test(action.username ?? "")) return false;
-  if (
-    Object.keys(action).sort().join(",") !== [...required].sort().join(",")
-  ) {
+  if (Object.keys(action).sort().join(",") !== [...required].sort().join(",")) {
     return false;
   }
   if (action.type === "create") {
@@ -95,9 +93,7 @@ export async function runCiEditorAccountAction(pool, action) {
     // authorization test for the NOLOGIN provisioner role only.
     await client.query("SET LOCAL ROLE vns_editor_provisioner");
     const passwordHash =
-      action.type === "create" || action.type === "rotate"
-        ? hashPassword(action.password)
-        : null;
+      action.type === "create" || action.type === "rotate" ? hashPassword(action.password) : null;
     let result;
     switch (action.type) {
       case "create":
