@@ -155,3 +155,67 @@ p {
   overflow-wrap: anywhere;
   font-size: 0.82rem;
 }
+
+/* Internal human source review: no automatic publication or background requests. */
+.evidence-section {
+  margin-top: 0.6rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #42587a;
+}
+.evidence-list {
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.8rem;
+  list-style: none;
+}
+.evidence-card {
+  padding: 1rem;
+  border: 1px solid #42587a;
+  border-radius: 9px;
+  display: grid;
+  gap: 0.55rem;
+}
+.evidence-card a {
+  color: #a7c6f6;
+  overflow-wrap: anywhere;
+}
+.evidence-card p {
+  margin: 0.2rem 0;
+}
+.evidence-form {
+  display: grid;
+  gap: 0.7rem;
+}
+.evidence-form select {
+  padding: 0.8rem;
+  color: #f5f7fb;
+  background: #111b2c;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  font: inherit;
+}
+.evidence-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  line-height: 1.5;
+}
+.evidence-form button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font: inherit;
+  background: #8fb5ee;
+  color: #0a101b;
+  font-weight: 700;
+  cursor: pointer;
+}
+.evidence-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.evidence-section :focus-visible {
+  outline: 3px solid white;
+  outline-offset: 2px;
+}
