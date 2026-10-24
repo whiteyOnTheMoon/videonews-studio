@@ -15,21 +15,31 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
 
   async function refresh() {
     try {
-      const response = await fetch("/api/editor/me", { credentials: "same-origin", cache: "no-store" });
+      const response = await fetch("/api/editor/me", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
       if (response.status !== 200) {
-        setRole(null); setActiveUsername("");
+        setRole(null);
+        setActiveUsername("");
         return;
       }
       const data: unknown = await response.json();
-      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid profile");
+      if (!data || typeof data !== "object" || Array.isArray(data))
+        throw new Error("Invalid profile");
       const row = data as Record<string, unknown>;
-      if (Object.keys(row).length !== 2 || typeof row.username !== "string" ||
-          !USERNAME.test(row.username) ||
-          !["editor", "reviewer", "admin"].includes(row.role as string)) throw new Error("Invalid profile");
+      if (
+        Object.keys(row).length !== 2 ||
+        typeof row.username !== "string" ||
+        !USERNAME.test(row.username) ||
+        !["editor", "reviewer", "admin"].includes(row.role as string)
+      )
+        throw new Error("Invalid profile");
       setRole(row.role as EditorRole);
       setActiveUsername(row.username);
     } catch {
-      setRole(null); setActiveUsername("");
+      setRole(null);
+      setActiveUsername("");
       setMessage("Redakteur-Sitzung konnte nicht geprüft werden.");
     }
   }
@@ -54,7 +64,9 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
       setPassword("");
       if (result.status === 200) {
         await refresh();
-        setMessage("Persönliche Anmeldung bestätigt. Nur Reviewer und Administratoren dürfen Quellen bewerten.");
+        setMessage(
+          "Persönliche Anmeldung bestätigt. Nur Reviewer und Administratoren dürfen Quellen bewerten.",
+        );
       } else if (result.status === 429) {
         setMessage("Zu viele Anmeldeversuche. Bitte später erneut versuchen.");
       } else if (result.status === 401) {
@@ -76,7 +88,9 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
     setMessage("");
     try {
       const response = await fetch("/api/editor/logout", {
-        method: "POST", credentials: "same-origin", cache: "no-store",
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
       });
       if (!response.ok) {
         setMessage("Persönliche Abmeldung nicht bestätigt.");
@@ -101,29 +115,56 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
         </div>
       ) : role ? (
         <div className="admin-form">
-          <p role="status">Angemeldet als <strong>{activeUsername}</strong> · Rolle: <strong>{role}</strong></p>
-          <p>Nur Reviewer und Administratoren können Quellenentscheidungen speichern. Für jede Bewertung ist eine Begründung erforderlich.</p>
+          <p role="status">
+            Angemeldet als <strong>{activeUsername}</strong> · Rolle: <strong>{role}</strong>
+          </p>
+          <p>
+            Nur Reviewer und Administratoren können Quellenentscheidungen speichern. Für jede
+            Bewertung ist eine Begründung erforderlich.
+          </p>
           <button type="button" disabled={busy} onClick={() => void logout()}>
             {busy ? "Persönliche Abmeldung …" : "Redakteur-Sitzung abmelden"}
           </button>
         </div>
       ) : (
         <form className="admin-form" onSubmit={(event) => void login(event)}>
-          <p>Der gemeinsame Admin-Zugang ersetzt keine persönliche Prüfung. Melde dich für redaktionelle Bewertungen zusätzlich mit deinem eigenen Konto an.</p>
+          <p>
+            Der gemeinsame Admin-Zugang ersetzt keine persönliche Prüfung. Melde dich für
+            redaktionelle Bewertungen zusätzlich mit deinem eigenen Konto an.
+          </p>
           <label htmlFor="editor-username">Redakteur-Benutzername</label>
-          <input id="editor-username" value={username} autoComplete="username"
-            minLength={3} maxLength={32} required disabled={busy}
-            onChange={(event) => setUsername(event.target.value)} />
+          <input
+            id="editor-username"
+            value={username}
+            autoComplete="username"
+            minLength={3}
+            maxLength={32}
+            required
+            disabled={busy}
+            onChange={(event) => setUsername(event.target.value)}
+          />
           <label htmlFor="editor-password">Persönliches Passwort</label>
-          <input id="editor-password" type="password" value={password}
-            autoComplete="current-password" minLength={12} maxLength={256}
-            required disabled={busy} onChange={(event) => setPassword(event.target.value)} />
+          <input
+            id="editor-password"
+            type="password"
+            value={password}
+            autoComplete="current-password"
+            minLength={12}
+            maxLength={256}
+            required
+            disabled={busy}
+            onChange={(event) => setPassword(event.target.value)}
+          />
           <button type="submit" disabled={busy || !USERNAME.test(username) || password.length < 12}>
             {busy ? "Anmeldung …" : "Persönlich anmelden"}
           </button>
         </form>
       )}
-      {message ? <p role="status" aria-live="polite">{message}</p> : null}
+      {message ? (
+        <p role="status" aria-live="polite">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }
