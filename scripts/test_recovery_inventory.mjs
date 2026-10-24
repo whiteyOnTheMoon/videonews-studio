@@ -52,7 +52,15 @@ const DISPOSITIONS = new Set([
   "independent-custody",
   "not-configured",
 ]);
-const CATEGORIES = new Set(["code", "configuration", "data", "credential", "identity", "external", "planned"]);
+const CATEGORIES = new Set([
+  "code",
+  "configuration",
+  "data",
+  "credential",
+  "identity",
+  "external",
+  "planned",
+]);
 const EXACT_RECORD_FIELDS = [
   "id",
   "category",
@@ -121,7 +129,11 @@ export function validateInventory(inventory, plan) {
       assert.equal(record[key], false, `Unverified claim must remain false: ${record.id}.${key}`);
     }
     for (const key of ["approvedCustodian", "backupLocation", "evidenceReference"]) {
-      assert.equal(record[key], null, `No real approval or location has been established: ${record.id}`);
+      assert.equal(
+        record[key],
+        null,
+        `No real approval or location has been established: ${record.id}`,
+      );
     }
     if (record.category === "code") assert.equal(record.disposition, "rebuild");
     if (record.category === "credential") {
@@ -129,9 +141,17 @@ export function validateInventory(inventory, plan) {
     }
     if (record.category === "planned") assert.equal(record.disposition, "not-configured");
   }
-  assert.deepEqual([...indexed.keys()], REQUIRED_IDS, "Recovery component inventory order/coverage");
+  assert.deepEqual(
+    [...indexed.keys()],
+    REQUIRED_IDS,
+    "Recovery component inventory order/coverage",
+  );
   for (const id of REQUIRED_BACKUPS) {
-    assert.equal(indexed.get(id).disposition, "backup-required", `Loss of critical backup item ${id}`);
+    assert.equal(
+      indexed.get(id).disposition,
+      "backup-required",
+      `Loss of critical backup item ${id}`,
+    );
   }
   assert.equal(indexed.get("uploaded-media").disposition, "not-configured");
   assert.equal(indexed.get("cloudflare-tunnel-config").disposition, "operator-verify");
