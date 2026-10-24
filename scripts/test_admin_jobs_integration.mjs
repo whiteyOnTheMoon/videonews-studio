@@ -212,7 +212,13 @@ try {
     [evidenceId],
   );
   assert.equal(audit.rowCount, 1);
-  assert.deepEqual(audit.rows[0], { before_status: "candidate", after_status: "disputed", reason: REASON, reviewer_label: "admin-session", editor_id: null });
+  assert.deepEqual(audit.rows[0], {
+    before_status: "candidate",
+    after_status: "disputed",
+    reason: REASON,
+    reviewer_label: "admin-session",
+    editor_id: null,
+  });
   assert.ok(reviewRow.rows[0].reviewed_at instanceof Date);
   const updatedEvidence = await fetch(evidenceUrl, { headers: { Cookie: cookie } });
   assert.equal((await updatedEvidence.json()).evidence[0].status, "disputed");
