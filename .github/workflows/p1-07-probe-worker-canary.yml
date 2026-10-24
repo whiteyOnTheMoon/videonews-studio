@@ -82,6 +82,7 @@ jobs:
             prefix: "bull:vns",
           });
           const queue = new Queue("vns-jobs", { connection, prefix: "bull:vns" });
+          let passed = false;
           try {
             await events.waitUntilReady();
             console.log("CI: QueueEvents connected");
@@ -95,11 +96,13 @@ jobs:
               throw new Error("worker image did not finish harmless probe");
             }
             console.log("PASS: disposable probe processed to completed state");
-          } finally {
-            await queue.close();
-            await events.close();
-            await connection.quit();
+            passed = true;
+          } catch {
+            console.error("FAIL: disposable probe was not completed");
           }
+          // This is a short-lived CI-only client. Explicit exit closes its
+          // network sockets without waiting on QueueEvents blocking reads.
+          process.exit(passed ? 0 : 1);
           JS
           if bash scripts/p1_07_worker_canary.sh start; then
             echo "FAIL: duplicate worker start incorrectly permitted"
