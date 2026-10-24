@@ -19,7 +19,10 @@ export interface EvidenceSummary {
 
 export interface EvidenceReviewStore {
   list(jobId: string): Promise<EvidenceSummary[]>;
-  review(evidenceId: string, decision: Decision): Promise<"updated" | "missing" | "already_reviewed">;
+  review(
+    evidenceId: string,
+    decision: Decision,
+  ): Promise<"updated" | "missing" | "already_reviewed">;
 }
 
 export function parseReview(value: unknown): { evidenceId: string; decision: Decision } | null {
@@ -30,26 +33,33 @@ export function parseReview(value: unknown): { evidenceId: string; decision: Dec
     typeof body.evidenceId !== "string" ||
     !UUID.test(body.evidenceId) ||
     !DECISIONS.some((decision) => decision === body.decision)
-  ) return null;
+  )
+    return null;
   return { evidenceId: body.evidenceId, decision: body.decision as Decision };
 }
 
 function validEvidence(value: unknown): value is EvidenceSummary {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
-  return Object.keys(row).length === 8 &&
-    typeof row.id === "string" && UUID.test(row.id) &&
-    typeof row.jobId === "string" && UUID.test(row.jobId) &&
-    typeof row.sourceUrl === "string" && row.sourceUrl.startsWith("https://") &&
+  return (
+    Object.keys(row).length === 8 &&
+    typeof row.id === "string" &&
+    UUID.test(row.id) &&
+    typeof row.jobId === "string" &&
+    UUID.test(row.jobId) &&
+    typeof row.sourceUrl === "string" &&
+    row.sourceUrl.startsWith("https://") &&
     row.sourceUrl.length <= 512 &&
-    typeof row.publisher === "string" && row.publisher.length <= 120 &&
-    typeof row.headline === "string" && row.headline.length <= 200 &&
-    typeof row.claim === "string" && row.claim.length <= 280 &&
+    typeof row.publisher === "string" &&
+    row.publisher.length <= 120 &&
+    typeof row.headline === "string" &&
+    row.headline.length <= 200 &&
+    typeof row.claim === "string" &&
+    row.claim.length <= 280 &&
     ["candidate", ...DECISIONS].includes(row.status as Decision) &&
-    (row.reviewedAt === null || (
-      typeof row.reviewedAt === "string" &&
-      !Number.isNaN(Date.parse(row.reviewedAt))
-    ));
+    (row.reviewedAt === null ||
+      (typeof row.reviewedAt === "string" && !Number.isNaN(Date.parse(row.reviewedAt))))
+  );
 }
 
 async function jsonRequest(request: IncomingMessage): Promise<unknown> {
@@ -64,8 +74,11 @@ async function jsonRequest(request: IncomingMessage): Promise<unknown> {
     if (length > 512) return null;
     chunks.push(bytes);
   }
-  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown; }
-  catch { return null; }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function respond(response: ServerResponse, code: number, data: object): void {
@@ -94,7 +107,9 @@ export class AdminEvidence {
           return;
         }
         jobId = parsed.searchParams.get("jobId");
-      } catch { /* Invalid URL is rejected below. */ }
+      } catch {
+        /* Invalid URL is rejected below. */
+      }
       if (!jobId || !UUID.test(jobId)) {
         respond(response, 400, { error: "invalid_request" });
         return;
@@ -123,7 +138,8 @@ export class AdminEvidence {
       try {
         const outcome = await this.store.review(review.evidenceId, review.decision);
         if (outcome === "missing") respond(response, 404, { error: "not_found" });
-        else if (outcome === "already_reviewed") respond(response, 409, { error: "already_reviewed" });
+        else if (outcome === "already_reviewed")
+          respond(response, 409, { error: "already_reviewed" });
         else if (outcome === "updated") respond(response, 200, { reviewed: true });
         else throw new Error("Invalid review outcome");
       } catch {
@@ -141,9 +157,16 @@ export class PostgresEvidenceReviewStore implements EvidenceReviewStore {
   async list(jobId: string): Promise<EvidenceSummary[]> {
     if (!UUID.test(jobId)) throw new Error("Invalid job id");
     const { rows } = await this.pool.query<{
-      id: string; jobId: string; sourceUrl: string; publisher: string;
-      headline: string; claim: string; status: EvidenceSummary["status"]; reviewedAt: Date | null;
-    }>(`
+      id: string;
+      jobId: string;
+      sourceUrl: string;
+      publisher: string;
+      headline: string;
+      claim: string;
+      status: EvidenceSummary["status"];
+      reviewedAt: Date | null;
+    }>(
+      `
       SELECT e.id::text AS id, e.job_id::text AS "jobId",
              e.source_url AS "sourceUrl", e.publisher, e.headline,
              e.claim_text AS claim, e.review_status AS status, e.reviewed_at AS "reviewedAt"
@@ -152,15 +175,25 @@ export class PostgresEvidenceReviewStore implements EvidenceReviewStore {
       WHERE e.job_id = $1::uuid
       ORDER BY e.created_at DESC, e.id DESC
       LIMIT 20
-    `, [jobId]);
+    `,
+      [jobId],
+    );
     return rows.map((row) => ({
-      id: row.id, jobId: row.jobId, sourceUrl: row.sourceUrl,
-      publisher: row.publisher, headline: row.headline, claim: row.claim,
-      status: row.status, reviewedAt: row.reviewedAt?.toISOString() ?? null,
+      id: row.id,
+      jobId: row.jobId,
+      sourceUrl: row.sourceUrl,
+      publisher: row.publisher,
+      headline: row.headline,
+      claim: row.claim,
+      status: row.status,
+      reviewedAt: row.reviewedAt?.toISOString() ?? null,
     }));
   }
 
-  async review(evidenceId: string, decision: Decision): Promise<"updated" | "missing" | "already_reviewed"> {
+  async review(
+    evidenceId: string,
+    decision: Decision,
+  ): Promise<"updated" | "missing" | "already_reviewed"> {
     if (!UUID.test(evidenceId) || !DECISIONS.includes(decision)) {
       throw new Error("Invalid editorial review");
     }
