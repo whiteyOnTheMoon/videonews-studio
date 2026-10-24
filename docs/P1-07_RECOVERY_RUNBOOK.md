@@ -1,9 +1,17 @@
 # P1-07 — Full-stack recovery runbook and release gates
 
-**Status: offline design, NOT APPROVED FOR PRODUCTION.** VideoNews Studio currently
+**Status: full disaster recovery is NOT approved.** VideoNews Studio still
 has **no approved off-host backup destination, retention budget, recovery
-objectives, or full-stack restore drill**. No new PostgreSQL, Redis, worker,
-media storage or audit-archive service is to be started on the VPS.
+objectives, or full-stack restore drill**. The **2026-10-25 operator-approved
+no-backup experimental exception** allowed a narrowly isolated PostgreSQL 17,
+Redis 7 and probe-only worker rollout on the VPS. Their health, eleven schema
+migrations, ACL, a retained harmless BullMQ probe and an idle worker-only restart
+have since been confirmed by the operator. The original blanket ban on data
+and worker startup in this runbook is therefore historical for that **specific
+experiment**, not a general ban still in force. It does **not** authorize real
+editorial processing, publication, untested service additions or claims of
+recoverability. See [live acceptance status](P1-07_LIVE_ACCEPTANCE_STATUS.md).
+All twelve full-recovery gates remain **false**.
 
 This runbook and the associated
 [`p1-07-recovery-plan.json`](p1-07-recovery-plan.json) are planning
