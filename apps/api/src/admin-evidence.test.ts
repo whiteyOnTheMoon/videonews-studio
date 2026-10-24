@@ -40,6 +40,7 @@ test("only allowlisted evidence review decisions are valid", () => {
   assert.deepEqual(parseReview({ evidenceId: ID, decision: "verified", reason: REASON }), {
     evidenceId: ID,
     decision: "verified",
+    reason: REASON,
   });
   for (const invalid of [
     null,
