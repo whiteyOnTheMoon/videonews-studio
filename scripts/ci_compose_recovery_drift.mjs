@@ -6,7 +6,6 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 
-const ROOT = new URL("../", import.meta.url);
 const MAP_URL = new URL("../docs/p1-07-compose-recovery-map.json", import.meta.url);
 const INVENTORY_URL = new URL("../docs/p1-07-recovery-inventory.json", import.meta.url);
 const COMPOSE_URL = new URL("../compose.yaml", import.meta.url);
