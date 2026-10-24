@@ -7,6 +7,7 @@ export interface StatusCandidate {
   job_id: string;
   kind: string;
   queue_job_id: string;
+  max_attempts: number;
   status: "pending" | "running" | "retry";
 }
 
@@ -21,7 +22,7 @@ export interface StatusSyncResult {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const SELECT_JOBS = `
-  SELECT j.id::text AS job_id, j.kind, ob.queue_job_id, j.status
+  SELECT j.id::text AS job_id, j.kind, j.max_attempts, ob.queue_job_id, j.status
   FROM vns.jobs AS j
   JOIN vns.job_outbox AS ob ON ob.job_id = j.id
   WHERE j.status IN ('pending', 'running', 'retry')
@@ -37,6 +38,9 @@ export function validateCandidate(value: StatusCandidate): void {
     value.queue_job_id !== "job-" + value.job_id.replaceAll("-", "")
   ) {
     throw new Error("Malformed persisted queue job identifier");
+  }
+  if (!Number.isInteger(value.max_attempts) || value.max_attempts < 1 || value.max_attempts > 20) {
+    throw new Error("Invalid persisted retry policy");
   }
   if (
     !["research", "script", "render", "upload"].includes(value.kind) ||
@@ -76,7 +80,13 @@ function verifyRedisJob(job: Job, row: StatusCandidate): void {
     job.name !== row.kind ||
     job.data?.kind !== row.kind ||
     job.data?.jobId !== row.job_id ||
-    Object.keys(job.data ?? {}).length !== 2
+    Object.keys(job.data ?? {}).length !== 2 ||
+    job.opts.attempts !== row.max_attempts ||
+    typeof job.opts.backoff !== "object" ||
+    job.opts.backoff?.type !== "exponential" ||
+    job.opts.backoff?.delay !== 1000 ||
+    job.opts.removeOnComplete !== false ||
+    job.opts.removeOnFail !== false
   ) {
     throw new Error("Redis job conflicts with persisted editorial record");
   }
