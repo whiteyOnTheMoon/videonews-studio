@@ -1,0 +1,64 @@
+name: P1-07 probe worker canary (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "Dockerfile.worker"
+      - "scripts/p1_07_worker_canary.sh"
+      - "docs/P1-07_WORKER_CANARY_RUNBOOK.md"
+      - ".github/workflows/p1-07-probe-worker-canary.yml"
+      - "apps/worker/**"
+      - "packages/shared/**"
+      - "package-lock.json"
+      - "deploy/compose.worker.yaml"
+      - "compose.yaml"
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      VNS_CI_WORKER_PROJECT: vns-p107-worker-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check operator helper syntax and create disposable secrets
+        run: |
+          bash -n scripts/p1_07_worker_canary.sh
+          python3 scripts/provision_redis_secrets.py secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(fd, "w", encoding="ascii") as output:
+              output.write("CI-only-fake-PostgreSQL-passphrase\n")
+          PY
+      - name: Start only disposable authenticated Redis and exercise worker canary
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose -p vns-p107-worker-ci -f compose.yaml -f deploy/compose.worker.yaml \
+              --profile data --profile worker down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p107-worker-ci -f compose.yaml \
+            --profile data up -d --no-deps --no-build --pull missing redis
+          healthy=0
+          for _ in $(seq 1 40); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' vns-p107-worker-ci-redis-1 2>/dev/null || true)
+            if [[ "$status" == healthy ]]; then healthy=1; break; fi
+            [[ "$status" != unhealthy ]] || break
+            sleep 2
+          done
+          [[ "$healthy" == 1 ]] || { echo "CI Redis unhealthy"; exit 1; }
+          bash scripts/p1_07_worker_canary.sh preflight
+          bash scripts/p1_07_worker_canary.sh build
+          bash scripts/p1_07_worker_canary.sh start
+          bash scripts/p1_07_worker_canary.sh status
+          if bash scripts/p1_07_worker_canary.sh start; then
+            echo "FAIL: duplicate worker start incorrectly permitted"
+            exit 1
+          fi
+          bash scripts/p1_07_worker_canary.sh stop
+          [[ "$(docker inspect -f '{{.State.Status}}' vns-p107-worker-ci-worker-1)" == exited ]]
+          echo "PASS: targeted worker built, authenticated, started once, duplicate refused, stopped"
