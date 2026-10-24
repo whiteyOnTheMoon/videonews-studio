@@ -85,9 +85,10 @@ try {
      PASSWORD '${password}'`,
   );
   createdRole = true;
-  await owner.query(
-    "GRANT vns_outbox_dispatcher TO vns_ci_recovery_reader WITH INHERIT TRUE, SET FALSE, ADMIN FALSE",
-  );
+  // Do NOT inherit the dispatcher role: it has outbox UPDATE rights.
+  // The separate CI recovery login gets strictly SELECT on just two tables.
+  await owner.query("GRANT USAGE ON SCHEMA vns TO vns_ci_recovery_reader");
+  await owner.query("GRANT SELECT ON vns.jobs, vns.job_outbox TO vns_ci_recovery_reader");
   const who = await readOnly.query("SELECT current_user, session_user");
   assert.equal(who.rows[0].session_user, role);
   await assert.rejects(
@@ -193,7 +194,12 @@ try {
   await Promise.allSettled([readOnly.end(), queue.close()]);
   await redis.quit().catch(() => undefined);
   if (createdRole) {
-    await owner.query("REVOKE vns_outbox_dispatcher FROM vns_ci_recovery_reader").catch(() => undefined);
+    await owner
+      .query("REVOKE SELECT ON vns.jobs, vns.job_outbox FROM vns_ci_recovery_reader")
+      .catch(() => undefined);
+    await owner
+      .query("REVOKE USAGE ON SCHEMA vns FROM vns_ci_recovery_reader")
+      .catch(() => undefined);
     await owner.query("DROP ROLE vns_ci_recovery_reader").catch(() => undefined);
   }
   await owner.end();
