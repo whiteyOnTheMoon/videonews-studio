@@ -16,8 +16,8 @@ BEGIN
      OR has_column_privilege('vns_api_runtime','vns.research_evidence',
                              'review_status','UPDATE')
      OR has_table_privilege('vns_api_runtime','vns.evidence_review_events','INSERT')
-     OR has_function_privilege('public','vns.review_evidence_as_editor(uuid,text,text,uuid,integer)',
-                               'EXECUTE') THEN
+     OR has_function_privilege('vns_outbox_dispatcher',
+       'vns.review_evidence_as_editor(uuid,text,text,uuid,integer)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Runtime API/public acquired unsafe privileges';
   END IF;
   IF NOT has_function_privilege('vns_api_runtime',
