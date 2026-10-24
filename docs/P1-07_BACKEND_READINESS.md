@@ -119,3 +119,40 @@ brief digest/snippet should be stored as auditable provenance. `SourceDocument`
 contains external untrusted text, not instructions for the assistant or a
 basis for automatic factual validation. Passing the URL policy is not proof
 that a source or its claims are reliable.
+
+## Synthetic editorial research processor (offline integration, not deployed)
+
+The new `apps/worker/src/research-process.ts` is an explicitly constructed
+BullMQ processor, **not** the running `apps/worker/src/index.ts` entrypoint.
+It refuses non-research job names, forged job IDs/payloads, missing PostgreSQL
+research topics, zero or more than three candidate sources, duplicate sources
+and invalid retrieval metadata. Source candidates come from an injected
+provider. The injectable fetch port can later be wired to the separate
+allowlisted, DNS-pinned HTTPS retrieval layer; no production provider or
+source discovery adapter is installed yet.
+
+The processor loads the authoritative topic from PostgreSQL, passes it to a
+provider, validates candidates with `makeSourceCandidate`, retrieves each
+source through the injected fetch port, and stores the source URL,
+publisher, headline, claim and observed timestamp in
+`vns.research_evidence` with database-default `review_status='candidate'`.
+It never stores the fetched web page body, creates a verified verdict, updates
+approval metadata, renders videos or publishes anything. If BullMQ retries a
+job, the unique key `(job_id, source_url, claim_text)` makes writes idempotent:
+an exact repeat preserves even an already reviewed record, while altered
+publisher/headline metadata cause a fail-closed conflict.
+
+CI builds the real worker code and runs a **synthetic** BullMQ research job
+through Redis into a **disposable** PostgreSQL 17 database, then checks that
+there is exactly one unverified provenance row, and that retries leave
+existing reviewer decisions intact. This does not claim any external website
+was queried or any report verified; the CI provider and fetched document are
+synthetic. The running worker remains probe-only, and no source provider,
+PostgreSQL credential or web access is enabled on the VPS.
+
+Before live source discovery or editorial jobs may run, implement and review
+trusted source discovery, explicit provider allowlists and rights policies,
+authenticated human review, safe summarization and claim-to-source traceability,
+auditable content digests, budget/rate limits, data recovery and least-privilege
+DB credentials. A BullMQ `done` state describes processor completion,
+**not** publication or fact verification.
