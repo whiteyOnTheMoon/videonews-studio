@@ -1,0 +1,63 @@
+name: P1-07 fresh PostgreSQL schema bootstrap (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_07_schema_bootstrap.sh"
+      - ".github/workflows/p1-07-schema-bootstrap.yml"
+      - "db/migrations/**"
+permissions:
+  contents: read
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+      VNS_CI_MIGRATION_PROJECT: vns-p107-migrate-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate helper shell syntax
+        run: bash -n scripts/p1_07_schema_bootstrap.sh
+      - name: Set up isolated fake-only credentials
+        run: |
+          mkdir -p -m 700 secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(fd, "w", encoding="ascii") as out:
+              out.write("ci-disposable-postgres-password-not-for-real-deployment\n")
+          PY
+      - name: Run migrations against a disposable Compose project
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose -p vns-p107-migrate-ci -f compose.yaml --profile data down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p107-migrate-ci -f compose.yaml --profile data \
+            up -d --no-deps --no-build --pull missing postgres
+          healthy=0
+          for i in $(seq 1 60); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' vns-p107-migrate-ci-postgres-1 2>/dev/null || true)
+            if [[ "$status" == healthy ]]; then healthy=1; break; fi
+            [[ "$status" != unhealthy ]] || break
+            sleep 2
+          done
+          [[ "$healthy" == 1 ]] || { echo 'Refused: disposable PostgreSQL unhealthy'; exit 1; }
+          bash scripts/p1_07_schema_bootstrap.sh preflight
+          bash scripts/p1_07_schema_bootstrap.sh apply
+          bash scripts/p1_07_schema_bootstrap.sh status
+          if bash scripts/p1_07_schema_bootstrap.sh preflight; then
+            echo 'FAIL: repeat bootstrap was wrongly permitted'
+            exit 1
+          fi
+          if bash scripts/p1_07_schema_bootstrap.sh apply; then
+            echo 'FAIL: duplicate bootstrap was wrongly permitted'
+            exit 1
+          fi
+          count=$(docker exec vns-p107-migrate-ci-postgres-1 psql -X -A -t -q \
+            -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c 'SELECT count(*) FROM vns.schema_migrations')
+          [[ "$count" == 11 ]]
+          echo 'PASS: eleven migrations, preserved schema, repeat runs fail closed'
