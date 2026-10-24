@@ -54,7 +54,7 @@ async function requestReviewBody(request: Request): Promise<string | null> {
       const { done, value } = await reader.read();
       if (done) break;
       count += value.byteLength;
-      if (count > 512) return null;
+      if (count > 1024) return null;
       chunks.push(value);
     }
     const bytes = new Uint8Array(count);
