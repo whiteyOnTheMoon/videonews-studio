@@ -7,6 +7,7 @@ on:
       - "scripts/test_p1_07_readiness.py"
       - "docs/P1-07_BACKEND_READINESS.md"
       - "compose.yaml"
+      - "deploy/compose.worker.yaml"
       - "scripts/provision_redis_secrets.py"
       - "scripts/test_provision_redis_secrets.py"
       - "db/scripts/test_redis_acl.sh"
@@ -30,6 +31,7 @@ jobs:
           chmod 600 secrets/postgres_password
           python3 scripts/provision_redis_secrets.py secrets
           docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
+          docker compose -f compose.yaml -f deploy/compose.worker.yaml --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py --worker-overlay
       - name: Run disposable Redis authentication and ACL isolation tests
         env:
           CI: "true"
