@@ -8,8 +8,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const JOB_KINDS = new Set(["research", "script", "render", "upload"]);
 const PG_STATES = new Set(["pending", "running", "retry", "done", "failed", "cancelled"]);
 const BULL_STATES = new Set([
-  "waiting", "delayed", "active", "paused", "waiting-children",
-  "completed", "failed", "unknown",
+  "waiting",
+  "delayed",
+  "active",
+  "paused",
+  "waiting-children",
+  "completed",
+  "failed",
+  "unknown",
 ]);
 
 function ciOnly(pool, queue) {
@@ -76,9 +82,7 @@ export async function inspectCiRecovery(pool, queue, limit = LIMIT) {
       let category;
       if (!observed) {
         category =
-          row.delivery_state === "pending"
-            ? "pending_without_redis"
-            : "missing_enqueued_redis";
+          row.delivery_state === "pending" ? "pending_without_redis" : "missing_enqueued_redis";
       } else {
         assert.equal(observed.id, row.queue_job_id);
         if (
