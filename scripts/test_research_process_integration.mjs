@@ -5,7 +5,10 @@ import { readFileSync } from "node:fs";
 import { Queue, QueueEvents, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import pg from "pg";
-import { createResearchProcessor, PostgresResearchEvidenceStore } from "../apps/worker/dist/research-process.js";
+import {
+  createResearchProcessor,
+  PostgresResearchEvidenceStore,
+} from "../apps/worker/dist/research-process.js";
 import { dispatchOutboxBatch } from "../apps/worker/dist/outbox.js";
 import { QUEUE_NAME, QUEUE_PREFIX } from "../apps/worker/dist/queue.js";
 
@@ -81,10 +84,7 @@ try {
   await db.query("DELETE FROM vns.research_requests");
   await db.query("DELETE FROM vns.jobs");
   const key = "ci-research-proc-job-001";
-  const created = await db.query(
-    "SELECT vns.create_research_request($1, $2) AS id",
-    [key, topic],
-  );
+  const created = await db.query("SELECT vns.create_research_request($1, $2) AS id", [key, topic]);
   const jobId = created.rows[0].id;
   // The test runner might still have earlier CI job fixtures; only require
   // that our deterministic ID appears, not that the batch inserted one.
@@ -121,7 +121,9 @@ try {
   assert.equal(evidence.rows[0].reviewed_at, null);
   assert.equal(evidence.rows[0].observed_at.toISOString(), fetchedAt);
   assert.ok(!JSON.stringify(evidence.rows).includes(document.text));
-  console.log("PASS: synthetic BullMQ research job records exactly one unverified evidence candidate");
+  console.log(
+    "PASS: synthetic BullMQ research job records exactly one unverified evidence candidate",
+  );
 
   // A worker re-run after a stall may retrieve the same source again,
   // but must not overwrite its original provenance or duplicate the row.
@@ -151,16 +153,22 @@ try {
   // Same source/claim but changed publisher is not an idempotent replay.
   const conflict = createResearchProcessor(
     store,
-    { async discover() { return [{ ...candidate, publisher: "Impostor Publisher" }]; } },
-    { async fetch() { return document; } },
+    {
+      async discover() {
+        return [{ ...candidate, publisher: "Impostor Publisher" }];
+      },
+    },
+    {
+      async fetch() {
+        return document;
+      },
+    },
   );
   await assert.rejects(conflict(queued), /conflicts with existing provenance/);
   console.log("PASS: conflicting replays fail closed without rewriting provenance");
 } finally {
-  await Promise.allSettled([
-    worker?.close(), events.close(), queue.close(), db.end(),
-  ].filter(Boolean));
-  await Promise.allSettled([producerRedis, eventRedis, workerRedis].map((conn) =>
-    conn.quit(),
-  ));
+  await Promise.allSettled(
+    [worker?.close(), events.close(), queue.close(), db.end()].filter(Boolean),
+  );
+  await Promise.allSettled([producerRedis, eventRedis, workerRedis].map((conn) => conn.quit()));
 }
