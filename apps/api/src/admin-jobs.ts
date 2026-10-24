@@ -101,7 +101,7 @@ export class AdminJobs {
     private readonly auth: AdminAuth,
     private readonly store: ResearchJobStore,
     private readonly evidence?: AdminEvidence,
-  ) {} 
+  ) {}
 
   async handleEvidence(request: IncomingMessage, response: ServerResponse): Promise<void> {
     if (!this.evidence) {
@@ -262,6 +262,9 @@ export function adminJobsFromEnv(
     idleTimeoutMillis: 5000,
     statement_timeout: 8000,
   });
-  return new AdminJobs(auth, new PostgresResearchJobStore(pool),
-    new AdminEvidence(auth, new PostgresEvidenceReviewStore(pool)));
+  return new AdminJobs(
+    auth,
+    new PostgresResearchJobStore(pool),
+    new AdminEvidence(auth, new PostgresEvidenceReviewStore(pool)),
+  );
 }
