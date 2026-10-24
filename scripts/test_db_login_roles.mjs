@@ -129,20 +129,23 @@ try {
   // An independently authenticated synthetic governance LOGIN, without
   // owner rights, registers the ephemeral provisioner via the scoped function.
   await refuses(provisioner, "SELECT * FROM vns.editor_operator_registry");
-  await refuses(provisioner,
-    "SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)",
-    ["vns_ci_provision_login","cccccccc-1234-4123-8123-cccccccccccc",
-     "CI Provisioning Operator","Unauthorized self-enrollment attempt is refused."]);
-  await refuses(governor,
+  await refuses(provisioner, "SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)", [
+    "vns_ci_provision_login",
+    "cccccccc-1234-4123-8123-cccccccccccc",
+    "CI Provisioning Operator",
+    "Unauthorized self-enrollment attempt is refused.",
+  ]);
+  await refuses(
+    governor,
     "INSERT INTO vns.editor_operator_registry(login_role,operator_id,operator_label) VALUES ($1,$2,$3)",
-    ["vns_ci_provision_login","cccccccc-1234-4123-8123-cccccccccccc",
-     "Forged Operator"]);
-  await governor.query(
-    "SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)",
-    ["vns_ci_provision_login", "cccccccc-1234-4123-8123-cccccccccccc",
-     "Synthetic CI Provisioning Operator",
-     "Independent disposable CI governance approval for account maintenance."],
+    ["vns_ci_provision_login", "cccccccc-1234-4123-8123-cccccccccccc", "Forged Operator"],
   );
+  await governor.query("SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)", [
+    "vns_ci_provision_login",
+    "cccccccc-1234-4123-8123-cccccccccccc",
+    "Synthetic CI Provisioning Operator",
+    "Independent disposable CI governance approval for account maintenance.",
+  ]);
   const registered = await owner.query(
     "SELECT operator_login FROM vns.editor_account_lifecycle_events WHERE operator_login=$1",
     ["vns_ci_provision_login"],
@@ -299,26 +302,31 @@ try {
   }
   // Revocation is separately authenticated and fully audited. A revoked
   // operator can no longer mutate accounts, despite retaining table GRANTs.
-  await governor.query(
-    "SELECT vns.revoke_editor_operator($1::name,$2)",
-    ["vns_ci_provision_login",
-     "Synthetic governance revocation after completing isolated CI checks."],
-  );
+  await governor.query("SELECT vns.revoke_editor_operator($1::name,$2)", [
+    "vns_ci_provision_login",
+    "Synthetic governance revocation after completing isolated CI checks.",
+  ]);
   const governanceEvents = await owner.query(
     `SELECT event_type,authorized_by,login_role
        FROM vns.editor_operator_registry_events
       WHERE login_role='vns_ci_provision_login' ORDER BY recorded_at,id`,
   );
-  assert.deepEqual(governanceEvents.rows.map((row) => row.event_type),
-    ["registered", "revoked"]);
-  assert.ok(governanceEvents.rows.every((row) =>
-    row.authorized_by === "vns_ci_govern_login"));
-  await refuses(provisioner,
-    "UPDATE vns.editor_accounts SET active=true WHERE username='ci_login_probe'");
-  await assert.rejects(governor.query(
-    "SELECT vns.revoke_editor_operator($1::name,$2)",
-    ["vns_ci_provision_login","Repeat revocation should fail closed, not double-log."]),
-    (error) => error?.code === "22023");
+  assert.deepEqual(
+    governanceEvents.rows.map((row) => row.event_type),
+    ["registered", "revoked"],
+  );
+  assert.ok(governanceEvents.rows.every((row) => row.authorized_by === "vns_ci_govern_login"));
+  await refuses(
+    provisioner,
+    "UPDATE vns.editor_accounts SET active=true WHERE username='ci_login_probe'",
+  );
+  await assert.rejects(
+    governor.query("SELECT vns.revoke_editor_operator($1::name,$2)", [
+      "vns_ci_provision_login",
+      "Repeat revocation should fail closed, not double-log.",
+    ]),
+    (error) => error?.code === "22023",
+  );
   await refuses(api, "SELECT * FROM vns.editor_operator_registry_events");
   await refuses(governor, "DELETE FROM vns.editor_operator_registry_events");
   console.log("PASS: authenticated governor registers, audits and revokes provisioner");
