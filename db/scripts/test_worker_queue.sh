@@ -59,9 +59,7 @@ docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
   < "$root/db/migrations/0005_editorial_review_audit.up.sql"
 node "$root/scripts/test_outbox_integration.mjs"
 node "$root/scripts/test_job_status_integration.mjs"
-node "$root/scripts/test_research_process_integration.mjs"
-# The recovery observer uses a separate NOLOGIN-derived read-only database
-# identity; production PostgreSQL/Redis remains entirely unmodified.
-docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
-  < "$root/db/migrations/0007_runtime_role_boundaries.up.sql"
+# A separate synthetic read-only PostgreSQL LOGIN inspects CI-only queue
+# fixtures before the later research-evidence audit is populated.
 VNS_CI_RECOVERY_AUDIT=true node "$root/scripts/test_ci_outbox_recovery_audit.mjs"
+node "$root/scripts/test_research_process_integration.mjs"
