@@ -208,7 +208,6 @@ account lifecycle administration and independent audit retention remain
 requirements for production. GitHub CI uses synthetic credentials and
 disposable PostgreSQL; no live VPS services change.
 
-
 ## Personal editor browser integration (still disabled)
 
 `VNS_WEB_EDITOR_AUTH_ENABLED=true` is a separate web-side gate requiring
