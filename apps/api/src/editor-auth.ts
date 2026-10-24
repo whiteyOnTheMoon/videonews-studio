@@ -1,7 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import pg, { type Pool, type PoolClient } from "pg";
+import pg, { type Pool } from "pg";
 import { parseReview } from "./admin-evidence.js";
 import type { AdminAuth } from "./auth.js";
 import type { AdminJobs } from "./admin-jobs.js";
@@ -391,47 +391,28 @@ export class PostgresEditorStore implements EditorStore {
     if (!UUID.test(id) || !UUID.test(editorId) || !Number.isSafeInteger(authVersion)) {
       throw new Error("Invalid review identity");
     }
-    const client: PoolClient = await this.pool.connect();
-    let inTransaction = false;
     try {
-      await client.query("BEGIN");
-      inTransaction = true;
-      // Prevent simultaneous deactivation/role modification while committing.
-      const account = await client.query<{ username: string; role: EditorRole }>(
-        `SELECT username, role FROM vns.editor_accounts
-         WHERE id=$1::uuid AND active=true AND auth_version=$2 FOR SHARE`,
-        [editorId, authVersion],
+      // A single statement holds the account row lock through its evidence
+      // update and audit trigger. Runtime SQL requires only EXECUTE on this
+      // narrowly scoped function, not UPDATE on editor_accounts or evidence.
+      const result = await this.pool.query<{ outcome: ReviewOutcome }>(
+        `SELECT vns.review_evidence_as_editor(
+           $1::uuid, $2::text, $3::text, $4::uuid, $5::integer
+         ) AS outcome`,
+        [id, verdict, reason, editorId, authVersion],
       );
-      if (!account.rows[0] || !["reviewer", "admin"].includes(account.rows[0].role)) {
-        await client.query("ROLLBACK");
-        inTransaction = false;
-        return "forbidden";
+      const outcome = result.rows[0]?.outcome;
+      if (
+        outcome === "updated" ||
+        outcome === "missing" ||
+        outcome === "already_reviewed" ||
+        outcome === "forbidden"
+      ) {
+        return outcome;
       }
-      const updated = await client.query(
-        `UPDATE vns.research_evidence
-         SET review_status=$2, review_reason=$3, reviewer_editor_id=$4::uuid,
-             reviewer=$5, reviewed_at=clock_timestamp()
-         WHERE id=$1::uuid AND review_status='candidate'
-         RETURNING id`,
-        [id, verdict, reason, editorId, account.rows[0].username],
-      );
-      let outcome: ReviewOutcome = "updated";
-      if (updated.rowCount !== 1) {
-        const exists = await client.query("SELECT 1 FROM vns.research_evidence WHERE id=$1::uuid", [
-          id,
-        ]);
-        outcome = exists.rowCount ? "already_reviewed" : "missing";
-      }
-      await client.query("COMMIT");
-      inTransaction = false;
-      return outcome;
+      throw new Error("Invalid database review outcome");
     } catch {
-      if (inTransaction) {
-        await client.query("ROLLBACK").catch(() => undefined);
-      }
       throw new Error("Editorial review transaction failed");
-    } finally {
-      client.release();
     }
   }
 

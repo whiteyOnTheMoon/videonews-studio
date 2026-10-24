@@ -403,3 +403,38 @@ rotation/suspension events. The current CI harness has no independently
 authenticated human operator and must not invent one. Any real
 provisioning interface, login credentials, off-host audit retention,
 backup/restore strategy and VPS deployment require explicit approval.
+
+## 0009 – Scoped atomic named reviews (Git-only, not deployed)
+
+A PostgreSQL review operation previously issued `SELECT ... FOR SHARE`
+against `editor_accounts`, which requires UPDATE privileges that the
+restricted API role intentionally does **not** have. Granting the API an
+account UPDATE permission would weaken the account-lifecycle boundary.
+
+Migration `0009_scoped_editor_review` replaces that direct two-statement
+write with `vns.review_evidence_as_editor(uuid,text,text,uuid,integer)`,
+a SECURITY DEFINER function with a fixed, explicit search path. A private
+`vns_editor_review_executor` NOLOGIN role (no members) owns it. Only this
+role can lock the account row and update the specific review columns;
+the API has **EXECUTE only**, not direct UPDATE privileges on evidence or
+editor accounts. The function checks active reviewer/admin role plus
+auth_version while locking the editor row, writes a verdict once, and
+creates one immutable review event through the separate existing audit
+trigger. Missing, repeated or unauthorized review outcomes are mapped
+to the existing API contract. The legacy shared admin authorization
+remains under its previous feature gates and is not loosened.
+
+The SQL migration has a CI-only down migration; PostgreSQL tests verify
+role/member state, allowed verdicts, negative cases, audit attribution,
+and denied direct writes. CI's real HTTP integration continues checking
+deactivation, login, CSRF, and reviewer attribution; a separate disposable
+LOGIN test verifies a fully restricted database connection. No real
+operator roles, accounts, secrets, VPS services, or runtime config change
+as part of this PR.
+
+This function trusts the _authenticated API_ to supply the correct editor
+identity/version: a stolen API database login could attempt calls with
+other editor IDs. This is a least-privilege SQL integrity boundary, not
+database-native verification of a browser session. Credential isolation,
+separate operational login management, off-host audit retention, approved
+backup/recovery, and explicit deployment authorization remain mandatory.

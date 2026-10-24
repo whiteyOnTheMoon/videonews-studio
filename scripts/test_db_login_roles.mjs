@@ -1,8 +1,14 @@
 // P1-07: GitHub Actions ONLY. Disposable Postgres login isolation smoke test.
 // Does not create application login users or modify any production database.
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { randomBytes, scryptSync } from "node:crypto";
+import { once } from "node:events";
 import pg from "pg";
+import { AdminAuth } from "../apps/api/dist/auth.js";
+import { AdminJobs } from "../apps/api/dist/admin-jobs.js";
+import { AdminEvidence } from "../apps/api/dist/admin-evidence.js";
+import { EditorAuth, PostgresEditorStore } from "../apps/api/dist/editor-auth.js";
+import { createApiServer } from "../apps/api/dist/server.js";
 
 const expected = {
   GITHUB_ACTIONS: "true",
@@ -105,11 +111,25 @@ try {
     "Unauthorized dispatcher job creation attempt",
   ]);
 
+  // Authenticate a named editor through a real HTTP API backed by the
+  // restricted LOGIN, not by the database owner.
+  const reviewerPassword = "ci-scoped-login-review-password";
+  const salt = Buffer.alloc(16, 69);
+  const hash =
+    "scrypt$" +
+    salt.toString("hex") +
+    "$" +
+    scryptSync(reviewerPassword, salt, 64, {
+      N: 16384,
+      r: 8,
+      p: 1,
+      maxmem: 64 * 1024 * 1024,
+    }).toString("hex");
   const inserted = await provisioner.query(
     "INSERT INTO vns.editor_accounts (username,display_name,role,password_hash) " +
       "VALUES ('ci_login_probe','CI Login Probe','reviewer',$1) " +
       "RETURNING username, active, role",
-    ["scrypt$" + "a".repeat(32) + "$" + "b".repeat(128)],
+    [hash],
   );
   assert.equal(inserted.rows[0].active, false);
   assert.equal(inserted.rows[0].role, "reviewer");
@@ -131,15 +151,130 @@ try {
   await refuses(provisioner, "DELETE FROM vns.editor_accounts");
   await refuses(provisioner, "SELECT * FROM vns.evidence_review_events");
 
-  // IMPORTANT: the existing API uses SELECT ... FOR SHARE for editor review.
-  // PostgreSQL requires UPDATE permission for that lock, intentionally absent
-  // from vns_api_runtime. Detect the gap without granting unsafe account writes.
+  // Runtime role still cannot lock editor accounts or directly change
+  // evidence. The sole permitted path is the scoped SQL review function.
   await refuses(
     api,
     "SELECT username,role FROM vns.editor_accounts " + "WHERE username='ci_login_probe' FOR SHARE",
   );
+  await refuses(api, "SET ROLE vns_editor_review_executor");
+  const evidence = await owner.query(
+    `INSERT INTO vns.research_evidence
+       (job_id,source_url,publisher,headline,claim_text)
+       VALUES ($1::uuid,'https://example.org/ci-scoped-login','CI Test Publisher',
+               'Scoped real login review','A synthetic fact-check source claim.')
+       RETURNING id::text AS id`,
+    [job.rows[0].id],
+  );
+  const evidenceId = evidence.rows[0].id;
+  await refuses(api, "UPDATE vns.research_evidence SET review_status='verified'");
+  const origin = "https://studio.example.invalid";
+  const adminPassword = "ci-scoped-login-shared-admin-password";
+  const adminSalt = Buffer.alloc(16, 71);
+  const adminHash =
+    "scrypt$" +
+    adminSalt.toString("hex") +
+    "$" +
+    scryptSync(adminPassword, adminSalt, 64, {
+      N: 16384,
+      r: 8,
+      p: 1,
+      maxmem: 64 * 1024 * 1024,
+    }).toString("hex");
+  const auth = new AdminAuth({ passwordHash: adminHash, origin });
+  const jobs = new AdminJobs(
+    auth,
+    {
+      async createResearchJob() {
+        return job.rows[0].id;
+      },
+      async listRecentResearchJobs() {
+        return [];
+      },
+    },
+    new AdminEvidence(
+      auth,
+      {
+        async list() {
+          return [];
+        },
+        async review() {
+          return "updated";
+        },
+      },
+      false,
+    ),
+  );
+  const editor = new EditorAuth(new PostgresEditorStore(api), origin);
+  const server = createApiServer({ auth, jobs, editor });
+  try {
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const base = "http://127.0.0.1:" + server.address().port;
+    const login = (password) =>
+      fetch(base + "/editor/auth/login", {
+        method: "POST",
+        headers: { Origin: origin, "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "ci_login_probe", password }),
+      });
+    const loggedIn = await login(reviewerPassword);
+    assert.equal(loggedIn.status, 200);
+    const cookie = loggedIn.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(cookie);
+    const review = (session, id) =>
+      fetch(base + "/editor/evidence/review", {
+        method: "POST",
+        headers: { Origin: origin, Cookie: session, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          evidenceId: id,
+          decision: "disputed",
+          reason: "This sample source does not establish the complete claim.",
+        }),
+      });
+    assert.equal((await review(cookie, evidenceId)).status, 200);
+    assert.equal((await review(cookie, evidenceId)).status, 409);
+    const audited = await owner.query(
+      `SELECT reviewer_label, editor_id::text AS editor_id,
+              after_status, reason FROM vns.evidence_review_events
+       WHERE evidence_id=$1::uuid`,
+      [evidenceId],
+    );
+    assert.equal(audited.rowCount, 1);
+    assert.equal(audited.rows[0].reviewer_label, "ci_login_probe");
+    assert.equal(audited.rows[0].after_status, "disputed");
+    assert.equal(
+      audited.rows[0].reason,
+      "This sample source does not establish the complete claim.",
+    );
+    const namedId = await owner.query(
+      "SELECT id::text AS id FROM vns.editor_accounts WHERE username='ci_login_probe'",
+    );
+    assert.equal(audited.rows[0].editor_id, namedId.rows[0].id);
+
+    // Account demotion invalidates the cookie and denies a fresh review.
+    await provisioner.query(
+      "UPDATE vns.editor_accounts SET role='editor' WHERE username='ci_login_probe'",
+    );
+    assert.equal((await review(cookie, evidenceId)).status, 401);
+    const afterDemotion = await login(reviewerPassword);
+    assert.equal(afterDemotion.status, 200);
+    const downgradedCookie = afterDemotion.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(downgradedCookie);
+    assert.equal((await review(downgradedCookie, evidenceId)).status, 403);
+    await provisioner.query(
+      "UPDATE vns.editor_accounts SET active=false WHERE username='ci_login_probe'",
+    );
+    assert.equal((await login(reviewerPassword)).status, 401);
+    assert.equal((await review(downgradedCookie, evidenceId)).status, 401);
+    console.log(
+      "PASS: restricted PostgreSQL LOGIN authenticates, reviews, audits and revokes via HTTP",
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+    // The parent cleanup closes the restricted API pool.
+  }
   console.log("PASS: separate disposable LOGINs honor runtime/provisioning boundaries");
-  console.log("KNOWN GATE: named review row lock still requires a safer SQL authorization design");
 } finally {
   await Promise.allSettled(clients.map((pool) => pool.end()));
   // Roll back only the three hardcoded, test-only login roles on the isolated DB.
