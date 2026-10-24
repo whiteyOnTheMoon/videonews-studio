@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ResearchJobOverview } from "../../lib/admin-jobs-list";
 import { isResearchJobOverview } from "../../lib/admin-jobs-list";
+import EvidenceReview from "./evidence-review";
 
 const statusNames: Record<ResearchJobOverview["status"], string> = {
   pending: "Vorgemerkt",
@@ -229,6 +230,7 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
                   <span>{deliveryNames[job.deliveryState]}</span>
                   <span>{job.topic ?? "Ohne Thema (älterer Auftrag)"}</span>
                   <code>{job.id}</code>
+                  <EvidenceReview jobId={job.id} />
                 </li>
               ))}
             </ul>

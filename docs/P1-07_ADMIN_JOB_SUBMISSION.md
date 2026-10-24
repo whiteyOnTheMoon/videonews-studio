@@ -121,8 +121,31 @@ supports no individual editor accounts. The mandatory reviewer column is
 therefore recorded as `admin-session`, not a real person's identity. This
 is sufficient to distinguish an authorized admin action from automated
 candidate collection, but it is **not** a trustworthy individual audit trail.
-Individual RBAC, named reviewer attribution, review rationale, full immutable
-audit events and UI review controls remain mandatory before production use.
+Individual RBAC, named reviewer attribution, review rationale and full immutable
+audit events remain mandatory before production use.
 
 The feature is still disabled and not deployed on the VPS. GitHub Actions
 runs real HTTP and PostgreSQL integration against disposable containers.
+
+## Admin source-review controls (feature-gated UI)
+
+The authenticated `/admin` job overview now includes a per-job, initially
+closed `Quellen und Prüfstatus anzeigen` panel. Sources are fetched only
+when an admin deliberately opens or refreshes a job panel, and never when
+rendering the page. The panel lists the original URL, source publisher,
+headline, specific claim and editorial status. External source links open in
+a separate browser tab; the app does not download the page automatically.
+
+An unreviewed candidate may be marked confirmed, disputed or rejected only
+after selecting a decision and checking an explicit statement that the
+editor personally inspected the original claim. A successful action is sent
+through the existing protected API; uncertain network outcomes instruct the
+admin to refresh before trying again. Once the persisted review state is no
+longer `candidate`, the UI does not offer any revision control. Neither
+reviewing a source nor viewing this list publishes or renders videos.
+
+Because the shared password-based admin session does not distinguish users,
+this remains a **preproduction preview**, not a complete authenticated
+editorial accountability system. Individual identities, mandatory reason
+notes, a complete audit trail, real source-rights reviews and a separately
+approved backup/restore and VPS rollout are still required.
