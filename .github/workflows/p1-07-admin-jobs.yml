@@ -17,7 +17,6 @@ on:
       - "Dockerfile"
       - "package-lock.json"
       - "db/scripts/test_admin_jobs.sh"
-      - "scripts/test_admin_jobs_integration.mjs scripts/test_editor_auth_integration.mjs"
       - "scripts/test_editor_auth_integration.mjs"
       - ".github/workflows/p1-07-admin-jobs.yml"
 permissions:
