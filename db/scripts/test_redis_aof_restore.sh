@@ -12,10 +12,11 @@ fi
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 name="vns-ci-aof-src-${GITHUB_RUN_ID}"
 target="vns-ci-aof-dst-${GITHUB_RUN_ID}"
+bootstrap="vns-ci-aof-bootstrap-${GITHUB_RUN_ID}"
 umask 077
 tmp="$(mktemp -d)"
 cleanup() {
-  docker rm -f "$name" "$target" >/dev/null 2>&1 || true
+  docker rm -f "$name" "$bootstrap" "$target" >/dev/null 2>&1 || true
   rm -rf -- "$tmp"
 }
 trap cleanup EXIT
@@ -24,22 +25,32 @@ python3 "$root/scripts/provision_redis_secrets.py" "$tmp" >/dev/null
 export VNS_TEST_REDIS_PASSWORD_FILE="$tmp/redis_password"
 export VNS_CI_AOF_DRILL=true
 
+# Redis AOF replay may need a temporary recovery ACL; this mode has NO
+# network or host ports. Normal containers retain the restrictive ACL.
 start() {
-  local container="$1" volume="$2"
-  # Match the CI runner UID/GID so the Redis entrypoint cannot chown
-  # the private runner-side AOF directory away from the verifier.
+  local container="$1" volume="$2" mode="$3"
+  local acl_file="$tmp/redis_acl" expected="NOAUTH"
+  local network=(--network bridge -p 127.0.0.1:16380:6379)
+  if [[ "$mode" == "offline-replay" ]]; then
+    acl_file="$tmp/ci_recovery_acl"
+    expected="PONG"
+    network=(--network none)
+  elif [[ "$mode" != "strict" ]]; then
+    echo "FAIL: unrecognized Redis recovery mode" >&2
+    exit 1
+  fi
   docker run --rm --detach --name "$container" \
     --user "$(id -u):$(id -g)" \
-    --network bridge -p 127.0.0.1:16380:6379 \
+    "\${network[@]}" \
     --memory 160m --memory-swap 160m --cpus 0.5 --pids-limit 80 \
     --mount "type=bind,src=$volume,dst=/data" \
-    --mount "type=bind,src=$tmp/redis_acl,dst=/run/secrets/redis_acl,readonly" \
+    --mount "type=bind,src=$acl_file,dst=/run/secrets/redis_acl,readonly" \
     redis:7-alpine redis-server --protected-mode yes --bind 0.0.0.0 \
     --aclfile /run/secrets/redis_acl --appendonly yes \
     --appendfsync always --aof-load-truncated no --save "" --dir /data >/dev/null
   local ready=0
   for i in $(seq 1 45); do
-    if docker exec "$container" redis-cli ping 2>&1 | grep -q NOAUTH; then
+    if docker exec "$container" redis-cli ping 2>&1 | grep -q "$expected"; then
       ready=1
       break
     fi
@@ -49,7 +60,7 @@ start() {
 }
 
 echo "P1-07 disposable Redis AOF source with no worker processes"
-start "$name" "$tmp/source"
+start "$name" "$tmp/source" strict
 node "$root/scripts/test_ci_redis_aof_restore.mjs" seed
 docker stop --time 15 "$name" >/dev/null
 
@@ -80,15 +91,34 @@ if (cd "$tmp/tampered" && sha256sum --check --status "$tmp/aof.sha256"); then
   exit 1
 fi
 echo "PASS: multipart AOF checksum verification rejects tampering"
-echo "CI-AOF-DIAG: synthetic archived file sizes:"
-find "$tmp/source" -type f -printf '%P %s bytes\\n'
+# Redis 7 AOF loading can reject MULTI/EXEC with NOPERM when default
+# ACL is off, yet still start with an empty queue. Bootstrap a VERIFIED
+# archive in a networkless, workerless process with one-time recovery ACL,
+# compact to an RDB-base AOF, then restart with original restricted ACL.
+printf 'user default on nopass +@all\n' > "$tmp/ci_recovery_acl"
+chmod 0600 "$tmp/ci_recovery_acl"
+start "$bootstrap" "$tmp/restored" offline-replay
+dbsize="$(docker exec "$bootstrap" redis-cli DBSIZE | tr -d '\r')"
+if ! [[ "$dbsize" =~ ^[0-9]+$ ]] || (( dbsize < 4 )); then
+  echo "FAIL: isolated Redis bootstrap did not recover synthetic keys" >&2
+  exit 1
+fi
+docker exec "$bootstrap" redis-cli BGREWRITEAOF | grep -q 'Background append only file rewriting started'
+rewritten=0
+for i in $(seq 1 60); do
+  info="$(docker exec "$bootstrap" redis-cli INFO persistence)"
+  if grep -q 'aof_rewrite_in_progress:0' <<< "$info" &&
+     grep -q 'aof_last_bgrewrite_status:ok' <<< "$info"; then
+    rewritten=1
+    break
+  fi
+  sleep 1
+done
+test "$rewritten" -eq 1 || { echo "FAIL: recovery AOF rewrite incomplete" >&2; exit 1; }
+docker stop --time 15 "$bootstrap" >/dev/null
 
-# The actual restore uses a NEW Redis process and separate restored files.
-start "$target" "$tmp/restored"
-echo "CI-AOF-DIAG: restored Redis startup log (synthetic data only):"
-docker logs --tail 45 "$target" 2>&1
-echo "CI-AOF-DIAG: Redis 7 multipart AOF manifest:"
-cat "$tmp/restored/appendonlydir/appendonly.aof.manifest"
+# Validate in a fresh process with no permissive ACL and loopback-only port.
+start "$target" "$tmp/restored" strict
 node "$root/scripts/test_ci_redis_aof_restore.mjs" verify
-echo "PASS: clean disposable Redis 7 multipart AOF recovery verified"
-echo "LIMIT: no PostgreSQL atomicity, media, off-host archive or live RPO/RTO proof"
+echo "PASS: Redis AOF recovered in networkless bootstrap with strict-ACL restart"
+echo "LIMIT: CI-only rewrite is NOT a production backup or approval"
