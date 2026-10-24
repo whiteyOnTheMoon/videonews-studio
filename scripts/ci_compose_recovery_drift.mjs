@@ -80,19 +80,34 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
   assert.equal(inventory.productionInventoryVerified, false);
   assert.equal(inventory.backupDestinationApproved, false);
   assert.equal(inventory.activationApproved, false);
-  assert.deepEqual(sortedNames(compose.services, "Compose services"), sortedNames(map.services, "Mapped services"));
-  assert.deepEqual(sortedNames(compose.volumes, "Compose volumes"), sortedNames(map.volumes, "Mapped volumes"));
-  assert.deepEqual(sortedNames(compose.secrets, "Compose secrets"), sortedNames(map.secrets, "Mapped secrets"));
+  assert.deepEqual(
+    sortedNames(compose.services, "Compose services"),
+    sortedNames(map.services, "Mapped services"),
+  );
+  assert.deepEqual(
+    sortedNames(compose.volumes, "Compose volumes"),
+    sortedNames(map.volumes, "Mapped volumes"),
+  );
+  assert.deepEqual(
+    sortedNames(compose.secrets, "Compose secrets"),
+    sortedNames(map.secrets, "Mapped secrets"),
+  );
   assert.ok(sortedNames(compose.services, "Compose services").length > 0);
 
   for (const [volumeName, id] of Object.entries(map.volumes)) {
     assert.match(volumeName, NAME);
     const spec = compose.volumes[volumeName];
     assert.ok(spec !== undefined && spec !== null && typeof spec === "object");
-    assert.deepEqual(Object.keys(spec), [], "External/driver-specific volume requires a separate review");
+    assert.deepEqual(
+      Object.keys(spec),
+      [],
+      "External/driver-specific volume requires a separate review",
+    );
     const asset = assets.get(id);
-    assert.ok(asset && asset.category === "data" && asset.disposition === "backup-required",
-      `State volume ${volumeName} requires a documented data backup`);
+    assert.ok(
+      asset && asset.category === "data" && asset.disposition === "backup-required",
+      `State volume ${volumeName} requires a documented data backup`,
+    );
   }
   for (const [secretName, id] of Object.entries(map.secrets)) {
     assert.match(secretName, NAME);
@@ -101,10 +116,14 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
     assert.equal(typeof spec.file, "string");
     assert.match(spec.file, /^\.\/secrets\/[a-z0-9_-]+$/);
     const asset = assets.get(id);
-    assert.ok(asset && asset.category === "credential" && asset.disposition === "reissue",
-      `Secret ${secretName} requires a separate recovery identity`);
-    assert.ok(asset.source.path === "compose.yaml",
-      `Secret ${secretName} needs a direct Compose evidence reference`);
+    assert.ok(
+      asset && asset.category === "credential" && asset.disposition === "reissue",
+      `Secret ${secretName} requires a separate recovery identity`,
+    );
+    assert.ok(
+      asset.source.path === "compose.yaml",
+      `Secret ${secretName} needs a direct Compose evidence reference`,
+    );
   }
 
   const profiles = new Set();
@@ -120,11 +139,15 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
     );
     const ids = namesOnly(contract.inventoryIds, "Inventory IDs");
     assert.ok(ids.length > 0, `Service ${serviceName} lacks an inventory owner`);
-    for (const id of ids) assert.ok(assets.has(id), `Undocumented service ${serviceName} asset ${id}`);
+    for (const id of ids)
+      assert.ok(assets.has(id), `Undocumented service ${serviceName} asset ${id}`);
 
     const declaredProfiles = namesOnly(service.profiles, "Service profiles");
-    assert.deepEqual(declaredProfiles, namesOnly(contract.profiles, "Mapped profiles"),
-      `Service ${serviceName} changed deployment profiles`);
+    assert.deepEqual(
+      declaredProfiles,
+      namesOnly(contract.profiles, "Mapped profiles"),
+      `Service ${serviceName} changed deployment profiles`,
+    );
     for (const profile of declaredProfiles) profiles.add(profile);
     assert.ok(declaredProfiles.length > 0, `Service ${serviceName} would start by default`);
 
@@ -143,7 +166,10 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
       assert.ok(parts[0] && parts[1] && parts[1].startsWith("/"), "Unsupported mount target");
       const asset = assets.get(expected.inventoryId);
       assert.ok(asset, "Mount lacks a recovery asset");
-      assert.ok(ids.includes(expected.inventoryId), "Service mount not covered by service recovery");
+      assert.ok(
+        ids.includes(expected.inventoryId),
+        "Service mount not covered by service recovery",
+      );
       if (expected.storage === "named-volume") {
         assert.ok(Object.hasOwn(map.volumes, parts[0]), "Unnamed volume requires review");
         assert.equal(map.volumes[parts[0]], expected.inventoryId);
@@ -154,8 +180,11 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
         assert.ok(/^\.\/[a-zA-Z0-9_./-]+$/.test(parts[0]));
         assert.ok(!parts[0].split("/").includes(".."), "Unsafe bind path");
         assert.equal(parts[2], "ro", "Repository config bind must be read-only");
-        assert.equal(asset.source.path, parts[0].slice(2),
-          "Bind mount is not the tracked source asset");
+        assert.equal(
+          asset.source.path,
+          parts[0].slice(2),
+          "Bind mount is not the tracked source asset",
+        );
         assert.equal(asset.disposition, "rebuild", "Repository bind is not rebuildable");
       } else {
         assert.fail("Unknown storage/recovery classification");
@@ -166,8 +195,11 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
     assert.deepEqual(tmpfs, expectedTmpfs, `Service ${serviceName} tmpfs changed`);
 
     const usedSecrets = namesOnly(service.secrets ?? [], "Service secrets");
-    assert.deepEqual(usedSecrets, namesOnly(contract.secrets, "Mapped service secrets"),
-      `Service ${serviceName} secret drift`);
+    assert.deepEqual(
+      usedSecrets,
+      namesOnly(contract.secrets, "Mapped service secrets"),
+      `Service ${serviceName} secret drift`,
+    );
     for (const name of usedSecrets) {
       assert.ok(Object.hasOwn(map.secrets, name), "Undocumented mounted secret");
       assert.ok(ids.includes(map.secrets[name]), "Service missing secret owner");
@@ -183,12 +215,19 @@ export function validateComposeRecoveryDrift(composeText, map, inventory) {
       "ipc",
       "configs",
     ]) {
-      assert.equal(service[unsupported], undefined, `Service ${serviceName}: unreviewed ${unsupported}`);
+      assert.equal(
+        service[unsupported],
+        undefined,
+        `Service ${serviceName}: unreviewed ${unsupported}`,
+      );
     }
   }
 
-  assert.deepEqual([...profiles].sort(), namesOnly(map.profiles, "Known Compose profiles").sort(),
-    "Unmapped or removed Compose profile");
+  assert.deepEqual(
+    [...profiles].sort(),
+    namesOnly(map.profiles, "Known Compose profiles").sort(),
+    "Unmapped or removed Compose profile",
+  );
   // Static guardrails preventing classification changes that accidentally
   // turn critical PostgreSQL/Redis persistence into rebuildable source code.
   assert.equal(map.volumes.postgres_data, "postgres-volume");
