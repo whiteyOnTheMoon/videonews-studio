@@ -44,7 +44,7 @@ bash scripts/p1_07_data_canary.sh status
 
 The script uses `docker compose --project-name videonews-studio -f compose.yaml --profile data up -d --no-deps --no-build --pull missing postgres redis`. It may download the two official database images if missing and create **new persistent data volumes**. The worker profile is not enabled. If image pulls exceed available capacity, the script can refuse/exit; do **not** compensate by deleting unknown images or volumes.
 
-**If anything fails:** capture only non-secret health/state and resource metrics; do not paste raw application logs because they can include private data. To stop *only* the data services without deleting their data:
+**If anything fails:** capture only non-secret health/state and resource metrics; do not paste raw application logs because they can include private data. To stop _only_ the data services without deleting their data:
 
 ```bash
 bash scripts/p1_07_data_canary.sh stop
