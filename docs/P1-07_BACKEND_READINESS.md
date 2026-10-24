@@ -29,7 +29,9 @@ python3 -m unittest discover -s scripts -p 'test_p1_07_readiness.py'
 docker compose --profile preview --profile data --profile worker config --format json | python3 scripts/p1_07_readiness.py
 ```
 
-This guard checks only the _existing offline topology_. A PASS does **not** certify end-to-end durable job processing, PostgreSQL durability, crash recovery or VPS deployment readiness.
+The CI readiness workflow also verifies the separately opt-in worker overlay with `-f compose.yaml -f deploy/compose.worker.yaml` and `--worker-overlay`, refusing missing worker Redis credentials, absent health dependency, extra exposed ports, changed profiles and unauthenticated Redis. It uses synthetic CI-only secret files and the Docker Compose `config` renderer; it **does not launch containers**. The base file is checked separately to ensure worker activation remains disabled by default.
+
+This guard checks only the _existing offline topology_. A PASS does **not** certify end-to-end durable job processing, PostgreSQL durability, crash recovery, live secrets, VPS Compose parity or deployment readiness.
 
 ## VPS rollback constraints
 
