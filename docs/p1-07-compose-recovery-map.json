@@ -65,7 +65,11 @@
         "data"
       ],
       "mounts": [
-        "postgres_data:/var/lib/postgresql/data"
+        {
+          "spec": "postgres_data:/var/lib/postgresql/data",
+          "inventoryId": "postgres-volume",
+          "storage": "named-volume"
+        }
       ],
       "secrets": [
         "postgres_password"
@@ -81,7 +85,11 @@
         "data"
       ],
       "mounts": [
-        "redis_data:/data"
+        {
+          "spec": "redis_data:/data",
+          "inventoryId": "redis-aof-volume",
+          "storage": "named-volume"
+        }
       ],
       "secrets": [
         "redis_acl"
@@ -97,7 +105,11 @@
         "ingress"
       ],
       "mounts": [
-        "./deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
+        {
+          "spec": "./deploy/Caddyfile:/etc/caddy/Caddyfile:ro",
+          "inventoryId": "caddy-routing",
+          "storage": "repo-bind"
+        }
       ],
       "secrets": [],
       "ephemeralTmpfs": [
