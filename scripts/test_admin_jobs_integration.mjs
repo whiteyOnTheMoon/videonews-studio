@@ -116,6 +116,65 @@ try {
   assert.ok(!JSON.stringify(listing).includes(KEY));
   assert.equal((await fetch(base + "/admin/jobs")).status, 401);
 
+  // Genuine authenticated evidence review against disposable PostgreSQL.
+  const inserted = await pool.query(
+    `INSERT INTO vns.research_evidence
+       (job_id, source_url, publisher, headline, claim_text)
+       VALUES ($1::uuid, $2, $3, $4, $5)
+       RETURNING id::text AS id`,
+    [
+      data1.jobId,
+      "https://www.example.org/reports/mobility",
+      "Example Institute",
+      "Annual city mobility spending report",
+      "Public infrastructure funding is described in the report.",
+    ],
+  );
+  const evidenceId = inserted.rows[0].id;
+  const evidenceUrl = base + "/admin/evidence?jobId=" + data1.jobId;
+  const reviewUrl = base + "/admin/evidence/review";
+  const reviewBody = JSON.stringify({ evidenceId, decision: "disputed" });
+  const review = (session, origin = ORIGIN, body = reviewBody) => fetch(reviewUrl, {
+    method: "POST",
+    headers: {
+      Origin: origin,
+      "Content-Type": "application/json",
+      ...(session ? { Cookie: session } : {}),
+    },
+    body,
+  });
+  assert.equal((await fetch(evidenceUrl)).status, 401);
+  assert.equal((await review(null)).status, 401);
+  const evidenceList = await fetch(evidenceUrl, { headers: { Cookie: cookie } });
+  assert.equal(evidenceList.status, 200);
+  const initial = await evidenceList.json();
+  assert.equal(initial.evidence.length, 1);
+  assert.equal(initial.evidence[0].id, evidenceId);
+  assert.equal(initial.evidence[0].status, "candidate");
+  assert.equal(initial.evidence[0].reviewedAt, null);
+  assert.equal((await review(cookie, "https://attacker.invalid")).status, 403);
+  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
+    evidenceId, decision: "verified", reviewer: "forged-editor",
+  }))).status, 400);
+  assert.equal((await review(cookie)).status, 200);
+  assert.equal((await review(cookie)).status, 409);
+  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
+    evidenceId, decision: "verified",
+  }))).status, 409);
+  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
+    evidenceId: "abcdef01-1234-4123-8123-123456789012", decision: "rejected",
+  }))).status, 404);
+  const reviewRow = await pool.query(
+    "SELECT review_status, reviewer, reviewed_at FROM vns.research_evidence WHERE id=$1",
+    [evidenceId],
+  );
+  assert.equal(reviewRow.rows[0].review_status, "disputed");
+  assert.equal(reviewRow.rows[0].reviewer, "admin-session");
+  assert.ok(reviewRow.rows[0].reviewed_at instanceof Date);
+  const updatedEvidence = await fetch(evidenceUrl, { headers: { Cookie: cookie } });
+  assert.equal((await updatedEvidence.json()).evidence[0].status, "disputed");
+  console.log("PASS: authenticated evidence candidate -> disputed, immutable review-once and CSRF");
+
   // No queue dispatcher is activated. Nothing gets sent to Redis.
   const wrongOrigin = await fetch(base + "/admin/jobs", {
     method: "POST",
@@ -150,6 +209,8 @@ try {
   });
   assert.equal(logout.status, 200);
   assert.equal((await send(cookie)).status, 401);
+  assert.equal((await review(cookie)).status, 401);
+  assert.equal((await fetch(evidenceUrl, { headers: { Cookie: cookie } })).status, 401);
   assert.equal((await fetch(base + "/admin/jobs", { headers: { Cookie: cookie } })).status, 401);
   console.log("PASS: real admin session, atomic job+outbox, repeated idempotency, CSRF and logout");
 } finally {
