@@ -22,7 +22,7 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
       if (response.status !== 200) {
         setRole(null);
         setActiveUsername("");
-        return;
+        return false;
       }
       const data: unknown = await response.json();
       if (!data || typeof data !== "object" || Array.isArray(data))
@@ -37,10 +37,12 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
         throw new Error("Invalid profile");
       setRole(row.role as EditorRole);
       setActiveUsername(row.username);
+      return true;
     } catch {
       setRole(null);
       setActiveUsername("");
       setMessage("Redakteur-Sitzung konnte nicht geprüft werden.");
+      return false;
     }
   }
 
@@ -63,10 +65,15 @@ export default function EditorLogin({ enabled }: { enabled: boolean }) {
       });
       setPassword("");
       if (result.status === 200) {
-        await refresh();
-        setMessage(
-          "Persönliche Anmeldung bestätigt. Nur Reviewer und Administratoren dürfen Quellen bewerten.",
-        );
+        if (await refresh()) {
+          setMessage(
+            "Persönliche Anmeldung bestätigt. Nur Reviewer und Administratoren dürfen Quellen bewerten.",
+          );
+        } else {
+          setMessage(
+            "Anmeldung übermittelt, aber die persönliche Sitzung konnte nicht bestätigt werden.",
+          );
+        }
       } else if (result.status === 429) {
         setMessage("Zu viele Anmeldeversuche. Bitte später erneut versuchen.");
       } else if (result.status === 401) {
