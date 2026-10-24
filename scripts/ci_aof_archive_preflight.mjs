@@ -42,8 +42,8 @@ export async function inspectCiAofArchive(root) {
   assert.deepEqual(await filesOnly(root), ["appendonlydir"], "Unexpected AOF root entry");
   const part = join(root, "appendonlydir");
   await ordinary(part, true);
-  const manifestBytes = await readFile(join(part, "appendonly.aof.manifest"));
   await ordinary(join(part, "appendonly.aof.manifest"));
+  const manifestBytes = await readFile(join(part, "appendonly.aof.manifest"));
   assert.ok(manifestBytes.length <= 4096, "Redis AOF manifest too large");
   const manifest = manifestBytes.toString("utf8");
   assert.ok(!manifest.includes("\r") && manifest.endsWith("\n"), "Bad AOF manifest encoding");
@@ -101,6 +101,10 @@ export async function inspectCiAofArchive(root) {
 export async function createCiAofInventory(root, destination) {
   ciOnly();
   assert.ok(resolve(destination).startsWith("/tmp/"), "CI temp inventory only");
+  assert.ok(
+    !resolve(destination).startsWith(resolve(root) + "/"),
+    "Inventory must remain outside the AOF archive",
+  );
   const value = await inspectCiAofArchive(root);
   await writeFile(destination, JSON.stringify(value, null, 2) + "\n", {
     flag: "wx",
