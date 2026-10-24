@@ -106,6 +106,7 @@ export class AdminEvidence {
   constructor(
     private readonly auth: AdminAuth,
     private readonly store: EvidenceReviewStore,
+    private readonly allowSharedReviews = true,
   ) {}
 
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -142,6 +143,12 @@ export class AdminEvidence {
       return;
     }
     if (request.method === "POST" && path === "/admin/evidence/review") {
+      // Once named editor auth is enabled, a shared admin password must never
+      // silently bypass personal attribution and role checks.
+      if (!this.allowSharedReviews) {
+        respond(response, 403, { error: "named_editor_required" });
+        return;
+      }
       if (!this.auth.originAllowed(request)) {
         respond(response, 403, { error: "forbidden" });
         return;
