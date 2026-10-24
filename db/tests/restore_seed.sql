@@ -46,6 +46,18 @@ BEGIN
       'Example Transport Institute', 'Report on transport infrastructure',
       'The public transit report describes budgeted infrastructure plans.'
     FROM vns.jobs WHERE idempotency_key = 'ci-restore-research-topic';
+  -- A separate reviewed evidence fixture verifies atomic audit event recovery.
+  INSERT INTO vns.research_evidence
+      (job_id, source_url, publisher, headline, claim_text)
+    SELECT id, 'https://www.example.org/reviewed-transit-report',
+      'Example Transport Institute', 'Reviewed transit funding report',
+      'The independent review discusses regional funding accountability.'
+    FROM vns.jobs WHERE idempotency_key = 'ci-restore-research-topic';
+  UPDATE vns.research_evidence
+    SET review_status='disputed', reviewer='admin-session',
+        review_reason='Original evidence supports part of the claim, but details remain uncertain.',
+        reviewed_at=clock_timestamp()
+    WHERE source_url='https://www.example.org/reviewed-transit-report';
   UPDATE vns.jobs SET status = 'retry', attempt_count = 1 WHERE id = created_job_id;
   UPDATE vns.job_outbox AS ob
     SET delivery_state = 'enqueued', dispatch_attempts = 1,
