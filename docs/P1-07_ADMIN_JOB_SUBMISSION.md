@@ -270,3 +270,42 @@ API runtime and job-dispatcher privileges, provision login credentials only
 after operator approval, test realistic fail-closed grants, and approve
 backup/restore and account lifecycle controls. The migration and rollback
 must never be run on the VPS without explicit authorization.
+
+## 0007 – API/dispatcher runtime SQL grants (Git-only, no activation)
+
+Offline migration `0007_runtime_role_boundaries` introduces three separate
+`NOLOGIN`, no-member roles. They are not usable by the live API or worker and
+have no issued credentials:
+
+- `vns_api_runtime`: reads required job, request, evidence and editor account
+  tables (including password hashes, which personal login verification needs);
+  can create job/outbox intent through the existing SECURITY INVOKER functions
+  and write only specific review columns. It cannot create/change accounts,
+  rewrite source provenance or insert audit events directly.
+- `vns_outbox_dispatcher`: reads job/outbox rows and may update only transport
+  delivery bookkeeping in `job_outbox`. It cannot create jobs, read editor
+  passwords or modify source verdicts.
+- `vns_review_event_writer`: owns the audit-capture trigger as a narrow
+  SECURITY DEFINER role with a fixed search path and only audit-event INSERT
+  permission. The API role does **not** receive audit INSERT privileges. A
+  privileged migration operator is required to establish this ownership.
+
+The migration also removes PUBLIC EXECUTE from the two internal research job
+functions, granting execution specifically to the API runtime role; the
+current owner-based CI API retains access. Disposable PostgreSQL tests cover
+allowed job creation, real evidence verdict -> automatic audit append, outbox
+acknowledgement, and forbidden account/audit/evidence mutations. The migration
+is reverted before `0006`, and two full SQL migration cycles are exercised.
+
+**Security boundary is not yet deployed or complete:** both API and dispatcher
+still use their previous development/database settings. No login roles,
+memberships or production credentials are created. API SQL grants do not
+replace application authorization, authenticated editor identities or
+independent audit retention; the API still has the ability to update review
+metadata and must strictly authenticate/authorize callers. Before any VPS
+migration: define owner separation, realistic grant-bound credentials,
+test the actual live worker queries against this role, rotate secrets,
+approve independently recoverable backups and a fail-closed rollout. Global
+PostgreSQL roles are not contained in a `pg_dump --schema=vns --no-privileges`
+archive; a production restoration requires a separately approved global-role
+reconstruction procedure.
