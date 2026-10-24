@@ -198,16 +198,26 @@ try {
     hashFor(newPassword, 59),
     editorOnly.rows[0].id,
   ]);
-  assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: writerCookie } })).status, 401);
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: writerCookie } })).status,
+    401,
+  );
   assert.equal((await login("ci_writer", PASSWORD)).status, 401);
   const rotatedLogin = await login("ci_writer", newPassword);
   assert.equal(rotatedLogin.status, 200);
   const rotatedCookie = rotatedLogin.headers.get("set-cookie")?.split(";")[0];
   assert.ok(rotatedCookie);
   // Even a rapid disable + reenable cannot resurrect the old token.
-  await pool.query("UPDATE vns.editor_accounts SET active=false WHERE id=$1", [editorOnly.rows[0].id]);
-  await pool.query("UPDATE vns.editor_accounts SET active=true WHERE id=$1", [editorOnly.rows[0].id]);
-  assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status, 401);
+  await pool.query("UPDATE vns.editor_accounts SET active=false WHERE id=$1", [
+    editorOnly.rows[0].id,
+  ]);
+  await pool.query("UPDATE vns.editor_accounts SET active=true WHERE id=$1", [
+    editorOnly.rows[0].id,
+  ]);
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status,
+    401,
+  );
   assert.equal((await login("ci_writer", newPassword)).status, 200);
   console.log("PASS: password rotation and reactivation revoke preexisting sessions");
 
