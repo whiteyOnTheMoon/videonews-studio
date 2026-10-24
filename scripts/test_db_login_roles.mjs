@@ -71,15 +71,15 @@ try {
   }
 
   const [api, dispatcher, provisioner] = clients;
-  const job = await api.query(
-    "SELECT vns.create_research_request($1, $2) AS id",
-    ["ci-real-login-role-job-00001", "Disposable separated database login access test"],
-  );
+  const job = await api.query("SELECT vns.create_research_request($1, $2) AS id", [
+    "ci-real-login-role-job-00001",
+    "Disposable separated database login access test",
+  ]);
   assert.match(job.rows[0].id, /^[0-9a-f-]{36}$/);
-  const same = await api.query(
-    "SELECT vns.create_research_request($1, $2) AS id",
-    ["ci-real-login-role-job-00001", "Disposable separated database login access test"],
-  );
+  const same = await api.query("SELECT vns.create_research_request($1, $2) AS id", [
+    "ci-real-login-role-job-00001",
+    "Disposable separated database login access test",
+  ]);
   assert.equal(same.rows[0].id, job.rows[0].id);
   await refuses(api, "INSERT INTO vns.editor_accounts (username) VALUES ('ci_forged')");
   await refuses(api, "SELECT * FROM vns.evidence_review_events");
@@ -120,7 +120,9 @@ try {
       "VALUES ('ci_forged','Forged', 'admin', $1, true)",
     ["scrypt$" + "a".repeat(32) + "$" + "b".repeat(128)],
   );
-  await provisioner.query("UPDATE vns.editor_accounts SET active=true WHERE username='ci_login_probe'");
+  await provisioner.query(
+    "UPDATE vns.editor_accounts SET active=true WHERE username='ci_login_probe'",
+  );
   const activated = await owner.query(
     "SELECT active,auth_version FROM vns.editor_accounts WHERE username='ci_login_probe'",
   );
@@ -134,8 +136,7 @@ try {
   // from vns_api_runtime. Detect the gap without granting unsafe account writes.
   await refuses(
     api,
-    "SELECT username,role FROM vns.editor_accounts " +
-      "WHERE username='ci_login_probe' FOR SHARE",
+    "SELECT username,role FROM vns.editor_accounts " + "WHERE username='ci_login_probe' FOR SHARE",
   );
   console.log("PASS: separate disposable LOGINs honor runtime/provisioning boundaries");
   console.log("KNOWN GATE: named review row lock still requires a safer SQL authorization design");
