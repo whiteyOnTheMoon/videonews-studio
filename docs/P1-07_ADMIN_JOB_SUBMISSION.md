@@ -309,3 +309,28 @@ approve independently recoverable backups and a fail-closed rollout. Global
 PostgreSQL roles are not contained in a `pg_dump --schema=vns --no-privileges`
 archive; a production restoration requires a separately approved global-role
 reconstruction procedure.
+
+## 0008 – Session invalidation on account lifecycle changes (Git-only)
+
+Offline-only migration `0008_editor_session_revocation` adds an integer
+`auth_version` to each editor account and a PostgreSQL BEFORE UPDATE trigger.
+Changes to `password_hash`, `role` or `active` increment that version.
+An authorized provisioner cannot directly set the version; a matching-value
+update does not revoke an unchanged account. Overflow fails closed.
+
+The separately gated editor login stores the account's version with the
+existing in-memory, hashed-token session. Every authenticated request
+re-reads the active editor and checks this version. Named source decisions
+also check it **under the locked PostgreSQL account row**, preventing an
+out-of-date session from writing a review after a concurrent rotation.
+Password changes, suspension, role changes and quick deactivate/reactivate
+therefore invalidate previously issued sessions until a new login. In-memory
+sessions still vanish on API restart.
+
+CI-only tests use disposable accounts and real HTTP/PostgreSQL requests to
+verify password rotation (old password and cookie rejected), immediate role
+revalidation, disable/reactivate and rollback/reapplication. This is not an
+operator-facing account-provisioning interface; account setup and rotation
+still require separately approved privileged operations and safe secret
+handling. No accounts are created or altered on the VPS, no feature flag is
+turned on, and no persistent PostgreSQL role/login is provisioned.
