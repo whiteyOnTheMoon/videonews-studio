@@ -55,12 +55,14 @@ BEGIN
   SELECT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND
          NOT rolcreaterole AND NOT rolreplication
     INTO eligible FROM pg_catalog.pg_roles WHERE rolname=p_login;
-  IF NOT COALESCE(eligible,false)
-    OR NOT pg_catalog.pg_has_role(p_login,'vns_editor_provisioner','MEMBER')
+  IF NOT COALESCE(eligible,false) THEN
+    RAISE EXCEPTION 'ineligible registry login' USING ERRCODE='42501';
+  END IF;
+  IF NOT pg_catalog.pg_has_role(p_login,'vns_editor_provisioner','MEMBER')
     OR pg_catalog.pg_has_role(p_login,'vns_api_runtime','MEMBER')
     OR pg_catalog.pg_has_role(p_login,'vns_outbox_dispatcher','MEMBER')
     OR pg_catalog.pg_has_role(p_login,'vns_operator_governor','MEMBER') THEN
-    RAISE EXCEPTION 'ineligible registry login' USING ERRCODE='42501';
+    RAISE EXCEPTION 'ineligible registry membership' USING ERRCODE='42501';
   END IF;
 
   INSERT INTO vns.editor_operator_registry
