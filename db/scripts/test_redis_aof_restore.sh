@@ -101,6 +101,7 @@ start "$bootstrap" "$tmp/restored" offline-replay
 dbsize="$(docker exec "$bootstrap" redis-cli DBSIZE | tr -d '\r')"
 if ! [[ "$dbsize" =~ ^[0-9]+$ ]] || (( dbsize < 4 )); then
   echo "FAIL: isolated Redis bootstrap did not recover synthetic keys" >&2
+  docker logs --tail 70 "$bootstrap" 2>&1
   exit 1
 fi
 docker exec "$bootstrap" redis-cli BGREWRITEAOF | grep -q 'Background append only file rewriting started'
