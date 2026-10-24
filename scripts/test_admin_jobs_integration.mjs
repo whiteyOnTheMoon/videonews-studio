@@ -134,15 +134,16 @@ try {
   const evidenceUrl = base + "/admin/evidence?jobId=" + data1.jobId;
   const reviewUrl = base + "/admin/evidence/review";
   const reviewBody = JSON.stringify({ evidenceId, decision: "disputed" });
-  const review = (session, origin = ORIGIN, body = reviewBody) => fetch(reviewUrl, {
-    method: "POST",
-    headers: {
-      Origin: origin,
-      "Content-Type": "application/json",
-      ...(session ? { Cookie: session } : {}),
-    },
-    body,
-  });
+  const review = (session, origin = ORIGIN, body = reviewBody) =>
+    fetch(reviewUrl, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        "Content-Type": "application/json",
+        ...(session ? { Cookie: session } : {}),
+      },
+      body,
+    });
   assert.equal((await fetch(evidenceUrl)).status, 401);
   assert.equal((await review(null)).status, 401);
   const evidenceList = await fetch(evidenceUrl, { headers: { Cookie: cookie } });
@@ -153,17 +154,48 @@ try {
   assert.equal(initial.evidence[0].status, "candidate");
   assert.equal(initial.evidence[0].reviewedAt, null);
   assert.equal((await review(cookie, "https://attacker.invalid")).status, 403);
-  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
-    evidenceId, decision: "verified", reviewer: "forged-editor",
-  }))).status, 400);
+  assert.equal(
+    (
+      await review(
+        cookie,
+        ORIGIN,
+        JSON.stringify({
+          evidenceId,
+          decision: "verified",
+          reviewer: "forged-editor",
+        }),
+      )
+    ).status,
+    400,
+  );
   assert.equal((await review(cookie)).status, 200);
   assert.equal((await review(cookie)).status, 409);
-  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
-    evidenceId, decision: "verified",
-  }))).status, 409);
-  assert.equal((await review(cookie, ORIGIN, JSON.stringify({
-    evidenceId: "abcdef01-1234-4123-8123-123456789012", decision: "rejected",
-  }))).status, 404);
+  assert.equal(
+    (
+      await review(
+        cookie,
+        ORIGIN,
+        JSON.stringify({
+          evidenceId,
+          decision: "verified",
+        }),
+      )
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await review(
+        cookie,
+        ORIGIN,
+        JSON.stringify({
+          evidenceId: "abcdef01-1234-4123-8123-123456789012",
+          decision: "rejected",
+        }),
+      )
+    ).status,
+    404,
+  );
   const reviewRow = await pool.query(
     "SELECT review_status, reviewer, reviewed_at FROM vns.research_evidence WHERE id=$1",
     [evidenceId],
