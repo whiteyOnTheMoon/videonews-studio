@@ -89,6 +89,24 @@ export async function dispatchOutboxBatch(
             removeOnFail: false,
           },
         );
+        // A concurrent producer may have claimed the deterministic ID
+        // between getJob() and add(). Never acknowledge an unchecked collision.
+        const persisted = await queue.getJob(row.queue_job_id);
+        if (
+          !persisted ||
+          persisted.name !== row.kind ||
+          persisted.data?.kind !== row.kind ||
+          persisted.data?.jobId !== row.job_id ||
+          Object.keys(persisted.data ?? {}).length !== 2 ||
+          persisted.opts.attempts !== row.max_attempts ||
+          typeof persisted.opts.backoff !== "object" ||
+          persisted.opts.backoff?.type !== "exponential" ||
+          persisted.opts.backoff?.delay !== 1000 ||
+          persisted.opts.removeOnComplete !== false ||
+          persisted.opts.removeOnFail !== false
+        ) {
+          throw new Error("Enqueued Redis job conflicts with PostgreSQL outbox");
+        }
         newlyEnqueued += 1;
       }
       await client.query(
