@@ -63,6 +63,43 @@ jobs:
             exit 1
           fi
           bash scripts/p1_07_worker_canary.sh status
+          # Only the disposable CI Redis may receive the harmless probe fixture.
+          # No editable/editorial job, API, database or production data is used.
+          docker exec -i vns-p107-worker-ci-worker-1 node --input-type=module <<'JS'
+          import { Queue, QueueEvents } from "bullmq";
+          import Redis from "ioredis";
+          import { readFileSync } from "node:fs";
+          const credentials = {
+            host: "redis",
+            port: 6379,
+            username: "vns_worker",
+            password: readFileSync("/run/secrets/redis_password", "utf8").trim(),
+            maxRetriesPerRequest: null,
+          };
+          const connection = new Redis(credentials);
+          const events = new QueueEvents("vns-jobs", {
+            connection: new Redis(credentials),
+            prefix: "bull:vns",
+          });
+          const queue = new Queue("vns-jobs", { connection, prefix: "bull:vns" });
+          try {
+            await events.waitUntilReady();
+            const job = await queue.add(
+              "probe",
+              { kind: "probe" },
+              { jobId: "ci-worker-image-smoke", removeOnComplete: false, removeOnFail: false },
+            );
+            const result = await job.waitUntilFinished(events, 15000);
+            if (result?.ok !== true || (await job.getState()) !== "completed") {
+              throw new Error("worker image did not finish harmless probe");
+            }
+            console.log("PASS: disposable probe processed to completed state");
+          } finally {
+            await queue.close();
+            await events.close();
+            await connection.quit();
+          }
+          JS
           if bash scripts/p1_07_worker_canary.sh start; then
             echo "FAIL: duplicate worker start incorrectly permitted"
             exit 1
