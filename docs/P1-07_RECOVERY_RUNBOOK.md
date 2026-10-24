@@ -15,20 +15,20 @@ deployment approvals are stored here.
 
 The independent operator must explicitly decide and document:
 
-| Decision | Current approval | Evidence to collect |
-| --- | --- | --- |
-| Off-host storage location, ownership and access | **Not approved** | Independent destination, access controls and recovery-access proof |
-| Recovery point objective (RPO, acceptable data loss) | **Not defined** | Explicit maximum tolerable lost data, agreed retention and backup schedule |
-| Recovery time objective (RTO, time to resume) | **Not defined** | Explicit recovery target and completed realistic, timed rehearsal |
-| Backup encryption and independent key custody | **Not approved** | Audited key recovery and authorized access to an offline recovery copy |
-| Retention, privacy, deletion and audit completeness | **Not approved** | Approved policy for people, review reasons and other sensitive metadata |
-| Media and external assets | **Not backed up** | Hash-verified upload/media inventory and independent restored copy |
-| PostgreSQL data, globals, roles and login secrets | **CI-only tested** | Full off-host database restore, reissued individual credentials |
-| Redis AOF/BullMQ and PostgreSQL outbox consistency | **Not full-stack tested** | Reconciliation and duplicate/retry handling before workers resume |
-| Signed audit data | **CI-only tested** | Independent public-key trust, signature/key rotation, immutable off-host anchor |
-| Config, tunnel, third-party credentials and publication | **Not rehearsed** | Independently retained configuration and post-restore nonpublication check |
-| Real identity/MFA and administrator grant approvals | **Not complete** | Operator-owned authorization and revocation evidence |
-| Explicit live activation | **Not granted** | New human approval for VPS migration, containers, flags and cutover |
+| Decision                                                | Current approval          | Evidence to collect                                                             |
+| ------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| Off-host storage location, ownership and access         | **Not approved**          | Independent destination, access controls and recovery-access proof              |
+| Recovery point objective (RPO, acceptable data loss)    | **Not defined**           | Explicit maximum tolerable lost data, agreed retention and backup schedule      |
+| Recovery time objective (RTO, time to resume)           | **Not defined**           | Explicit recovery target and completed realistic, timed rehearsal               |
+| Backup encryption and independent key custody           | **Not approved**          | Audited key recovery and authorized access to an offline recovery copy          |
+| Retention, privacy, deletion and audit completeness     | **Not approved**          | Approved policy for people, review reasons and other sensitive metadata         |
+| Media and external assets                               | **Not backed up**         | Hash-verified upload/media inventory and independent restored copy              |
+| PostgreSQL data, globals, roles and login secrets       | **CI-only tested**        | Full off-host database restore, reissued individual credentials                 |
+| Redis AOF/BullMQ and PostgreSQL outbox consistency      | **Not full-stack tested** | Reconciliation and duplicate/retry handling before workers resume               |
+| Signed audit data                                       | **CI-only tested**        | Independent public-key trust, signature/key rotation, immutable off-host anchor |
+| Config, tunnel, third-party credentials and publication | **Not rehearsed**         | Independently retained configuration and post-restore nonpublication check      |
+| Real identity/MFA and administrator grant approvals     | **Not complete**          | Operator-owned authorization and revocation evidence                            |
+| Explicit live activation                                | **Not granted**           | New human approval for VPS migration, containers, flags and cutover             |
 
 Cost constraint: **do not provision or subscribe to a new backup service
 automatically**. A future approved backup plan might use an operator-owned
@@ -64,7 +64,7 @@ with dependencies checked on every PR by GitHub Actions. It remains
 evidence reference is null, the `data`, `worker` and `ingress` profiles
 are false, and RPO/RTO are null.
 
-1. **Freeze.** Stop accepting *new* editorial jobs and publication requests,
+1. **Freeze.** Stop accepting _new_ editorial jobs and publication requests,
    halt dispatchers/workers in the approved incident plan, preserve evidence.
    Do not overwrite a failed database or destroy an original volume.
 2. **Verify provenance.** Independently locate and authenticate a recent
@@ -117,21 +117,22 @@ for failed reconciliation and for any evidence of already-published work.
 
 ## Failure decisions and rollback
 
-| Failure | Safe response |
-| --- | --- |
-| Backup missing, expired, unsigned or inaccessible | Stop restoration; preserve incident evidence; no activation |
-| Decryption/signature trust cannot be established | Treat archive as untrusted; do not invent a new trusted key |
-| Global database roles missing, owner/ACL mismatch | Abort; correct on a fresh test target; never weaken runtime DB permissions |
-| Backup incomplete or restored audit trail diverges | Quarantine target, investigate; no synthetic replacement audit events |
-| PostgreSQL and Redis job state disagree | Freeze workers; investigate outbox duplicates and at-least-once replay manually |
-| Media missing, damaged or license rights unknown | Block upload/publication for affected items |
-| Compromised operator or application credentials | Revoke/rotate through independent trusted procedures; review audit trail |
-| New deployment unhealthy | Keep public traffic and worker execution disabled; revert only per operator-approved plan |
-| RPO/RTO not approved or restoration time unmeasured | Do not claim readiness or activate the data profile |
+| Failure                                             | Safe response                                                                             |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Backup missing, expired, unsigned or inaccessible   | Stop restoration; preserve incident evidence; no activation                               |
+| Decryption/signature trust cannot be established    | Treat archive as untrusted; do not invent a new trusted key                               |
+| Global database roles missing, owner/ACL mismatch   | Abort; correct on a fresh test target; never weaken runtime DB permissions                |
+| Backup incomplete or restored audit trail diverges  | Quarantine target, investigate; no synthetic replacement audit events                     |
+| PostgreSQL and Redis job state disagree             | Freeze workers; investigate outbox duplicates and at-least-once replay manually           |
+| Media missing, damaged or license rights unknown    | Block upload/publication for affected items                                               |
+| Compromised operator or application credentials     | Revoke/rotate through independent trusted procedures; review audit trail                  |
+| New deployment unhealthy                            | Keep public traffic and worker execution disabled; revert only per operator-approved plan |
+| RPO/RTO not approved or restoration time unmeasured | Do not claim readiness or activate the data profile                                       |
 
 ## Automated regression checks
 
 The `p1-07-postgres-restore.yml` workflow runs:
+
 - the original disposable baseline PostgreSQL restore,
 - the complete PostgreSQL globals/schema/ACL restore, and
 - `node --test scripts/test_recovery_readiness.mjs`, a **pure**
