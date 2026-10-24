@@ -1,0 +1,56 @@
+name: P1-07 database canary (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_07_data_canary.sh"
+      - "docs/P1-07_DATA_CANARY_RUNBOOK.md"
+      - ".github/workflows/p1-07-data-canary.yml"
+      - "compose.yaml"
+permissions:
+  contents: read
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax and explicit unsafe-command exclusion
+        run: |
+          bash -n scripts/p1_07_data_canary.sh
+          ! grep -Eq 'docker (system prune|volume rm)|compose (down|rm)' scripts/p1_07_data_canary.sh
+      - name: Create synthetic CI-only database credentials
+        run: |
+          mkdir -p -m 700 secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(fd, "w") as f:
+              f.write("ci-only-placeholder-not-for-VPS-deployment\n")
+          PY
+          python3 scripts/provision_redis_secrets.py secrets
+      - name: Validate strictly isolated offline Compose structure
+        run: |
+          docker compose -p vns-p107-disposable -f compose.yaml --profile data --profile preview --profile worker config --format json |
+            python3 scripts/p1_07_readiness.py
+      - name: Start disposable PostgreSQL and Redis, prove healthy
+        run: |
+          set -euo pipefail
+          function cleanup() {
+            docker compose -p vns-p107-disposable -f compose.yaml --profile data down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p107-disposable -f compose.yaml --profile data \
+            up -d --no-deps --no-build --pull missing postgres redis
+          ok=0
+          for i in $(seq 1 60); do
+            pg=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}' vns-p107-disposable-postgres-1 2>/dev/null || true)
+            rd=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}' vns-p107-disposable-redis-1 2>/dev/null || true)
+            if [[ "$pg" == healthy && "$rd" == healthy ]]; then ok=1; break; fi
+            [[ "$pg" != unhealthy && "$rd" != unhealthy ]] || break
+            sleep 2
+          done
+          [[ "$ok" == 1 ]] || { echo "CI-only data canary was not healthy"; exit 1; }
+          docker compose -p vns-p107-disposable -f compose.yaml --profile data ps postgres redis
+          [[ "$(docker ps -q -f name=vns-p107-disposable-worker)" == "" ]]
+          echo "PASS: disposable data-only Compose canary healthy; worker not started"
