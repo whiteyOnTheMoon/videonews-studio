@@ -6,6 +6,7 @@ const CONFIG = { origin: "https://studio.example.invalid", api: "http://api:4000
 const COOKIE = "__Host-vns_session=" + "f".repeat(64);
 const JOB = "12345678-1234-4123-8123-123456789012";
 const ID = "87654321-4321-4432-8432-210987654321";
+const REASON = "The submitted citation confirms the statement in its original context.";
 const EVIDENCE = {
   id: ID,
   jobId: JOB,
@@ -85,12 +86,16 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
   const fake: typeof fetch = async (url, init) => {
     invoked += 1;
     assert.equal(url, CONFIG.api + "/admin/evidence/review");
-    assert.deepEqual(JSON.parse(init?.body as string), { evidenceId: ID, decision: "verified" });
+    assert.deepEqual(JSON.parse(init?.body as string), {
+      evidenceId: ID,
+      decision: "verified",
+      reason: REASON,
+    });
     assert.equal(new Headers(init?.headers).get("cookie"), COOKIE);
     assert.equal(new Headers(init?.headers).get("origin"), CONFIG.origin);
     return Response.json({ reviewed: true, private: "secret" });
   };
-  const valid = { evidenceId: ID, decision: "verified" };
+  const valid = { evidenceId: ID, decision: "verified", reason: REASON };
   assert.equal((await submitAdminEvidenceReview(post(valid), null, fake)).status, 404);
   assert.equal(
     (await submitAdminEvidenceReview(post(valid, { Origin: "https://evil.invalid" }), CONFIG, fake))
@@ -107,14 +112,34 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
     400,
   );
   assert.equal(
-    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "candidate" }), CONFIG, fake))
-      .status,
+    (
+      await submitAdminEvidenceReview(
+        post({ evidenceId: ID, decision: "candidate", reason: REASON }),
+        CONFIG,
+        fake,
+      )
+    ).status,
     400,
   );
   assert.equal(
     (
       await submitAdminEvidenceReview(
         post({ evidenceId: "invalid", decision: "verified" }),
+        CONFIG,
+        fake,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "verified" }), CONFIG, fake))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await submitAdminEvidenceReview(
+        post({ evidenceId: ID, decision: "verified", reason: "short" }),
         CONFIG,
         fake,
       )
@@ -132,7 +157,7 @@ test("review conflict is preserved without exposing upstream details", async () 
   const conflict: typeof fetch = async () =>
     Response.json({ secret: "SQL credentials" }, { status: 409 });
   const result = await submitAdminEvidenceReview(
-    post({ evidenceId: ID, decision: "rejected" }),
+    post({ evidenceId: ID, decision: "rejected", reason: REASON }),
     CONFIG,
     conflict,
   );

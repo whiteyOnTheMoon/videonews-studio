@@ -23,6 +23,7 @@ const HASH = `scrypt$${SALT.toString("hex")}$${scryptSync(PASS, SALT, 64, {
 }).toString("hex")}`;
 const KEY = "ci_job_research_transaction_001";
 const TOPIC = "A public transit policy funding comparison";
+const REASON = "The original statement is disputed because the figures cover only one district.";
 
 const auth = new AdminAuth({ passwordHash: HASH, origin: ORIGIN });
 const adminJobs = adminJobsFromEnv(
@@ -133,7 +134,7 @@ try {
   const evidenceId = inserted.rows[0].id;
   const evidenceUrl = base + "/admin/evidence?jobId=" + data1.jobId;
   const reviewUrl = base + "/admin/evidence/review";
-  const reviewBody = JSON.stringify({ evidenceId, decision: "disputed" });
+  const reviewBody = JSON.stringify({ evidenceId, decision: "disputed", reason: REASON });
   const review = (session, origin = ORIGIN, body = reviewBody) =>
     fetch(reviewUrl, {
       method: "POST",
@@ -162,6 +163,7 @@ try {
         JSON.stringify({
           evidenceId,
           decision: "verified",
+          reason: REASON,
           reviewer: "forged-editor",
         }),
       )
@@ -178,6 +180,7 @@ try {
         JSON.stringify({
           evidenceId,
           decision: "verified",
+          reason: REASON,
         }),
       )
     ).status,
@@ -191,17 +194,31 @@ try {
         JSON.stringify({
           evidenceId: "abcdef01-1234-4123-8123-123456789012",
           decision: "rejected",
+          reason: REASON,
         }),
       )
     ).status,
     404,
   );
   const reviewRow = await pool.query(
-    "SELECT review_status, reviewer, reviewed_at FROM vns.research_evidence WHERE id=$1",
+    "SELECT review_status, reviewer, reviewed_at, review_reason FROM vns.research_evidence WHERE id=$1",
     [evidenceId],
   );
   assert.equal(reviewRow.rows[0].review_status, "disputed");
   assert.equal(reviewRow.rows[0].reviewer, "admin-session");
+  assert.equal(reviewRow.rows[0].review_reason, REASON);
+  const audit = await pool.query(
+    "SELECT before_status, after_status, reason, reviewer_label, editor_id FROM vns.evidence_review_events WHERE evidence_id=$1",
+    [evidenceId],
+  );
+  assert.equal(audit.rowCount, 1);
+  assert.deepEqual(audit.rows[0], {
+    before_status: "candidate",
+    after_status: "disputed",
+    reason: REASON,
+    reviewer_label: "admin-session",
+    editor_id: null,
+  });
   assert.ok(reviewRow.rows[0].reviewed_at instanceof Date);
   const updatedEvidence = await fetch(evidenceUrl, { headers: { Cookie: cookie } });
   assert.equal((await updatedEvidence.json()).evidence[0].status, "disputed");

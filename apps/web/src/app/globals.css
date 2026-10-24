@@ -219,3 +219,15 @@ p {
   outline: 3px solid white;
   outline-offset: 2px;
 }
+
+.evidence-form textarea {
+  resize: vertical;
+  min-height: 5rem;
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  background: #111b2c;
+  color: #f5f7fb;
+  font: inherit;
+}

@@ -49,13 +49,27 @@ function validEvidence(value: unknown, jobId: string): value is EvidenceCard {
 
 function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => Promise<void> }) {
   const [decision, setDecision] = useState<ReviewDecision | "">("");
+  const [reason, setReason] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
 
   async function review(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!decision || !confirmed || busy || item.status !== "candidate") return;
+    const reasonText = reason.trim();
+    if (
+      !decision ||
+      !confirmed ||
+      busy ||
+      item.status !== "candidate" ||
+      Array.from(reasonText).length < 20 ||
+      Array.from(reasonText).length > 500 ||
+      reasonText.split("").some((c) => {
+        const code = c.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
+    )
+      return;
     setBusy(true);
     setFeedback("");
     try {
@@ -64,7 +78,7 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
         credentials: "same-origin",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ evidenceId: item.id, decision }),
+        body: JSON.stringify({ evidenceId: item.id, decision, reason: reasonText }),
       });
       if (response.status === 200) {
         setFeedback("Entscheidung einmalig gespeichert. Keine automatische Veröffentlichung.");
@@ -114,6 +128,18 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
             <option value="disputed">Umstritten</option>
             <option value="rejected">Abgelehnt</option>
           </select>
+          <label htmlFor={"evidence-reason-" + item.id}>Prüfbegründung (20–500 Zeichen)</label>
+          <textarea
+            id={"evidence-reason-" + item.id}
+            value={reason}
+            minLength={20}
+            maxLength={500}
+            required
+            rows={3}
+            disabled={busy}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Welche Textstelle der Originalquelle stützt oder widerspricht der Aussage?"
+          />
           <label className="evidence-confirm">
             <input
               type="checkbox"
@@ -124,7 +150,10 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
             />
             Ich habe diese Quelle und die konkrete Aussage selbst geprüft.
           </label>
-          <button type="submit" disabled={!decision || !confirmed || busy}>
+          <button
+            type="submit"
+            disabled={!decision || !confirmed || busy || Array.from(reason.trim()).length < 20}
+          >
             {busy ? "Speichere Entscheidung …" : "Entscheidung unwiderruflich speichern"}
           </button>
           {feedback ? <p role="status">{feedback}</p> : null}

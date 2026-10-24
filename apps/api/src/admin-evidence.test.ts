@@ -24,6 +24,7 @@ const HASH = `scrypt$${SALT.toString("hex")}$${scryptSync(PASS, SALT, 64, {
 }).toString("hex")}`;
 const JOB = "12345678-1234-4123-8123-123456789012";
 const ID = "87654321-4321-4432-8432-210987654321";
+const REASON = "The cited document only partially supports this specific statement.";
 const ITEM: EvidenceSummary = {
   id: ID,
   jobId: JOB,
@@ -36,9 +37,10 @@ const ITEM: EvidenceSummary = {
 };
 
 test("only allowlisted evidence review decisions are valid", () => {
-  assert.deepEqual(parseReview({ evidenceId: ID, decision: "verified" }), {
+  assert.deepEqual(parseReview({ evidenceId: ID, decision: "verified", reason: REASON }), {
     evidenceId: ID,
     decision: "verified",
+    reason: REASON,
   });
   for (const invalid of [
     null,
@@ -46,7 +48,10 @@ test("only allowlisted evidence review decisions are valid", () => {
     { evidenceId: ID, decision: "candidate" },
     { evidenceId: "bad", decision: "verified" },
     { evidenceId: ID, decision: "verified", reviewer: "spoofed" },
-    { evidenceId: ID, decision: "approved" },
+    { evidenceId: ID, decision: "approved", reason: REASON },
+    { evidenceId: ID, decision: "verified" },
+    { evidenceId: ID, decision: "verified", reason: "too short" },
+    { evidenceId: ID, decision: "verified", reason: "  " + REASON },
   ])
     assert.equal(parseReview(invalid), null);
 });
@@ -84,7 +89,7 @@ test("evidence endpoints require valid admin session and Origin for mutations", 
   try {
     const listUrl = base + "/admin/evidence?jobId=" + JOB;
     const reviewUrl = base + "/admin/evidence/review";
-    const body = JSON.stringify({ evidenceId: ID, decision: "verified" });
+    const body = JSON.stringify({ evidenceId: ID, decision: "verified", reason: REASON });
     const post = (cookie: string | undefined, origin = ORIGIN, payload = body) =>
       fetch(reviewUrl, {
         method: "POST",
@@ -116,8 +121,13 @@ test("evidence endpoints require valid admin session and Origin for mutations", 
     assert.equal((await fetch(listUrl + "&extra=1", { headers: { Cookie: cookie } })).status, 400);
     assert.equal((await post(cookie, "https://evil.invalid")).status, 403);
     assert.equal(
-      (await post(cookie, ORIGIN, JSON.stringify({ evidenceId: ID, decision: "candidate" })))
-        .status,
+      (
+        await post(
+          cookie,
+          ORIGIN,
+          JSON.stringify({ evidenceId: ID, decision: "candidate", reason: REASON }),
+        )
+      ).status,
       400,
     );
     assert.equal((await post(cookie, ORIGIN, "x".repeat(1024))).status, 400);
@@ -182,7 +192,7 @@ test("reviewed evidence is immutable and failures sanitized through API", async 
     const review = await fetch(base + "/admin/evidence/review", {
       method: "POST",
       headers: { Cookie: cookie, Origin: ORIGIN, "Content-Type": "application/json" },
-      body: JSON.stringify({ evidenceId: ID, decision: "rejected" }),
+      body: JSON.stringify({ evidenceId: ID, decision: "rejected", reason: REASON }),
     });
     assert.equal(review.status, 409);
     assert.deepEqual(await review.json(), { error: "already_reviewed" });
