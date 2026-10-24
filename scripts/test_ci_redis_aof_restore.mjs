@@ -66,7 +66,7 @@ try {
       const counts = await queue.getJobCounts("waiting", "delayed", "completed", "failed");
       const persistence = await connection.info("persistence");
       const fields = persistence
-        .split("\\n")
+        .split("\n")
         .filter((line) =>
           /^(aof_enabled|aof_current_size|aof_last_write_status|loading):/.test(line),
         );
