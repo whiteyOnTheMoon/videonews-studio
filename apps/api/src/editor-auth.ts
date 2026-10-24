@@ -25,23 +25,26 @@ export interface EditorAccount {
   role: EditorRole;
   active: boolean;
   passwordHash: string;
+  authVersion: number;
 }
 export interface EditorIdentity {
   id: string;
   username: string;
   role: EditorRole;
+  authVersion: number;
 }
 export type ReviewOutcome = "updated" | "missing" | "already_reviewed" | "forbidden";
 
 export interface EditorStore {
   findAccount(username: string): Promise<EditorAccount | null>;
   activeIdentity(id: string): Promise<EditorIdentity | null>;
-  review(id: string, verdict: Verdict, reason: string, editorId: string): Promise<ReviewOutcome>;
+  review(id: string, verdict: Verdict, reason: string, editorId: string, authVersion: number): Promise<ReviewOutcome>;
   close?(): Promise<void>;
 }
 
 interface Session {
   editorId: string;
+  authVersion: number;
   expiresAt: number;
 }
 interface Attempt {
@@ -164,6 +167,8 @@ export class EditorAuth {
       !identity ||
       !UUID.test(identity.id) ||
       !NAME.test(identity.username) ||
+      !Number.isSafeInteger(identity.authVersion) ||
+      identity.authVersion !== session.authVersion ||
       !["editor", "reviewer", "admin"].includes(identity.role)
     ) {
       this.sessions.delete(key); // Immediate revocation on next access.
@@ -218,6 +223,8 @@ export class EditorAuth {
         !valid ||
         !account?.active ||
         !UUID.test(account.id) ||
+        !Number.isSafeInteger(account.authVersion) ||
+        account.authVersion < 0 ||
         !["editor", "reviewer", "admin"].includes(account.role)
       ) {
         this.attempts.set(address, {
@@ -233,7 +240,11 @@ export class EditorAuth {
         return true;
       }
       const token = randomBytes(32).toString("hex");
-      this.sessions.set(digest(token), { editorId: account.id, expiresAt: now + SESSION_MS });
+      this.sessions.set(digest(token), {
+        editorId: account.id,
+        authVersion: account.authVersion,
+        expiresAt: now + SESSION_MS,
+      });
       res.setHeader("Set-Cookie", cookieHeader(token, SESSION_MS / 1000));
       json(res, 200, { authenticated: true, role: account.role });
       return true;
@@ -312,6 +323,7 @@ export class EditorAuth {
           review.decision,
           review.reason,
           identity.id,
+          identity.authVersion,
         );
         if (status === "updated") json(res, 200, { reviewed: true });
         else if (status === "already_reviewed") json(res, 409, { error: "already_reviewed" });
@@ -343,8 +355,10 @@ export class PostgresEditorStore implements EditorStore {
       role: EditorRole;
       active: boolean;
       passwordHash: string;
+      authVersion: number;
     }>(
-      `SELECT id::text, username, role, active, password_hash AS "passwordHash"
+      `SELECT id::text, username, role, active, auth_version AS "authVersion",
+              password_hash AS "passwordHash"
        FROM vns.editor_accounts WHERE username=$1`,
       [username],
     );
@@ -354,8 +368,8 @@ export class PostgresEditorStore implements EditorStore {
   async activeIdentity(id: string): Promise<EditorIdentity | null> {
     if (!UUID.test(id)) return null;
     const result = await this.pool.query<EditorIdentity>(
-      `SELECT id::text, username, role FROM vns.editor_accounts
-       WHERE id=$1::uuid AND active=true`,
+      `SELECT id::text, username, role, auth_version AS "authVersion"
+       FROM vns.editor_accounts WHERE id=$1::uuid AND active=true`,
       [id],
     );
     return result.rows[0] ?? null;
@@ -366,8 +380,11 @@ export class PostgresEditorStore implements EditorStore {
     verdict: Verdict,
     reason: string,
     editorId: string,
+    authVersion: number,
   ): Promise<ReviewOutcome> {
-    if (!UUID.test(id) || !UUID.test(editorId)) throw new Error("Invalid review ID");
+    if (!UUID.test(id) || !UUID.test(editorId) || !Number.isSafeInteger(authVersion)) {
+      throw new Error("Invalid review identity");
+    }
     const client: PoolClient = await this.pool.connect();
     let inTransaction = false;
     try {
@@ -376,8 +393,8 @@ export class PostgresEditorStore implements EditorStore {
       // Prevent simultaneous deactivation/role modification while committing.
       const account = await client.query<{ username: string; role: EditorRole }>(
         `SELECT username, role FROM vns.editor_accounts
-         WHERE id=$1::uuid AND active=true FOR SHARE`,
-        [editorId],
+         WHERE id=$1::uuid AND active=true AND auth_version=$2 FOR SHARE`,
+        [editorId, authVersion],
       );
       if (!account.rows[0] || !["reviewer", "admin"].includes(account.rows[0].role)) {
         await client.query("ROLLBACK");
