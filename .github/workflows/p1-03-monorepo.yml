@@ -5,6 +5,8 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
+      - "scripts/ci_editor_account_lifecycle.mjs"
+      - "scripts/test_editor_auth_integration.mjs"
       - "package.json"
       - "package-lock.json"
       - "tsconfig.base.json"

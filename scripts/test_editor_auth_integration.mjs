@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { scryptSync } from "node:crypto";
 import { once } from "node:events";
 import pg from "pg";
+import { runCiEditorAccountAction } from "./ci_editor_account_lifecycle.mjs";
 import { AdminAuth } from "../apps/api/dist/auth.js";
 import { adminJobsFromEnv } from "../apps/api/dist/admin-jobs.js";
 import { editorAuthFromEnv } from "../apps/api/dist/editor-auth.js";
@@ -120,6 +121,90 @@ try {
       headers: { Cookie: cookie, Origin: origin, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
+  // Exercise a complete lifecycle using the NOLOGIN provisioner, never owner writes.
+  const action = (input) => runCiEditorAccountAction(pool, input);
+  await assert.rejects(
+    action({
+      type: "create",
+      username: "live_user",
+      displayName: "Not a CI Account",
+      role: "admin",
+      password: "ci-unsafe-account-password",
+    }),
+    /Invalid synthetic/,
+  );
+  await assert.rejects(
+    action({
+      type: "create",
+      username: "ci_managed",
+      displayName: "CI Managed Reviewer",
+      role: "reviewer",
+      password: "ci-managed-original-password",
+      active: true,
+    }),
+    /Invalid synthetic/,
+  );
+  const managed = await action({
+    type: "create",
+    username: "ci_managed",
+    displayName: "CI Managed Reviewer",
+    role: "reviewer",
+    password: "ci-managed-original-password",
+  });
+  assert.equal(managed.username, "ci_managed");
+  assert.equal(managed.role, "reviewer");
+  assert.equal(managed.active, false);
+  assert.ok(!("passwordHash" in managed));
+  assert.equal((await login("ci_managed", "ci-managed-original-password")).status, 401);
+  assert.equal((await action({ type: "activate", username: "ci_managed" })).active, true);
+  const managedLogin = await login("ci_managed", "ci-managed-original-password");
+  assert.equal(managedLogin.status, 200);
+  const managedCookie = managedLogin.headers.get("set-cookie")?.split(";")[0];
+  assert.ok(managedCookie);
+  await action({
+    type: "rotate",
+    username: "ci_managed",
+    password: "ci-managed-rotated-password",
+  });
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: managedCookie } })).status,
+    401,
+  );
+  assert.equal((await login("ci_managed", "ci-managed-original-password")).status, 401);
+  const newLogin = await login("ci_managed", "ci-managed-rotated-password");
+  assert.equal(newLogin.status, 200);
+  const newCookie = newLogin.headers.get("set-cookie")?.split(";")[0];
+  assert.ok(newCookie);
+  await action({ type: "setRole", username: "ci_managed", role: "editor" });
+  assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: newCookie } })).status, 401);
+  const downgraded = await login("ci_managed", "ci-managed-rotated-password");
+  assert.equal(downgraded.status, 200);
+  const downgradedCookie = downgraded.headers.get("set-cookie")?.split(";")[0];
+  assert.ok(downgradedCookie);
+  assert.equal((await review(downgradedCookie, evidenceId)).status, 403);
+  await action({ type: "deactivate", username: "ci_managed" });
+  assert.equal((await login("ci_managed", "ci-managed-rotated-password")).status, 401);
+  await action({ type: "activate", username: "ci_managed" });
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: downgradedCookie } })).status,
+    401,
+  );
+  assert.equal((await login("ci_managed", "ci-managed-rotated-password")).status, 200);
+  await assert.rejects(
+    action({ type: "rotate", username: "ci_missing", password: "ci-secret-password-strong" }),
+    /rejected/,
+  );
+  const saved = await pool.query(
+    "SELECT active, role, auth_version, password_hash FROM vns.editor_accounts WHERE username=$1",
+    ["ci_managed"],
+  );
+  assert.equal(saved.rows[0].auth_version, 5);
+  assert.equal(saved.rows[0].role, "editor");
+  assert.equal(saved.rows[0].active, true);
+  assert.ok(saved.rows[0].password_hash.startsWith("scrypt$"));
+  assert.ok(!saved.rows[0].password_hash.includes("ci-managed-rotated-password"));
+  console.log("PASS: CI-only inactive create, activation, rotation, role downgrade and revocation");
 
   assert.equal((await login("ci_reviewer", PASSWORD, "https://bad.invalid")).status, 403);
   assert.equal((await login("ci_inactive", PASS_DISABLED)).status, 401);
