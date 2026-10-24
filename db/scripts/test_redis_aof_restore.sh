@@ -41,7 +41,7 @@ start() {
   fi
   docker run --rm --detach --name "$container" \
     --user "$(id -u):$(id -g)" \
-    "\${network[@]}" \
+    "${network[@]}" \
     --memory 160m --memory-swap 160m --cpus 0.5 --pids-limit 80 \
     --mount "type=bind,src=$volume,dst=/data" \
     --mount "type=bind,src=$acl_file,dst=/run/secrets/redis_acl,readonly" \
