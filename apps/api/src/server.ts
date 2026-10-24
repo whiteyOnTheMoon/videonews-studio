@@ -17,6 +17,14 @@ export function createApiServer(options: { auth?: AdminAuth; jobs?: AdminJobs } 
       return;
     }
 
+    if (request.url?.startsWith("/admin/evidence") && options.auth && options.jobs) {
+      void options.jobs.handleEvidence(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+      });
+      return;
+    }
+
     if (request.url === "/admin/jobs" && options.auth && options.jobs) {
       void options.jobs.handle(request, response).catch(() => {
         if (!response.headersSent) response.writeHead(503);

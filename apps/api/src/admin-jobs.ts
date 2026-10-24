@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import pg from "pg";
 import type { Pool } from "pg";
 import type { AdminAuth } from "./auth.js";
+import { AdminEvidence, PostgresEvidenceReviewStore } from "./admin-evidence.js";
 
 const KEY_PATTERN = /^[a-zA-Z0-9_-]{24,80}$/;
 export function validResearchTopic(value: unknown): value is string {
@@ -99,7 +100,17 @@ export class AdminJobs {
   constructor(
     private readonly auth: AdminAuth,
     private readonly store: ResearchJobStore,
+    private readonly evidence?: AdminEvidence,
   ) {}
+
+  async handleEvidence(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    if (!this.evidence) {
+      response.writeHead(404);
+      response.end(JSON.stringify({ error: "not_found" }));
+      return;
+    }
+    await this.evidence.handle(request, response);
+  }
 
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     if (!this.auth.hasAdminSession(request)) {
@@ -251,5 +262,9 @@ export function adminJobsFromEnv(
     idleTimeoutMillis: 5000,
     statement_timeout: 8000,
   });
-  return new AdminJobs(auth, new PostgresResearchJobStore(pool));
+  return new AdminJobs(
+    auth,
+    new PostgresResearchJobStore(pool),
+    new AdminEvidence(auth, new PostgresEvidenceReviewStore(pool)),
+  );
 }
