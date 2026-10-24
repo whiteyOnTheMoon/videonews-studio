@@ -432,7 +432,7 @@ LOGIN test verifies a fully restricted database connection. No real
 operator roles, accounts, secrets, VPS services, or runtime config change
 as part of this PR.
 
-This function trusts the *authenticated API* to supply the correct editor
+This function trusts the _authenticated API_ to supply the correct editor
 identity/version: a stolen API database login could attempt calls with
 other editor IDs. This is a least-privilege SQL integrity boundary, not
 database-native verification of a browser session. Credential isolation,
