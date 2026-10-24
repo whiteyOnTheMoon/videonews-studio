@@ -169,21 +169,25 @@ async function submitEvidenceReview(
   if (request.headers.get("origin") !== config.origin) {
     return reply(403, { error: "forbidden" });
   }
-  const cookie = mode === "named"
-    ? clientEditorCookie(request.headers.get("cookie"))
-    : clientAdminCookie(request.headers.get("cookie"));
+  const cookie =
+    mode === "named"
+      ? clientEditorCookie(request.headers.get("cookie"))
+      : clientAdminCookie(request.headers.get("cookie"));
   if (!cookie) return reply(401, { error: "unauthorized" });
   const body = await requestReviewBody(request);
   if (!body) return reply(400, { error: "invalid_request" });
   try {
-    const upstream = await fetcher(config.api + (mode === "named" ? "/editor/evidence/review" : "/admin/evidence/review"), {
-      method: "POST",
-      headers: { Cookie: cookie, Origin: config.origin, "Content-Type": "application/json" },
-      body,
-      cache: "no-store",
-      redirect: "manual",
-      signal: AbortSignal.timeout(5000),
-    });
+    const upstream = await fetcher(
+      config.api + (mode === "named" ? "/editor/evidence/review" : "/admin/evidence/review"),
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: config.origin, "Content-Type": "application/json" },
+        body,
+        cache: "no-store",
+        redirect: "manual",
+        signal: AbortSignal.timeout(5000),
+      },
+    );
     if (upstream.status === 200) return reply(200, { reviewed: true });
     if (upstream.status === 401) return reply(401, { error: "unauthorized" });
     if (upstream.status === 403) return reply(403, { error: "forbidden" });
