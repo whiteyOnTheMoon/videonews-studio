@@ -49,6 +49,7 @@ const DISPOSITIONS = new Set([
   "rebuild",
   "reissue",
   "operator-verify",
+  "independent-custody",
   "not-configured",
 ]);
 const CATEGORIES = new Set(["code", "configuration", "data", "credential", "identity", "external", "planned"]);
@@ -122,7 +123,9 @@ export function validateInventory(inventory, plan) {
       assert.equal(record[key], null, `No real approval or location has been established: ${record.id}`);
     }
     if (record.category === "code") assert.equal(record.disposition, "rebuild");
-    if (record.category === "credential") assert.equal(record.disposition, "reissue");
+    if (record.category === "credential") {
+      assert.ok(["reissue", "independent-custody"].includes(record.disposition));
+    }
     if (record.category === "planned") assert.equal(record.disposition, "not-configured");
   }
   assert.deepEqual([...indexed.keys()], REQUIRED_IDS, "Recovery component inventory order/coverage");
@@ -131,6 +134,9 @@ export function validateInventory(inventory, plan) {
   }
   assert.equal(indexed.get("uploaded-media").disposition, "not-configured");
   assert.equal(indexed.get("cloudflare-tunnel-config").disposition, "operator-verify");
+  for (const id of ["recovery-signing-keys", "backup-encryption-keys"]) {
+    assert.equal(indexed.get(id).disposition, "independent-custody");
+  }
   const visiting = new Set();
   const finished = new Set();
   function visit(id) {
