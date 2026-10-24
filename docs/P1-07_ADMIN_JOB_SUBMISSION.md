@@ -96,3 +96,34 @@ network requests. A source is not verified merely because it has an HTTPS URL,
 and no real source fetch, external publication or research worker is active.
 The authoritative reviewer workflow and least-privilege roles must be built
 before any real editorial verification or deployment.
+
+
+## Authenticated one-time evidence review (Git-only)
+
+The same `VNS_ADMIN_JOBS_ENABLED` and `VNS_WEB_ADMIN_JOBS_ENABLED` gates now
+protect `GET /admin/evidence?jobId=<uuid>` and
+`POST /admin/evidence/review`, proxied through Next.js as
+`/api/admin/evidence` and `/api/admin/evidence/review`. All requests
+require a valid server-checked admin session; POST additionally requires the
+exact configured HTTPS Origin. Responses are uncached and reveal only
+allowlisted source metadata (up to 20 per research job). No arbitrary source
+fetching is performed by these endpoints.
+
+Only a strict JSON body `{"evidenceId":"<uuid>","decision":"verified|disputed|rejected"}`
+can transition a PostgreSQL source from `candidate` to the specified
+review verdict. The UPDATE is conditional on candidate status, so concurrent
+or repeated decisions never rewrite existing evidence. A second decision
+returns 409, a nonexistent identifier returns 404, and anonymous/CSRF attempts
+are rejected. Status labels are editorial decisions only, **not** automatic
+fact verification. A human reviewer must independently assess evidence.
+
+**Identity limitation:** the current password-based shared admin session
+supports no individual editor accounts. The mandatory reviewer column is
+therefore recorded as `admin-session`, not a real person's identity. This
+is sufficient to distinguish an authorized admin action from automated
+candidate collection, but it is **not** a trustworthy individual audit trail.
+Individual RBAC, named reviewer attribution, review rationale, full immutable
+audit events and UI review controls remain mandatory before production use.
+
+The feature is still disabled and not deployed on the VPS. GitHub Actions
+runs real HTTP and PostgreSQL integration against disposable containers.
