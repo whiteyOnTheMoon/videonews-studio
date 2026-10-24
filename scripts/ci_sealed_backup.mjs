@@ -79,6 +79,8 @@ function requireEncryptionKey(key) {
 export async function sealCiBackup(directory, plaintext, options) {
   requireCi();
   const target = requireDirectory(directory);
+  assert.ok((await lstat(target)).isDirectory(), "Invalid CI backup target");
+  assert.deepEqual(await readdir(target), [], "Refusing to overwrite an existing backup");
   const { backupId, generation, encryptionKey, signingPrivateKey, signingPublicKey } = options;
   requireBackupId(backupId);
   assert.ok(Number.isSafeInteger(generation) && generation >= 1);
@@ -106,12 +108,16 @@ export async function sealCiBackup(directory, plaintext, options) {
   const bytes = Buffer.from(JSON.stringify(envelope) + "\n", "utf8");
   assert.ok(bytes.length <= MAX_ENVELOPE);
   const signature = sign(null, Buffer.concat([DOMAIN, bytes]), signingPrivateKey);
+  let wroteEnvelope = false;
+  let wroteSignature = false;
   try {
     await writeFile(join(target, ENVELOPE_FILE), bytes, { mode: 0o600, flag: "wx" });
+    wroteEnvelope = true;
     await writeFile(join(target, SIGNATURE_FILE), signature, { mode: 0o600, flag: "wx" });
+    wroteSignature = true;
   } catch (error) {
-    await rm(join(target, ENVELOPE_FILE), { force: true });
-    await rm(join(target, SIGNATURE_FILE), { force: true });
+    if (wroteEnvelope) await rm(join(target, ENVELOPE_FILE), { force: true });
+    if (wroteSignature) await rm(join(target, SIGNATURE_FILE), { force: true });
     throw error;
   }
   return { backupId, generation, signingKeyId: envelope.signingKeyId };
