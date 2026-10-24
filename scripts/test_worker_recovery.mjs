@@ -171,6 +171,25 @@ try {
     assert.ok(retained);
     assert.equal(retained.attemptsMade, 2);
     assert.equal((await queue.getJobCounts("failed")).failed, 1);
+    // Retaining the failed deterministic ID must also prevent accidental
+    // resubmission from converting terminal failure into a new runnable job.
+    const duplicateFailed = await queue.add(
+      "render",
+      { kind: "render" },
+      {
+        jobId: "ci-terminal-unsupported",
+        attempts: 2,
+        backoff: { type: "exponential", delay: 200 },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    );
+    assert.equal(duplicateFailed.id, invalidJob.id);
+    assert.equal(await invalidJob.getState(), "failed");
+    assert.equal((await queue.getJobCounts("failed")).failed, 1);
+    assert.equal(await queue.getWaitingCount(), 0);
+    assert.equal(await queue.getDelayedCount(), 0);
+    assert.equal(await queue.getActiveCount(), 0);
     console.log("PASS: unsupported work fails after bounded exponential retries");
   } finally {
     await rejectingWorker.worker.close();
