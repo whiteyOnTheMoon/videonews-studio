@@ -242,7 +242,10 @@ try {
     assert.equal(audited.rowCount, 1);
     assert.equal(audited.rows[0].reviewer_label, "ci_login_probe");
     assert.equal(audited.rows[0].after_status, "disputed");
-    assert.equal(audited.rows[0].reason, "This sample source does not establish the complete claim.");
+    assert.equal(
+      audited.rows[0].reason,
+      "This sample source does not establish the complete claim.",
+    );
     const namedId = await owner.query(
       "SELECT id::text AS id FROM vns.editor_accounts WHERE username='ci_login_probe'",
     );
@@ -263,7 +266,9 @@ try {
     );
     assert.equal((await login(reviewerPassword)).status, 401);
     assert.equal((await review(downgradedCookie, evidenceId)).status, 401);
-    console.log("PASS: restricted PostgreSQL LOGIN authenticates, reviews, audits and revokes via HTTP");
+    console.log(
+      "PASS: restricted PostgreSQL LOGIN authenticates, reviews, audits and revokes via HTTP",
+    );
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
