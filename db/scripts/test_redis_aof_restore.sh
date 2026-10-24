@@ -80,6 +80,8 @@ if (cd "$tmp/tampered" && sha256sum --check --status "$tmp/aof.sha256"); then
   exit 1
 fi
 echo "PASS: multipart AOF checksum verification rejects tampering"
+echo "CI-AOF-DIAG: synthetic archived file sizes:"
+find "$tmp/source" -type f -printf '%P %s bytes\\n'
 
 # The actual restore uses a NEW Redis process and separate restored files.
 start "$target" "$tmp/restored"
