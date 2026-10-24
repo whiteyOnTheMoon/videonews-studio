@@ -65,7 +65,7 @@ jobs:
           bash scripts/p1_07_worker_canary.sh status
           # Only the disposable CI Redis may receive the harmless probe fixture.
           # No editable/editorial job, API, database or production data is used.
-          docker exec -i vns-p107-worker-ci-worker-1 node --input-type=module <<'JS'
+          timeout 40s docker exec -i vns-p107-worker-ci-worker-1 node --input-type=module <<'JS'
           import { Queue, QueueEvents } from "bullmq";
           import Redis from "ioredis";
           import { readFileSync } from "node:fs";
@@ -84,6 +84,7 @@ jobs:
           const queue = new Queue("vns-jobs", { connection, prefix: "bull:vns" });
           try {
             await events.waitUntilReady();
+            console.log("CI: QueueEvents connected");
             const job = await queue.add(
               "probe",
               { kind: "probe" },
