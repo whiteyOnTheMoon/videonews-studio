@@ -103,10 +103,7 @@ try {
     readOnly.query("SELECT username FROM vns.editor_accounts"),
     (error) => error?.code === "42501",
   );
-  await assert.rejects(
-    readOnly.query("SET ROLE vns"),
-    (error) => error?.code === "42501",
-  );
+  await assert.rejects(readOnly.query("SET ROLE vns"), (error) => error?.code === "42501",)
 
   // Other CI tests have stopped all workers; reset only disposable fixtures.
   await queue.obliterate({ force: true });
@@ -193,7 +190,9 @@ try {
   console.log(
     "PASS: missing Redis, lost acknowledgement, collision, terminal conflict and disconnect fail closed",
   );
-  console.log("KNOWN LIMIT: only PG-known IDs are inspected; manual operator approval is mandatory");
+  console.log(
+    "KNOWN LIMIT: only PG-known IDs are inspected; manual operator approval is mandatory",
+  );
 } finally {
   await Promise.allSettled([readOnly.end(), queue.close()]);
   await redis.quit().catch(() => undefined);
