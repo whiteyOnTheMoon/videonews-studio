@@ -1,9 +1,14 @@
 // P1-07: GitHub Actions ONLY. Disposable Postgres login isolation smoke test.
 // Does not create application login users or modify any production database.
 import assert from "node:assert/strict";
-import { randomBytes, scryptSync } from "node:crypto";
+import { generateKeyPairSync, randomBytes, scryptSync } from "node:crypto";
 import { once } from "node:events";
 import { readFile, rm, writeFile } from "node:fs/promises";
+import {
+  replayVerifiedCiAuditEvents,
+  signCiAuditManifest,
+  verifySignedCiAuditBundle,
+} from "./ci_signed_audit_replay.mjs";
 import { join } from "node:path";
 import pg from "pg";
 import { exportCiAuditBundle, verifyCiAuditBundle } from "./ci_audit_export.mjs";
@@ -367,6 +372,58 @@ try {
     await assert.rejects(verifyCiAuditBundle(output), /mismatch/);
     await writeFile(join(output, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
     await verifyCiAuditBundle(output);
+    // Trusted verification key is passed OUTSIDE the archive. The ephemeral
+    // signing key exists in memory for this CI run only.
+    const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+    const attacker = generateKeyPairSync("ed25519");
+    await signCiAuditManifest(output, privateKey);
+    await verifySignedCiAuditBundle(output, publicKey);
+    const recovered = await replayVerifiedCiAuditEvents(output, publicKey);
+    assert.deepEqual(
+      recovered.map((item) => item.stream),
+      ["source_reviews", "editor_lifecycle", "operator_governance"],
+    );
+    assert.ok(recovered.every((item) => item.rows > 0));
+    await assert.rejects(
+      verifySignedCiAuditBundle(output, attacker.publicKey),
+      /signature verification failed/,
+    );
+    const signedManifest = await readFile(join(output, "manifest.json"));
+    const trustedSignature = await readFile(join(output, "manifest.sig"));
+    const falsified = structuredClone(JSON.parse(signedManifest.toString("utf8")));
+    falsified.streams[0].rows += 1;
+    try {
+      await writeFile(join(output, "manifest.json"), JSON.stringify(falsified) + "\n");
+      await assert.rejects(
+        verifySignedCiAuditBundle(output, publicKey),
+        /signature verification failed/,
+      );
+    } finally {
+      await writeFile(join(output, "manifest.json"), signedManifest);
+    }
+    const modifiedSignature = Buffer.from(trustedSignature);
+    modifiedSignature[0] ^= 0x01;
+    try {
+      await writeFile(join(output, "manifest.sig"), modifiedSignature);
+      await assert.rejects(
+        verifySignedCiAuditBundle(output, publicKey),
+        /signature verification failed/,
+      );
+    } finally {
+      await writeFile(join(output, "manifest.sig"), trustedSignature);
+    }
+    // An attacker who controls both archive and signature but NOT the
+    // externally pinned public key cannot replace the trusted signer.
+    await rm(join(output, "manifest.sig"));
+    await signCiAuditManifest(output, attacker.privateKey);
+    await verifySignedCiAuditBundle(output, attacker.publicKey);
+    await assert.rejects(
+      replayVerifiedCiAuditEvents(output, publicKey),
+      /signature verification failed/,
+    );
+    await writeFile(join(output, "manifest.sig"), trustedSignature);
+    assert.deepEqual(await replayVerifiedCiAuditEvents(output, publicKey), recovered);
+    console.log("PASS: detached Ed25519 signature and offline replay reject untrusted signer");
     console.log("PASS: read-only three-ledger export, hashes and tamper rejection");
   } finally {
     await rm(output, { recursive: true, force: true });

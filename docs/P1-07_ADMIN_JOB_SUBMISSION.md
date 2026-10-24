@@ -555,3 +555,45 @@ digest/signature verification, restore exercises, privileged DBA
 monitoring and GDPR/privacy retention decisions remain open until
 approved backup/recovery and explicit operator sign-off. No VPS access,
 persistent database or service activation is part of this work.
+
+## Ed25519 signed audit verification and offline event replay (GitHub CI only)
+
+The disposable-only `scripts/ci_signed_audit_replay.mjs` signs the exact
+bytes of `manifest.json` with a **domain-separated detached Ed25519
+signature** (`manifest.sig`). The manifest continues to commit to
+the individual NDJSON ledger files using SHA-256 hashes, lengths and
+record counts. The verifier requires an Ed25519 **trusted public key
+provided independently of the bundle**; it never extracts or trusts a
+key supplied by the archive. It verifies the signature **before**
+reading the event files, then checks the existing allowlisted
+records and content hashes. A memory-only replay checks each stream's
+ordered, unique event identifiers and counts without writing to any
+database.
+
+CI generates a fresh signing key pair in memory for the synthetic
+disposable archive. The private key is never written to disk, put in
+GitHub Secrets or printed in logs. The CI exercises these denial cases:
+modified signed manifest, corrupt detached signature, wrong trusted key,
+and archive replacement by a different signer. After verification the
+CI deletes the archive. The test uses an independently authenticated
+read-only PostgreSQL login exclusively on a disposable GitHub runner.
+No signatures or ledger exports are uploaded as Actions artifacts.
+
+**Important: this is a cryptographic protocol rehearsal, not an
+independently anchored production archive.** The CI key is short-lived;
+there is no trusted signing service, pinned production key, external
+append-only timestamp, WORM/off-host storage, encryption-at-rest
+policy, key rotation/revocation service or independently retained
+archive. A verifier only obtains authentication when it has the
+correct public key through an actually trusted external channel.
+An attacker controlling the signing key could forge valid signatures.
+A missing whole export, silent ledger omission before signing,
+database-owner bypass, or rollback to a previously valid signed
+snapshot cannot be detected without independent completeness and
+freshness anchors. Signatures do not recover PostgreSQL state or
+restore missing research records. The replay verifies **audit events
+only**, in memory; it is not a database backup or restoration plan.
+Off-host retention, durable key lifecycle, data handling policies,
+privileged DB monitoring, recovery exercises and explicit operator
+approval remain release gates. Production environments and flags
+remain unchanged.

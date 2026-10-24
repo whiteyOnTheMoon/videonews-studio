@@ -8,6 +8,7 @@ on:
       - "scripts/ci_editor_account_lifecycle.mjs"
       - "scripts/test_editor_auth_integration.mjs"
       - "scripts/ci_audit_export.mjs"
+      - "scripts/ci_signed_audit_replay.mjs"
       - "scripts/test_db_login_roles.mjs"
       - "package.json"
       - "package-lock.json"
