@@ -7,6 +7,8 @@ on:
       - "scripts/p1_07_worker_canary.sh"
       - "scripts/p1_07_live_probe.sh"
       - "scripts/p1_07_live_probe_receipt.sh"
+      - "scripts/p1_07_worker_restart.sh"
+      - "scripts/p1_07_idle_queue_check.mjs"
       - "docs/P1-07_WORKER_CANARY_RUNBOOK.md"
       - ".github/workflows/p1-07-probe-worker-canary.yml"
       - "apps/worker/**"
@@ -117,7 +119,11 @@ jobs:
             echo "FAIL: a second live probe with the same ID was accepted"
             exit 1
           fi
-          bash scripts/p1_07_worker_canary.sh status
+          bash -n scripts/p1_07_worker_restart.sh
+          node --check scripts/p1_07_idle_queue_check.mjs
+          bash scripts/p1_07_worker_restart.sh preflight
+          bash scripts/p1_07_worker_restart.sh restart
+          bash scripts/p1_07_worker_restart.sh preflight
           if bash scripts/p1_07_worker_canary.sh start; then
             echo "FAIL: duplicate worker start incorrectly permitted"
             exit 1
