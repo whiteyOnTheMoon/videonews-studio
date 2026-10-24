@@ -149,3 +149,29 @@ this remains a **preproduction preview**, not a complete authenticated
 editorial accountability system. Individual identities, mandatory reason
 notes, a complete audit trail, real source-rights reviews and a separately
 approved backup/restore and VPS rollout are still required.
+
+
+## 0005 – Editor identities and mandatory review audit (offline)
+
+Migration 0005 adds the **inactive-by-default** `vns.editor_accounts` table
+with unique editor usernames, allowed roles, scrypt password-hash storage and
+activation state. This is only the schema: no individual login or provisioning
+API is enabled yet, and there is no default editor account. Shared P1-06 admin
+sessions must not be represented as individual identities.
+
+Every *new* source decision now requires a 20–500-character editorial reason,
+validated on the UI, Next.js proxy, API and PostgreSQL. A one-time change from
+`candidate` to a verdict atomically appends an event to
+`vns.evidence_review_events`. The event contains previous and new verdict,
+timestamp, reason and an actor label. Under ordinary database access its rows
+cannot be edited or deleted by application code; transaction rollback removes
+both the decision and event together. For the existing shared admin mechanism
+the actor label remains `admin-session` and editor ID is NULL. No personal
+audit identity is fabricated. Pre-migration decisions lack a reason and have
+no retroactively invented events.
+
+**Not tamper-proof against a database owner/superuser:** such actors can disable
+triggers or change schema. Before production, issue least-privilege DB grants
+and implement uniquely authenticated named editor logins, revocation, actual
+role enforcement and independent backup/export of audit events. This
+migration and HTTP route remain unactivated on the VPS.
