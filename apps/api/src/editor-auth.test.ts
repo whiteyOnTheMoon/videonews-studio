@@ -255,7 +255,10 @@ test("password rotation invalidates old sessions even after a quick reactivation
       { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 },
     ).toString("hex")}`;
     state.account.authVersion += 1;
-    assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: oldCookie } })).status, 401);
+    assert.equal(
+      (await fetch(base + "/editor/me", { headers: { Cookie: oldCookie } })).status,
+      401,
+    );
     assert.equal((await login(base)).status, 401);
     const rotatedLogin = await login(base, "test_editor", newPassword);
     assert.equal(rotatedLogin.status, 200);
@@ -265,7 +268,10 @@ test("password rotation invalidates old sessions even after a quick reactivation
     state.account.authVersion += 1;
     state.account.active = true;
     state.account.authVersion += 1;
-    assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status, 401);
+    assert.equal(
+      (await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status,
+      401,
+    );
     assert.equal((await login(base, "test_editor", newPassword)).status, 200);
   });
 });
