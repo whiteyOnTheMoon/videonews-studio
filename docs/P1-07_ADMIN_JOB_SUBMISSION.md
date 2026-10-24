@@ -97,7 +97,6 @@ and no real source fetch, external publication or research worker is active.
 The authoritative reviewer workflow and least-privilege roles must be built
 before any real editorial verification or deployment.
 
-
 ## Authenticated one-time evidence review (Git-only)
 
 The same `VNS_ADMIN_JOBS_ENABLED` and `VNS_WEB_ADMIN_JOBS_ENABLED` gates now
