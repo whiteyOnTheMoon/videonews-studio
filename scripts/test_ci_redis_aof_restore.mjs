@@ -67,7 +67,9 @@ try {
       const persistence = await connection.info("persistence");
       const fields = persistence
         .split("\\n")
-        .filter((line) => /^(aof_enabled|aof_current_size|aof_last_write_status|loading):/.test(line));
+        .filter((line) =>
+          /^(aof_enabled|aof_current_size|aof_last_write_status|loading):/.test(line),
+        );
       console.log("CI-AOF-DIAG: counts", JSON.stringify(counts), "persistence", fields.join(" "));
     }
     assert.ok(job, "AOF test job missing");
