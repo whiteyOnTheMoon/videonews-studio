@@ -175,7 +175,6 @@ and implement uniquely authenticated named editor logins, revocation, actual
 role enforcement and independent backup/export of audit events. This
 migration and HTTP route remain unactivated on the VPS.
 
-
 ## Dedicated personal editor sessions (API-only preview, disabled)
 
 The internal API now provides a separate, opt-in `VNS_EDITOR_AUTH_ENABLED=true`
