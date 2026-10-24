@@ -129,21 +129,27 @@ assert_empty_schema
 echo "PASS: missing global roles fail-closed without a partial schema"
 
 test "$(sha256sum "$globals" | cut -d ' ' -f 1)" = "$globals_sha"
-# PostgreSQL 17 emits role membership GRANTs with an explicit original
-# GRANTED BY postgres. The target bootstrap superuser is restore_admin,
-# which is not automatically an admin member of every restored role.
-# Once CREATE ROLE postgres has been replayed, switch to that recovered
-# grantor for membership GRANTs. Never suppress failed statements, strip
-# GRANTED BY, or relax any original membership or ACL.
+# PostgreSQL 17 writes role membership GRANTs with GRANTED BY postgres.
+# On a *different* clean cluster, this original grantor lacks the recorded
+# ADMIN OPTION for some NOLOGIN roles. PostgreSQL rejects the GRANT even
+# when we connect as a separate restore superuser. Reapply the same role
+# memberships and option flags as the authenticated bootstrap administrator;
+# only grantor provenance changes. Fail closed if any unexpected grantor
+# appears. Keep the unmodified originals and their digest as evidence.
 grep -q '^CREATE ROLE postgres;' "$globals"
-grep -Eq '^GRANT .*GRANTED BY postgres;' "$globals"
 awk '
-  /^GRANT .*GRANTED BY postgres;/ && !changed {
-    print "SET ROLE postgres;"
-    changed=1
+  /GRANTED BY/ {
+    if ($0 !~ /^GRANT .* GRANTED BY postgres;$/) exit 8
+    sub(/ GRANTED BY postgres;$/, ";")
+    changed++
   }
-  {print}
+  { print }
+  END { if (changed < 1) exit 9 }
 ' "$globals" > "$work/globals-replay.sql"
+if grep -q 'GRANTED BY ' "$work/globals-replay.sql"; then
+  echo "FAIL: unexpected global membership grantor" >&2
+  exit 1
+fi
 run_sql "$target_name" "$target_db" restore_admin "$work/globals-replay.sql"
 test "$(sha256sum "$archive" | cut -d ' ' -f 1)" = "$archive_sha"
 docker exec -i "$target_name" pg_restore -U restore_admin -d "$target_db" \
