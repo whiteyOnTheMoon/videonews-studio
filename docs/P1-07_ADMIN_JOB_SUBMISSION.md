@@ -334,3 +334,36 @@ operator-facing account-provisioning interface; account setup and rotation
 still require separately approved privileged operations and safe secret
 handling. No accounts are created or altered on the VPS, no feature flag is
 turned on, and no persistent PostgreSQL role/login is provisioned.
+
+## CI-only editor account lifecycle harness (not an operator CLI)
+
+`scripts/ci_editor_account_lifecycle.mjs` is an **automated-test
+harness only**. It refuses to run unless GitHub Actions-specific variables
+and the known disposable local PostgreSQL endpoint match exactly. It is not
+included as a public API route, admin UI, production container entrypoint or
+operator command. No production account provisioning has been enabled.
+
+Against a disposable CI database it executes account lifecycle operations
+inside `BEGIN` / `SET LOCAL ROLE vns_editor_provisioner`. The role has
+no LOGIN permission or members. Actions are strictly scoped to synthetic
+`ci_*` usernames:
+
+- Create an **inactive** editor, reviewer or admin test account. The initial
+  password is salted using random bytes and stored as scrypt hash, never
+  returned or logged.
+- Activate or deactivate an existing synthetic account.
+- Rotate its password and change its role. Migration 0008 automatically
+  revokes previous browser sessions on these changes.
+
+The test calls the account handler, then verifies actual HTTP login and
+revocation, deactivated-user denial, role downgrade, hashed password storage,
+and rejection of unauthorized usernames/extra account fields. Errors do not
+contain password inputs. The existing production API login flags remain off.
+
+**Still required before real user provisioning:** an operator-authorized
+credential and administration interface with MFA or equivalent independent
+authorization, correct separate PostgreSQL login grants, secure secret
+input and rotation policy, lifecycle audit, approved off-host backups and
+restore verification, recovery/rollback plan, and separate deployment
+authorization. Never run the CI script by spoofing its environment variables
+or against real personal accounts.
