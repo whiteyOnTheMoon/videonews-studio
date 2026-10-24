@@ -20,14 +20,14 @@ The GitHub `compose.yaml` currently specifies PostgreSQL at 320 MiB / 0.4 CPU, R
 
 ## Confirmed repository blockers before any live start
 
-1. `compose.yaml` currently gives the `worker` neither `VNS_WORKER_ENABLED=true` nor `VNS_REDIS_PASSWORD_FILE=/run/secrets/redis_password`, nor a matching worker-mounted `redis_password` secret. `apps/worker/src/queue.ts` requires all of these. The Compose `redis_acl` secret is **not interchangeable** with the worker password file. Starting the declared worker unchanged will fail closed; do not treat it as ready.
+1. **Worker uses a deliberate two-file Compose configuration.** The base `compose.yaml` does not provide `VNS_WORKER_ENABLED=true` or the `redis_password` secret, and **would fail closed if started alone**. The already checked-in, opt-in `deploy/compose.worker.yaml` supplies these settings, the worker-mounted password secret and Redis health dependency. This overlay must be deliberately included in a separately approved deployment, tested as a merged Compose configuration and paired with operator-provisioned matching Redis ACL/password credentials. `redis_acl` and `redis_password` are distinct files and may never be conflated. The overlay does not authorize running the worker.
 2. PostgreSQL `postgres_password` and Redis `redis_acl` are file-backed secrets that require separately authorized provisioning and access control. Their values must never be shared in GitHub, chat logs or diagnostic output.
 3. The live deployment uses GHCR images and a separately running Cloudflare tunnel, while the repository Compose scaffold declares local images and an optional Caddy ingress. Do **not** run a blanket `docker compose up`, `pull`, `build` or full-stack replacement over the existing live deployment.
 4. The production runnable worker in `apps/worker/src/queue.ts` only accepts `probe` jobs. Do not activate editorial job dispatch or present the setup as full research/render/publishing functionality.
 
 ## Proposed stages, each requiring its own approval
 
-1. **GitHub-only remediation:** prepare narrowly scoped Compose-worker credential wiring and CI tests, update the versioned recovery/Compose map together, and keep all profiles disabled by default. No live services changed.
+1. **GitHub-only review and readiness:** verify both `compose.yaml` and the already available `deploy/compose.worker.yaml` together using existing CI-only readiness tests. Confirm their secret references and non-public networks; no activation or new secret provision is authorized. Keep profiles off on the VPS.
 2. **Risk-acceptance/go-no-go:** explicitly acknowledge possible permanent loss of PostgreSQL/Redis/editorial state without backups, choose whether the scope is only disposable experimental data, and decide suitable disk/RAM monitoring/stop criteria. This is a deviation from the current backup-dependent recovery gate; do not flip gate booleans or call the installation fully recoverable.
 3. **Operator-approved deployment plan:** name exact services, tested image digests, secret creation/custody, SQL migrations, ingress isolation, storage volumes, healthchecks and staged stop/reversal steps. Account for existing Web/API/tunnel and other projects.
 4. **After a *separate* specific approval**, introduce *only* isolated data services, verify PostgreSQL/Redis health and resource trends, and stop if capacity or access controls are unsafe. Preserve existing volumes even if rollout is aborted.
@@ -38,5 +38,7 @@ The GitHub `compose.yaml` currently specifies PostgreSQL at 320 MiB / 0.4 CPU, R
 ## Next requested operator approval (not granted)
 
 After GitHub-only readiness fixes and an explicit no-backup experimental risk acknowledgement, present a bounded plan for **isolated PostgreSQL + Redis only**, leaving Web/API/Cloudflare and worker unchanged. Require the operator to explicitly approve that precise deployment before giving state-changing commands. Existing approval covers read-only checks only.
+
+The worker overlay is described in [backend readiness](P1-07_BACKEND_READINESS.md) and is separate from the repository-only base Compose recovery inventory. A green CI configuration test is not evidence that live VPS secrets exist or that the live GHCR deployment uses the reviewed Compose definitions.
 
 See [operator no-backup decision](P1-07_OPERATOR_NO_BACKUP_DECISION.md), [recovery inventory](P1-07_RECOVERY_INVENTORY.md) and [full recovery runbook](P1-07_RECOVERY_RUNBOOK.md).
