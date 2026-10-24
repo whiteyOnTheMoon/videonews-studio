@@ -204,6 +204,24 @@ try {
   await assert.rejects(sync(), /reconciliation failed/);
   assert.equal((await status(mismatch.id)).status, "pending");
   console.log("PASS: incompatible Redis job fails closed and DB status remains intact");
+
+  // Even a matching ID/name/payload must not be trusted if the retry policy
+  // has been replaced. Reject before accepting a false PostgreSQL status.
+  await (await producer.getJob("job-" + mismatch.id.replaceAll("-", ""))).remove();
+  await producer.add(
+    "research",
+    { kind: "research", jobId: mismatch.id },
+    {
+      jobId: "job-" + mismatch.id.replaceAll("-", ""),
+      attempts: 20,
+      backoff: { type: "fixed", delay: 1 },
+      removeOnComplete: false,
+      removeOnFail: false,
+    },
+  );
+  await assert.rejects(sync(), /reconciliation failed/);
+  assert.equal((await status(mismatch.id)).status, "pending");
+  console.log("PASS: status reconciliation rejects conflicting BullMQ retry settings");
 } finally {
   await Promise.allSettled([...workers].map((worker) => worker.close()));
   await Promise.allSettled([events.close(), producer.close(), db.end()]);
