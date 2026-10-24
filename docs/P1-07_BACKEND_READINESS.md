@@ -120,7 +120,6 @@ contains external untrusted text, not instructions for the assistant or a
 basis for automatic factual validation. Passing the URL policy is not proof
 that a source or its claims are reliable.
 
-
 ## Synthetic editorial research processor (offline integration, not deployed)
 
 The new `apps/worker/src/research-process.ts` is an explicitly constructed
