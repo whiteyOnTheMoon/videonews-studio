@@ -143,8 +143,10 @@ export async function inspectCiRecovery(pool, queue, limit = LIMIT) {
     }, 0);
     assert.ok(total <= limit, "CI Redis inventory exceeds cap");
     const inventory = await queue.getJobs(INVENTORY_STATES, 0, limit, true);
-    assert.ok(Array.isArray(inventory) && inventory.length === total,
-      "Redis inventory changed or is incomplete");
+    assert.ok(
+      Array.isArray(inventory) && inventory.length === total,
+      "Redis inventory changed or is incomplete",
+    );
     const knownIds = new Set(result.rows.map((row) => row.queue_job_id));
     const inventoryIds = new Set();
     for (const job of inventory) {
