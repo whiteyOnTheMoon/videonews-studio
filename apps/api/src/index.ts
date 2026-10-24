@@ -1,6 +1,7 @@
 import { adminAuthFromEnv } from "./auth.js";
 import { adminJobsFromEnv } from "./admin-jobs.js";
 import { createApiServer } from "./server.js";
+import { editorAuthFromEnv } from "./editor-auth.js";
 
 const host = process.env.API_HOST ?? "127.0.0.1";
 const port = Number(process.env.API_PORT ?? "4000");
@@ -12,7 +13,8 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 // Explicit opt-in only. Invalid secrets or a non-HTTPS origin prevent startup.
 const auth = adminAuthFromEnv(process.env);
 const jobs = adminJobsFromEnv(auth, process.env);
-const server = createApiServer({ auth, jobs });
+const editor = editorAuthFromEnv(auth, jobs, process.env);
+const server = createApiServer({ auth, jobs, editor });
 server.listen(port, host, () => {
   console.log(`VideoNews Studio API ready at http://${host}:${port}`);
 });
@@ -20,6 +22,10 @@ server.listen(port, host, () => {
 function shutdown(): void {
   server.close((error) => {
     if (error) console.error("API shutdown failed");
+    void editor?.close().catch(() => {
+      console.error("Editor database shutdown failed");
+      process.exitCode = 1;
+    });
     void jobs?.close().catch(() => {
       console.error("Admin-job database shutdown failed");
       process.exitCode = 1;
