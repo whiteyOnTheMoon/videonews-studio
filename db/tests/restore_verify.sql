@@ -22,12 +22,17 @@ BEGIN
     SELECT 1 FROM vns.schema_migrations WHERE version = '0004_research_evidence'
   ) THEN RAISE EXCEPTION 'evidence migration missing on restore'; END IF;
 
+  IF NOT EXISTS (SELECT 1 FROM vns.schema_migrations
+    WHERE version = '0005_editorial_review_audit') THEN
+    RAISE EXCEPTION 'editorial audit migration missing on restore';
+  END IF;
+
   FOREACH table_name IN ARRAY ARRAY[
     'schema_migrations', 'sources', 'licenses', 'stories', 'claims',
-    'assets', 'scripts', 'jobs', 'job_outbox', 'research_requests', 'research_evidence', 'videos', 'costs', 'approvals', 'uploads'
+    'assets', 'scripts', 'jobs', 'job_outbox', 'research_requests', 'research_evidence', 'evidence_review_events', 'videos', 'costs', 'approvals', 'uploads'
   ] LOOP
     EXECUTE format('SELECT count(*) FROM vns.%I', table_name) INTO row_total;
-    IF row_total <> (CASE WHEN table_name = 'schema_migrations' THEN 4 WHEN table_name IN ('jobs','job_outbox') THEN 2 ELSE 1 END) THEN
+    IF row_total <> (CASE WHEN table_name = 'schema_migrations' THEN 5 WHEN table_name = 'evidence_review_events' THEN 1 WHEN table_name = 'research_evidence' THEN 2 WHEN table_name IN ('jobs','job_outbox') THEN 2 ELSE 1 END) THEN
       RAISE EXCEPTION 'restored table % has % rows rather than 1', table_name, row_total;
     END IF;
   END LOOP;
@@ -84,6 +89,17 @@ BEGIN
       AND re.reviewer IS NULL
       AND re.reviewed_at IS NULL
   ) THEN RAISE EXCEPTION 'unverified source provenance not preserved'; END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM vns.evidence_review_events ev
+      JOIN vns.research_evidence evidence ON evidence.id = ev.evidence_id
+      JOIN vns.jobs jobs ON jobs.id = evidence.job_id
+    WHERE jobs.idempotency_key = 'ci-restore-research-topic'
+      AND ev.before_status='candidate' AND ev.after_status='disputed'
+      AND ev.reviewer_label='admin-session' AND ev.editor_id IS NULL
+      AND ev.reason = evidence.review_reason
+      AND evidence.review_status='disputed'
+  ) THEN RAISE EXCEPTION 'atomic review audit event lost on restore'; END IF;
 
   -- A restored database must still enforce idempotency and permission checks.
   BEGIN
