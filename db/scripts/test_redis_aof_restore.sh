@@ -95,7 +95,7 @@ echo "PASS: multipart AOF checksum verification rejects tampering"
 # ACL is off, yet still start with an empty queue. Bootstrap a VERIFIED
 # archive in a networkless, workerless process with one-time recovery ACL,
 # compact to an RDB-base AOF, then restart with original restricted ACL.
-printf 'user default on nopass +@all\n' > "$tmp/ci_recovery_acl"
+printf 'user default on nopass ~* &* +@all\n' > "$tmp/ci_recovery_acl"
 chmod 0600 "$tmp/ci_recovery_acl"
 start "$bootstrap" "$tmp/restored" offline-replay
 dbsize="$(docker exec "$bootstrap" redis-cli DBSIZE | tr -d '\r')"
