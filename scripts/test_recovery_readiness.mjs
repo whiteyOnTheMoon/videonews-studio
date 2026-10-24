@@ -30,11 +30,7 @@ const REQUIRED_STEPS = [
   ["restore_media", ["prepare_isolated_target"], "media"],
   ["verify_audit_archive", ["verify_backup_sources"], "audit"],
   ["restore_redis_or_rebuild", ["restore_postgres_data"], "redis"],
-  [
-    "reconcile_postgres_outbox",
-    ["restore_postgres_data", "restore_redis_or_rebuild"],
-    "queue",
-  ],
+  ["reconcile_postgres_outbox", ["restore_postgres_data", "restore_redis_or_rebuild"], "queue"],
   [
     "reissue_database_logins",
     ["restore_configuration_secrets", "restore_postgres_data"],
@@ -150,10 +146,19 @@ const attacks = [
   ["invents off-host destination", (copy) => (copy.backup.approvedDestination = "s3://fabricated")],
   ["invents RPO objective", (copy) => (copy.recoveryObjectives.rpoMinutes = 5)],
   ["marks a release gate ready", (copy) => (copy.gates.restorable_offsite_copy = true)],
-  ["fabricates a signed evidence URI", (copy) => (copy.requiredEvidence.signed_audit_anchor = "claim")],
+  [
+    "fabricates a signed evidence URI",
+    (copy) => (copy.requiredEvidence.signed_audit_anchor = "claim"),
+  ],
   ["deletes a recovery step", (copy) => copy.steps.splice(6, 1)],
-  ["skips Redis/outbox dependency", (copy) => (copy.steps[9].dependsOn = ["restore_postgres_data"])],
-  ["starts services before reconciliation", (copy) => (copy.steps[11].dependsOn = ["restore_postgres_data"])],
+  [
+    "skips Redis/outbox dependency",
+    (copy) => (copy.steps[9].dependsOn = ["restore_postgres_data"]),
+  ],
+  [
+    "starts services before reconciliation",
+    (copy) => (copy.steps[11].dependsOn = ["restore_postgres_data"]),
+  ],
   ["changes the startup order", (copy) => copy.steps.reverse()],
   ["removes audit verification", (copy) => copy.steps.splice(7, 1)],
   ["adds unsupported activation mode", (copy) => (copy.mode = "production-ready")],
