@@ -91,7 +91,7 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
     assert.equal(new Headers(init?.headers).get("origin"), CONFIG.origin);
     return Response.json({ reviewed: true, private: "secret" });
   };
-  const valid = { evidenceId: ID, decision: "verified" };
+  const valid = { evidenceId: ID, decision: "verified", reason: REASON };
   assert.equal((await submitAdminEvidenceReview(post(valid), null, fake)).status, 404);
   assert.equal(
     (await submitAdminEvidenceReview(post(valid, { Origin: "https://evil.invalid" }), CONFIG, fake))
