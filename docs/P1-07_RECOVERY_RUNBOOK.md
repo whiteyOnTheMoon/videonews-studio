@@ -295,6 +295,6 @@ approval. Every entry is unverified. New GitHub CI checks that
 repository evidence anchors still exist, all recovery dependencies
 are declared, the inventory covers exactly 22 explicitly reviewed
 components, and every previously missing restore/backup approval
-remains missing. This improves *completeness of planning*, not the
+remains missing. This improves _completeness of planning_, not the
 recoverability of the actual server. No storage or other paid
 service has been selected.
