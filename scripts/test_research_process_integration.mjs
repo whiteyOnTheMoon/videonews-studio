@@ -74,6 +74,12 @@ const processor = createResearchProcessor(
 try {
   await events.waitUntilReady();
   await queue.waitUntilReady();
+  // Fully disposable CI DB/Redis: isolate synthetic research from earlier test jobs.
+  await queue.obliterate({ force: true });
+  await db.query("DELETE FROM vns.research_evidence");
+  await db.query("DELETE FROM vns.job_outbox");
+  await db.query("DELETE FROM vns.research_requests");
+  await db.query("DELETE FROM vns.jobs");
   const key = "ci-research-proc-job-001";
   const created = await db.query(
     "SELECT vns.create_research_request($1, $2) AS id",
