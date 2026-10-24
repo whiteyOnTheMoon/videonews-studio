@@ -10,7 +10,7 @@ if (process.env.CI !== "true" || process.env.GITHUB_ACTIONS !== "true") {
   throw new Error("REFUSED: repository-only inventory test requires GitHub CI");
 }
 
-const ROOT = fileURLToPath(new URL("../", import.meta.url));
+const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const INVENTORY_URL = new URL("../docs/p1-07-recovery-inventory.json", import.meta.url);
 const PLAN_URL = new URL("../docs/p1-07-recovery-plan.json", import.meta.url);
 const REQUIRED_IDS = [
