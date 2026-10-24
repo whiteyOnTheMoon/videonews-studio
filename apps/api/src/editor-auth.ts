@@ -38,7 +38,13 @@ export type ReviewOutcome = "updated" | "missing" | "already_reviewed" | "forbid
 export interface EditorStore {
   findAccount(username: string): Promise<EditorAccount | null>;
   activeIdentity(id: string): Promise<EditorIdentity | null>;
-  review(id: string, verdict: Verdict, reason: string, editorId: string, authVersion: number): Promise<ReviewOutcome>;
+  review(
+    id: string,
+    verdict: Verdict,
+    reason: string,
+    editorId: string,
+    authVersion: number,
+  ): Promise<ReviewOutcome>;
   close?(): Promise<void>;
 }
 
