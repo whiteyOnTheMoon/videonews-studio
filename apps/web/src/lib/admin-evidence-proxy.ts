@@ -66,13 +66,18 @@ async function requestReviewBody(request: Request): Promise<string | null> {
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
     const row = raw as Record<string, unknown>;
     if (
-      Object.keys(row).length !== 2 ||
+      Object.keys(row).length !== 3 ||
       typeof row.evidenceId !== "string" ||
       !UUID.test(row.evidenceId) ||
-      !DECISIONS.some((decision) => decision === row.decision)
+      !DECISIONS.some((decision) => decision === row.decision) ||
+      typeof row.reason !== "string" ||
+      row.reason !== row.reason.trim() ||
+      Array.from(row.reason).length < 20 ||
+      Array.from(row.reason).length > 500 ||
+      row.reason.split("").some((c) => { const code = c.charCodeAt(0); return code < 32 || code === 127; })
     )
       return null;
-    return JSON.stringify({ evidenceId: row.evidenceId, decision: row.decision });
+    return JSON.stringify({ evidenceId: row.evidenceId, decision: row.decision, reason: row.reason });
   } catch {
     return null;
   } finally {
