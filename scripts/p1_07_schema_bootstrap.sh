@@ -68,6 +68,11 @@ check_fresh() {
   [[ "$role_count" == 0 ]] || die "existing vns_* roles; refuse partially initialized cluster"
 }
 check_capacity() {
+  # Disposable GitHub-hosted runners do not meet the operator's VPS-specific
+  # free-disk reserve; bypass only after the strict CI project verification.
+  if [[ "$project" == vns-p107-migrate-ci ]]; then
+    return
+  fi
   local available_kib available_mib used_percent
   available_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
   available_mib="$(free -m | awk '$1 == "Mem:" {print $7}')"
