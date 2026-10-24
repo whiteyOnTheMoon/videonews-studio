@@ -150,3 +150,41 @@ evidence; changing a bool in JSON does not constitute operator approval.
 the VPS, creates new VPS containers, changes Compose configuration,
 enables a flag or approves a production migration. Those operations
 remain out of scope until the operator explicitly authorizes them.
+
+## Read-only PostgreSQL/BullMQ pre-restart mismatch drill (GitHub Actions only)
+
+The disposable worker workflow now invokes
+`scripts/test_ci_outbox_recovery_audit.mjs` against the existing isolated
+PostgreSQL 17 and authenticated Redis 7 test containers, without starting
+a publication, rendering or research worker. A newly created, individually
+authenticated synthetic PostgreSQL LOGIN is granted only `USAGE` on the
+application schema and `SELECT` on `vns.jobs` and `vns.job_outbox`.
+It does not inherit the dispatcher role, whose UPDATE privileges would be
+unsafe for an independent recovery observer. The test explicitly rejects
+table writes, reading editor accounts and switching to a privileged role.
+
+The inspect-only module `scripts/ci_outbox_recovery_audit.mjs` performs a
+bounded PostgreSQL `REPEATABLE READ READ ONLY` transaction and examines
+deterministic BullMQ job IDs for persisted PostgreSQL jobs. It reports
+pending jobs absent from Redis, Redis enqueue ahead of database
+acknowledgment, missing Redis jobs after acknowledgment, conflicting queue
+payloads, and terminal database jobs with runnable queue records. A
+simulated Redis disconnect fails closed. SQL and Redis snapshots are not
+atomic together, so an observation may change while being collected.
+
+The implementation **never** re-enqueues, retries, acknowledges, marks a
+job complete, starts workers, or mutates a database or Redis record.
+Synthetic CI fixtures test the observations and verify that repeated
+inspections leave the job/outbox rows and queue counts unchanged. The
+report always requires operator approval even when it sees no conflicts.
+
+This is not production-ready reconciliation or Redis AOF disaster
+recovery. It scans **only PostgreSQL-known queue IDs**, not extra
+orphaned Redis jobs, untracked deleted keys, or external side effects.
+It is capped to a small CI dataset; exceeding that cap is an error,
+not permission to ignore old jobs. Before any worker restart, the
+operator must independently inventory the entire BullMQ queue,
+verify retained Redis AOF or a safe reconstruction plan, address
+completed/failed jobs and duplicate external side effects, and
+explicitly approve a new recovery run. The full-stack backup,
+media, signing, key custody and activation gates remain CLOSED.
