@@ -47,13 +47,7 @@ function validEvidence(value: unknown, jobId: string): value is EvidenceCard {
   );
 }
 
-function ReviewItem({
-  item,
-  onUpdated,
-}: {
-  item: EvidenceCard;
-  onUpdated: () => Promise<void>;
-}) {
+function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => Promise<void> }) {
   const [decision, setDecision] = useState<ReviewDecision | "">("");
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -81,10 +75,14 @@ function ReviewItem({
       } else if (response.status === 401) {
         setFeedback("Admin-Sitzung abgelaufen. Bitte neu anmelden.");
       } else {
-        setFeedback("Entscheidung nicht bestätigt. Vor erneutem Versuch bitte Liste aktualisieren.");
+        setFeedback(
+          "Entscheidung nicht bestätigt. Vor erneutem Versuch bitte Liste aktualisieren.",
+        );
       }
     } catch {
-      setFeedback("Verbindung unterbrochen. Bitte vor weiteren Änderungen die Liste aktualisieren.");
+      setFeedback(
+        "Verbindung unterbrochen. Bitte vor weiteren Änderungen die Liste aktualisieren.",
+      );
     } finally {
       setBusy(false);
     }
@@ -160,9 +158,14 @@ export default function EvidenceReview({ jobId }: { jobId: string }) {
       }
       if (!response.ok) throw new Error("Review list unavailable");
       const result: unknown = await response.json();
-      if (typeof result !== "object" || result === null || !("evidence" in result) ||
-          !Array.isArray(result.evidence) || result.evidence.length > 20 ||
-          !result.evidence.every((value) => validEvidence(value, jobId))) {
+      if (
+        typeof result !== "object" ||
+        result === null ||
+        !("evidence" in result) ||
+        !Array.isArray(result.evidence) ||
+        result.evidence.length > 20 ||
+        !result.evidence.every((value) => validEvidence(value, jobId))
+      ) {
         throw new Error("Invalid review list");
       }
       setItems(result.evidence);
@@ -194,7 +197,12 @@ export default function EvidenceReview({ jobId }: { jobId: string }) {
             Ein Quellenlink beweist keine Aussage. Bitte Originaltext und Kontext selbst prüfen.
             Entscheidungen sind endgültig; sie veröffentlichen keine Inhalte.
           </p>
-          <button className="jobs-refresh" type="button" disabled={loading} onClick={() => void load()}>
+          <button
+            className="jobs-refresh"
+            type="button"
+            disabled={loading}
+            onClick={() => void load()}
+          >
             {loading ? "Lade Quellen …" : "Quellen aktualisieren"}
           </button>
           {error ? <p role="alert">{error}</p> : null}
