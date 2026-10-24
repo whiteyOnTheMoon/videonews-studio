@@ -231,3 +231,10 @@ p {
   color: #f5f7fb;
   font: inherit;
 }
+
+#editor-login {
+  scroll-margin-top: 1.5rem;
+}
+#editor-login .admin-form input {
+  max-width: 32rem;
+}

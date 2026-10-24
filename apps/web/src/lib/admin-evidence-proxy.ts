@@ -1,4 +1,5 @@
 import { clientAdminCookie, type AdminProxyConfig } from "./admin-proxy";
+import { clientEditorCookie } from "./editor-proxy";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DECISIONS = ["verified", "disputed", "rejected"] as const;
@@ -53,7 +54,7 @@ async function requestReviewBody(request: Request): Promise<string | null> {
       const { done, value } = await reader.read();
       if (done) break;
       count += value.byteLength;
-      if (count > 512) return null;
+      if (count > 1024) return null;
       chunks.push(value);
     }
     const bytes = new Uint8Array(count);
@@ -147,23 +148,46 @@ export async function submitAdminEvidenceReview(
   config: AdminProxyConfig | null,
   fetcher: typeof fetch = fetch,
 ): Promise<Response> {
+  return submitEvidenceReview(request, config, "shared", fetcher);
+}
+
+export async function submitEditorEvidenceReview(
+  request: Request,
+  config: AdminProxyConfig | null,
+  fetcher: typeof fetch = fetch,
+): Promise<Response> {
+  return submitEvidenceReview(request, config, "named", fetcher);
+}
+
+async function submitEvidenceReview(
+  request: Request,
+  config: AdminProxyConfig | null,
+  mode: "shared" | "named",
+  fetcher: typeof fetch,
+): Promise<Response> {
   if (!config) return reply(404, { error: "not_found" });
   if (request.headers.get("origin") !== config.origin) {
     return reply(403, { error: "forbidden" });
   }
-  const cookie = clientAdminCookie(request.headers.get("cookie"));
+  const cookie =
+    mode === "named"
+      ? clientEditorCookie(request.headers.get("cookie"))
+      : clientAdminCookie(request.headers.get("cookie"));
   if (!cookie) return reply(401, { error: "unauthorized" });
   const body = await requestReviewBody(request);
   if (!body) return reply(400, { error: "invalid_request" });
   try {
-    const upstream = await fetcher(config.api + "/admin/evidence/review", {
-      method: "POST",
-      headers: { Cookie: cookie, Origin: config.origin, "Content-Type": "application/json" },
-      body,
-      cache: "no-store",
-      redirect: "manual",
-      signal: AbortSignal.timeout(5000),
-    });
+    const upstream = await fetcher(
+      config.api + (mode === "named" ? "/editor/evidence/review" : "/admin/evidence/review"),
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: config.origin, "Content-Type": "application/json" },
+        body,
+        cache: "no-store",
+        redirect: "manual",
+        signal: AbortSignal.timeout(5000),
+      },
+    );
     if (upstream.status === 200) return reply(200, { reviewed: true });
     if (upstream.status === 401) return reply(401, { error: "unauthorized" });
     if (upstream.status === 403) return reply(403, { error: "forbidden" });

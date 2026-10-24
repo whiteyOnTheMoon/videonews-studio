@@ -200,10 +200,42 @@ revocation during commit, and atomically writes reviewer ID, real username,
 reason and audit event. Once named editor auth is enabled, the old shared-admin
 POST evidence-review endpoint is blocked, preventing an attribution bypass.
 
-**Not enabled or deployed:** no individual login page or Next.js BFF proxy
-exists yet for these API routes. No provisioning/rotation UI exists and no
-accounts are seeded. Named editor accounts cannot be used through the website
-at this stage. DB least-privilege roles, distributed or durable sessions,
+**Not enabled or deployed:** an individual login preview and Next.js BFF proxy
+now exist, but remain behind independent web and API feature flags. No
+provisioning/rotation UI exists and no accounts are seeded. Named editor
+accounts cannot be used through the live website at this stage. DB least-privilege roles, distributed or durable sessions,
 account lifecycle administration and independent audit retention remain
 requirements for production. GitHub CI uses synthetic credentials and
 disposable PostgreSQL; no live VPS services change.
+
+## Personal editor browser integration (still disabled)
+
+`VNS_WEB_EDITOR_AUTH_ENABLED=true` is a separate web-side gate requiring
+`VNS_WEB_ADMIN_ENABLED=true` and `VNS_WEB_ADMIN_JOBS_ENABLED=true` plus
+the existing validated API URL and public HTTPS origin. Its default is off.
+When explicitly enabled, a new personal editor login form appears **inside**
+the existing shared-admin-protected `/admin` preview. It exchanges individual
+username/password for an independent `__Host-vns_editor` cookie through
+`POST /api/editor/login`, exposes `GET /api/editor/me` for current
+active role/identity and `POST /api/editor/logout` for revocation of the
+in-memory browser session. The Next.js BFF strictly validates inputs and
+accepts only an exact expected Secure/HttpOnly cookie format from the API.
+It never sends raw password or access tokens in browser responses.
+
+When the web editor flag is `true`, `POST /api/admin/evidence/review` forwards
+**only** the individually authenticated editor cookie to
+`/editor/evidence/review`. There is no fallback to the old shared admin
+cookie: a missing, inactive or ordinary `editor` role cannot publish a
+verdict. The existing shared admin session still protects the dashboard and
+research job listing; it is not personal editorial identity. The protected
+source-review form requires a written reason and manual confirmation.
+
+For a coherent rollout, the **API** flag `VNS_EDITOR_AUTH_ENABLED`, its
+already approved PostgreSQL/data/admin gates and this **web** flag must be
+reviewed as a unit. Neither flag is enabled by the default Compose
+configuration; the server has not been modified or restarted.
+
+Outstanding before public or persistent rollout: securely provision named
+editor accounts (there are none by default), password rotation/revocation UI,
+least-privilege database credentials, verified backups, rate/cost controls,
+SSRF-safe real sources and a separate VPS operator approval.
