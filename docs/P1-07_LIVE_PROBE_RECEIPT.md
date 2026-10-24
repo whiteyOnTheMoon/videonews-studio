@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The read-only helper `scripts/p1_07_live_probe_receipt.sh` verifies the retained *existing* fixed-ID probe result. It never calls `Queue.add`, never removes or retries a Redis job, and never starts, restarts or stops any container. It checks the original worker's Docker Compose identity and image provenance, private Redis network, healthy data services, Redis ACL identity, and that the retained job is a completed `probe` with only `{kind: "probe"}`, exactly one attempt, `{ok: true}` return value, and persistent completion/failure records.
+The read-only helper `scripts/p1_07_live_probe_receipt.sh` verifies the retained _existing_ fixed-ID probe result. It never calls `Queue.add`, never removes or retries a Redis job, and never starts, restarts or stops any container. It checks the original worker's Docker Compose identity and image provenance, private Redis network, healthy data services, Redis ACL identity, and that the retained job is a completed `probe` with only `{kind: "probe"}`, exactly one attempt, `{ok: true}` return value, and persistent completion/failure records.
 
 On the live VPS it also runs **only SELECT statements** against PostgreSQL, requiring exactly 11 migration records, no editorial jobs, no outbox intents, and no operator registry entries. This establishes that the probe did not require touching editorial SQL, provided no other workload has subsequently added entries. A nonzero count is a **stop condition** to investigate; do not delete tables or queue records to make the test pass.
 
