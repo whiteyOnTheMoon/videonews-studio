@@ -32,6 +32,7 @@ function isJobsResponse(data: unknown): data is { jobs: ResearchJobOverview[] } 
 
 export default function ResearchJobs({ enabled }: { enabled: boolean }) {
   const [jobs, setJobs] = useState<ResearchJobOverview[]>([]);
+  const [failedOnly, setFailedOnly] = useState(false);
   const [loading, setLoading] = useState(enabled);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -154,6 +155,8 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
     }
   }
 
+  const visibleJobs = failedOnly ? jobs.filter((job) => job.status === "failed") : jobs;
+
   return (
     <section className="jobs-section" aria-labelledby="jobs-title">
       <h2 id="jobs-title">Rechercheaufträge</h2>
@@ -200,6 +203,15 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
           </form>
           <div className="jobs-heading">
             <h3>Letzte 20 Aufträge</h3>
+            <label>
+              <input
+                type="checkbox"
+                checked={failedOnly}
+                onChange={(event) => setFailedOnly(event.target.checked)}
+                disabled={refreshing}
+              />
+              Nur fehlgeschlagene
+            </label>
             <button
               type="button"
               className="jobs-refresh"
@@ -214,9 +226,12 @@ export default function ResearchJobs({ enabled }: { enabled: boolean }) {
           {!loading && !listError && jobs.length === 0 ? (
             <p>Noch keine Rechercheaufträge vorgemerkt.</p>
           ) : null}
-          {jobs.length > 0 && !listError ? (
+          {!loading && !listError && failedOnly && visibleJobs.length === 0 && jobs.length > 0 ? (
+            <p>Unter den letzten 20 Aufträgen sind keine fehlgeschlagenen Jobs.</p>
+          ) : null}
+          {visibleJobs.length > 0 && !listError ? (
             <ul className="jobs-list">
-              {jobs.map((job) => (
+              {visibleJobs.map((job) => (
                 <li className="jobs-entry" key={job.id}>
                   <div className="jobs-entry-top">
                     <strong>{statusNames[job.status]}</strong>
