@@ -57,8 +57,11 @@ function cookieHeader(token: string, maxAge: number): string {
   return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 }
 function tokenFromRequest(req: IncomingMessage): string | null {
-  const matches = req.headers.cookie?.split(";").map((x) => x.trim())
-    .filter((x) => x.startsWith(COOKIE + "=")) ?? [];
+  const matches =
+    req.headers.cookie
+      ?.split(";")
+      .map((x) => x.trim())
+      .filter((x) => x.startsWith(COOKIE + "=")) ?? [];
   if (matches.length !== 1) return null;
   const value = matches[0]?.slice(COOKIE.length + 1);
   return value && /^[a-f0-9]{64}$/.test(value) ? value : null;
@@ -67,7 +70,9 @@ function digest(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-async function credentials(req: IncomingMessage): Promise<{ username: string; password: string } | null> {
+async function credentials(
+  req: IncomingMessage,
+): Promise<{ username: string; password: string } | null> {
   if (req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
     return null;
   }
@@ -83,9 +88,15 @@ async function credentials(req: IncomingMessage): Promise<{ username: string; pa
     const data: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
     const row = data as Record<string, unknown>;
-    if (Object.keys(row).length !== 2 || typeof row.username !== "string" ||
-        !NAME.test(row.username) || typeof row.password !== "string" ||
-        row.password.length < 12 || row.password.length > 256) return null;
+    if (
+      Object.keys(row).length !== 2 ||
+      typeof row.username !== "string" ||
+      !NAME.test(row.username) ||
+      typeof row.password !== "string" ||
+      row.password.length < 12 ||
+      row.password.length > 256
+    )
+      return null;
     return { username: row.username, password: row.password };
   } catch {
     return null;
@@ -96,7 +107,10 @@ function passwordMatches(password: string, stored: string): boolean {
   const match = HASH.exec(stored) ?? HASH.exec(DUMMY_HASH);
   if (!match?.[1] || !match[2]) throw new Error("Editor auth hash configuration invalid");
   const candidate = scryptSync(password, Buffer.from(match[1], "hex"), 64, {
-    N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024,
+    N: 16384,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
   });
   return timingSafeEqual(candidate, Buffer.from(match[2], "hex")) && HASH.test(stored);
 }
@@ -112,8 +126,15 @@ export class EditorAuth {
     now?: () => number,
   ) {
     const parsed = new URL(origin);
-    if (parsed.protocol !== "https:" || parsed.origin !== origin ||
-        parsed.username || parsed.password || parsed.hash || parsed.search || parsed.pathname !== "/") {
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.origin !== origin ||
+      parsed.username ||
+      parsed.password ||
+      parsed.hash ||
+      parsed.search ||
+      parsed.pathname !== "/"
+    ) {
       throw new Error("Editor authentication requires exact HTTPS origin");
     }
     this.now = now ?? Date.now;
@@ -139,8 +160,12 @@ export class EditorAuth {
       return null;
     }
     const identity = await this.store.activeIdentity(session.editorId);
-    if (!identity || !UUID.test(identity.id) ||
-        !NAME.test(identity.username) || !["editor", "reviewer", "admin"].includes(identity.role)) {
+    if (
+      !identity ||
+      !UUID.test(identity.id) ||
+      !NAME.test(identity.username) ||
+      !["editor", "reviewer", "admin"].includes(identity.role)
+    ) {
       this.sessions.delete(key); // Immediate revocation on next access.
       return null;
     }
@@ -149,8 +174,16 @@ export class EditorAuth {
 
   async handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const path = req.url;
-    if (!["/editor/auth/login", "/editor/auth/logout", "/editor/auth/session",
-      "/editor/me", "/editor/evidence/review"].includes(path ?? "")) return false;
+    if (
+      ![
+        "/editor/auth/login",
+        "/editor/auth/logout",
+        "/editor/auth/session",
+        "/editor/me",
+        "/editor/evidence/review",
+      ].includes(path ?? "")
+    )
+      return false;
 
     if (path === "/editor/auth/login" && req.method === "POST") {
       if (req.headers.origin !== this.origin) {
@@ -161,8 +194,10 @@ export class EditorAuth {
       const now = this.now();
       this.cleanup(now);
       const prior = this.attempts.get(address);
-      if ((prior && prior.count >= MAX_FAILURES) ||
-          (!prior && this.attempts.size >= MAX_ADDRESSES)) {
+      if (
+        (prior && prior.count >= MAX_FAILURES) ||
+        (!prior && this.attempts.size >= MAX_ADDRESSES)
+      ) {
         json(res, 429, { error: "too_many_requests" });
         return true;
       }
@@ -179,10 +214,15 @@ export class EditorAuth {
         return true;
       }
       const valid = passwordMatches(input.password, account?.passwordHash ?? DUMMY_HASH);
-      if (!valid || !account?.active || !UUID.test(account.id) ||
-          !["editor", "reviewer", "admin"].includes(account.role)) {
+      if (
+        !valid ||
+        !account?.active ||
+        !UUID.test(account.id) ||
+        !["editor", "reviewer", "admin"].includes(account.role)
+      ) {
         this.attempts.set(address, {
-          count: (prior?.count ?? 0) + 1, startedAt: prior?.startedAt ?? now,
+          count: (prior?.count ?? 0) + 1,
+          startedAt: prior?.startedAt ?? now,
         });
         json(res, 401, { error: "invalid_credentials" });
         return true;
@@ -213,8 +253,10 @@ export class EditorAuth {
 
     if (path === "/editor/auth/session" && req.method === "GET") {
       const identity = await this.identity(req);
-      json(res, 200, { authenticated: Boolean(identity),
-        ...(identity ? { role: identity.role, username: identity.username } : {}) });
+      json(res, 200, {
+        authenticated: Boolean(identity),
+        ...(identity ? { role: identity.role, username: identity.username } : {}),
+      });
       return true;
     }
 
@@ -255,15 +297,21 @@ export class EditorAuth {
         chunks.push(bytes);
       }
       let review: ReturnType<typeof parseReview> = null;
-      try { review = parseReview(JSON.parse(Buffer.concat(chunks).toString("utf8"))); }
-      catch { /* Malformed input stays invalid. */ }
+      try {
+        review = parseReview(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+      } catch {
+        /* Malformed input stays invalid. */
+      }
       if (!review) {
         json(res, 400, { error: "invalid_request" });
         return true;
       }
       try {
         const status = await this.store.review(
-          review.evidenceId, review.decision, review.reason, identity.id,
+          review.evidenceId,
+          review.decision,
+          review.reason,
+          identity.id,
         );
         if (status === "updated") json(res, 200, { reviewed: true });
         else if (status === "already_reviewed") json(res, 409, { error: "already_reviewed" });
@@ -290,9 +338,16 @@ export class PostgresEditorStore implements EditorStore {
 
   async findAccount(username: string): Promise<EditorAccount | null> {
     const result = await this.pool.query<{
-      id: string; username: string; role: EditorRole; active: boolean; passwordHash: string;
-    }>(`SELECT id::text, username, role, active, password_hash AS "passwordHash"
-       FROM vns.editor_accounts WHERE username=$1`, [username]);
+      id: string;
+      username: string;
+      role: EditorRole;
+      active: boolean;
+      passwordHash: string;
+    }>(
+      `SELECT id::text, username, role, active, password_hash AS "passwordHash"
+       FROM vns.editor_accounts WHERE username=$1`,
+      [username],
+    );
     return result.rows[0] ?? null;
   }
 
@@ -300,12 +355,17 @@ export class PostgresEditorStore implements EditorStore {
     if (!UUID.test(id)) return null;
     const result = await this.pool.query<EditorIdentity>(
       `SELECT id::text, username, role FROM vns.editor_accounts
-       WHERE id=$1::uuid AND active=true`, [id]);
+       WHERE id=$1::uuid AND active=true`,
+      [id],
+    );
     return result.rows[0] ?? null;
   }
 
   async review(
-    id: string, verdict: Verdict, reason: string, editorId: string,
+    id: string,
+    verdict: Verdict,
+    reason: string,
+    editorId: string,
   ): Promise<ReviewOutcome> {
     if (!UUID.test(id) || !UUID.test(editorId)) throw new Error("Invalid review ID");
     const client: PoolClient = await this.pool.connect();
@@ -316,9 +376,12 @@ export class PostgresEditorStore implements EditorStore {
       // Prevent simultaneous deactivation/role modification while committing.
       const account = await client.query<{ username: string; role: EditorRole }>(
         `SELECT username, role FROM vns.editor_accounts
-         WHERE id=$1::uuid AND active=true FOR SHARE`, [editorId]);
+         WHERE id=$1::uuid AND active=true FOR SHARE`,
+        [editorId],
+      );
       if (!account.rows[0] || !["reviewer", "admin"].includes(account.rows[0].role)) {
-        await client.query("ROLLBACK"); inTransaction = false;
+        await client.query("ROLLBACK");
+        inTransaction = false;
         return "forbidden";
       }
       const updated = await client.query(
@@ -331,8 +394,9 @@ export class PostgresEditorStore implements EditorStore {
       );
       let outcome: ReviewOutcome = "updated";
       if (updated.rowCount !== 1) {
-        const exists = await client.query(
-          "SELECT 1 FROM vns.research_evidence WHERE id=$1::uuid", [id]);
+        const exists = await client.query("SELECT 1 FROM vns.research_evidence WHERE id=$1::uuid", [
+          id,
+        ]);
         outcome = exists.rowCount ? "already_reviewed" : "missing";
       }
       await client.query("COMMIT");
@@ -348,7 +412,9 @@ export class PostgresEditorStore implements EditorStore {
     }
   }
 
-  async close(): Promise<void> { await this.pool.end(); }
+  async close(): Promise<void> {
+    await this.pool.end();
+  }
 }
 
 export function editorAuthFromEnv(
@@ -360,26 +426,44 @@ export function editorAuthFromEnv(
   if (env.VNS_EDITOR_AUTH_ENABLED === undefined || env.VNS_EDITOR_AUTH_ENABLED === "false") {
     return undefined;
   }
-  if (env.VNS_EDITOR_AUTH_ENABLED !== "true" || !adminAuth || !jobs ||
-      env.VNS_POSTGRES_PASSWORD_FILE !== "/run/secrets/postgres_password" ||
-      !env.VNS_ADMIN_ORIGIN) {
+  if (
+    env.VNS_EDITOR_AUTH_ENABLED !== "true" ||
+    !adminAuth ||
+    !jobs ||
+    env.VNS_POSTGRES_PASSWORD_FILE !== "/run/secrets/postgres_password" ||
+    !env.VNS_ADMIN_ORIGIN
+  ) {
     throw new Error("Editor authentication requires approved admin/data feature gates");
   }
   const host = env.VNS_POSTGRES_HOST ?? "postgres";
   const port = Number(env.VNS_POSTGRES_PORT ?? "5432");
   const database = env.VNS_POSTGRES_DB ?? "videonews";
-  if (!["postgres", "127.0.0.1"].includes(host) ||
-      !Number.isInteger(port) || port < 1 || port > 65535 ||
-      !/^[a-z][a-z0-9_]{0,62}$/.test(database)) {
+  if (
+    !["postgres", "127.0.0.1"].includes(host) ||
+    !Number.isInteger(port) ||
+    port < 1 ||
+    port > 65535 ||
+    !/^[a-z][a-z0-9_]{0,62}$/.test(database)
+  ) {
     throw new Error("Editor authentication PostgreSQL endpoint invalid");
   }
   let password: string;
-  try { password = readSecret(env.VNS_POSTGRES_PASSWORD_FILE).trimEnd(); }
-  catch { throw new Error("Editor authentication PostgreSQL secret unavailable"); }
+  try {
+    password = readSecret(env.VNS_POSTGRES_PASSWORD_FILE).trimEnd();
+  } catch {
+    throw new Error("Editor authentication PostgreSQL secret unavailable");
+  }
   if (password.length < 16) throw new Error("Editor authentication PostgreSQL secret invalid");
   const pool = new pg.Pool({
-    host, port, database, user: "vns", password,
-    max: 2, connectionTimeoutMillis: 4000, idleTimeoutMillis: 5000, statement_timeout: 8000,
+    host,
+    port,
+    database,
+    user: "vns",
+    password,
+    max: 2,
+    connectionTimeoutMillis: 4000,
+    idleTimeoutMillis: 5000,
+    statement_timeout: 8000,
   });
   return new EditorAuth(new PostgresEditorStore(pool), env.VNS_ADMIN_ORIGIN);
 }
