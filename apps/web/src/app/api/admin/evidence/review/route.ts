@@ -1,5 +1,8 @@
 import { adminJobsProxyConfig } from "../../../../../lib/admin-jobs-proxy";
-import { submitAdminEvidenceReview, submitEditorEvidenceReview } from "../../../../../lib/admin-evidence-proxy";
+import {
+  submitAdminEvidenceReview,
+  submitEditorEvidenceReview,
+} from "../../../../../lib/admin-evidence-proxy";
 import { editorProxyConfig } from "../../../../../lib/editor-proxy";
 
 export const runtime = "nodejs";
