@@ -99,7 +99,11 @@ test("discovery refuses zero, many, invalid, and self-certified sources", async 
     [{ ...candidate, reviewStatus: "verified" }],
     [candidate, candidate],
   ]) {
-    const provider: ResearchCandidateProvider = { async discover() { return discovered; } };
+    const provider: ResearchCandidateProvider = {
+      async discover() {
+        return discovered;
+      },
+    };
     const process = createResearchProcessor(store, provider, fetcher);
     await assert.rejects(process(job));
   }
@@ -108,17 +112,27 @@ test("discovery refuses zero, many, invalid, and self-certified sources", async 
 test("retrieved content metadata must match the same source URL", async () => {
   const { store, provider } = fixture();
   const process = createResearchProcessor(store, provider, {
-    async fetch() { return { ...document, sourceUrl: "https://www.other-site.example/news" }; },
+    async fetch() {
+      return { ...document, sourceUrl: "https://www.other-site.example/news" };
+    },
   });
   await assert.rejects(process(job), /retrieval metadata/);
 });
 
 test("missing or terminal database jobs fail before discovery", async () => {
   const { provider, fetcher, counts } = fixture();
-  const process = createResearchProcessor({
-    async loadResearchTopic() { return null; },
-    async saveCandidate() { throw new Error("must not write"); },
-  }, provider, fetcher);
+  const process = createResearchProcessor(
+    {
+      async loadResearchTopic() {
+        return null;
+      },
+      async saveCandidate() {
+        throw new Error("must not write");
+      },
+    },
+    provider,
+    fetcher,
+  );
   await assert.rejects(process(job), /no approved topic/);
   assert.deepEqual(counts(), { discovered: 0, fetched: 0 });
 });
