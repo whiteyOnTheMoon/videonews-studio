@@ -127,6 +127,9 @@ export async function reconcileJobStatusBatch(
         continue;
       }
       verifyRedisJob(job, row);
+      if (!Number.isSafeInteger(job.attemptsMade) || job.attemptsMade > row.max_attempts) {
+        throw new Error("BullMQ attempts exceed persisted retry policy");
+      }
       const state = mapBullState(await job.getState(), job.attemptsMade);
       if (state === null) {
         missingRedis += 1;
