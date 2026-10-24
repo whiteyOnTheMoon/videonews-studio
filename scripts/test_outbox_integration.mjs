@@ -141,6 +141,28 @@ try {
   assert.equal((await outbox(fourth)).delivery_state, "enqueued");
   console.log("PASS: retry-option and payload drift fail closed without PG acknowledgement");
 
+  // A second producer can claim the same Redis job ID after getJob()
+  // observed absence. Acknowledging such a collision loses the SQL intent.
+  const raced = await create("research", "ci-outbox-raced-enqueue");
+  const collisionProducer = {
+    getJob: (key) => queue.getJob(key),
+    add: async (name, data, opts) => {
+      await queue.add(
+        "probe",
+        { kind: "probe", jobId: raced },
+        { jobId: opts.jobId, removeOnComplete: false, removeOnFail: false },
+      );
+      return queue.add(name, data, opts);
+    },
+  };
+  await assert.rejects(dispatchOutboxBatch(pool, collisionProducer), /safe to retry/);
+  assert.equal((await outbox(raced)).delivery_state, "pending");
+  assert.equal((await queue.getJob(bullId(raced))).name, "probe");
+  await (await queue.getJob(bullId(raced))).remove();
+  assert.equal((await dispatchOutboxBatch(pool, queue)).newlyEnqueued, 1);
+  assert.equal((await outbox(raced)).delivery_state, "enqueued");
+  console.log("PASS: concurrent Redis ID collision cannot acknowledge PostgreSQL outbox");
+
   // Terminal editorial jobs must never be redispatched after Redis loss.
   await pool.query("UPDATE vns.jobs SET status = 'done' WHERE id = $1", [id]);
   await (await queue.getJob(bullId(id))).remove();
