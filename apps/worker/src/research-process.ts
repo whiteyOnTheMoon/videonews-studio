@@ -36,15 +36,17 @@ export function createResearchProcessor(
   fetcher: ResearchFetchPort,
 ): (job: Job) => Promise<ResearchProcessorResult> {
   return async (job) => {
-    if (job.name !== "research" ||
-        typeof job.id !== "string" ||
-        typeof job.data !== "object" ||
-        job.data === null ||
-        Object.keys(job.data).length !== 2 ||
-        job.data.kind !== "research" ||
-        typeof job.data.jobId !== "string" ||
-        !UUID.test(job.data.jobId) ||
-        job.id !== "job-" + job.data.jobId.replaceAll("-", "")) {
+    if (
+      job.name !== "research" ||
+      typeof job.id !== "string" ||
+      typeof job.data !== "object" ||
+      job.data === null ||
+      Object.keys(job.data).length !== 2 ||
+      job.data.kind !== "research" ||
+      typeof job.data.jobId !== "string" ||
+      !UUID.test(job.data.jobId) ||
+      job.id !== "job-" + job.data.jobId.replaceAll("-", "")
+    ) {
       throw new Error("Unrecognized research queue job");
     }
     const id: string = job.data.jobId;
@@ -66,12 +68,14 @@ export function createResearchProcessor(
     let recorded = 0;
     for (const candidate of candidates) {
       const document = await fetcher.fetch(candidate.sourceUrl);
-      if (document.sourceUrl !== candidate.sourceUrl ||
-          !/^[0-9a-f]{64}$/.test(document.sha256) ||
-          typeof document.text !== "string" ||
-          typeof document.mediaType !== "string" ||
-          !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(document.fetchedAt) ||
-          Number.isNaN(Date.parse(document.fetchedAt))) {
+      if (
+        document.sourceUrl !== candidate.sourceUrl ||
+        !/^[0-9a-f]{64}$/.test(document.sha256) ||
+        typeof document.text !== "string" ||
+        typeof document.mediaType !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(document.fetchedAt) ||
+        Number.isNaN(Date.parse(document.fetchedAt))
+      ) {
         throw new Error("Source retrieval metadata is invalid");
       }
       // Note: mere retrieval does NOT verify the candidate claim, and the
@@ -110,8 +114,11 @@ export class PostgresResearchEvidenceStore implements ResearchEvidenceStore {
     candidate: SourceCandidate,
     document: SourceDocument,
   ): Promise<void> {
-    if (!UUID.test(jobId) || candidate.reviewStatus !== "candidate" ||
-        document.sourceUrl !== candidate.sourceUrl) {
+    if (
+      !UUID.test(jobId) ||
+      candidate.reviewStatus !== "candidate" ||
+      document.sourceUrl !== candidate.sourceUrl
+    ) {
       throw new Error("Research candidate rejected");
     }
     const result = await this.pool.query<{ id: string }>(
@@ -143,9 +150,11 @@ export class PostgresResearchEvidenceStore implements ResearchEvidenceStore {
        WHERE job_id = $1::uuid AND source_url = $2 AND claim_text = $3`,
       [jobId, candidate.sourceUrl, candidate.claim],
     );
-    if (existing.rows.length !== 1 ||
-        existing.rows[0]?.publisher !== candidate.publisher ||
-        existing.rows[0]?.headline !== candidate.headline) {
+    if (
+      existing.rows.length !== 1 ||
+      existing.rows[0]?.publisher !== candidate.publisher ||
+      existing.rows[0]?.headline !== candidate.headline
+    ) {
       throw new Error("Research evidence conflicts with existing provenance");
     }
   }
