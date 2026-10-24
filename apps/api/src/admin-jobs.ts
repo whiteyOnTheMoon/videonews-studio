@@ -265,6 +265,10 @@ export function adminJobsFromEnv(
   return new AdminJobs(
     auth,
     new PostgresResearchJobStore(pool),
-    new AdminEvidence(auth, new PostgresEvidenceReviewStore(pool)),
+    new AdminEvidence(
+      auth,
+      new PostgresEvidenceReviewStore(pool),
+      env.VNS_EDITOR_AUTH_ENABLED !== "true",
+    ),
   );
 }

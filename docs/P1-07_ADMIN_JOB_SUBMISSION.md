@@ -174,3 +174,36 @@ triggers or change schema. Before production, issue least-privilege DB grants
 and implement uniquely authenticated named editor logins, revocation, actual
 role enforcement and independent backup/export of audit events. This
 migration and HTTP route remain unactivated on the VPS.
+
+## Dedicated personal editor sessions (API-only preview, disabled)
+
+The internal API now provides a separate, opt-in `VNS_EDITOR_AUTH_ENABLED=true`
+identity boundary. The feature requires the existing shared AdminAuth gate,
+protected research-job gate, PostgreSQL Docker secret and exact HTTPS Origin.
+The flag remains unset in Docker Compose and defaults to off. No account is
+created or activated by this change.
+
+`POST /editor/auth/login`, `POST /editor/auth/logout`,
+`GET /editor/auth/session`, `GET /editor/me` and
+`POST /editor/evidence/review` use existing individually provisioned active
+editor accounts from migration 0005. Scrypt password verification is bounded,
+errors reveal no account existence, and failures are rate-limited. A distinct
+15-minute `__Host-vns_editor` Secure/HttpOnly/SameSite=Strict cookie is
+used, never the shared admin cookie. Tokens are random and only hashed tokens
+are held in process memory, so sessions end when the API process restarts.
+
+Account state and role are read afresh from PostgreSQL on every authenticated
+request. A deactivated account loses access on its next request. Only active
+`reviewer` and `admin` roles can decide evidence; ordinary `editor` cannot.
+The review transaction locks the account row to prevent concurrent account
+revocation during commit, and atomically writes reviewer ID, real username,
+reason and audit event. Once named editor auth is enabled, the old shared-admin
+POST evidence-review endpoint is blocked, preventing an attribution bypass.
+
+**Not enabled or deployed:** no individual login page or Next.js BFF proxy
+exists yet for these API routes. No provisioning/rotation UI exists and no
+accounts are seeded. Named editor accounts cannot be used through the website
+at this stage. DB least-privilege roles, distributed or durable sessions,
+account lifecycle administration and independent audit retention remain
+requirements for production. GitHub CI uses synthetic credentials and
+disposable PostgreSQL; no live VPS services change.
