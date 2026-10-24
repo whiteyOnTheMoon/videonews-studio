@@ -11,6 +11,8 @@ on:
       - "scripts/ci_signed_audit_replay.mjs"
       - "scripts/test_db_login_roles.mjs"
       - "scripts/test_recovery_readiness.mjs"
+      - "scripts/ci_outbox_recovery_audit.mjs"
+      - "scripts/test_ci_outbox_recovery_audit.mjs"
       - "docs/P1-07_RECOVERY_RUNBOOK.md"
       - "docs/p1-07-recovery-plan.json"
       - "package.json"
