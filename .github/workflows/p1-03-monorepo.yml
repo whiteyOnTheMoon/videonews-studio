@@ -56,7 +56,11 @@ jobs:
       - name: ESLint
         run: npm run lint
       - name: Formatting
-        run: npm run format:check
+        run: |
+          npx prettier --write docs/P1-07_ACCEPTANCE_AUDIT.md
+          git diff --no-color -- docs/P1-07_ACCEPTANCE_AUDIT.md
+          npm run format:check
+          git diff --exit-code -- docs/P1-07_ACCEPTANCE_AUDIT.md
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
