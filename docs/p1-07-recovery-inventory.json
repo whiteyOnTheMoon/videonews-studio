@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "scope": "repository-declared-and-operator-review-required",
+  "productionInventoryVerified": false,
+  "backupDestinationApproved": false,
+  "activationApproved": false,
+  "records": [
+    {
+      "id": "repository-source",
+      "category": "code",
+      "disposition": "rebuild",
+      "source": {
+        "path": "package.json",
+        "anchor": "\"name\": \"videonews-studio\""
+      },
+      "dependsOn": [],
+      "recoveryStep": "prepare_isolated_target",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "container-images",
+      "category": "code",
+      "disposition": "rebuild",
+      "source": {
+        "path": "Dockerfile",
+        "anchor": "FROM node:22-bookworm-slim"
+      },
+      "dependsOn": ["repository-source"],
+      "recoveryStep": "start_internal_services_disabled",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "compose-definition",
+      "category": "configuration",
+      "disposition": "rebuild",
+      "source": {
+        "path": "compose.yaml",
+        "anchor": "name: videonews-studio"
+      },
+      "dependsOn": ["repository-source"],
+      "recoveryStep": "restore_configuration_secrets",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "caddy-routing",
+      "category": "configuration",
+      "disposition": "rebuild",
+      "source": {
+        "path": "deploy/Caddyfile",
+        "anchor": "reverse_proxy web:3000"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "start_internal_services_disabled",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "environment-settings",
+      "category": "configuration",
+      "disposition": "operator-verify",
+      "source": {
+        "path": ".env.example",
+        "anchor": "VNS_ADMIN_AUTH_ENABLED"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_configuration_secrets",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "postgres-volume",
+      "category": "data",
+      "disposition": "backup-required",
+      "source": {
+        "path": "compose.yaml",
+        "anchor": "postgres_data:/var/lib/postgresql/data"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_postgres_data",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "postgres-global-roles",
+      "category": "data",
+      "disposition": "backup-required",
+      "source": {
+        "path": "db/scripts/test_full_restore.sh",
+        "anchor": "pg_dumpall -U postgres --globals-only"
+      },
+      "dependsOn": ["postgres-volume"],
+      "recoveryStep": "restore_postgres_globals",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "postgres-secret",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "compose.yaml",
+        "anchor": "file: ./secrets/postgres_password"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_configuration_secrets",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "redis-aof-volume",
+      "category": "data",
+      "disposition": "backup-required",
+      "source": {
+        "path": "compose.yaml",
+        "anchor": "redis_data:/data"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_redis_or_rebuild",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "redis-acl-secret",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "compose.yaml",
+        "anchor": "file: ./secrets/redis_acl"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_configuration_secrets",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "redis-worker-password",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "apps/worker/src/queue.ts",
+        "anchor": "/run/secrets/redis_password"
+      },
+      "dependsOn": ["redis-acl-secret"],
+      "recoveryStep": "reissue_database_logins",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "administrator-password-hash",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "apps/api/src/auth.ts",
+        "anchor": "VNS_ADMIN_PASSWORD_HASH_FILE"
+      },
+      "dependsOn": ["environment-settings"],
+      "recoveryStep": "reissue_database_logins",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "editor-operator-identities",
+      "category": "identity",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "db/migrations/0010_editor_account_lifecycle_audit.up.sql",
+        "anchor": "CREATE TABLE vns.editor_operator_registry"
+      },
+      "dependsOn": ["postgres-global-roles", "postgres-volume"],
+      "recoveryStep": "reissue_database_logins",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "audit-ledger-records",
+      "category": "data",
+      "disposition": "backup-required",
+      "source": {
+        "path": "db/migrations/0010_editor_account_lifecycle_audit.up.sql",
+        "anchor": "CREATE TABLE vns.editor_account_lifecycle_events"
+      },
+      "dependsOn": ["postgres-volume"],
+      "recoveryStep": "verify_audit_archive",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "signed-offsite-audit-archive",
+      "category": "external",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "docs/P1-07_BACKUP_KEY_CUSTODY.md",
+        "anchor": "off-host"
+      },
+      "dependsOn": ["audit-ledger-records"],
+      "recoveryStep": "verify_audit_archive",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "uploaded-media",
+      "category": "planned",
+      "disposition": "not-configured",
+      "source": {
+        "path": "docs/P1-07_RECOVERY_RUNBOOK.md",
+        "anchor": "Media and external assets"
+      },
+      "dependsOn": ["compose-definition"],
+      "recoveryStep": "restore_media",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "cloudflare-tunnel-config",
+      "category": "external",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "docs/P1-07_RECOVERY_RUNBOOK.md",
+        "anchor": "Cloudflare configuration"
+      },
+      "dependsOn": ["environment-settings"],
+      "recoveryStep": "restore_configuration_secrets",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "domain-and-dns",
+      "category": "external",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "docs/P1-07_RECOVERY_RUNBOOK.md",
+        "anchor": "domain/DNS ownership"
+      },
+      "dependsOn": ["cloudflare-tunnel-config"],
+      "recoveryStep": "start_internal_services_disabled",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "external-publisher-access",
+      "category": "external",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "docs/P1-07_RECOVERY_RUNBOOK.md",
+        "anchor": "third-party credentials"
+      },
+      "dependsOn": ["environment-settings"],
+      "recoveryStep": "start_internal_services_disabled",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "pg-redis-outbox-relationship",
+      "category": "data",
+      "disposition": "operator-verify",
+      "source": {
+        "path": "docs/P1-07_RECOVERY_RUNBOOK.md",
+        "anchor": "Reconcile PostgreSQL outbox and BullMQ"
+      },
+      "dependsOn": ["postgres-volume", "redis-aof-volume"],
+      "recoveryStep": "reconcile_postgres_outbox",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "recovery-signing-keys",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "docs/P1-07_BACKUP_KEY_CUSTODY.md",
+        "anchor": "independent key custody"
+      },
+      "dependsOn": ["signed-offsite-audit-archive"],
+      "recoveryStep": "verify_backup_sources",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    },
+    {
+      "id": "backup-encryption-keys",
+      "category": "credential",
+      "disposition": "reissue",
+      "source": {
+        "path": "docs/P1-07_BACKUP_KEY_CUSTODY.md",
+        "anchor": "Encryption key custody"
+      },
+      "dependsOn": ["postgres-volume"],
+      "recoveryStep": "verify_backup_sources",
+      "operatorVerified": false,
+      "offsiteBackupVerified": false,
+      "isolatedRestoreVerified": false,
+      "approvedCustodian": null,
+      "backupLocation": null,
+      "evidenceReference": null
+    }
+  ]
+}
