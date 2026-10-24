@@ -474,3 +474,44 @@ writes. It does **not** itself implement multi-factor authentication,
 a human-facing management UI, independently verified identity, secure
 credential distribution, external audit retention or immutable off-host
 logs. Real backup/restore and operator approval remain mandatory.
+
+## 0011 – Separated operator registry governance (Git-only)
+
+Offline-only reversible migration `0011_operator_registry_governance`
+adds a private `vns_operator_registry_executor` and a separate
+`vns_operator_governor`, both `NOLOGIN` and **without members or
+credentials**. No operational governor is enabled by the migration.
+
+Only an authenticated PostgreSQL LOGIN with separately approved,
+inherited governance membership can execute
+`vns.register_editor_operator` / `vns.revoke_editor_operator`.
+It cannot directly change the registry or append events. The restricted
+definer validates that the requested subject is a different authenticated
+LOGIN, has the provisioner membership and no elevated PostgreSQL or
+API/dispatcher/governor memberships. Registration is one-time:
+a revoked operator cannot simply re-register, substitute a UUID or
+reactivate itself. Revocation sets `active=false` and makes subsequent
+account changes fail closed through migration 0010's lifecycle trigger.
+Both governance actions require a bounded, nonempty human-readable reason.
+
+The new `editor_operator_registry_events` ledger records enrollment,
+revocation, the authorizing **PostgreSQL session_user**, subject role,
+operator UUID/label, reason and timestamp. Neither logins' passwords nor
+editor password hashes appear in this audit. Ordinary roles cannot
+mutate audit rows; `vns_audit_reader` receives read-only access. A database
+owner/superuser retains ultimate authority and is not protected by this
+ledger alone.
+
+Disposable PostgreSQL tests create a synthetic subject LOGIN, verify
+permissions and denied self/enhanced/duplicate registration, two audit
+events, idempotency rejection and rollback. Real LOGIN integration tests
+also run with disposable independent governor and provisioner credentials,
+cover authorized enrollment, prohibited direct DML, revocation and denied
+future account writes.
+
+**Not a production operator identity system.** Initial issuer enrollment
+and independent verification, human MFA, access review, credential issuance
+and rotation, revocation for lost credentials, backup/recovery and off-host
+retention are not implemented. Grants to governance membership, database
+credentials and production migrations still require separate explicit
+operator approval. No VPS access, service creation or feature enablement.
