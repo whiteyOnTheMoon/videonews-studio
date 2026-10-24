@@ -24,6 +24,8 @@ on:
       - "scripts/ci_outbox_recovery_audit.mjs"
       - "scripts/test_ci_outbox_recovery_audit.mjs"
       - "scripts/test_ci_redis_aof_restore.mjs"
+      - "scripts/ci_aof_archive_preflight.mjs"
+      - "scripts/test_ci_aof_archive_preflight.mjs"
       - "db/scripts/test_redis_aof_restore.sh"
       - ".github/workflows/p1-07-worker.yml"
 permissions:
@@ -78,8 +80,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check AOF fixture source formatting
         run: |
-          npx prettier --write scripts/test_ci_redis_aof_restore.mjs
-          git diff --exit-code -- scripts/test_ci_redis_aof_restore.mjs
+          npx prettier --write scripts/ci_aof_archive_preflight.mjs scripts/test_ci_aof_archive_preflight.mjs scripts/test_ci_redis_aof_restore.mjs
+          git diff --exit-code -- scripts/ci_aof_archive_preflight.mjs scripts/test_ci_aof_archive_preflight.mjs scripts/test_ci_redis_aof_restore.mjs
       - name: Build shared and worker packages for isolated Redis fixture
         run: |
           npm run build --workspace @vns/shared
