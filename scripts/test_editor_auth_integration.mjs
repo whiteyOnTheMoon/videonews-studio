@@ -218,7 +218,7 @@ try {
   assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: cookie } })).status, 401);
   assert.equal((await review(cookie, evidenceId)).status, 401);
   assert.equal((await login("ci_reviewer", PASSWORD)).status, 401);
-  assert.equal((await review(writerCookie, evidenceId)).status, 403);
+  assert.equal((await review(writerCookie, evidenceId)).status, 401);
   const count = await pool.query(
     "SELECT count(*)::int AS n FROM vns.evidence_review_events WHERE evidence_id=$1",
     [evidenceId],
