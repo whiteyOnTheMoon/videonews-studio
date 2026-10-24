@@ -61,68 +61,95 @@ test("independent restore directory decrypts only with out-of-band trusted keys"
 });
 
 const attacks = [
-  ["wrong independent encryption key", async (f) =>
-    recoverCiBackup(f.restored, f.policy, randomBytes(32))],
-  ["stale signed generation", async (f) =>
-    recoverCiBackup(f.restored, { ...f.policy, expectedGeneration: 8 }, f.encryptionKey)],
-  ["unexpected backup identity", async (f) =>
-    recoverCiBackup(f.restored, { ...f.policy, backupId: "synthetic-other-id" }, f.encryptionKey)],
-  ["revoked signing key", async (f) =>
-    recoverCiBackup(
-      f.restored,
-      {
-        ...f.policy,
-        keys: new Map([[f.keyId, { active: false, publicKey: f.signer.publicKey }]]),
-      },
-      f.encryptionKey,
-    )],
-  ["no externally pinned signing key", async (f) =>
-    recoverCiBackup(f.restored, { ...f.policy, keys: new Map() }, f.encryptionKey)],
-  ["substituted signer in trusted-key map", async (f) => {
-    const attacker = generateKeyPairSync("ed25519");
-    return recoverCiBackup(
-      f.restored,
-      {
-        ...f.policy,
-        keys: new Map([[f.keyId, { active: true, publicKey: attacker.publicKey }]]),
-      },
-      f.encryptionKey,
-    );
-  }],
-  ["altered authenticated ciphertext", async (f) => {
-    const path = join(f.restored, "sealed.json");
-    const envelope = JSON.parse(await readFile(path, "utf8"));
-    envelope.ciphertext = Buffer.from("fake-tampered-data").toString("base64");
-    await writeFile(path, JSON.stringify(envelope) + "\n");
-    return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
-  }],
-  ["malformed detached signature", async (f) => {
-    await writeFile(join(f.restored, "sealed.sig"), Buffer.alloc(64, 5));
-    return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
-  }],
-  ["unexpected archive file", async (f) => {
-    await writeFile(join(f.restored, "credentials.txt"), "unrecognized");
-    return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
-  }],
-  ["symbolic link instead of ciphertext", async (f) => {
-    await rm(join(f.restored, "sealed.json"));
-    await symlink(join(f.source, "sealed.json"), join(f.restored, "sealed.json"));
-    return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
-  }],
-  ["tampered GCM tag signed with a trusted synthetic key", async (f) => {
-    const path = join(f.restored, "sealed.json");
-    const envelope = JSON.parse(await readFile(path, "utf8"));
-    envelope.tag = Buffer.alloc(16, 1).toString("base64");
-    const envelopeBytes = Buffer.from(JSON.stringify(envelope) + "\n");
-    await writeFile(path, envelopeBytes);
-    const newSignature = sign(
-      null,
-      Buffer.concat([CONTEXT, envelopeBytes]),
-      f.signer.privateKey,
-    );
-    await writeFile(join(f.restored, "sealed.sig"), newSignature);
-    return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
-  }],
+  [
+    "wrong independent encryption key",
+    async (f) => recoverCiBackup(f.restored, f.policy, randomBytes(32)),
+  ],
+  [
+    "stale signed generation",
+    async (f) =>
+      recoverCiBackup(f.restored, { ...f.policy, expectedGeneration: 8 }, f.encryptionKey),
+  ],
+  [
+    "unexpected backup identity",
+    async (f) =>
+      recoverCiBackup(f.restored, { ...f.policy, backupId: "synthetic-other-id" }, f.encryptionKey),
+  ],
+  [
+    "revoked signing key",
+    async (f) =>
+      recoverCiBackup(
+        f.restored,
+        {
+          ...f.policy,
+          keys: new Map([[f.keyId, { active: false, publicKey: f.signer.publicKey }]]),
+        },
+        f.encryptionKey,
+      ),
+  ],
+  [
+    "no externally pinned signing key",
+    async (f) => recoverCiBackup(f.restored, { ...f.policy, keys: new Map() }, f.encryptionKey),
+  ],
+  [
+    "substituted signer in trusted-key map",
+    async (f) => {
+      const attacker = generateKeyPairSync("ed25519");
+      return recoverCiBackup(
+        f.restored,
+        {
+          ...f.policy,
+          keys: new Map([[f.keyId, { active: true, publicKey: attacker.publicKey }]]),
+        },
+        f.encryptionKey,
+      );
+    },
+  ],
+  [
+    "altered authenticated ciphertext",
+    async (f) => {
+      const path = join(f.restored, "sealed.json");
+      const envelope = JSON.parse(await readFile(path, "utf8"));
+      envelope.ciphertext = Buffer.from("fake-tampered-data").toString("base64");
+      await writeFile(path, JSON.stringify(envelope) + "\n");
+      return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
+    },
+  ],
+  [
+    "malformed detached signature",
+    async (f) => {
+      await writeFile(join(f.restored, "sealed.sig"), Buffer.alloc(64, 5));
+      return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
+    },
+  ],
+  [
+    "unexpected archive file",
+    async (f) => {
+      await writeFile(join(f.restored, "credentials.txt"), "unrecognized");
+      return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
+    },
+  ],
+  [
+    "symbolic link instead of ciphertext",
+    async (f) => {
+      await rm(join(f.restored, "sealed.json"));
+      await symlink(join(f.source, "sealed.json"), join(f.restored, "sealed.json"));
+      return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
+    },
+  ],
+  [
+    "tampered GCM tag signed with a trusted synthetic key",
+    async (f) => {
+      const path = join(f.restored, "sealed.json");
+      const envelope = JSON.parse(await readFile(path, "utf8"));
+      envelope.tag = Buffer.alloc(16, 1).toString("base64");
+      const envelopeBytes = Buffer.from(JSON.stringify(envelope) + "\n");
+      await writeFile(path, envelopeBytes);
+      const newSignature = sign(null, Buffer.concat([CONTEXT, envelopeBytes]), f.signer.privateKey);
+      await writeFile(join(f.restored, "sealed.sig"), newSignature);
+      return recoverCiBackup(f.restored, f.policy, f.encryptionKey);
+    },
+  ],
 ];
 
 for (const [name, attack] of attacks) {
