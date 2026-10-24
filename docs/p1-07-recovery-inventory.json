@@ -348,7 +348,7 @@
     {
       "id": "recovery-signing-keys",
       "category": "credential",
-      "disposition": "reissue",
+      "disposition": "independent-custody",
       "source": {
         "path": "docs/P1-07_BACKUP_KEY_CUSTODY.md",
         "anchor": "independent key custody"
@@ -365,7 +365,7 @@
     {
       "id": "backup-encryption-keys",
       "category": "credential",
-      "disposition": "reissue",
+      "disposition": "independent-custody",
       "source": {
         "path": "docs/P1-07_BACKUP_KEY_CUSTODY.md",
         "anchor": "Encryption key custody"
