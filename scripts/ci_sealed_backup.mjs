@@ -65,7 +65,9 @@ function requireKey(key, type) {
 
 export function signingKeyId(publicKey) {
   requireKey(publicKey, "public");
-  return createHash("sha256").update(publicKey.export({ type: "spki", format: "der" })).digest("hex");
+  return createHash("sha256")
+    .update(publicKey.export({ type: "spki", format: "der" }))
+    .digest("hex");
 }
 
 function requireBackupId(id) {
@@ -153,7 +155,11 @@ export async function recoverCiBackup(directory, independentPolicy, encryptionKe
   assert.equal(data.format, "vns-ci-sealed-backup-v1");
   requireBackupId(data.backupId);
   assert.equal(data.backupId, independentPolicy.backupId, "Unexpected backup identity");
-  assert.equal(data.generation, independentPolicy.expectedGeneration, "Stale or unknown generation");
+  assert.equal(
+    data.generation,
+    independentPolicy.expectedGeneration,
+    "Stale or unknown generation",
+  );
   assert.match(data.signingKeyId, HEX);
   const trusted = independentPolicy.keys.get(data.signingKeyId);
   assert.ok(trusted?.active === true, "Signing key missing or revoked by independent policy");
