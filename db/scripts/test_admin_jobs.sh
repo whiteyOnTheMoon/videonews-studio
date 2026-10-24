@@ -37,3 +37,4 @@ for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004
 done
 node "$root/scripts/test_admin_jobs_integration.mjs"
 node "$root/scripts/test_editor_auth_integration.mjs"
+VNS_CI_ROLE_LOGIN_PROBE=true node "$root/scripts/test_db_login_roles.mjs"
