@@ -30,7 +30,7 @@ cannot replace missing stateful database volumes.
 application contents, PostgreSQL global roles and role memberships,
 Redis multipart AOF/queue persistence, and editorial/audit ledger
 records. The table records may also belong to the PostgreSQL volume:
-the inventory tracks this *logical requirement*, not a claim that
+the inventory tracks this _logical requirement_, not a claim that
 these are four independent physical files or backups.
 The CI restores synthetic PostgreSQL and Redis fixtures, but there
 is **no approved real off-host copy**.
@@ -66,6 +66,7 @@ backup has been made.
 ## Status, evidence and change control
 
 Every component is marked:
+
 - `operatorVerified=false`
 - `offsiteBackupVerified=false`
 - `isolatedRestoreVerified=false`
