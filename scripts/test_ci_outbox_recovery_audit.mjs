@@ -71,12 +71,16 @@ async function row(id) {
   return r.rows[0];
 }
 async function addValid(id) {
-  return queue.add("research", { kind: "research", jobId: id }, {
-    jobId: queueId(id),
-    attempts: 3,
-    removeOnComplete: false,
-    removeOnFail: false,
-  });
+  return queue.add(
+    "research",
+    { kind: "research", jobId: id },
+    {
+      jobId: queueId(id),
+      attempts: 3,
+      removeOnComplete: false,
+      removeOnFail: false,
+    },
+  );
 }
 try {
   await owner.query(
