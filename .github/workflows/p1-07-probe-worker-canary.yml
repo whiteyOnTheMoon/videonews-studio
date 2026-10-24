@@ -27,6 +27,9 @@ jobs:
         run: |
           bash -n scripts/p1_07_worker_canary.sh
           python3 scripts/provision_redis_secrets.py secrets
+          # Disposable runner user may be UID 1001. Mirror a UID 1000 owner
+          # for the Node worker without weakening the password file's 0600 mode.
+          sudo chown 1000:1000 secrets/redis_password
           python3 - <<'PY'
           import os
           fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
