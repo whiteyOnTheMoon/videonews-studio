@@ -26,6 +26,6 @@ COPY --from=worker-builder --chown=node:node /workspace/packages/shared/package.
 COPY --from=worker-builder --chown=node:node /workspace/packages/shared/dist ./packages/shared/dist
 COPY --from=worker-builder --chown=node:node /workspace/apps/worker/package.json ./apps/worker/package.json
 COPY --from=worker-builder --chown=node:node /workspace/apps/worker/dist ./apps/worker/dist
-RUN mkdir -p node_modules/@vns && ln -s ../../packages/shared node_modules/@vns/shared
+RUN mkdir -p node_modules/@vns && ln -sfn ../../packages/shared node_modules/@vns/shared
 USER node
 CMD ["node", "apps/worker/dist/index.js"]
