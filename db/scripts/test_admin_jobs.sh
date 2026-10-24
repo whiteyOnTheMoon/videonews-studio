@@ -31,7 +31,7 @@ for attempt in $(seq 1 60); do
   sleep 1
 done
 test "$ready" -eq 1 || { echo "Disposable PostgreSQL not ready" >&2; exit 1; }
-for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004_research_evidence 0005_editorial_review_audit; do
+for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004_research_evidence 0005_editorial_review_audit 0006_offline_role_boundaries; do
   docker exec -i "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
      < "$root/db/migrations/$migration.up.sql"
 done
