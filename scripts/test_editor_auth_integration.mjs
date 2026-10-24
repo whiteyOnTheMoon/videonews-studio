@@ -191,7 +191,10 @@ try {
     401,
   );
   assert.equal((await login("ci_managed", "ci-managed-rotated-password")).status, 200);
-  await assert.rejects(action({ type: "rotate", username: "ci_missing", password: "ci-secret-password-strong" }), /rejected/);
+  await assert.rejects(
+    action({ type: "rotate", username: "ci_missing", password: "ci-secret-password-strong" }),
+    /rejected/,
+  );
   const saved = await pool.query(
     "SELECT active, role, auth_version, password_hash FROM vns.editor_accounts WHERE username=$1",
     ["ci_managed"],
