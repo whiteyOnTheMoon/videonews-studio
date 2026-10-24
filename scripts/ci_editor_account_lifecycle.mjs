@@ -15,7 +15,7 @@ const KEYS = {
 
 function acceptedInput(action) {
   if (!action || typeof action !== "object" || Array.isArray(action)) return false;
-  const required = KEYS[action.type];
+  const required = Object.hasOwn(KEYS, action.type) ? KEYS[action.type] : null;
   if (!required || !USERNAME.test(action.username ?? "")) return false;
   if (
     Object.keys(action).sort().join(",") !== [...required].sort().join(",")
@@ -28,7 +28,10 @@ function acceptedInput(action) {
       action.displayName !== action.displayName.trim() ||
       action.displayName.length < 3 ||
       action.displayName.length > 100 ||
-      /[\x00-\x1f\x7f]/.test(action.displayName)
+      [...action.displayName].some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
     ) {
       return false;
     }
@@ -40,7 +43,10 @@ function acceptedInput(action) {
       action.password.length < 16 ||
       action.password.length > 256 ||
       Buffer.byteLength(action.password, "utf8") > 1024 ||
-      /[\x00-\x1f\x7f]/.test(action.password)
+      [...action.password].some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
     ) {
       return false;
     }
