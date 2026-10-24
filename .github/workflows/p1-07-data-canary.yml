@@ -31,7 +31,7 @@ jobs:
           python3 scripts/provision_redis_secrets.py secrets
       - name: Validate strictly isolated offline Compose structure
         run: |
-          docker compose -p vns-p107-disposable -f compose.yaml --profile data config --format json |
+          docker compose -p vns-p107-disposable -f compose.yaml --profile data --profile preview --profile worker config --format json |
             python3 scripts/p1_07_readiness.py
       - name: Start disposable PostgreSQL and Redis, prove healthy
         run: |
