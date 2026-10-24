@@ -6,6 +6,8 @@ on:
       - "db/migrations/**"
       - "db/tests/restore_*.sql"
       - "db/scripts/test_backup_restore.sh"
+      - "db/scripts/test_full_restore.sh"
+      - "db/tests/full_restore_*.sql"
       - "docs/P1-07_POSTGRES_RESTORE.md"
       - ".github/workflows/p1-07-postgres-restore.yml"
 permissions:
@@ -24,5 +26,21 @@ jobs:
           test ! -e secrets/redis_password
       - name: Exercise PostgreSQL 17 backup, clean restore, and fail-closed overwrite
         run: bash db/scripts/test_backup_restore.sh
+      - name: Confirm no tracked files changed
+        run: git diff --exit-code
+
+  full-schema-and-role-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deny repository secret files
+        run: |
+          test ! -e secrets/postgres_password
+          test ! -e secrets/redis_password
+      - name: Restore PostgreSQL 17 globals, all migrations and audit data
+        run: bash db/scripts/test_full_restore.sh
       - name: Confirm no tracked files changed
         run: git diff --exit-code
