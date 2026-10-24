@@ -183,6 +183,8 @@ const mutations = [
   ["change Redis AOF into a rebuildable source", (x) => (x.records[8].disposition = "rebuild")],
   ["pretend media storage is deployed", (x) => (x.records[15].disposition = "backup-required")],
   ["hide credential category", (x) => (x.records[11].category = "code")],
+  ["treat backup encryption key as reissuable", (x) => (x.records[21].disposition = "reissue")],
+  ["treat signature trust as disposable", (x) => (x.records[20].disposition = "reissue")],
   ["invent a secret location", (x) => (x.records[10].backupLocation = "secret.example.invalid")],
   ["add undetected asset", (x) => x.records.push(structuredClone(x.records[0]))],
   ["introduce circular dependency", (x) => x.records[0].dependsOn.push("container-images")],
