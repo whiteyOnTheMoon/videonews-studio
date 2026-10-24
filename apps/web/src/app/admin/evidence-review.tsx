@@ -87,7 +87,7 @@ function ReviewItem({ item, onUpdated }: { item: EvidenceCard; onUpdated: () => 
         setFeedback("Dieser Nachweis wurde bereits bewertet. Liste bitte aktualisieren.");
         await onUpdated();
       } else if (response.status === 401) {
-        setFeedback("Admin-Sitzung abgelaufen. Bitte neu anmelden.");
+        setFeedback("Prüfer-Sitzung fehlt oder ist abgelaufen. Bitte persönlichen Redakteur-Zugang überprüfen.");
       } else {
         setFeedback(
           "Entscheidung nicht bestätigt. Vor erneutem Versuch bitte Liste aktualisieren.",
