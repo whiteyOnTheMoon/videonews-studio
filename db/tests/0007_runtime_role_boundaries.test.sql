@@ -141,7 +141,8 @@ $delivery_check$;
 SET ROLE vns_review_event_writer;
 DO $writer_check$
 BEGIN
-  IF NOT has_table_privilege(current_user, 'vns.evidence_review_events', 'INSERT')
+  IF NOT has_column_privilege(current_user, 'vns.evidence_review_events',
+                              'evidence_id', 'INSERT')
      OR has_table_privilege(current_user, 'vns.evidence_review_events', 'SELECT')
      OR has_table_privilege(current_user, 'vns.editor_accounts', 'SELECT')
      OR has_table_privilege(current_user, 'vns.research_evidence', 'UPDATE')
