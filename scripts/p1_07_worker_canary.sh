@@ -42,6 +42,12 @@ check_labels() {
     die "container $name has incorrect Compose identity"
 }
 check_running_data() {
+  # Compose bind-mounted secrets preserve host ownership. The official Node
+  # runtime uses UID 1000 and the file remains private mode 0600.
+  [[ -f secrets/redis_password && ! -L secrets/redis_password ]] ||
+    die "worker Redis secret missing or symlinked"
+  [[ "$(stat -c %u:%a secrets/redis_password)" == 1000:600 ]] ||
+    die "worker Redis secret must be owned by UID 1000 with mode 0600"
   check_labels "$redis" redis
   [[ "$(get_health "$redis")" == healthy ]] || die "Redis is not healthy"
   [[ -z "$(docker port "$redis")" ]] || die "Redis exposes a host port"
