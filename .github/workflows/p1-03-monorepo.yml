@@ -53,11 +53,6 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
-      - name: Show recovery inventory Prettier changes on failure
-        if: failure()
-        run: |
-          npx prettier --write docs/P1-07_RECOVERY_INVENTORY.md docs/P1-07_RECOVERY_RUNBOOK.md scripts/test_recovery_inventory.mjs
-          git diff --no-color -- docs/P1-07_RECOVERY_INVENTORY.md docs/P1-07_RECOVERY_RUNBOOK.md scripts/test_recovery_inventory.mjs
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
