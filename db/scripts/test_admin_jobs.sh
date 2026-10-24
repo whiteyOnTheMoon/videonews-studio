@@ -37,7 +37,7 @@ for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004
 done
 # Synthetic disposable owner mapping. This does NOT enroll a human operator;
 # the production migration leaves the registry empty and fails closed.
-docker exec "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \\
+docker exec "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
   -c "INSERT INTO vns.editor_operator_registry
       (login_role,operator_id,operator_label,active)
       VALUES ('vns','bbbbbbbb-1234-4123-8123-bbbbbbbbbbbb',
