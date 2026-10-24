@@ -55,83 +55,61 @@
     },
     {
       "id": "verify_backup_sources",
-      "dependsOn": [
-        "freeze_operations"
-      ],
+      "dependsOn": ["freeze_operations"],
       "area": "backup",
       "purpose": "Verify approved off-site provenance, age, encrypted archive integrity and trusted signing keys"
     },
     {
       "id": "prepare_isolated_target",
-      "dependsOn": [
-        "verify_backup_sources"
-      ],
+      "dependsOn": ["verify_backup_sources"],
       "area": "infrastructure",
       "purpose": "Prepare disposable isolated recovery target; never overwrite a live volume"
     },
     {
       "id": "restore_configuration_secrets",
-      "dependsOn": [
-        "prepare_isolated_target"
-      ],
+      "dependsOn": ["prepare_isolated_target"],
       "area": "secrets",
       "purpose": "Restore Compose/tunnel configuration and reissue secrets from independent custody"
     },
     {
       "id": "restore_postgres_globals",
-      "dependsOn": [
-        "restore_configuration_secrets"
-      ],
+      "dependsOn": ["restore_configuration_secrets"],
       "area": "postgres_globals",
       "purpose": "Restore PostgreSQL global roles and memberships; review changed grantor provenance"
     },
     {
       "id": "restore_postgres_data",
-      "dependsOn": [
-        "restore_postgres_globals"
-      ],
+      "dependsOn": ["restore_postgres_globals"],
       "area": "postgres_data",
       "purpose": "Restore complete PostgreSQL databases, all schema migrations, ACLs and audit tables"
     },
     {
       "id": "restore_media",
-      "dependsOn": [
-        "prepare_isolated_target"
-      ],
+      "dependsOn": ["prepare_isolated_target"],
       "area": "media",
       "purpose": "Recover uploaded media and storage metadata; verify checksums and rights evidence"
     },
     {
       "id": "verify_audit_archive",
-      "dependsOn": [
-        "verify_backup_sources"
-      ],
+      "dependsOn": ["verify_backup_sources"],
       "area": "audit",
       "purpose": "Verify archived audit ledgers using independently pinned signature keys and freshness anchors"
     },
     {
       "id": "restore_redis_or_rebuild",
-      "dependsOn": [
-        "restore_postgres_data"
-      ],
+      "dependsOn": ["restore_postgres_data"],
       "area": "redis",
       "purpose": "Recover durable Redis AOF only if proven valid; otherwise keep all workers stopped pending reconciliation"
     },
     {
       "id": "reconcile_postgres_outbox",
-      "dependsOn": [
-        "restore_postgres_data",
-        "restore_redis_or_rebuild"
-      ],
+      "dependsOn": ["restore_postgres_data","restore_redis_or_rebuild"],
       "area": "queue",
       "purpose": "Compare PostgreSQL job/outbox state against BullMQ; account for retries, duplicates and unacknowledged jobs"
     },
     {
       "id": "reissue_database_logins",
-      "dependsOn": [
-        "restore_configuration_secrets",
-        "restore_postgres_data"
-      ],
+      "dependsOn": ["restore_configuration_secrets","restore_postgres_data"],
       "area": "identity",
       "purpose": "Reissue per-service PostgreSQL LOGIN credentials and confirm least privilege plus operator governance"
     },
@@ -148,17 +126,13 @@
     },
     {
       "id": "verify_editorial_integrity",
-      "dependsOn": [
-        "start_internal_services_disabled"
-      ],
+      "dependsOn": ["start_internal_services_disabled"],
       "area": "verification",
       "purpose": "Confirm audit continuity, queue idempotency, media references and no external publication side effects"
     },
     {
       "id": "operator_release_gate",
-      "dependsOn": [
-        "verify_editorial_integrity"
-      ],
+      "dependsOn": ["verify_editorial_integrity"],
       "area": "approval",
       "purpose": "Require fresh explicit operator approval before any public ingress, worker or feature activation"
     }
