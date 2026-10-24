@@ -25,6 +25,9 @@ python3 "$root/scripts/provision_redis_secrets.py" "$tmp" >/dev/null
 export VNS_TEST_REDIS_PASSWORD_FILE="$tmp/redis_password"
 export VNS_CI_AOF_DRILL=true
 
+# Ensure malformed/manipulated archives are rejected before any Redis startup.
+node --test "$root/scripts/test_ci_aof_archive_preflight.mjs"
+
 # Redis AOF replay may need a temporary recovery ACL; this mode has NO
 # network or host ports. Normal containers retain the restrictive ACL.
 start() {
@@ -64,6 +67,11 @@ start "$name" "$tmp/source" strict
 node "$root/scripts/test_ci_redis_aof_restore.mjs" seed
 docker stop --time 15 "$name" >/dev/null
 
+# Capture only a local CI integrity reference outside the stopped archive.
+# This digest inventory is NOT signed or independently anchored off-host.
+node "$root/scripts/ci_aof_archive_preflight.mjs" create \
+  "$tmp/source" "$tmp/ci-inventory.json"
+
 # Redis 7 uses multipart AOF (manifest + base/incremental data files).
 # Work only with a stopped source, never a live changing AOF directory.
 (
@@ -80,6 +88,8 @@ grep -q '\.aof' "$tmp/aof.sha256" || {
 # Copy both the multipart manifest and segments to an independent clean dir.
 cp -a "$tmp/source/." "$tmp/restored/"
 (cd "$tmp/restored" && sha256sum --check --status "$tmp/aof.sha256")
+node "$root/scripts/ci_aof_archive_preflight.mjs" verify \
+  "$tmp/restored" "$tmp/ci-inventory.json"
 
 # A changed archived AOF segment must be refused BEFORE Redis is started.
 cp -a "$tmp/source/." "$tmp/tampered/"
@@ -90,7 +100,13 @@ if (cd "$tmp/tampered" && sha256sum --check --status "$tmp/aof.sha256"); then
   echo "FAIL: corrupted AOF passed checksum comparison" >&2
   exit 1
 fi
-echo "PASS: multipart AOF checksum verification rejects tampering"
+# The structured preflight must independently reject altered AOF bytes.
+if node "$root/scripts/ci_aof_archive_preflight.mjs" verify \
+    "$tmp/tampered" "$tmp/ci-inventory.json" >/dev/null 2>&1; then
+  echo "FAIL: corrupt Redis AOF passed strict structured preflight" >&2
+  exit 1
+fi
+echo "PASS: multipart AOF checksums and structured manifest preflight reject tampering"
 # Redis 7 AOF loading can reject MULTI/EXEC with NOPERM when default
 # ACL is off, yet still start with an empty queue. Bootstrap a VERIFIED
 # archive in a networkless, workerless process with one-time recovery ACL,
@@ -102,6 +118,10 @@ dbsize="$(docker exec "$bootstrap" redis-cli DBSIZE | tr -d '\r')"
 if ! [[ "$dbsize" =~ ^[0-9]+$ ]] || (( dbsize < 4 )); then
   echo "FAIL: isolated Redis bootstrap did not recover synthetic keys" >&2
   docker logs --tail 70 "$bootstrap" 2>&1
+  exit 1
+fi
+if docker logs "$bootstrap" 2>&1 | grep -Eq 'CRITICAL|NOPERM'; then
+  echo "FAIL: Redis AOF bootstrap showed ACL/replay errors" >&2
   exit 1
 fi
 docker exec "$bootstrap" redis-cli BGREWRITEAOF | grep -q 'Background append only file rewriting started'
@@ -120,6 +140,10 @@ docker stop --time 15 "$bootstrap" >/dev/null
 
 # Validate in a fresh process with no permissive ACL and loopback-only port.
 start "$target" "$tmp/restored" strict
+if docker logs "$target" 2>&1 | grep -Eq 'CRITICAL|NOPERM'; then
+  echo "FAIL: Redis strict-ACL restart reported replay/permissions errors" >&2
+  exit 1
+fi
 node "$root/scripts/test_ci_redis_aof_restore.mjs" verify
 echo "PASS: Redis AOF recovered in networkless bootstrap with strict-ACL restart"
 echo "LIMIT: CI-only rewrite is NOT a production backup or approval"

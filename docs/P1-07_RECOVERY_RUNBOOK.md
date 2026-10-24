@@ -235,3 +235,35 @@ deduplicate external side effects or recover private credentials.
 Production off-host retention, signing, encryption, independent
 backup/restore, orphan-resolution policy, media, key custody, safe
 worker restart and operator approval remain explicitly **unapproved**.
+
+## Redis AOF archive preflight and replay-error stop conditions
+
+A separate GitHub Actions-only `ci_aof_archive_preflight.mjs`
+now inspects the **stopped** disposable Redis 7 multipart AOF before
+the temporary network-isolated bootstrap starts. It requires exactly
+one `appendonlydir`, a bounded valid Redis AOF manifest with one
+base segment and at least one incremental segment, matching sequence
+numbers and types, and no missing, extra, duplicate, hard-linked,
+symlinked, traversing, oversized or unrecognized archive files.
+It creates a local SHA-256 and file-length inventory **outside** the
+archive after source shutdown. A copy must match that inventory in
+full; changed files or manifest layout prevent Redis startup. The
+integration also runs explicit adversarial archive mutations and
+rejects them. The CI verifier checks Redis bootstrap and strict-ACL
+target startup logs for `CRITICAL` or `NOPERM` rather than treating
+a live Redis process as evidence of successful job recovery.
+
+These checks reduce the chance of silently accepting corrupt,
+partial or unsafe **synthetic** AOF directories. They do not provide
+authenticated provenance, an off-host trusted manifest, an independent
+signing key, a complete Redis/PG atomic snapshot, a recoverable
+production secret or approval to start workers. The file inventory
+is generated and retained only on the same disposable GitHub runner;
+an attacker controlling both inventory and archive can replace both.
+The network-isolated bootstrap uses a temporary CI-only ACL solely to
+replay a verified archive. Its existence is not permission to
+introduce that ACL to an externally reachable server or production
+system. Production disaster recovery remains blocked pending an
+independent threat review, security-approved recovery credentials and
+keys, off-host backup and retention policies, and a human cutover
+approval.
