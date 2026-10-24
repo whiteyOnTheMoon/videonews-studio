@@ -105,6 +105,42 @@ try {
   assert.equal((await outbox(third)).delivery_state, "enqueued");
   console.log("PASS: conflicting Redis job fails closed and remains recoverable");
 
+  // A matching deterministic ID is not enough: reject changed retry policy
+  // and unexpected payload keys before acknowledging PostgreSQL delivery.
+  const fourth = await create("research", "ci-outbox-option-drift");
+  await queue.add(
+    "research",
+    { kind: "research", jobId: fourth },
+    {
+      jobId: bullId(fourth),
+      attempts: 20,
+      backoff: { type: "fixed", delay: 1 },
+      removeOnComplete: false,
+      removeOnFail: false,
+    },
+  );
+  await assert.rejects(dispatchOutboxBatch(pool, queue), /safe to retry/);
+  assert.equal((await outbox(fourth)).delivery_state, "pending");
+  await (await queue.getJob(bullId(fourth))).remove();
+
+  await queue.add(
+    "research",
+    { kind: "research", jobId: fourth, unreviewed: true },
+    {
+      jobId: bullId(fourth),
+      attempts: 3,
+      backoff: { type: "exponential", delay: 1000 },
+      removeOnComplete: false,
+      removeOnFail: false,
+    },
+  );
+  await assert.rejects(dispatchOutboxBatch(pool, queue), /safe to retry/);
+  assert.equal((await outbox(fourth)).delivery_state, "pending");
+  await (await queue.getJob(bullId(fourth))).remove();
+  assert.equal((await dispatchOutboxBatch(pool, queue)).newlyEnqueued, 1);
+  assert.equal((await outbox(fourth)).delivery_state, "enqueued");
+  console.log("PASS: retry-option and payload drift fail closed without PG acknowledgement");
+
   // Terminal editorial jobs must never be redispatched after Redis loss.
   await pool.query("UPDATE vns.jobs SET status = 'done' WHERE id = $1", [id]);
   await (await queue.getJob(bullId(id))).remove();

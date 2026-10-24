@@ -66,7 +66,14 @@ export async function dispatchOutboxBatch(
         if (
           current.name !== row.kind ||
           current.data?.kind !== row.kind ||
-          current.data?.jobId !== row.job_id
+          current.data?.jobId !== row.job_id ||
+          Object.keys(current.data ?? {}).length !== 2 ||
+          current.opts.attempts !== row.max_attempts ||
+          typeof current.opts.backoff !== "object" ||
+          current.opts.backoff?.type !== "exponential" ||
+          current.opts.backoff?.delay !== 1000 ||
+          current.opts.removeOnComplete !== false ||
+          current.opts.removeOnFail !== false
         ) {
           throw new Error("Existing Redis job conflicts with PostgreSQL outbox");
         }
