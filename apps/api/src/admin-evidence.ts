@@ -7,10 +7,14 @@ const DECISIONS = ["verified", "disputed", "rejected"] as const;
 export function validReviewReason(value: unknown): value is string {
   if (typeof value !== "string" || value !== value.trim()) return false;
   const length = Array.from(value).length;
-  return length >= 20 && length <= 500 && !value.split("").some((c) => {
-    const code = c.charCodeAt(0);
-    return code < 32 || code === 127;
-  });
+  return (
+    length >= 20 &&
+    length <= 500 &&
+    !value.split("").some((c) => {
+      const code = c.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  );
 }
 type Decision = (typeof DECISIONS)[number];
 
@@ -34,7 +38,9 @@ export interface EvidenceReviewStore {
   ): Promise<"updated" | "missing" | "already_reviewed">;
 }
 
-export function parseReview(value: unknown): { evidenceId: string; decision: Decision; reason: string } | null {
+export function parseReview(
+  value: unknown,
+): { evidenceId: string; decision: Decision; reason: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const body = value as Record<string, unknown>;
   if (
