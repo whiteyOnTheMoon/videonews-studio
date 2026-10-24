@@ -87,7 +87,7 @@ async function jsonRequest(request: IncomingMessage): Promise<unknown> {
   for await (const chunk of request) {
     const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     length += bytes.length;
-    if (length > 512) return null;
+    if (length > 1024) return null;
     chunks.push(bytes);
   }
   try {
