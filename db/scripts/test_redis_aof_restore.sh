@@ -85,6 +85,10 @@ find "$tmp/source" -type f -printf '%P %s bytes\\n'
 
 # The actual restore uses a NEW Redis process and separate restored files.
 start "$target" "$tmp/restored"
+echo "CI-AOF-DIAG: restored Redis startup log (synthetic data only):"
+docker logs --tail 45 "$target" 2>&1
+echo "CI-AOF-DIAG: Redis 7 multipart AOF manifest:"
+cat "$tmp/restored/appendonlydir/appendonly.aof.manifest"
 node "$root/scripts/test_ci_redis_aof_restore.mjs" verify
 echo "PASS: clean disposable Redis 7 multipart AOF recovery verified"
 echo "LIMIT: no PostgreSQL atomicity, media, off-host archive or live RPO/RTO proof"
