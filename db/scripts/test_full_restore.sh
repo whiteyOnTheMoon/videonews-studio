@@ -129,7 +129,22 @@ assert_empty_schema
 echo "PASS: missing global roles fail-closed without a partial schema"
 
 test "$(sha256sum "$globals" | cut -d ' ' -f 1)" = "$globals_sha"
-run_sql "$target_name" "$target_db" restore_admin "$globals"
+# PostgreSQL 17 emits role membership GRANTs with an explicit original
+# GRANTED BY postgres. The target bootstrap superuser is restore_admin,
+# which is not automatically an admin member of every restored role.
+# Once CREATE ROLE postgres has been replayed, switch to that recovered
+# grantor for membership GRANTs. Never suppress failed statements, strip
+# GRANTED BY, or relax any original membership or ACL.
+grep -q '^CREATE ROLE postgres;' "$globals"
+grep -Eq '^GRANT .*GRANTED BY postgres;' "$globals"
+awk '
+  /^GRANT .*GRANTED BY postgres;/ && !changed {
+    print "SET ROLE postgres;"
+    changed=1
+  }
+  {print}
+' "$globals" > "$work/globals-replay.sql"
+run_sql "$target_name" "$target_db" restore_admin "$work/globals-replay.sql"
 test "$(sha256sum "$archive" | cut -d ' ' -f 1)" = "$archive_sha"
 docker exec -i "$target_name" pg_restore -U restore_admin -d "$target_db" \
   --exit-on-error --single-transaction < "$archive"
