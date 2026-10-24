@@ -3,7 +3,10 @@
 import assert from "node:assert/strict";
 import { randomBytes, scryptSync } from "node:crypto";
 import { once } from "node:events";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import pg from "pg";
+import { exportCiAuditBundle, verifyCiAuditBundle } from "./ci_audit_export.mjs";
 import { AdminAuth } from "../apps/api/dist/auth.js";
 import { AdminJobs } from "../apps/api/dist/admin-jobs.js";
 import { AdminEvidence } from "../apps/api/dist/admin-evidence.js";
@@ -40,6 +43,7 @@ const assignments = [
   ["vns_ci_dispatch_login", "vns_outbox_dispatcher"],
   ["vns_ci_provision_login", "vns_editor_provisioner"],
   ["vns_ci_govern_login", "vns_operator_governor"],
+  ["vns_ci_audit_login", "vns_audit_reader"],
 ];
 const clients = [];
 let created = 0;
@@ -77,7 +81,7 @@ try {
     await refuses(pool, "SET ROLE vns_review_event_writer");
   }
 
-  const [api, dispatcher, provisioner, governor] = clients;
+  const [api, dispatcher, provisioner, governor, audit] = clients;
   const job = await api.query("SELECT vns.create_research_request($1, $2) AS id", [
     "ci-real-login-role-job-00001",
     "Disposable separated database login access test",
@@ -329,6 +333,45 @@ try {
   );
   await refuses(api, "SELECT * FROM vns.editor_operator_registry_events");
   await refuses(governor, "DELETE FROM vns.editor_operator_registry_events");
+  // The export uses an independently authenticated, READ-ONLY LOGIN.
+  await refuses(audit, "SELECT username FROM vns.editor_accounts");
+  await refuses(audit, "UPDATE vns.editor_operator_registry_events SET event_type='revoked'");
+  await refuses(audit, "SELECT * FROM vns.editor_operator_registry");
+  const output = await exportCiAuditBundle(audit);
+  try {
+    const verified = await verifyCiAuditBundle(output);
+    assert.deepEqual(verified.streams.map((item) => item.stream), [
+      "source_reviews",
+      "editor_lifecycle",
+      "operator_governance",
+    ]);
+    assert.ok(verified.streams.every((item) => item.rows > 0));
+    const manifest = JSON.parse(await readFile(join(output, "manifest.json"), "utf8"));
+    assert.equal(manifest.streams.length, 3);
+    const allText = await Promise.all(
+      manifest.streams.map((item) => readFile(join(output, item.file), "utf8")),
+    );
+    assert.ok(allText.every((text) => !text.includes("password_hash")));
+    assert.ok(allText.every((text) => !text.includes("scrypt$")));
+    const name = manifest.streams[1].file;
+    const original = await readFile(join(output, name));
+    try {
+      await writeFile(join(output, name), Buffer.concat([original, Buffer.from("tamper")]));
+      await assert.rejects(verifyCiAuditBundle(output), /mismatch/);
+    } finally {
+      await writeFile(join(output, name), original);
+    }
+    await verifyCiAuditBundle(output);
+    const changed = structuredClone(manifest);
+    changed.streams[0].rows += 1;
+    await writeFile(join(output, "manifest.json"), JSON.stringify(changed) + "\n");
+    await assert.rejects(verifyCiAuditBundle(output), /mismatch/);
+    await writeFile(join(output, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+    await verifyCiAuditBundle(output);
+    console.log("PASS: read-only three-ledger export, hashes and tamper rejection");
+  } finally {
+    await rm(output, { recursive: true, force: true });
+  }
   console.log("PASS: authenticated governor registers, audits and revokes provisioner");
   console.log("PASS: separate disposable LOGINs honor runtime/provisioning boundaries");
 } finally {
