@@ -8,11 +8,13 @@ const candidate = {
   job_id: "b85b671e-f99b-483b-b124-855030fcf125",
   queue_job_id: "job-b85b671ef99b483bb124855030fcf125",
   kind: "research",
+  max_attempts: 3,
   status: "pending" as const,
 };
 
 test("status reconciliation verifies persisted job ID and task kind", () => {
   assert.doesNotThrow(() => validateCandidate(candidate));
+  assert.throws(() => validateCandidate({ ...candidate, max_attempts: 21 }), /retry policy/);
   assert.throws(() => validateCandidate({ ...candidate, queue_job_id: "untrusted" }), /identifier/);
   assert.throws(() => validateCandidate({ ...candidate, kind: "probe" }), /Unsupported/);
   assert.throws(
