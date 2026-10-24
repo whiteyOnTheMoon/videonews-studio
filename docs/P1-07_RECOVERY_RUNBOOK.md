@@ -267,3 +267,17 @@ system. Production disaster recovery remains blocked pending an
 independent threat review, security-approved recovery credentials and
 keys, off-host backup and retention policies, and a human cutover
 approval.
+
+## Encrypted synthetic backup and independently pinned key rehearsal
+
+See [P1-07 backup key custody design](P1-07_BACKUP_KEY_CUSTODY.md).
+A new GitHub Actions-only recovery job verifies a small synthetic
+AES-256-GCM encrypted archive signed by Ed25519. Successful restoration
+requires a **separately supplied** decryption key, approved public
+signing-key fingerprint and exact expected backup generation. The CI
+checks key rotation and revocation, modified files, wrong keys and
+old-generation rollback. It persists neither signing nor encryption keys,
+does not upload archives and does not choose an off-host destination.
+It does not constitute a production backup or a real independently
+anchored signature. The 12 release gates, including off-host storage,
+encryption-key custody and human deployment approval, remain **false**.
