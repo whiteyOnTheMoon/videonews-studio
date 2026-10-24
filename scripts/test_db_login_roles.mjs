@@ -39,6 +39,7 @@ const assignments = [
   ["vns_ci_api_login", "vns_api_runtime"],
   ["vns_ci_dispatch_login", "vns_outbox_dispatcher"],
   ["vns_ci_provision_login", "vns_editor_provisioner"],
+  ["vns_ci_govern_login", "vns_operator_governor"],
 ];
 const clients = [];
 let created = 0;
@@ -76,7 +77,7 @@ try {
     await refuses(pool, "SET ROLE vns_review_event_writer");
   }
 
-  const [api, dispatcher, provisioner] = clients;
+  const [api, dispatcher, provisioner, governor] = clients;
   const job = await api.query("SELECT vns.create_research_request($1, $2) AS id", [
     "ci-real-login-role-job-00001",
     "Disposable separated database login access test",
@@ -125,16 +126,31 @@ try {
       p: 1,
       maxmem: 64 * 1024 * 1024,
     }).toString("hex");
-  // A trusted CI fixture DBA enrolls this synthetic, independently
-  // authenticated test LOGIN. Production enrollment remains unspecified.
-  await owner.query(
-    `INSERT INTO vns.editor_operator_registry
-       (login_role,operator_id,operator_label,active)
-     VALUES ('vns_ci_provision_login',
-             'cccccccc-1234-4123-8123-cccccccccccc'::uuid,
-             'Synthetic CI Provisioning Operator',true)`,
-  );
+  // An independently authenticated synthetic governance LOGIN, without
+  // owner rights, registers the ephemeral provisioner via the scoped function.
   await refuses(provisioner, "SELECT * FROM vns.editor_operator_registry");
+  await refuses(provisioner, "SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)", [
+    "vns_ci_provision_login",
+    "cccccccc-1234-4123-8123-cccccccccccc",
+    "CI Provisioning Operator",
+    "Unauthorized self-enrollment attempt is refused.",
+  ]);
+  await refuses(
+    governor,
+    "INSERT INTO vns.editor_operator_registry(login_role,operator_id,operator_label) VALUES ($1,$2,$3)",
+    ["vns_ci_provision_login", "cccccccc-1234-4123-8123-cccccccccccc", "Forged Operator"],
+  );
+  await governor.query("SELECT vns.register_editor_operator($1::name,$2::uuid,$3,$4)", [
+    "vns_ci_provision_login",
+    "cccccccc-1234-4123-8123-cccccccccccc",
+    "Synthetic CI Provisioning Operator",
+    "Independent disposable CI governance approval for account maintenance.",
+  ]);
+  const registered = await owner.query(
+    "SELECT operator_login FROM vns.editor_account_lifecycle_events WHERE operator_login=$1",
+    ["vns_ci_provision_login"],
+  );
+  assert.equal(registered.rowCount, 0);
   const inserted = await provisioner.query(
     "INSERT INTO vns.editor_accounts (username,display_name,role,password_hash) " +
       "VALUES ('ci_login_probe','CI Login Probe','reviewer',$1) " +
@@ -284,6 +300,36 @@ try {
     await new Promise((resolve) => server.close(resolve));
     // The parent cleanup closes the restricted API pool.
   }
+  // Revocation is separately authenticated and fully audited. A revoked
+  // operator can no longer mutate accounts, despite retaining table GRANTs.
+  await governor.query("SELECT vns.revoke_editor_operator($1::name,$2)", [
+    "vns_ci_provision_login",
+    "Synthetic governance revocation after completing isolated CI checks.",
+  ]);
+  const governanceEvents = await owner.query(
+    `SELECT event_type,authorized_by,login_role
+       FROM vns.editor_operator_registry_events
+      WHERE login_role='vns_ci_provision_login' ORDER BY recorded_at,id`,
+  );
+  assert.deepEqual(
+    governanceEvents.rows.map((row) => row.event_type),
+    ["registered", "revoked"],
+  );
+  assert.ok(governanceEvents.rows.every((row) => row.authorized_by === "vns_ci_govern_login"));
+  await refuses(
+    provisioner,
+    "UPDATE vns.editor_accounts SET active=true WHERE username='ci_login_probe'",
+  );
+  await assert.rejects(
+    governor.query("SELECT vns.revoke_editor_operator($1::name,$2)", [
+      "vns_ci_provision_login",
+      "Repeat revocation should fail closed, not double-log.",
+    ]),
+    (error) => error?.code === "22023",
+  );
+  await refuses(api, "SELECT * FROM vns.editor_operator_registry_events");
+  await refuses(governor, "DELETE FROM vns.editor_operator_registry_events");
+  console.log("PASS: authenticated governor registers, audits and revokes provisioner");
   console.log("PASS: separate disposable LOGINs honor runtime/provisioning boundaries");
 } finally {
   await Promise.allSettled(clients.map((pool) => pool.end()));
