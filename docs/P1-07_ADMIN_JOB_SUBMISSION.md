@@ -515,3 +515,43 @@ and rotation, revocation for lost credentials, backup/recovery and off-host
 retention are not implemented. Grants to governance membership, database
 credentials and production migrations still require separate explicit
 operator approval. No VPS access, service creation or feature enablement.
+
+## GitHub-only protected audit export rehearsal (not an off-host exporter)
+
+`scripts/ci_audit_export.mjs` is a **disposable GitHub Actions-only**
+prototype: it explicitly rejects other environments and PostgreSQL
+connections except the fixed local test database and independently
+authenticated `vns_ci_audit_login` (member of the read-only
+`vns_audit_reader` role). The actual API, dispatcher, provisioner and
+governance roles do **not** receive audit export permissions.
+
+A read-only, REPEATABLE READ transaction queries an allowlist of
+columns from exactly three ledgers:
+`evidence_review_events`, `editor_account_lifecycle_events`, and
+`editor_operator_registry_events`. The files are canonical
+newline-delimited JSON with stable ordering and a manifest containing
+event counts, exact byte counts, and SHA-256 digests. Local export files
+are restricted to the temporary CI directory with owner-only file
+permissions, bounded row/byte counts and no symlinks; the integration
+test removes them after verifying the bundle. No GitHub Actions
+artifact is uploaded or made publicly available.
+
+The verification test rejects changed files, changed counts, or
+unexpected fields and verifies no password hash or scrypt data is in
+the exports. It also denies direct editor-account reads, registry reads
+or audit mutations using the real audit-reader LOGIN.
+
+**Important limitations:** SHA-256 checks can detect corruption/tampering
+only against an **independently trusted manifest**. An attacker able to
+change both files and manifest can recompute these checksums; this is
+**not digital signing**, independent provenance, WORM storage or durable
+audit retention. Data such as review reasons and operator names may
+contain sensitive information and need access controls and retention
+rules. The current export is intentionally bounded for CI, has no
+scheduled production task, no upload/network destination and no
+external archive, encryption key, signing key or operational secret.
+Actual off-host storage, immutable retention, independently anchored
+digest/signature verification, restore exercises, privileged DBA
+monitoring and GDPR/privacy retention decisions remain open until
+approved backup/recovery and explicit operator sign-off. No VPS access,
+persistent database or service activation is part of this work.

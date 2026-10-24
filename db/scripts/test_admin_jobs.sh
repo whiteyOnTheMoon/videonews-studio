@@ -44,4 +44,4 @@ docker exec "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
               'Synthetic CI Database Owner',true)"
 node "$root/scripts/test_admin_jobs_integration.mjs"
 node "$root/scripts/test_editor_auth_integration.mjs"
-VNS_CI_ROLE_LOGIN_PROBE=true node "$root/scripts/test_db_login_roles.mjs"
+VNS_CI_ROLE_LOGIN_PROBE=true VNS_CI_AUDIT_EXPORT_PROBE=true node "$root/scripts/test_db_login_roles.mjs"
