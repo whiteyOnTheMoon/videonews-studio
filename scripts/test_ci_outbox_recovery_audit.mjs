@@ -211,7 +211,6 @@ try {
   assert.ok(await queue.getJob(orphanId));
   assert.ok(await queue.getJob(unexpectedId));
 
-
   console.log(
     "PASS: actual restricted PostgreSQL LOGIN sees PG/Redis mismatches without writes or replay",
   );
