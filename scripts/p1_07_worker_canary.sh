@@ -97,6 +97,22 @@ absent_worker() {
     die "worker container already exists; refuse to recreate it"
   fi
 }
+check_running_image() {
+  # A newer Git checkout does not retroactively replace the running image.
+  # For status, validate the deployed image and its provenance independently.
+  local running tagged revision
+  running="$(docker inspect --format '{{.Image}}' "$worker")" ||
+    die "running worker image cannot be inspected"
+  tagged="$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ||
+    die "locally labelled worker image missing"
+  [[ "$running" == "$tagged" ]] ||
+    die "running worker image differs from the local image tag"
+  revision="$(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+  [[ "$revision" =~ ^[0-9a-f]{40}$ ]] ||
+    die "worker image lacks a valid build revision"
+  git merge-base --is-ancestor "$revision" HEAD ||
+    die "running worker revision is not in local Git history"
+}
 check_image() {
   local revision expected
   expected="$(git rev-parse HEAD)"
@@ -156,9 +172,9 @@ case "$ACTION" in
       die "worker not running"
     [[ -z "$(docker port "$worker")" ]] ||
       die "unexpected worker public port"
-    check_image
+    check_running_image
     check_running_data
-    echo "PASS: worker running, no public port, PostgreSQL/Redis still healthy"
+    echo "PASS: worker running from verified earlier commit, no public port, PostgreSQL/Redis still healthy"
     ;;
   stop)
     check_labels "$worker" worker
