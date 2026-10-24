@@ -1,0 +1,59 @@
+name: P1-07 Redis authenticated canary (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_07_redis_auth_preflight.py"
+      - "scripts/provision_redis_secrets.py"
+      - "docs/P1-07_REDIS_AUTH_RUNBOOK.md"
+      - ".github/workflows/p1-07-live-redis-auth.yml"
+permissions:
+  contents: read
+jobs:
+  redis-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: "true"
+      VNS_CI_REDIS_PROJECT: vns-p107-auth-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check syntax and provision disposable secrets
+        run: |
+          python3 -m py_compile scripts/p1_07_redis_auth_preflight.py
+          python3 scripts/provision_redis_secrets.py secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(fd, "w") as output:
+              output.write("ci-only-postgres-not-live-secret\n")
+          PY
+      - name: Verify named-user Redis access and ACL refusal without writing keys
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose -p vns-p107-auth-ci -f compose.yaml --profile data down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p107-auth-ci -f compose.yaml --profile data \
+            up -d --no-deps --no-build --pull missing redis
+          healthy=0
+          for attempt in $(seq 1 50); do
+            state=$(docker inspect --format '{{.State.Health.Status}}' vns-p107-auth-ci-redis-1 2>/dev/null || true)
+            if [[ "$state" == healthy ]]; then healthy=1; break; fi
+            [[ "$state" != unhealthy ]] || break
+            sleep 2
+          done
+          [[ "$healthy" == 1 ]] || { echo "disposable Redis not healthy"; exit 1; }
+          python3 scripts/p1_07_redis_auth_preflight.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("secrets/redis_password")
+          path.write_text("changed-ci-only-token-not-a-valid-worker-secret\n")
+          path.chmod(0o600)
+          PY
+          if python3 scripts/p1_07_redis_auth_preflight.py; then
+            echo "FAIL: wrong secret was accepted"
+            exit 1
+          fi
+          echo "PASS: wrong Redis credentials refused"
