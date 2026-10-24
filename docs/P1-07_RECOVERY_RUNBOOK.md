@@ -211,10 +211,18 @@ stores synthetic waiting and delayed BullMQ jobs using multipart AOF
 with `appendfsync always`, then stops cleanly. After hashing the
 complete stopped AOF archive (including the Redis multipart manifest),
 the test copies it to a clean directory, detects a deliberately
-modified AOF segment via SHA-256, and starts a **fresh** Redis process
-against the unmodified copy. It confirms both test jobs retain their
-queue IDs, payloads, retry options and waiting/delayed states. No
-BullMQ Worker, publisher, research fetcher or dispatcher is started.
+modified AOF segment via SHA-256, and performs a **two-stage isolated recovery** against the verified
+copy. Redis 7's AOF replay runs commands under the default ACL; with the
+normal `user default off` it may log CRITICAL `NOPERM` errors on
+`MULTI/EXEC`, start successfully, and silently omit queue jobs. The
+test therefore bootstraps the verified AOF with a **CI-only temporary
+recovery ACL** inside a container with `--network none` (no exposed
+port, workers, or integrations), verifies the loaded keys, rewrites the
+AOF into a fresh RDB-base segment, stops that process, then starts
+a **new, authenticated Redis process under the original restrictive
+ACL** and checks the same job IDs, payloads, retry options and queue
+states. The recovery ACL is NEVER mounted into an externally reachable
+CI container or deployed anywhere.
 
 These are **CI recovery rehearsals only**, not production Redis backups.
 A SHA-256 checksum from the same machine is not independently trusted
