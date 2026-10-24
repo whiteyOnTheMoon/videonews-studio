@@ -138,7 +138,9 @@ try {
   // job (the processing step is not an editorial authorization mechanism).
   await db.query(
     `UPDATE vns.research_evidence
-     SET review_status='verified', reviewer='ci-editor', reviewed_at=clock_timestamp()
+     SET review_status='verified', reviewer='ci-editor',
+         review_reason='The synthetic report directly supports this test-only finding.',
+         reviewed_at=clock_timestamp()
      WHERE job_id=$1`,
     [jobId],
   );
