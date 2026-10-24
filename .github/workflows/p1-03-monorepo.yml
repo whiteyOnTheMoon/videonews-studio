@@ -57,6 +57,11 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Show Compose recovery Prettier changes after formatting failure
+        if: failure()
+        run: |
+          npx prettier --write docs/p1-07-compose-recovery-map.json scripts/ci_compose_recovery_drift.mjs scripts/test_compose_recovery_drift.mjs
+          git diff --no-color -- docs/p1-07-compose-recovery-map.json scripts/ci_compose_recovery_drift.mjs scripts/test_compose_recovery_drift.mjs
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
