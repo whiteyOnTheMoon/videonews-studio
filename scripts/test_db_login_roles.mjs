@@ -340,11 +340,10 @@ try {
   const output = await exportCiAuditBundle(audit);
   try {
     const verified = await verifyCiAuditBundle(output);
-    assert.deepEqual(verified.streams.map((item) => item.stream), [
-      "source_reviews",
-      "editor_lifecycle",
-      "operator_governance",
-    ]);
+    assert.deepEqual(
+      verified.streams.map((item) => item.stream),
+      ["source_reviews", "editor_lifecycle", "operator_governance"],
+    );
     assert.ok(verified.streams.every((item) => item.rows > 0));
     const manifest = JSON.parse(await readFile(join(output, "manifest.json"), "utf8"));
     assert.equal(manifest.streams.length, 3);
