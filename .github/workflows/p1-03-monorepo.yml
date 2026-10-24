@@ -42,6 +42,11 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Show exact recovery-plan formatting patch when checks fail
+        if: failure()
+        run: |
+          npx prettier --write docs/P1-07_POSTGRES_RESTORE.md docs/P1-07_RECOVERY_RUNBOOK.md docs/p1-07-recovery-plan.json scripts/test_recovery_readiness.mjs
+          git diff --no-color -- docs/P1-07_POSTGRES_RESTORE.md docs/P1-07_RECOVERY_RUNBOOK.md docs/p1-07-recovery-plan.json scripts/test_recovery_readiness.mjs
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
