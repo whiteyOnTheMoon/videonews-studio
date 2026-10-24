@@ -11,6 +11,9 @@ on:
       - "docs/P1-07_POSTGRES_RESTORE.md"
       - "docs/P1-07_RECOVERY_RUNBOOK.md"
       - "docs/p1-07-recovery-plan.json"
+      - "docs/p1-07-recovery-inventory.json"
+      - "docs/P1-07_RECOVERY_INVENTORY.md"
+      - "scripts/test_recovery_inventory.mjs"
       - "scripts/test_recovery_readiness.mjs"
       - "scripts/ci_sealed_backup.mjs"
       - "scripts/test_ci_sealed_backup.mjs"
@@ -63,6 +66,8 @@ jobs:
           node-version: "22"
       - name: Check recovery gates and failure-path dependency order
         run: node --test scripts/test_recovery_readiness.mjs
+      - name: Check recovery asset inventory, references and false security claims
+        run: node --test scripts/test_recovery_inventory.mjs
       - name: Verify validation never changes tracked files
         run: git diff --exit-code
 

@@ -281,3 +281,20 @@ does not upload archives and does not choose an off-host destination.
 It does not constitute a production backup or a real independently
 anchored signature. The 12 release gates, including off-host storage,
 encryption-key custody and human deployment approval, remain **false**.
+
+## Repository recovery component inventory (planning-only)
+
+See the [machine-readable 22-component inventory](p1-07-recovery-inventory.json)
+and its [recovery inventory explanation](P1-07_RECOVERY_INVENTORY.md).
+The inventory identifies source-rebuildable files, PostgreSQL/Redis
+state and audit records needing off-host copies, replaceable service
+credentials, nonreplaceable historical decryption-key custody, and
+externally controlled tunnel/DNS/publication assets. It records no
+real VPS configuration, personal secrets, storage destination or
+approval. Every entry is unverified. New GitHub CI checks that
+repository evidence anchors still exist, all recovery dependencies
+are declared, the inventory covers exactly 22 explicitly reviewed
+components, and every previously missing restore/backup approval
+remains missing. This improves _completeness of planning_, not the
+recoverability of the actual server. No storage or other paid
+service has been selected.
