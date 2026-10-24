@@ -192,14 +192,43 @@ try {
     403,
   );
 
+  // Rotate an existing account's password: old password and session fail.
+  const newPassword = "ci-writer-rotated-password";
+  await pool.query("UPDATE vns.editor_accounts SET password_hash=$1 WHERE id=$2", [
+    hashFor(newPassword, 59),
+    editorOnly.rows[0].id,
+  ]);
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: writerCookie } })).status,
+    401,
+  );
+  assert.equal((await login("ci_writer", PASSWORD)).status, 401);
+  const rotatedLogin = await login("ci_writer", newPassword);
+  assert.equal(rotatedLogin.status, 200);
+  const rotatedCookie = rotatedLogin.headers.get("set-cookie")?.split(";")[0];
+  assert.ok(rotatedCookie);
+  // Even a rapid disable + reenable cannot resurrect the old token.
+  await pool.query("UPDATE vns.editor_accounts SET active=false WHERE id=$1", [
+    editorOnly.rows[0].id,
+  ]);
+  await pool.query("UPDATE vns.editor_accounts SET active=true WHERE id=$1", [
+    editorOnly.rows[0].id,
+  ]);
+  assert.equal(
+    (await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status,
+    401,
+  );
+  assert.equal((await login("ci_writer", newPassword)).status, 200);
+  console.log("PASS: password rotation and reactivation revoke preexisting sessions");
+
   // Revoked or demoted accounts lose authorization without restarting API.
   await pool.query("UPDATE vns.editor_accounts SET role='editor' WHERE id=$1", [reviewerId]);
-  assert.equal((await review(cookie, evidenceId)).status, 403);
+  assert.equal((await review(cookie, evidenceId)).status, 401);
   await pool.query("UPDATE vns.editor_accounts SET active=false WHERE id=$1", [reviewerId]);
   assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: cookie } })).status, 401);
   assert.equal((await review(cookie, evidenceId)).status, 401);
   assert.equal((await login("ci_reviewer", PASSWORD)).status, 401);
-  assert.equal((await review(writerCookie, evidenceId)).status, 403);
+  assert.equal((await review(writerCookie, evidenceId)).status, 401);
   const count = await pool.query(
     "SELECT count(*)::int AS n FROM vns.evidence_review_events WHERE evidence_id=$1",
     [evidenceId],

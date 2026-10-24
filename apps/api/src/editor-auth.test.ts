@@ -57,6 +57,7 @@ async function serverFixture(
       role: "reviewer" as const,
       active: true,
       passwordHash: HASH,
+      authVersion: 0,
     },
     reviews: 0,
   };
@@ -66,10 +67,16 @@ async function serverFixture(
     },
     async activeIdentity(id) {
       return id === state.account.id && state.account.active
-        ? { id: state.account.id, username: state.account.username, role: state.account.role }
+        ? {
+            id: state.account.id,
+            username: state.account.username,
+            role: state.account.role,
+            authVersion: state.account.authVersion,
+          }
         : null;
     },
-    async review(id, verdict, reason, editorId) {
+    async review(id, verdict, reason, editorId, authVersion) {
+      assert.equal(authVersion, state.account.authVersion);
       assert.equal(id, EVIDENCE);
       assert.equal(editorId, ID);
       assert.equal(reason, REASON);
@@ -204,14 +211,21 @@ test("role downgrade and account deactivation take effect on next request", asyn
     assert.ok(cookie);
     // Simulate updated database role, not a client-controlled role claim.
     (state.account as { role: string }).role = "editor";
-    assert.equal((await review(base, cookie)).status, 403);
+    state.account.authVersion += 1;
+    assert.equal((await review(base, cookie)).status, 401);
+    assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: cookie } })).status, 401);
+    const fresh = await login(base);
+    assert.equal(fresh.status, 200);
+    const freshCookie = fresh.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(freshCookie);
     assert.deepEqual(
-      await (await fetch(base + "/editor/me", { headers: { Cookie: cookie } })).json(),
+      await (await fetch(base + "/editor/me", { headers: { Cookie: freshCookie } })).json(),
       { username: "test_editor", role: "editor" },
     );
     state.account.active = false;
+    state.account.authVersion += 1;
     assert.equal((await fetch(base + "/editor/me", { headers: { Cookie: cookie } })).status, 401);
-    assert.equal((await review(base, cookie)).status, 401);
+    assert.equal((await review(base, freshCookie)).status, 401);
     assert.equal((await login(base)).status, 401);
     assert.equal(state.reviews, 0);
   });
@@ -223,5 +237,41 @@ test("login rate limit stops password guessing", async () => {
       assert.equal((await login(base, "test_editor", "badpasswordlong")).status, 401);
     }
     assert.equal((await login(base)).status, 429);
+  });
+});
+
+test("password rotation invalidates old sessions even after a quick reactivation", async () => {
+  await serverFixture(async (base, _editor, state) => {
+    const oldLogin = await login(base);
+    assert.equal(oldLogin.status, 200);
+    const oldCookie = oldLogin.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(oldCookie);
+    const newPassword = "ci-rotated-reviewer-password";
+    const salt = Buffer.from("c".repeat(32), "hex");
+    state.account.passwordHash = `scrypt$${salt.toString("hex")}$${scryptSync(
+      newPassword,
+      salt,
+      64,
+      { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 },
+    ).toString("hex")}`;
+    state.account.authVersion += 1;
+    assert.equal(
+      (await fetch(base + "/editor/me", { headers: { Cookie: oldCookie } })).status,
+      401,
+    );
+    assert.equal((await login(base)).status, 401);
+    const rotatedLogin = await login(base, "test_editor", newPassword);
+    assert.equal(rotatedLogin.status, 200);
+    const rotatedCookie = rotatedLogin.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(rotatedCookie);
+    state.account.active = false;
+    state.account.authVersion += 1;
+    state.account.active = true;
+    state.account.authVersion += 1;
+    assert.equal(
+      (await fetch(base + "/editor/me", { headers: { Cookie: rotatedCookie } })).status,
+      401,
+    );
+    assert.equal((await login(base, "test_editor", newPassword)).status, 200);
   });
 });
