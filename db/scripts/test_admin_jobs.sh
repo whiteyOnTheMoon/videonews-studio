@@ -31,10 +31,17 @@ for attempt in $(seq 1 60); do
   sleep 1
 done
 test "$ready" -eq 1 || { echo "Disposable PostgreSQL not ready" >&2; exit 1; }
-for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004_research_evidence 0005_editorial_review_audit 0006_offline_role_boundaries 0007_runtime_role_boundaries 0008_editor_session_revocation 0009_scoped_editor_review; do
+for migration in 0001_editorial_core 0002_job_outbox 0003_research_requests 0004_research_evidence 0005_editorial_review_audit 0006_offline_role_boundaries 0007_runtime_role_boundaries 0008_editor_session_revocation 0009_scoped_editor_review 0010_editor_account_lifecycle_audit; do
   docker exec -i "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
      < "$root/db/migrations/$migration.up.sql"
 done
+# Synthetic disposable owner mapping. This does NOT enroll a human operator;
+# the production migration leaves the registry empty and fails closed.
+docker exec "$name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \\
+  -c "INSERT INTO vns.editor_operator_registry
+      (login_role,operator_id,operator_label,active)
+      VALUES ('vns','bbbbbbbb-1234-4123-8123-bbbbbbbbbbbb',
+              'Synthetic CI Database Owner',true)"
 node "$root/scripts/test_admin_jobs_integration.mjs"
 node "$root/scripts/test_editor_auth_integration.mjs"
 VNS_CI_ROLE_LOGIN_PROBE=true node "$root/scripts/test_db_login_roles.mjs"
