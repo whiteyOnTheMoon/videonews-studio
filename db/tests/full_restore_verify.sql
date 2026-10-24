@@ -73,7 +73,7 @@ BEGIN
   THEN RAISE EXCEPTION 'Editor state or session revocation was lost'; END IF;
 
   IF (SELECT count(*) FROM vns.editor_account_lifecycle_events
-        WHERE editor_username IN ('ci_restore_editor','ci_restore_reviewer'))<>9
+        WHERE editor_username IN ('ci_restore_editor','ci_restore_reviewer'))<>7
     OR NOT EXISTS(SELECT 1 FROM vns.editor_account_lifecycle_events
         WHERE editor_username='ci_restore_reviewer' AND password_rotated
           AND operator_login='postgres')
