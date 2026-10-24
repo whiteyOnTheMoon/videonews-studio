@@ -8,7 +8,7 @@ import json
 import sys
 
 
-def check(config: dict) -> None:
+def check(config: dict, *, worker_overlay: bool = False) -> None:
     services = config.get("services", {})
     for name in ("web", "api", "worker", "postgres", "redis"):
         if name not in services:
@@ -56,15 +56,53 @@ def check(config: dict) -> None:
     if "redis_acl" not in config.get("secrets", {}):
         raise ValueError("Redis ACL secret must be declared")
 
-    # P1-07 must not activate the unfinished worker or an unauthenticated Redis
-    # deployment simply by validating the existing base compose configuration.
-    if services["worker"].get("restart") not in ("no", "none"):
-        raise ValueError("scaffold worker must not be set to restart continuously")
+    # Base Compose must remain disabled. Only the separately reviewed overlay
+    # may opt the worker into a health-gated, authenticated Redis connection.
+    worker = services["worker"]
+    if not worker_overlay:
+        if worker.get("restart") not in ("no", "none"):
+            raise ValueError("scaffold worker must not be set to restart continuously")
+        if worker.get("environment", {}).get("VNS_WORKER_ENABLED") == "true":
+            raise ValueError("base scaffold must not enable the worker")
+    else:
+        if worker.get("profiles") != ["worker"]:
+            raise ValueError("worker overlay must remain opt-in")
+        if worker.get("restart") != "unless-stopped":
+            raise ValueError("worker overlay restart policy changed")
+        env = worker.get("environment", {})
+        if (
+            env.get("VNS_WORKER_ENABLED") != "true"
+            or env.get("VNS_REDIS_HOST") != "redis"
+            or str(env.get("VNS_REDIS_PORT")) != "6379"
+            or env.get("VNS_REDIS_PASSWORD_FILE") != "/run/secrets/redis_password"
+        ):
+            raise ValueError("worker overlay requires explicit Redis secret authentication")
+        mounted = [
+            secret.get("source") if isinstance(secret, dict) else secret
+            for secret in worker.get("secrets", [])
+        ]
+        if mounted != ["redis_password"]:
+            raise ValueError("worker overlay must mount only the worker Redis secret")
+        declared = config.get("secrets", {}).get("redis_password")
+        if not isinstance(declared, dict) or not str(declared.get("file", "")).endswith(
+            "/secrets/redis_password"
+        ):
+            raise ValueError("worker overlay requires file-backed Redis password secret")
+        redis_dependency = worker.get("depends_on", {}).get("redis")
+        condition = (
+            redis_dependency.get("condition")
+            if isinstance(redis_dependency, dict)
+            else None
+        )
+        if condition != "service_healthy":
+            raise ValueError("worker overlay must wait for healthy Redis")
 
 
 if __name__ == "__main__":
     try:
-        check(json.load(sys.stdin))
+        if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "--worker-overlay"):
+            raise ValueError("Unsupported readiness argument")
+        check(json.load(sys.stdin), worker_overlay="--worker-overlay" in sys.argv[1:])
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         print(f"P1-07 readiness FAILED: {error}", file=sys.stderr)
         raise SystemExit(1)
