@@ -127,7 +127,6 @@ audit events remain mandatory before production use.
 The feature is still disabled and not deployed on the VPS. GitHub Actions
 runs real HTTP and PostgreSQL integration against disposable containers.
 
-
 ## Admin source-review controls (feature-gated UI)
 
 The authenticated `/admin` job overview now includes a per-job, initially
