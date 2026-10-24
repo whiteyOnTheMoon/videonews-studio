@@ -22,8 +22,7 @@ if (
 const BASE = "appendonly.aof.1.base.rdb";
 const INCR = "appendonly.aof.1.incr.aof";
 const MANIFEST = "appendonly.aof.manifest";
-const validManifest = () =>
-  "file " + BASE + " seq 1 type b\nfile " + INCR + " seq 1 type i\n";
+const validManifest = () => "file " + BASE + " seq 1 type b\nfile " + INCR + " seq 1 type i\n";
 
 async function fixture() {
   const folder = await mkdtemp(join(tmpdir(), "vns-ci-aof-preflight-"));
