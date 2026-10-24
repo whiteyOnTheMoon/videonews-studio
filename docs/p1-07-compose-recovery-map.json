@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "source": "compose.yaml",
+  "scope": "repository-scaffold-only",
+  "productionVerified": false,
+  "recoveryApproved": false,
+  "profiles": [
+    "data",
+    "ingress",
+    "preview",
+    "worker"
+  ],
+  "services": {
+    "web": {
+      "inventoryIds": [
+        "container-images",
+        "compose-definition"
+      ],
+      "profiles": [
+        "preview",
+        "ingress"
+      ],
+      "mounts": [],
+      "secrets": [],
+      "ephemeralTmpfs": [
+        "/tmp:rw,nosuid,noexec,size=32m",
+        "/workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000"
+      ]
+    },
+    "api": {
+      "inventoryIds": [
+        "container-images",
+        "compose-definition"
+      ],
+      "profiles": [
+        "preview"
+      ],
+      "mounts": [],
+      "secrets": [],
+      "ephemeralTmpfs": [
+        "/tmp:rw,nosuid,noexec,size=32m"
+      ]
+    },
+    "worker": {
+      "inventoryIds": [
+        "container-images",
+        "compose-definition",
+        "pg-redis-outbox-relationship"
+      ],
+      "profiles": [
+        "worker"
+      ],
+      "mounts": [],
+      "secrets": [],
+      "ephemeralTmpfs": [
+        "/tmp:rw,nosuid,noexec,size=32m"
+      ]
+    },
+    "postgres": {
+      "inventoryIds": [
+        "postgres-volume",
+        "postgres-secret"
+      ],
+      "profiles": [
+        "data"
+      ],
+      "mounts": [
+        "postgres_data:/var/lib/postgresql/data"
+      ],
+      "secrets": [
+        "postgres_password"
+      ],
+      "ephemeralTmpfs": []
+    },
+    "redis": {
+      "inventoryIds": [
+        "redis-aof-volume",
+        "redis-acl-secret"
+      ],
+      "profiles": [
+        "data"
+      ],
+      "mounts": [
+        "redis_data:/data"
+      ],
+      "secrets": [
+        "redis_acl"
+      ],
+      "ephemeralTmpfs": []
+    },
+    "caddy": {
+      "inventoryIds": [
+        "caddy-routing",
+        "compose-definition"
+      ],
+      "profiles": [
+        "ingress"
+      ],
+      "mounts": [
+        "./deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
+      ],
+      "secrets": [],
+      "ephemeralTmpfs": [
+        "/tmp:rw,nosuid,noexec,size=16m",
+        "/config:rw,nosuid,size=16m",
+        "/data:rw,nosuid,size=32m"
+      ]
+    }
+  },
+  "volumes": {
+    "postgres_data": "postgres-volume",
+    "redis_data": "redis-aof-volume"
+  },
+  "secrets": {
+    "postgres_password": "postgres-secret",
+    "redis_acl": "redis-acl-secret"
+  }
+}
