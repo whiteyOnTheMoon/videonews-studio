@@ -147,6 +147,36 @@ try {
     workers.delete(retryWorker);
   }
 
+  // An unsupported job must exhaust a finite retry budget and remain visible
+  // as failed. It must never be silently marked complete or perform work.
+  const rejectingWorker = createProbeWorker(settings);
+  workers.add(rejectingWorker.worker);
+  connections.add(rejectingWorker.connection);
+  try {
+    await rejectingWorker.worker.waitUntilReady();
+    const invalidJob = await queue.add(
+      "render",
+      { kind: "render" },
+      {
+        jobId: "ci-terminal-unsupported",
+        attempts: 2,
+        backoff: { type: "exponential", delay: 200 },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    );
+    await assert.rejects(invalidJob.waitUntilFinished(events, 20000), /Unsupported worker job/);
+    assert.equal(await invalidJob.getState(), "failed");
+    const retained = await queue.getJob(invalidJob.id);
+    assert.ok(retained);
+    assert.equal(retained.attemptsMade, 2);
+    assert.equal((await queue.getJobCounts("failed")).failed, 1);
+    console.log("PASS: unsupported work fails after bounded exponential retries");
+  } finally {
+    await rejectingWorker.worker.close();
+    workers.delete(rejectingWorker.worker);
+  }
+
   // Hard-kill a worker in mid-job. Redis stays up. A fresh worker should
   // reclaim an expired lock after BullMQ marks the job stalled.
   const fixture = fileURLToPath(new URL("./ci_stalled_probe_worker.mjs", import.meta.url));
