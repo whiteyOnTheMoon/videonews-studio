@@ -367,3 +367,39 @@ input and rotation policy, lifecycle audit, approved off-host backups and
 restore verification, recovery/rollback plan, and separate deployment
 authorization. Never run the CI script by spoofing its environment variables
 or against real personal accounts.
+
+## Separate disposable PostgreSQL LOGINs (GitHub Actions only)
+
+The test `scripts/test_db_login_roles.mjs` creates three **ephemeral** LOGIN
+roles on the fixed loopback-only, GitHub Actions disposable PostgreSQL 17
+instance: one each for the API runtime, outbox dispatcher and editor-account
+provisioner. Every credential is freshly random and never logged, committed
+or distributed to a VPS. The accounts are not created by any migration,
+Docker Compose configuration or production startup. The test explicitly
+uses PostgreSQL 17 membership flags `INHERIT TRUE, SET FALSE, ADMIN FALSE`,
+checks separate authenticated database connections and prohibited role
+switches, then tears down its test roles; the container is also destroyed.
+
+The test confirms job persistence with the API role, outbox bookkeeping with
+the dispatcher role, and inactive account insertion/activation with the
+provisioner role. It checks denial of account administration to the API,
+password visibility to the dispatcher, arbitrary job creation by the
+dispatcher, direct audit modifications, and direct password readback by
+the provisioner. All data and role names are synthetic and CI-only.
+
+**Unresolved runtime gate:** a named source-review transaction currently
+issues `SELECT ... FOR SHARE` on `vns.editor_accounts`. PostgreSQL requires
+an UPDATE privilege on that relation for this lock, but `vns_api_runtime`
+deliberately has no account UPDATE privilege. The test explicitly confirms
+this is denied instead of silently granting unrestricted account mutation.
+A narrowly scoped trusted database function or equivalent independently
+audited solution is needed, followed by actual API HTTP coverage using a
+least-privilege login, before a runtime credential cutover. This test is
+**not evidence of a production-ready runtime login configuration**.
+
+**Administrative action attribution is also still open:** a future account
+lifecycle audit must record a verified operator identity and trustworthy
+rotation/suspension events. The current CI harness has no independently
+authenticated human operator and must not invent one. Any real
+provisioning interface, login credentials, off-host audit retention,
+backup/restore strategy and VPS deployment require explicit approval.
