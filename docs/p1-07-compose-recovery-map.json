@@ -4,22 +4,11 @@
   "scope": "repository-scaffold-only",
   "productionVerified": false,
   "recoveryApproved": false,
-  "profiles": [
-    "data",
-    "ingress",
-    "preview",
-    "worker"
-  ],
+  "profiles": ["data", "ingress", "preview", "worker"],
   "services": {
     "web": {
-      "inventoryIds": [
-        "container-images",
-        "compose-definition"
-      ],
-      "profiles": [
-        "preview",
-        "ingress"
-      ],
+      "inventoryIds": ["container-images", "compose-definition"],
+      "profiles": ["preview", "ingress"],
       "mounts": [],
       "secrets": [],
       "ephemeralTmpfs": [
@@ -28,42 +17,22 @@
       ]
     },
     "api": {
-      "inventoryIds": [
-        "container-images",
-        "compose-definition"
-      ],
-      "profiles": [
-        "preview"
-      ],
+      "inventoryIds": ["container-images", "compose-definition"],
+      "profiles": ["preview"],
       "mounts": [],
       "secrets": [],
-      "ephemeralTmpfs": [
-        "/tmp:rw,nosuid,noexec,size=32m"
-      ]
+      "ephemeralTmpfs": ["/tmp:rw,nosuid,noexec,size=32m"]
     },
     "worker": {
-      "inventoryIds": [
-        "container-images",
-        "compose-definition",
-        "pg-redis-outbox-relationship"
-      ],
-      "profiles": [
-        "worker"
-      ],
+      "inventoryIds": ["container-images", "compose-definition", "pg-redis-outbox-relationship"],
+      "profiles": ["worker"],
       "mounts": [],
       "secrets": [],
-      "ephemeralTmpfs": [
-        "/tmp:rw,nosuid,noexec,size=32m"
-      ]
+      "ephemeralTmpfs": ["/tmp:rw,nosuid,noexec,size=32m"]
     },
     "postgres": {
-      "inventoryIds": [
-        "postgres-volume",
-        "postgres-secret"
-      ],
-      "profiles": [
-        "data"
-      ],
+      "inventoryIds": ["postgres-volume", "postgres-secret"],
+      "profiles": ["data"],
       "mounts": [
         {
           "spec": "postgres_data:/var/lib/postgresql/data",
@@ -71,19 +40,12 @@
           "storage": "named-volume"
         }
       ],
-      "secrets": [
-        "postgres_password"
-      ],
+      "secrets": ["postgres_password"],
       "ephemeralTmpfs": []
     },
     "redis": {
-      "inventoryIds": [
-        "redis-aof-volume",
-        "redis-acl-secret"
-      ],
-      "profiles": [
-        "data"
-      ],
+      "inventoryIds": ["redis-aof-volume", "redis-acl-secret"],
+      "profiles": ["data"],
       "mounts": [
         {
           "spec": "redis_data:/data",
@@ -91,19 +53,12 @@
           "storage": "named-volume"
         }
       ],
-      "secrets": [
-        "redis_acl"
-      ],
+      "secrets": ["redis_acl"],
       "ephemeralTmpfs": []
     },
     "caddy": {
-      "inventoryIds": [
-        "caddy-routing",
-        "compose-definition"
-      ],
-      "profiles": [
-        "ingress"
-      ],
+      "inventoryIds": ["caddy-routing", "compose-definition"],
+      "profiles": ["ingress"],
       "mounts": [
         {
           "spec": "./deploy/Caddyfile:/etc/caddy/Caddyfile:ro",
