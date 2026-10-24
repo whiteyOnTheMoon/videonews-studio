@@ -438,3 +438,39 @@ other editor IDs. This is a least-privilege SQL integrity boundary, not
 database-native verification of a browser session. Credential isolation,
 separate operational login management, off-host audit retention, approved
 backup/recovery, and explicit deployment authorization remain mandatory.
+
+## 0010 – Operator-attributed account lifecycle ledger (offline only)
+
+The reversible Git-only migration `0010_editor_account_lifecycle_audit`
+adds an **empty** `vns.editor_operator_registry` and an append-only
+`vns.editor_account_lifecycle_events` ledger. It creates a private
+`vns_lifecycle_audit_writer` NOLOGIN/no-member function owner with
+SELECT access only to the registry and INSERT access only to the events.
+The lifecycle trigger runs on every account INSERT or UPDATE and rejects
+**all account writes** unless PostgreSQL's authenticated `session_user`
+has an explicitly enrolled, active registry record. Neither browser inputs,
+arbitrary request headers, `SET ROLE`, custom session variables nor the
+existing shared admin session can choose the operator identity.
+
+The same transaction records editor account ID/name, authenticated
+database login, operator UUID/label, event time, old/new role and active
+state, session auth version and changed-field indicators. Password
+rotations are recorded as a boolean **without the password, salt or hash**.
+An unchanged UPDATE emits no misleading lifecycle event. Provisioners
+cannot enroll themselves, read the operator registry or modify/delete
+audit records. The independent `vns_audit_reader` role receives SELECT
+on the new ledger for a future off-host export. Database owners and
+superusers retain ultimate power and must be covered by separate
+operational audits, not represented as tamper-proof.
+
+Only disposable GitHub Actions test fixtures enroll synthetic database
+identities (`postgres`, `vns`, and the ephemeral provisioning LOGIN).
+No operator is pre-enrolled by migration or in the repository. In a
+production installation, verified individually issued database login
+credentials, explicit trusted operator enrollment/revocation, authorized
+procedures and security review are all prerequisites. Until then the
+migration remains **undeployed** and would fail closed for all account
+writes. It does **not** itself implement multi-factor authentication,
+a human-facing management UI, independently verified identity, secure
+credential distribution, external audit retention or immutable off-host
+logs. Real backup/restore and operator approval remain mandatory.
