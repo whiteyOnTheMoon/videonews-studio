@@ -4,6 +4,14 @@ import type { AdminAuth } from "./auth.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DECISIONS = ["verified", "disputed", "rejected"] as const;
+export function validReviewReason(value: unknown): value is string {
+  if (typeof value !== "string" || value !== value.trim()) return false;
+  const length = Array.from(value).length;
+  return length >= 20 && length <= 500 && !value.split("").some((c) => {
+    const code = c.charCodeAt(0);
+    return code < 32 || code === 127;
+  });
+}
 type Decision = (typeof DECISIONS)[number];
 
 export interface EvidenceSummary {
@@ -22,20 +30,22 @@ export interface EvidenceReviewStore {
   review(
     evidenceId: string,
     decision: Decision,
+    reason: string,
   ): Promise<"updated" | "missing" | "already_reviewed">;
 }
 
-export function parseReview(value: unknown): { evidenceId: string; decision: Decision } | null {
+export function parseReview(value: unknown): { evidenceId: string; decision: Decision; reason: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const body = value as Record<string, unknown>;
   if (
-    Object.keys(body).length !== 2 ||
+    Object.keys(body).length !== 3 ||
     typeof body.evidenceId !== "string" ||
     !UUID.test(body.evidenceId) ||
-    !DECISIONS.some((decision) => decision === body.decision)
+    !DECISIONS.some((decision) => decision === body.decision) ||
+    !validReviewReason(body.reason)
   )
     return null;
-  return { evidenceId: body.evidenceId, decision: body.decision as Decision };
+  return { evidenceId: body.evidenceId, decision: body.decision as Decision, reason: body.reason };
 }
 
 function validEvidence(value: unknown): value is EvidenceSummary {
@@ -136,7 +146,7 @@ export class AdminEvidence {
         return;
       }
       try {
-        const outcome = await this.store.review(review.evidenceId, review.decision);
+        const outcome = await this.store.review(review.evidenceId, review.decision, review.reason);
         if (outcome === "missing") respond(response, 404, { error: "not_found" });
         else if (outcome === "already_reviewed")
           respond(response, 409, { error: "already_reviewed" });
@@ -193,8 +203,9 @@ export class PostgresEvidenceReviewStore implements EvidenceReviewStore {
   async review(
     evidenceId: string,
     decision: Decision,
+    reason: string,
   ): Promise<"updated" | "missing" | "already_reviewed"> {
-    if (!UUID.test(evidenceId) || !DECISIONS.includes(decision)) {
+    if (!UUID.test(evidenceId) || !DECISIONS.includes(decision) || !validReviewReason(reason)) {
       throw new Error("Invalid editorial review");
     }
     // The reviewer field identifies only the authorized shared admin session,
@@ -202,10 +213,10 @@ export class PostgresEvidenceReviewStore implements EvidenceReviewStore {
     const result = await this.pool.query(
       `UPDATE vns.research_evidence
        SET review_status = $2, reviewer = 'admin-session',
-           reviewed_at = clock_timestamp()
+           review_reason = $3, reviewed_at = clock_timestamp()
        WHERE id = $1::uuid AND review_status = 'candidate'
        RETURNING id`,
-      [evidenceId, decision],
+      [evidenceId, decision, reason],
     );
     if (result.rowCount === 1) return "updated";
     const existing = await this.pool.query(
