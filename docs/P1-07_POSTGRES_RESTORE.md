@@ -56,3 +56,78 @@ backup and restoration plan.
 
 The production P1-06 web/API/tunnel remains on its separately approved image
 digests. No workflows here publish images or operate on the VPS.
+
+## Expanded recovery drill: full P1-07 schema and global PostgreSQL roles
+
+The earlier `test_backup_restore.sh` drill remains a valuable, independent
+baseline for migrations 0001–0005. A **separate** job in the same
+`p1-07-postgres-restore.yml` GitHub Actions workflow now runs
+`db/scripts/test_full_restore.sh` on a fresh PostgreSQL 17 source/destination
+pair, using isolated `--network none` containers with RAM-backed data
+directories, no host volume and no exposed ports.
+
+The expanded drill performs these checks:
+
+1. Applies **all eleven migrations 0001–0011** in the disposable source.
+   Seeds relational editorial data, queue/outbox recovery state, a legacy and a
+   named source-review decision, editor-account creation/password rotation/
+   activation/deactivation, and synthetic operator enrollment and lifecycle
+   events. These test identities, password hashes and login roles never
+   touch the production environment.
+2. Exports both a full `vns` schema **including ownership and GRANT/REVOKE
+   ACLs** (`pg_dump --format=custom --schema=vns`) and separate PostgreSQL
+   **global roles and role memberships** (`pg_dumpall --globals-only
+   --no-role-passwords`). Global-role passwords are intentionally excluded.
+3. Validates archive magic, archive catalog and SHA-256 checksums and tests
+   that a corrupted archive or truncated catalog is rejected before restore.
+4. Starts an independent clean target with a differently named bootstrap
+   superuser. First attempts the restore **without** global roles and checks
+   the transaction fails, leaving no partial application schema.
+5. Restores global roles first, then restores all `vns` objects and data
+   using `pg_restore --single-transaction --exit-on-error`, **without**
+   suppressing owners or privileges. PostgreSQL 17 records role-membership
+   grantors in the globals dump: where the original `postgres` grantor cannot
+   re-grant on a fresh independently bootstrapped cluster, the CI restore
+   explicitly reissues the **same memberships and option flags** as its
+   new bootstrap superuser. Only role-grantor provenance changes. Unknown
+   grantor formats fail closed; the original dump is retained and hashed for
+   the duration of the test. A production cutover must separately review
+   grantor provenance and privileged-role membership policy.
+6. Verifies all migration ledger entries, all nine non-login application
+   roles, the synthetic role membership, scoped SQL function owners and
+   execute permissions, denied API/dispatcher/provisioner privileges, audit
+   triggers and append-only constraints, lifecycle session revocation
+   versions, governance attribution, named and legacy source-review events,
+   and linked editorial/outbox data.
+7. Compares a deterministic fingerprint of **every ordinary vns table**
+   in source and target, not just selected fixture counts. A second attempted
+   restore over existing state must fail without altering the recovered
+   fingerprint.
+
+The CI archive, synthetic globals, fingerprints and test databases are
+deleted on job exit; no artifacts are uploaded and no private runtime
+secrets are used. The restore provides **evidence that the current GitHub
+schema can be reconstructed together with its PostgreSQL ACL/role boundary**
+in a clean disposable PostgreSQL 17 instance. It does not prove that
+production credentials, connection configuration, external storage or
+operators can be recovered.
+
+### Unresolved operational recovery gates
+
+There is **still no approved production backup or restore plan**.
+`--no-role-passwords` means restored login credentials must be safely
+reissued under an approved, independent secret-management process.
+`pg_dump --schema=vns` deliberately excludes other databases, extensions
+outside that schema, database-level settings, Redis/BullMQ runtime state,
+uploads/media, container volumes, Compose files, Cloudflare configuration,
+secrets and third-party credentials. This is logical recovery, **not**
+physical/PITR recovery, off-host retention, encryption, disaster recovery,
+or evidence of real recovery-time and recovery-point objectives.
+
+Audit-ledger integrity checks in CI do not replace independently anchored
+cryptographic signatures, durable off-host storage or privileged DBA
+monitoring. Before any VPS activation, the operator must explicitly approve
+the backup destination, access controls, retention, encryption and key
+custody, off-host restore rehearsal, actual role/login secret rotation,
+external dependencies recovery order and measurable recovery objectives.
+Do **not** run this disposable test script against production.
