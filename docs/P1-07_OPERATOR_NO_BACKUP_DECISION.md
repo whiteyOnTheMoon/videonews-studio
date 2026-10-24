@@ -10,7 +10,7 @@ Without an independent off-VPS copy, complete VPS loss, disk failure, destructiv
 
 ## Approved scope now
 
-Only manually executed read-only inspection of VPS operating-system resources, Docker container/volume *names*, image disk usage and Git working-tree status. Do not read or share secret values, container environment, Docker inspect output, private configuration contents, database content or SSH material. No `docker compose up`, `docker run`, `pull`, `build`, `restart`, `prune`, `volume rm`, secret generation, migrations, backup export or external requests.
+Only manually executed read-only inspection of VPS operating-system resources, Docker container/volume _names_, image disk usage and Git working-tree status. Do not read or share secret values, container environment, Docker inspect output, private configuration contents, database content or SSH material. No `docker compose up`, `docker run`, `pull`, `build`, `restart`, `prune`, `volume rm`, secret generation, migrations, backup export or external requests.
 
 Suggested command groups:
 
