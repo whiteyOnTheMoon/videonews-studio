@@ -51,7 +51,7 @@ test("only allowlisted evidence review decisions are valid", () => {
     { evidenceId: ID, decision: "approved", reason: REASON },
     { evidenceId: ID, decision: "verified" },
     { evidenceId: ID, decision: "verified", reason: "too short" },
-    { evidenceId: ID, decision: "verified", reason: "  "+REASON },
+    { evidenceId: ID, decision: "verified", reason: "  " + REASON },
   ])
     assert.equal(parseReview(invalid), null);
 });
@@ -121,8 +121,13 @@ test("evidence endpoints require valid admin session and Origin for mutations", 
     assert.equal((await fetch(listUrl + "&extra=1", { headers: { Cookie: cookie } })).status, 400);
     assert.equal((await post(cookie, "https://evil.invalid")).status, 403);
     assert.equal(
-      (await post(cookie, ORIGIN, JSON.stringify({ evidenceId: ID, decision: "candidate", reason: REASON })))
-        .status,
+      (
+        await post(
+          cookie,
+          ORIGIN,
+          JSON.stringify({ evidenceId: ID, decision: "candidate", reason: REASON }),
+        )
+      ).status,
       400,
     );
     assert.equal((await post(cookie, ORIGIN, "x".repeat(1024))).status, 400);
