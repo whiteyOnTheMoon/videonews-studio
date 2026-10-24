@@ -86,7 +86,11 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
   const fake: typeof fetch = async (url, init) => {
     invoked += 1;
     assert.equal(url, CONFIG.api + "/admin/evidence/review");
-    assert.deepEqual(JSON.parse(init?.body as string), { evidenceId: ID, decision: "verified", reason: REASON });
+    assert.deepEqual(JSON.parse(init?.body as string), {
+      evidenceId: ID,
+      decision: "verified",
+      reason: REASON,
+    });
     assert.equal(new Headers(init?.headers).get("cookie"), COOKIE);
     assert.equal(new Headers(init?.headers).get("origin"), CONFIG.origin);
     return Response.json({ reviewed: true, private: "secret" });
@@ -108,8 +112,13 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
     400,
   );
   assert.equal(
-    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "candidate", reason: REASON }), CONFIG, fake))
-      .status,
+    (
+      await submitAdminEvidenceReview(
+        post({ evidenceId: ID, decision: "candidate", reason: REASON }),
+        CONFIG,
+        fake,
+      )
+    ).status,
     400,
   );
   assert.equal(
@@ -123,11 +132,18 @@ test("write proxy requires Origin, cookie and one allowlisted decision", async (
     400,
   );
   assert.equal(
-    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "verified" }), CONFIG, fake)).status,
+    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "verified" }), CONFIG, fake))
+      .status,
     400,
   );
   assert.equal(
-    (await submitAdminEvidenceReview(post({ evidenceId: ID, decision: "verified", reason: "short" }), CONFIG, fake)).status,
+    (
+      await submitAdminEvidenceReview(
+        post({ evidenceId: ID, decision: "verified", reason: "short" }),
+        CONFIG,
+        fake,
+      )
+    ).status,
     400,
   );
   assert.equal(invoked, 0);
