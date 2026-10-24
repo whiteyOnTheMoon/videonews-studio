@@ -1,6 +1,8 @@
 # P1-07 acceptance and rollout gap audit (2026-10-24)
 
-**Status: code/CI substantially implemented; operational acceptance NOT complete.**
+> **Historical 2026-10-24 gate snapshot, superseded in part by the operator's 2026-10-25 P1-07 experimental rollout approval.** PostgreSQL/Redis, all 11 migrations, restricted Redis ACL, the probe-only worker, a retained live probe and an idle-worker-only restart have since been confirmed on the VPS. See [live acceptance evidence](P1-07_LIVE_ACCEPTANCE_STATUS.md) for current facts and the explicit no-backup risk exception. The old blanket ban on starting data/worker containers below is *historical* and must not be mistaken for the current authorization; the complete DR release gate still remains CLOSED.
+
+**Status as of 2026-10-24: code/CI substantially implemented; operational acceptance NOT complete.**
 This document tracks the original [P1-07 delivery issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) and the [authenticated data-stack rollout issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87). A green CI build is _not_ approval to start data services on the VPS.
 
 ## Evidence available in the repository
@@ -23,9 +25,9 @@ This document tracks the original [P1-07 delivery issue](https://github.com/whit
 | Real restore and continuity                                             | Disposable synthetic PostgreSQL/Redis and cryptographic exercises                                         | Independent off-host backup, trust/key custody, timed full restore and recovery signoff                                                                                                                 |
 | Named editor lifecycle and audit                                        | Offline role and identity controls tested                                                                 | Approved real account onboarding, operator authorization, credential custody and independent audit retention                                                                                            |
 
-## Stop conditions
+## Stop conditions (historical snapshot; see 2026-10-25 live evidence above)
 
-Do not turn on `data`, `worker`, `ingress`, personal-editor or source-review production flags based on this document. Do not create accounts, credentials, paid storage, or deploy/modify VPS containers without **separate, specific operator approval**. Preserve existing live services and Cloudflare settings. An independent backup location and budget, RPO/RTO, retention/privacy rules, encryption and signing trust custody, restored media inventory and external publication safety remain undecided as detailed in the recovery runbook.
+As of the original 2026-10-24 planning review, the operator had not approved container activation. The subsequently approved, **probe-only** experiment supersedes that narrow restriction, while full recovery and real editorial workload readiness remain unapproved. The original stop rule was: Do not turn on `data`, `worker`, `ingress`, personal-editor or source-review production flags based on this document. Do not create accounts, credentials, paid storage, or deploy/modify VPS containers without **separate, specific operator approval**. Preserve existing live services and Cloudflare settings. An independent backup location and budget, RPO/RTO, retention/privacy rules, encryption and signing trust custody, restored media inventory and external publication safety remain undecided as detailed in the recovery runbook.
 
 ## Next actions
 
@@ -41,4 +43,4 @@ The completed GitHub-only work now includes bounded BullMQ retry and retained-fa
 
 **Do not equate these with a live working editorial pipeline:** `apps/worker/src/queue.ts` intentionally supports only `probe`; research candidate evaluation lives in separately injected/tested abstractions, without a production discovery provider. The last-20 UI filter does not establish an exhaustive dead-letter or incident archive. Worker at-least-once delivery cannot prove exactly-once external effects.
 
-**Safe pause boundary:** repository/CI implementation can be reviewed and extended with no VPS side effects, but neither [#7](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) nor [#87](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87) can be certified as *operationally accepted* until the operator approves an independent off-VPS recovery destination, custody/privacy and RPO/RTO targets, real end-to-end restore evidence and an explicit deployment plan. The release flags and all twelve [machine-readable gates](p1-07-recovery-plan.json) remain disabled.
+**Safe pause boundary (2026-10-24 historic planning position):** Prior to the operator's subsequent no-backup experimental permission, only repository/CI implementation was authorized. Independent recovery acceptance has not since been demonstrated; neither [#7](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) nor [#87](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87) can be certified as *operationally accepted* until the operator approves an independent off-VPS recovery destination, custody/privacy and RPO/RTO targets, real end-to-end restore evidence and an explicit deployment plan. The release flags and all twelve [machine-readable gates](p1-07-recovery-plan.json) remain disabled.
