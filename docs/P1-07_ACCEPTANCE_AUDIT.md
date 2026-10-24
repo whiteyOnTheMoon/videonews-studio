@@ -1,7 +1,7 @@
 # P1-07 acceptance and rollout gap audit (2026-10-24)
 
 **Status: code/CI substantially implemented; operational acceptance NOT complete.**
-This document tracks the original [P1-07 delivery issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) and the [authenticated data-stack rollout issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87). A green CI build is *not* approval to start data services on the VPS.
+This document tracks the original [P1-07 delivery issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) and the [authenticated data-stack rollout issue](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87). A green CI build is _not_ approval to start data services on the VPS.
 
 ## Evidence available in the repository
 
@@ -33,4 +33,4 @@ Do not turn on `data`, `worker`, `ingress`, personal-editor or source-review pro
 2. Review concrete P1-07 acceptance evidence against all latest-head CI runs. Specifically verify that an unsupported worker job reaches the terminal failure path under bounded attempts without side effects, rather than implying that the probe worker performs editorial processing.
 3. Open focused PRs for independently testable gaps and require CI and review.
 4. Separately ask the operator to decide backup destination/cost, RPO/RTO and VPS rollout only when a safe, actionable proposal is available.
-5. Close issues #7 and #87 only once their *operational* acceptance evidence has been recorded. Never mark release gates as satisfied merely from documentation.
+5. Close issues #7 and #87 only once their _operational_ acceptance evidence has been recorded. Never mark release gates as satisfied merely from documentation.
