@@ -9,10 +9,10 @@ or a public cutover.
 
 ## Separate the three trust domains
 
-| Trust domain | Intended role | Status |
-| --- | --- | --- |
-| Backup archive | Store encrypted copies outside the VPS with restricted access, retention and deletion rules | No external destination approved |
-| Encryption key custody | Recover ciphertext with an independently held 256-bit data-encryption key, not stored beside the archive | CI creates memory-only synthetic keys; no key store approved |
+| Trust domain                  | Intended role                                                                                                                                  | Status                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Backup archive                | Store encrypted copies outside the VPS with restricted access, retention and deletion rules                                                    | No external destination approved                                           |
+| Encryption key custody        | Recover ciphertext with an independently held 256-bit data-encryption key, not stored beside the archive                                       | CI creates memory-only synthetic keys; no key store approved               |
 | Signature and freshness trust | Verify a trusted signing key, authenticated backup identity, expected generation and completeness anchor obtained independently of the archive | CI pins an in-memory public key and generation; no real independent anchor |
 
 The recovery reader **must not accept a public key, revocation status,
