@@ -125,6 +125,16 @@ try {
       p: 1,
       maxmem: 64 * 1024 * 1024,
     }).toString("hex");
+  // A trusted CI fixture DBA enrolls this synthetic, independently
+  // authenticated test LOGIN. Production enrollment remains unspecified.
+  await owner.query(
+    `INSERT INTO vns.editor_operator_registry
+       (login_role,operator_id,operator_label,active)
+     VALUES ('vns_ci_provision_login',
+             'cccccccc-1234-4123-8123-cccccccccccc'::uuid,
+             'Synthetic CI Provisioning Operator',true)`,
+  );
+  await refuses(provisioner, "SELECT * FROM vns.editor_operator_registry");
   const inserted = await provisioner.query(
     "INSERT INTO vns.editor_accounts (username,display_name,role,password_hash) " +
       "VALUES ('ci_login_probe','CI Login Probe','reviewer',$1) " +
