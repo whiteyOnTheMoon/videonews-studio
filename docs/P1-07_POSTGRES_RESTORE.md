@@ -77,7 +77,7 @@ The expanded drill performs these checks:
 2. Exports both a full `vns` schema **including ownership and GRANT/REVOKE
    ACLs** (`pg_dump --format=custom --schema=vns`) and separate PostgreSQL
    **global roles and role memberships** (`pg_dumpall --globals-only
-   --no-role-passwords`). Global-role passwords are intentionally excluded.
+--no-role-passwords`). Global-role passwords are intentionally excluded.
 3. Validates archive magic, archive catalog and SHA-256 checksums and tests
    that a corrupted archive or truncated catalog is rejected before restore.
 4. Starts an independent clean target with a differently named bootstrap
