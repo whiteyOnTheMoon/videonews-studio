@@ -94,7 +94,7 @@ PY
   start)
     preflight
     check_credentials
-    compose config --format json | python3 scripts/p1_07_readiness.py >/dev/null || die 'Compose base isolation/readiness refused'
+    compose --profile preview --profile worker config --format json | python3 scripts/p1_07_readiness.py >/dev/null || die 'Compose base isolation/readiness refused'
     printf 'Starting ONLY videonews-studio PostgreSQL and Redis; no worker, web, API or tunnel changes.\n'
     compose up -d --no-deps --no-build --pull missing postgres redis
     ready=0
