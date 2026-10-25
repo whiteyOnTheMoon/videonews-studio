@@ -83,4 +83,23 @@ BEGIN
 END;
 $token_seed$;
 
+-- The synthetic budget reservation must also be restored with its day counter.
+DO $budget_seed$
+DECLARE
+  j uuid;
+  first_id uuid;
+BEGIN
+  SELECT id INTO j FROM vns.jobs WHERE idempotency_key='ci-restore-job';
+  first_id := vns.reserve_synthetic_ai_budget(
+    j,'ci_restore_budget_req_001','script_draft','gpt-6.1-sol',
+    20000,5000,DATE '2026-10-25');
+  IF first_id IS NULL OR first_id IS DISTINCT FROM
+      vns.reserve_synthetic_ai_budget(
+        j,'ci_restore_budget_req_001','script_draft','gpt-6.1-sol',
+        20000,5000,DATE '2026-10-25') THEN
+    RAISE EXCEPTION 'Synthetic budget fixture was not idempotent';
+  END IF;
+END;
+$budget_seed$;
+
 COMMIT;

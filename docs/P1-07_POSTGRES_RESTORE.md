@@ -164,3 +164,13 @@ include its values and deny application-role access. This does **not**
 confirm 0013 is deployed, a real provider event was ingested or any VPS
 PostgreSQL backup exists. The synthetic-only extension is detailed in
 [P1-09 token usage ledger](P1-09_TOKEN_USAGE_LEDGER.md).
+
+## P1-09 — 0014 synthetic budget state (Git-only)
+
+The disposable PostgreSQL-17 CI full restore drill now includes migration
+0014 and a dated, synthetic-only per-job daily budget reservation fixture.
+Its checksum covers both the immutable receipt and the shared daily counter,
+and recovered application roles must still be unable to access either.
+This is **not** evidence of a live VPS backup, provider usage or
+production database migration. Further details:
+[P1-09 synthetic budget reservations](P1-09_SYNTHETIC_BUDGET_RESERVATIONS.md).

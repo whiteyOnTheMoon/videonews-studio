@@ -72,6 +72,14 @@ production data stack remain unchanged until a separate explicit operator
 approval and rollback plan. There is currently no independent offsite
 backup or proven VPS restore; this PR does not waive that risk.
 
+## Subsequent synthetic-only budget reservation
+
+See [P1-09 synthetic budget reservations](P1-09_SYNTHETIC_BUDGET_RESERVATIONS.md)
+for the proposed CI-only migration 0014, PostgreSQL row-lock based daily
+reservation counter, idempotent request receipts and concurrent CI test.
+This is not deployed on the VPS and not an authorization for provider calls
+or real billing.
+
 ## Still open for full P1-09 acceptance
 
 1. Approve specific provider(s) and price/version sources, including

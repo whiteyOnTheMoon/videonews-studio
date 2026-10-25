@@ -69,6 +69,15 @@ Redaktionsstufen samt Token-Zählung und geschätztem Kostenbeleg.
 Es führt weder HTTP-Anfragen aus noch greift es auf echte Inhalte,
 Zugangsdaten oder Datenbanken zu. Es bleibt vom produktiven Worker getrennt.
 
+## Synthetische Budgetreservierung mit Transaktionssperren
+
+Die [dauerhafte synthetische Budgetvormerkung](P1-09_SYNTHETIC_BUDGET_RESERVATIONS.md)
+wird durch die **nur für CI gedachte** Migration 0014 ergänzt. Sie prüft
+die vorgeschlagenen Request-, Job- und Tagesgrenzen transaktional und
+verhindert doppelte Vormerkungen. Separate parallele Datenbanksitzungen
+werden im isolierten PostgreSQL-17-Test gegeneinander geprüft.
+**Auf dem VPS weder installiert noch aktiviert; keine API-Kostenfreigabe.**
+
 **P1-09 bleibt offen:** Reale autorisierte KI-Anfragen, tatsächliche
 Verbrauchs-/Preis-/TTS-Erfassung, atomare Budgetreservierung und
 unabhängig getestete Offsite-Sicherung/Restore fehlen.
