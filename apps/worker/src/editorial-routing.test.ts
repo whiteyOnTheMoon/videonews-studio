@@ -30,7 +30,8 @@ test("explicit approval, component switch and isolated queue are all required", 
       );
     }
     assert.throws(
-      () => readEditorialQueueRoute(component, { ...approved, VNS_EDITORIAL_QUEUE_NAME: QUEUE_NAME }),
+      () =>
+        readEditorialQueueRoute(component, { ...approved, VNS_EDITORIAL_QUEUE_NAME: QUEUE_NAME }),
       /not approved/,
     );
     assert.throws(
@@ -42,11 +43,13 @@ test("explicit approval, component switch and isolated queue are all required", 
 
 test("one component may not be enabled by the other component switch", () => {
   assert.throws(
-    () => readEditorialQueueRoute("dispatch", { ...approved, VNS_OUTBOX_DISPATCH_ENABLED: "false" }),
+    () =>
+      readEditorialQueueRoute("dispatch", { ...approved, VNS_OUTBOX_DISPATCH_ENABLED: "false" }),
     /not approved/,
   );
   assert.throws(
-    () => readEditorialQueueRoute("statusSync", { ...approved, VNS_STATUS_RECONCILE_ENABLED: "false" }),
+    () =>
+      readEditorialQueueRoute("statusSync", { ...approved, VNS_STATUS_RECONCILE_ENABLED: "false" }),
     /not approved/,
   );
 });
