@@ -8,11 +8,13 @@ network access. It must not be used to claim full editorial pipeline acceptance.
 
 The running probe worker consumes `vns-jobs`. The new research-only CLI
 `npm run research-service --workspace @vns/worker` is programmed to consume
-**only `vns-research`**, a different BullMQ queue. The existing outbox
-dispatcher and status synchronizer still target `vns-jobs`, **not**
-`vns-research`. Accordingly this is deliberately not yet a working end-to-end
-production dispatch configuration. Future routing and status tracking changes
-require a separate PR and acceptance of queue isolation before starting anything.
+**only `vns-research`**, a different BullMQ queue. The opt-in outbox dispatcher and status reconciler now require an explicit
+`VNS_EDITORIAL_QUEUE_NAME=vns-research` plus a separate
+`VNS_RESEARCH_OPERATOR_APPROVED=true` flag and their own component gates.
+Missing these flags blocks startup; they can no longer route editorial jobs to
+the probe queue `vns-jobs`. The SQL/Redis end-to-end lifecycle for this new
+queue is exercised only inside disposable CI fixtures. This does not authorize
+operational use or deployment.
 
 No Docker Compose profile or deployed container starts the new entrypoint.
 
@@ -75,12 +77,32 @@ instantiated dormant (`autorun=false`) and is run only by the dedicated
 explicit entrypoint. It redacts connection failures.
 
 There is **no approved sources catalog on the VPS**, no reviewed outbound
-network arrangement for the new service, no independent queue routing/status
-synchronization for `vns-research`, and no separate operator approval to
-activate this CLI. The current backend network is intentionally internal and
+network arrangement or deployed Redis ACL proof for `vns-research`, and no
+separate operator approval to activate the CLI, dispatcher or synchronizer. The current backend network is intentionally internal and
 cannot be assumed to provide outside HTTPS access. Do not deploy or run this
 entrypoint on the VPS yet.
 
 CI tests use only local JSON and mocked source metadata. They do not contact
 any news website or run live production jobs. Full P1-07 recovery and backups
 remain unverified.
+
+## P1-07 isolated dispatch and status routing (CI-only)
+
+The existing dispatcher and reconciler now fail closed unless their individual
+component enable flag, `VNS_RESEARCH_OPERATOR_APPROVED=true`, and the exact
+`VNS_EDITORIAL_QUEUE_NAME=vns-research` are all set. They still require
+distinct PostgreSQL runtime logins and the dedicated Redis secret. No CLI
+can choose the active probe queue via environment flags. The optional Compose
+overlay leaves each service OFF and the operator-approval flag set to false.
+
+The existing disposable research E2E now exercises authenticated scoped
+PostgreSQL outbox → `vns-research` BullMQ → isolated dormant research worker
+→ evidence candidate / bounded failure → PostgreSQL status. It checks that
+the corresponding IDs do not appear in `vns-jobs` and that probe queue counts
+are not changed. These are **not** VPS jobs, real news retrieval or deployment.
+
+Before any future live authorization, explicitly check that Redis ACL grants
+only the required isolated queue keys and that the operator-approved network
+policy permits only the approved HTTPS source hosts. No public port, Compose
+restart, DB writes, backup changes or production research runs are part of
+this PR.
