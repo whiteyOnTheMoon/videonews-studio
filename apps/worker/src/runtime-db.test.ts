@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
   POSTGRES_SERVICE_IDENTITIES,
   readDedicatedPostgresConfig,
@@ -78,4 +79,16 @@ test("separate secrets are required before any runtime database connection", () 
     );
     assert.equal(reads, 1);
   }
+});
+
+test("editorial Compose overlay remains dormant and service-scoped", () => {
+  const overlay = readFileSync("deploy/compose.editorial-ops.yaml", "utf8");
+  assert.match(overlay, /profiles: \[editorial-ops\]/);
+  assert.match(overlay, /VNS_OUTBOX_DISPATCH_ENABLED: "false"/);
+  assert.match(overlay, /VNS_STATUS_RECONCILE_ENABLED: "false"/);
+  assert.equal((overlay.match(/VNS_PG_RUNTIME_IDENTITIES_ENABLED: "false"/g) ?? []).length, 2);
+  assert.match(overlay, /pg_outbox_dispatch_password/);
+  assert.match(overlay, /pg_job_status_sync_password/);
+  assert.doesNotMatch(overlay, /^\s+ports:/m);
+  assert.doesNotMatch(overlay, /network_mode: host/);
 });
