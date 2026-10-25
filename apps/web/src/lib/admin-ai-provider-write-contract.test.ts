@@ -99,19 +99,11 @@ test("GET, wrong origin and malformed cookies never touch internal API", async (
     assertSanitized(response);
   }
   for (const origin of ["https://evil.invalid", "", "http://studio.ap-pixels.com"]) {
-    const response = await dormantAdminAiProviderWriteProxy(
-      req(COMMAND, { origin }),
-      CFG,
-      fetcher,
-    );
+    const response = await dormantAdminAiProviderWriteProxy(req(COMMAND, { origin }), CFG, fetcher);
     assert.equal(response.status, 403);
   }
   for (const cookie of ["invalid", "", COOKIE + "; " + COOKIE]) {
-    const response = await dormantAdminAiProviderWriteProxy(
-      req(COMMAND, { cookie }),
-      CFG,
-      fetcher,
-    );
+    const response = await dormantAdminAiProviderWriteProxy(req(COMMAND, { cookie }), CFG, fetcher);
     assert.equal(response.status, 401);
   }
   assert.equal(called, false);

@@ -8,7 +8,7 @@ Die zukünftige Admin-Seite **KI-Anbieter** soll OpenAI-/Gemini-API-Keys
 ohne Hardcoding annehmen, ersetzen und löschen sowie Modelle auswählen.
 Dazu ergänzt der Git-only-Baustein
 `apps/web/src/lib/admin-ai-provider-write-contract.ts` den bereits
-vorhandenen *read-only* BFF um einen **isoliert testbaren,
+vorhandenen _read-only_ BFF um einen **isoliert testbaren,
 nicht angeschlossenen** Schreibvertrag.
 
 ## Was der Vertrag heute testet
@@ -39,7 +39,7 @@ bestehen:
   interne API weitergereicht. Der BFF darf keine Keys in Cookies, URLs,
   Dateien, Logzeilen, Statusantworten oder clientseitigem Speicher
   hinterlegen. Der interne API-Vertrag aus PR #210 ist weiterhin
-  *nicht* aktiviert.
+  _nicht_ aktiviert.
 - Nur eine exakte Backend-Antwort `{saved:true,active:false}` darf nach
   außen als Erfolg erscheinen. Anbieterschlüssel, Ciphertext,
   unbekannte Felder, Redirects oder Backend-Fehler werden nicht

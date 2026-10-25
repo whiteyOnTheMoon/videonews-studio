@@ -1,8 +1,4 @@
-import {
-  clientAdminCookie,
-  isAdminAuthorized,
-  type AdminProxyConfig,
-} from "./admin-proxy";
+import { clientAdminCookie, isAdminAuthorized, type AdminProxyConfig } from "./admin-proxy";
 import type { AdminAiProvider } from "./admin-ai-provider-view";
 
 /**
@@ -83,7 +79,7 @@ function safeReply(status: number, body: object): Response {
     status,
     headers: {
       "Cache-Control": "no-store",
-      "Pragma": "no-cache",
+      Pragma: "no-cache",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
     },
@@ -92,8 +88,7 @@ function safeReply(status: number, body: object): Response {
 
 async function limitedJsonBody(request: Request): Promise<unknown> {
   if (
-    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
-    "application/json"
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
   ) {
     return null;
   }
@@ -191,11 +186,7 @@ export async function dormantAdminAiProviderWriteProxy(
       return safeReply(503, { error: "temporarily_unavailable" });
     }
     const result = data as Record<string, unknown>;
-    if (
-      Object.keys(result).length !== 2 ||
-      result.saved !== true ||
-      result.active !== false
-    ) {
+    if (Object.keys(result).length !== 2 || result.saved !== true || result.active !== false) {
       return safeReply(503, { error: "temporarily_unavailable" });
     }
     return safeReply(200, { saved: true, active: false });
