@@ -7,7 +7,8 @@ import { AdminProviderConfiguration } from "./admin-provider-configuration.js";
 import { ProviderMutationLimiter } from "./provider-mutation-limiter.js";
 
 function request(): IncomingMessage {
-  return Object.assign(Readable.from([JSON.stringify({ action: "remove_key", provider: "openai" })]), {
+  const payload = JSON.stringify({ action: "remove_key", provider: "openai" });
+  return Object.assign(Readable.from([payload]), {
     url: "/admin/ai-providers",
     method: "POST",
     headers: {
