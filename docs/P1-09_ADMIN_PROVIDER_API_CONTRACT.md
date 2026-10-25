@@ -65,3 +65,11 @@ Siehe [transaktionaler, inaktiver Anbieter-Audit-Speicher](P1-09_ADMIN_PROVIDER_
 Der neue Adapter nutzt ausschließlich parametrisierte SQL-Funktionen mit
 zugeordnetem Audit. Es gibt weiterhin **keine** produktive Route, Browser-
 Key-Eingabe, Master-Key-Bereitstellung oder neue Laufzeitberechtigung.
+
+## Browser-Vorschau ohne Key-Eingabe (Folgeschritt)
+
+Die [schlüssel- und schreibfreie KI-Anbieter-Vorschau](P1-09_ADMIN_AI_PROVIDERS_PREVIEW.md)
+verwendet das vorhandene Admin-Session-Gate und einen separat deaktivierten
+GET-only-BFF. Weder diese Oberfläche noch dieser Proxy erlauben echte
+API-Keys oder aktivieren die Anbieter. Das produktive Backend ist weiterhin
+nicht mit dem künftigen Schreib-Adapter verbunden.
