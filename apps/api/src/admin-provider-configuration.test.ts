@@ -289,10 +289,7 @@ test("strict provider mutation body parsing rejects mismatched lengths and inval
   const { store, changes } = createFixtureStore();
   const config = new AdminProviderConfiguration(auth, store, MASTER_KEY);
   const valid = JSON.stringify({ action: "remove_key", provider: "openai" });
-  const invalidUtf8 = Buffer.concat([
-    Buffer.from(valid, "utf8"),
-    Buffer.from([0xff]),
-  ]);
+  const invalidUtf8 = Buffer.concat([Buffer.from(valid, "utf8"), Buffer.from([0xff])]);
   const samples: Array<{ bytes: Buffer; headers: Record<string, string> }> = [
     { bytes: Buffer.from(valid), headers: { "content-length": "1" } },
     { bytes: Buffer.from(valid), headers: { "content-length": "999" } },
