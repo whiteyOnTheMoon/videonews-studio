@@ -20,7 +20,12 @@ test("neither dispatcher nor status sync has a default active editorial route", 
 
 test("explicit approval, component switch and isolated queue are all required", () => {
   for (const component of ["dispatch", "statusSync"] as const) {
-    for (const key of Object.keys(approved)) {
+    const relevant = [
+      "VNS_RESEARCH_OPERATOR_APPROVED",
+      "VNS_EDITORIAL_QUEUE_NAME",
+      component === "dispatch" ? "VNS_OUTBOX_DISPATCH_ENABLED" : "VNS_STATUS_RECONCILE_ENABLED",
+    ];
+    for (const key of relevant) {
       const incomplete: Record<string, string> = { ...approved };
       delete incomplete[key];
       assert.throws(() => readEditorialQueueRoute(component, incomplete), /not approved/);
