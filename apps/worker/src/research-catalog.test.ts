@@ -16,7 +16,7 @@ const valid = () => ({ topic, candidates: [candidate] });
 test("only exact operator-catalog topics can be discovered", async () => {
   const catalog = parseApprovedResearchCatalog(catalogJson([valid()]), policy);
   const discovery = createApprovedCatalogDiscovery(catalog);
-  assert.deepEqual(await discovery.discover(topic), [{ ...candidate, reviewStatus: "candidate" }]);
+  assert.deepEqual(await discovery.discover(topic), [candidate]);
   await assert.rejects(discovery.discover(topic.toLowerCase()), /not operator approved/);
   await assert.rejects(discovery.discover("A totally unrelated headline"), /not operator approved/);
   assert.equal("verified" in (await discovery.discover(topic) as object[])[0]!, false);
