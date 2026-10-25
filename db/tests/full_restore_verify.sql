@@ -16,9 +16,9 @@ BEGIN
    '0010_editor_account_lifecycle_audit','0011_operator_registry_governance',
    '0012_runtime_least_privilege','0013_synthetic_token_usage',
    '0014_synthetic_ai_budget_reservations',
-   '0015_ai_provider_admin_configuration'
+   '0015_ai_provider_admin_configuration','0016_ai_provider_audit_store'
   );
-  IF total<>15 OR (SELECT count(*) FROM vns.schema_migrations)<>15 THEN
+  IF total<>16 OR (SELECT count(*) FROM vns.schema_migrations)<>16 THEN
     RAISE EXCEPTION 'Full migration ledger was not recovered';
   END IF;
 
@@ -28,9 +28,10 @@ BEGIN
     'vns_outbox_dispatcher','vns_review_event_writer',
     'vns_editor_review_executor','vns_lifecycle_audit_writer',
     'vns_operator_governor','vns_operator_registry_executor',
-    'vns_outbox_dispatch','vns_job_status_sync','vns_research_writer'
+    'vns_outbox_dispatch','vns_job_status_sync','vns_research_writer',
+    'vns_provider_config_executor','vns_provider_config_writer'
   ) AND NOT rolcanlogin AND NOT rolsuper;
-  IF total<>12 THEN RAISE EXCEPTION 'A NOLOGIN application role was not restored'; END IF;
+  IF total<>14 THEN RAISE EXCEPTION 'A NOLOGIN application role was not restored'; END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_roles WHERE rolname='vns_ci_restore_operator'
@@ -172,6 +173,24 @@ BEGIN
      OR has_table_privilege('vns_api_runtime','vns.ai_provider_sealed_credentials','SELECT')
      OR has_table_privilege('vns_research_writer','vns.ai_provider_sealed_credentials','SELECT')
   THEN RAISE EXCEPTION 'Provider key vault was enabled, populated or exposed on restore'; END IF;
+
+  -- Only a model-change audit fixture is included: no credentials.
+  IF (SELECT count(*) FROM vns.ai_provider_config_events)<>1
+    OR NOT EXISTS(SELECT 1 FROM vns.ai_provider_config_events
+       WHERE provider='openai' AND action='set_model'
+         AND actor_context='shared-admin-session'
+         AND database_login='postgres')
+    OR (SELECT selected_model FROM vns.ai_provider_settings
+        WHERE provider='openai')<>'gpt-6-luna'
+    OR has_table_privilege('vns_provider_config_writer',
+         'vns.ai_provider_sealed_credentials','SELECT')
+    OR has_table_privilege('vns_provider_config_writer',
+         'vns.ai_provider_config_events','INSERT')
+    OR NOT has_function_privilege('vns_provider_config_writer',
+         'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
+    OR has_function_privilege('vns_api_runtime',
+         'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
+  THEN RAISE EXCEPTION 'Audited provider model restore or role isolation failed'; END IF;
 
   -- Mutation and uniqueness protections must still fail closed after restore.
   BEGIN

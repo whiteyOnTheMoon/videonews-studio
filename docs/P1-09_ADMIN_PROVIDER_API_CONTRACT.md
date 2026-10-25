@@ -58,3 +58,10 @@ Das absichtlich zurückgestellte Offsite-Backup bleibt ein Risiko.
 
 Die echte Aktivierung eines KI-Anbieters bleibt bis zu einer
 ausdrücklichen Budget- und Providerfreigabe unmöglich.
+
+## Geprüfte SQL-Speichergrenze (Folgeschritt 0016)
+
+Siehe [transaktionaler, inaktiver Anbieter-Audit-Speicher](P1-09_ADMIN_PROVIDER_AUDIT_STORE.md).
+Der neue Adapter nutzt ausschließlich parametrisierte SQL-Funktionen mit
+zugeordnetem Audit. Es gibt weiterhin **keine** produktive Route, Browser-
+Key-Eingabe, Master-Key-Bereitstellung oder neue Laufzeitberechtigung.

@@ -102,4 +102,12 @@ BEGIN
 END;
 $budget_seed$;
 
+-- The audit fixture is model-only, with no real or encrypted API key material.
+-- Using the dormant NOLOGIN role proves function grants, not a VPS login.
+SET ROLE vns_provider_config_writer;
+SELECT vns.admin_mutate_ai_provider(
+  'openai','set_model','gpt-6-luna',NULL,NULL,NULL
+);
+RESET ROLE;
+
 COMMIT;
