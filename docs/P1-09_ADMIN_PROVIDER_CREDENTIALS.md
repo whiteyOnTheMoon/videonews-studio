@@ -106,3 +106,11 @@ kein vermeintlich fertiges Dashboard-Feature.
 VPS-Keystore, Provider-API-Verbindungen, kostenpflichtige Test-Calls
 und produktiver DB-Rollout. Solche Schritte verlangen eine spätere
 eindeutige Freigabe. Beszel und andere Docker-Dienste bleiben unberührt.
+
+## Folgeschritt – API-Vertrag für Administratoren (Git-only)
+
+Der [separat dokumentierte Admin-API-Vertrag](P1-09_ADMIN_PROVIDER_API_CONTRACT.md)
+prüft bereits `set_key`, `remove_key` und `set_model` mit simuliertem
+Speicher und einer echten AES-256-GCM-Testverschlüsselung. Er ist bewusst
+nicht in den laufenden API-Server eingebunden; Master-Key-Datei, auditierter
+DB-Zugang, browserseitiges Formular und echte Schlüsselannahme fehlen noch.
