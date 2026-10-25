@@ -96,6 +96,44 @@ class IsolatedPgTcpTest(unittest.TestCase):
         self.assertNotIn("INSERT INTO", source)
         self.assertNotIn("DELETE FROM", source)
 
+    def test_boolean_scope_receipt_uses_stable_text(self):
+        source = mod.CLIENT_SCRIPT
+        # concat_ws formats booleans through PostgreSQL output rules.
+        # Force unambiguous true/false strings instead of t/f ambiguity.
+        self.assertIn(
+            "CASE WHEN pg_has_role(current_user, '$GROUP', 'USAGE') "
+            "THEN 'true' ELSE 'false' END", source
+        )
+        for expected in (
+            "CASE WHEN pg_has_role(current_user, 'vns', 'MEMBER')",
+            "CASE WHEN has_column_privilege(current_user, 'vns.jobs', 'status', 'UPDATE')",
+            "CASE WHEN has_column_privilege(current_user, 'vns.job_outbox', 'delivery_state', 'UPDATE')",
+            "CASE WHEN has_table_privilege(current_user, 'vns.research_evidence', 'INSERT')",
+            "CASE WHEN has_column_privilege(current_user, 'vns.research_evidence', 'review_status', 'UPDATE')",
+            "CASE WHEN has_schema_privilege(current_user, 'vns', 'CREATE')",
+        ):
+            self.assertIn(expected, source)
+
+    def test_redacted_failure_stage_is_only_whitelisted(self):
+        from types import SimpleNamespace
+        with patch.object(mod.subprocess, "run", return_value=SimpleNamespace(
+            returncode=2,
+            stderr="VNS_CHECK_ALLOWED\\nconfidential-internal-diagnostics",
+            stdout="confidential-secret-data",
+        )):
+            with self.assertRaisesRegex(RuntimeError, "guarded check failed at ALLOWED") as error:
+                mod.safe_run(["docker", "run", "--rm", "something"])
+            self.assertNotIn("confidential", str(error.exception))
+
+        with patch.object(mod.subprocess, "run", return_value=SimpleNamespace(
+            returncode=125,
+            stderr="sensitive mount details",
+            stdout="sensitive data",
+        )):
+            with self.assertRaisesRegex(RuntimeError, "guarded check failed at CLIENT_START") as error:
+                mod.safe_run(["docker", "run", "--rm", "something"])
+            self.assertNotIn("sensitive", str(error.exception))
+
     def test_shell_code_syntax(self):
         res = subprocess.run(
             ["/bin/sh", "-n"], input=mod.CLIENT_SCRIPT,
