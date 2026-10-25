@@ -26,8 +26,8 @@ services:
       VNS_POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/pg_outbox_dispatch_password
       VNS_REDIS_HOST: redis
       VNS_REDIS_PORT: "6379"
-      VNS_REDIS_PASSWORD_FILE: /run/secrets/redis_password
-    secrets: [pg_outbox_dispatch_password, redis_password]
+      VNS_REDIS_RESEARCH_PASSWORD_FILE: /run/secrets/redis_research_password
+    secrets: [pg_outbox_dispatch_password, redis_research_password]
 
   job-status-sync:
     <<: *ops-base
@@ -40,13 +40,13 @@ services:
       VNS_POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/pg_job_status_sync_password
       VNS_REDIS_HOST: redis
       VNS_REDIS_PORT: "6379"
-      VNS_REDIS_PASSWORD_FILE: /run/secrets/redis_password
-    secrets: [pg_job_status_sync_password, redis_password]
+      VNS_REDIS_RESEARCH_PASSWORD_FILE: /run/secrets/redis_research_password
+    secrets: [pg_job_status_sync_password, redis_research_password]
 
 secrets:
   pg_outbox_dispatch_password:
     file: ./secrets/pg_outbox_dispatch_password
   pg_job_status_sync_password:
     file: ./secrets/pg_job_status_sync_password
-  redis_password:
-    file: ./secrets/redis_password
+  redis_research_password:
+    file: ./secrets/redis_research_password

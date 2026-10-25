@@ -30,8 +30,8 @@ The service refuses to start unless all the following are set **exactly**:
 - `VNS_RESEARCH_QUEUE_NAME=vns-research`
 - `VNS_RESEARCH_CATALOG_FILE=/run/secrets/approved_research_sources.json`
 
-Existing mandatory settings also apply: individual Redis secret mounted at
-`/run/secrets/redis_password`, research-writer-only database secret at
+Existing mandatory settings also apply: dedicated research Redis secret mounted at
+`/run/secrets/redis_research_password` with `VNS_REDIS_RESEARCH_PASSWORD_FILE` set to that exact path, research-writer-only database secret at
 `/run/secrets/pg_research_writer_password`, and explicit
 `VNS_ALLOWED_SOURCE_HOSTS` (1–5 approved HTTPS hosts). No owner DB password
 or source-provider API credential is accepted.
@@ -91,7 +91,8 @@ remain unverified.
 The existing dispatcher and reconciler now fail closed unless their individual
 component enable flag, `VNS_RESEARCH_OPERATOR_APPROVED=true`, and the exact
 `VNS_EDITORIAL_QUEUE_NAME=vns-research` are all set. They still require
-distinct PostgreSQL runtime logins and the dedicated Redis secret. No CLI
+distinct PostgreSQL runtime logins and the dedicated `vns_research` Redis
+identity with its own `redis_research_password` secret. No CLI
 can choose the active probe queue via environment flags. The optional Compose
 overlay leaves each service OFF and the operator-approval flag set to false.
 

@@ -3,7 +3,8 @@ import { Redis } from "ioredis";
 import pg from "pg";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
 import { readEditorialQueueRoute } from "./editorial-routing.js";
-import { readQueueConfig, QUEUE_PREFIX } from "./queue.js";
+import { QUEUE_PREFIX } from "./queue.js";
+import { readResearchRedisConfig } from "./research-redis-config.js";
 import { reconcileJobStatusBatch } from "./job-status.js";
 
 // Intentionally separate from the normal probe worker and from the dispatcher.
@@ -13,7 +14,7 @@ if (process.env.VNS_STATUS_RECONCILE_ENABLED !== "true") {
   throw new Error("Job status reconciler must be explicitly enabled");
 }
 const editorialQueue = readEditorialQueueRoute("statusSync");
-const redisConfig = readQueueConfig();
+const redisConfig = readResearchRedisConfig();
 const dbConfig = readDedicatedPostgresConfig("statusSync");
 
 const { Pool } = pg;
@@ -27,7 +28,7 @@ const pool = new Pool({
 const redis = new Redis({
   host: redisConfig.host,
   port: redisConfig.port,
-  username: "vns_worker",
+  username: redisConfig.username,
   password: redisConfig.password,
   maxRetriesPerRequest: 1,
   connectTimeout: 3000,
