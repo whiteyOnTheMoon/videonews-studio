@@ -15,11 +15,11 @@ const db = new Pool({
 });
 const expected = {
   vns_outbox_dispatch: {
-    allow: ["vns.jobs:SELECT", "vns.job_outbox:SELECT", "vns.job_outbox:UPDATE"],
+    allow: ["vns.jobs:SELECT", "vns.job_outbox:SELECT"],
     deny: ["vns.jobs:UPDATE", "vns.research_evidence:INSERT", "vns.job_outbox:DELETE"],
   },
   vns_job_status_sync: {
-    allow: ["vns.jobs:SELECT", "vns.jobs:UPDATE", "vns.job_outbox:SELECT"],
+    allow: ["vns.jobs:SELECT", "vns.job_outbox:SELECT"],
     deny: ["vns.job_outbox:UPDATE", "vns.jobs:DELETE", "vns.research_evidence:INSERT"],
   },
   vns_research_writer: {
