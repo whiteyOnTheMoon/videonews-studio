@@ -197,8 +197,8 @@ test("error or unexpected response does not echo credentials or upstream text", 
   for (const upstream of responses) {
     const fetcher = (async (input: RequestInfo | URL) => {
       if (String(input).endsWith("/editor/me")) {
-      return Response.json({ role: "admin", username: "ci_admin" });
-    }
+        return Response.json({ role: "admin", username: "ci_admin" });
+      }
       return upstream;
     }) as typeof fetch;
     const response = await dormantAdminAiProviderWriteProxy(req(), CFG, fetcher);

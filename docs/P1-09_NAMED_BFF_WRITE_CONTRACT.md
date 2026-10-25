@@ -29,8 +29,8 @@ persönliche Editor-Authentifizierung angepasst:
   oder upstream-Fehlertext geht an den Browser. Keine Redirect-Folge.
 - **Isolierte Tests:** gemeinsames Admin-Cookie, fehlende persönliche
   Rolle, gefälschter Benutzerstatus, fehlerhafte Framing-Header,
-  synthetische Credential-Weiterleitung, Upstream-Ablehnungen und
-  Secret-Exfiltration.
+  synthetische Credential-Weiterleitung, ungültige Payloads,
+  Upstream-Ablehnungen und Secret-Exfiltration.
 
 ### Nicht abgenommen
 
