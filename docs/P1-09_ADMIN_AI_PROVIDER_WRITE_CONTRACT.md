@@ -74,3 +74,12 @@ Die explizite Entscheidung, **vorerst ohne Backup** weiterzuarbeiten,
 wird nicht aufgehoben. Damit bleiben Datenverlust und der Verlust
 des künftig separat zu verwahrenden Master-Keys ein bewusstes Risiko.
 Es wurde kein Backupdienst installiert und keine KI-Ausgabe freigegeben.
+
+## Isolierte Admin-Formularvorbereitung
+
+Die [ausschließlich in Tests gerenderte Eingabemaske](P1-09_ADMIN_AI_PROVIDER_EDIT_FORM.md)
+modelliert sichere UI-Abläufe für Schlüsselersetzung, Modellwahl und
+explizit bestätigtes Entfernen. Sie ist **nicht** im produktiven
+Admin-Bereich eingebunden und besitzt keine aktive HTTP-Schreibroute;
+`ready` ist standardmäßig `false`. Somit werden aktuell keinerlei
+echte Zugangsdaten angenommen.
