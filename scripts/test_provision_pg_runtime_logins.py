@@ -98,10 +98,12 @@ class PgLoginProvisioningTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 mod.main()
         with tempfile.TemporaryDirectory() as root:
+            mod_reader = mod.read_passwords
             _, passwords = self.make_secrets(root)
             output = io.StringIO()
             with (
                 patch.object(mod, "ROOT", Path(root)),
+                patch.object(mod, "read_passwords", side_effect=lambda directory: mod_reader(directory, expected_uid=os.geteuid())),
                 patch.object(mod.sys, "argv", ["provision_pg_runtime_logins.py", "--apply"]),
                 patch.object(mod, "preflight"),
                 patch.object(mod.os, "urandom", return_value=b"x" * 16),
@@ -119,10 +121,12 @@ class PgLoginProvisioningTests(unittest.TestCase):
 
     def test_failure_does_not_retry_or_change_staged_files(self):
         with tempfile.TemporaryDirectory() as root:
+            mod_reader = mod.read_passwords
             folder, _ = self.make_secrets(root)
             before = {path.name: path.read_bytes() for path in folder.iterdir()}
             with (
                 patch.object(mod, "ROOT", Path(root)),
+                patch.object(mod, "read_passwords", side_effect=lambda directory: mod_reader(directory, expected_uid=os.geteuid())),
                 patch.object(mod.sys, "argv", ["provision_pg_runtime_logins.py", "--apply"]),
                 patch.object(mod, "preflight", side_effect=RuntimeError("blocked")),
                 patch.object(mod, "psql") as psql,
