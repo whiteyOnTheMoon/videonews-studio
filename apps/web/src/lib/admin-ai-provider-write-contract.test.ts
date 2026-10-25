@@ -278,14 +278,17 @@ test("invalid JSON framing and encoding are rejected before upstream writes", as
     { "Content-Length": "1025" },
     { "Content-Encoding": "gzip" },
   ]) {
+    const headers = new Headers({
+      Origin: ORIGIN,
+      Cookie: COOKIE,
+      "Content-Type": "application/json",
+    });
+    for (const [name, value] of Object.entries(header)) {
+      headers.set(name, value);
+    }
     const request = new Request(ORIGIN + "/api/admin/ai-providers", {
       method: "POST",
-      headers: {
-        Origin: ORIGIN,
-        Cookie: COOKIE,
-        "Content-Type": "application/json",
-        ...header,
-      },
+      headers,
       body: JSON.stringify(COMMAND),
     });
     const result = await dormantAdminAiProviderWriteProxy(request, CFG, fetcher);
