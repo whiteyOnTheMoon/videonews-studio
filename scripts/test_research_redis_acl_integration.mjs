@@ -31,6 +31,7 @@ const research = new Redis(settings("vns_research", "research_password"));
 const probeQueue = new Queue("vns-jobs", { connection: probe, prefix: "bull:vns" });
 const researchQueue = new Queue("vns-research", { connection: research, prefix: "bull:vns" });
 try {
+  await Promise.all([probeQueue.waitUntilReady(), researchQueue.waitUntilReady()]);
   assert.equal(await probe.ping(), "PONG");
   assert.equal(await research.ping(), "PONG");
   // Allowed commands and real BullMQ Lua operations in each distinct namespace.
