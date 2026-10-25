@@ -28,13 +28,13 @@ The existing script checks isolated worker/Redis identity, worker image provenan
 
 ## Acceptance classification
 
-| Requirement | Evidence class | Status |
-| --- | --- | --- |
-| Existing isolated probe-worker and Redis/PG baseline | Previously observed operator terminal output | Previously passed; repeat check not yet executed for this document |
-| Deterministic Outbox dispatch and status reconciliation | Disposable GitHub Actions integrations | CI tested; neither process running on VPS |
-| Bounded retry, lost-ack, Redis loss, retained failures | Disposable CI only | No live crash/restore acceptance |
-| Editorial research, script, render, upload | Probe worker refuses these kinds | Intentionally disabled; no live acceptance |
-| Offsite backups and DB/Redis restore | No independently verified original | Open, tracked under P1-09 #9 |
+| Requirement                                             | Evidence class                               | Status                                                             |
+| ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Existing isolated probe-worker and Redis/PG baseline    | Previously observed operator terminal output | Previously passed; repeat check not yet executed for this document |
+| Deterministic Outbox dispatch and status reconciliation | Disposable GitHub Actions integrations       | CI tested; neither process running on VPS                          |
+| Bounded retry, lost-ack, Redis loss, retained failures  | Disposable CI only                           | No live crash/restore acceptance                                   |
+| Editorial research, script, render, upload              | Probe worker refuses these kinds             | Intentionally disabled; no live acceptance                         |
+| Offsite backups and DB/Redis restore                    | No independently verified original           | Open, tracked under P1-09 #9                                       |
 
 ## No-go conditions and closure rule
 
