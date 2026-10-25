@@ -45,7 +45,10 @@ test("separate secrets are required before any runtime database connection", () 
       () =>
         readDedicatedPostgresConfig(
           service,
-          { VNS_PG_RUNTIME_IDENTITIES_ENABLED: "true", VNS_POSTGRES_RUNTIME_PASSWORD_FILE: "/run/secrets/postgres_password" },
+          {
+            VNS_PG_RUNTIME_IDENTITIES_ENABLED: "true",
+            VNS_POSTGRES_RUNTIME_PASSWORD_FILE: "/run/secrets/postgres_password",
+          },
           reader,
         ),
       /path mismatch/,
@@ -65,7 +68,12 @@ test("separate secrets are required before any runtime database connection", () 
     assert.equal(reads, 1);
     assert.throws(() => readDedicatedPostgresConfig(service, env, () => "short"), /secret invalid/);
     assert.throws(
-      () => readDedicatedPostgresConfig(service, { ...env, VNS_POSTGRES_HOST: "external.example" }, reader),
+      () =>
+        readDedicatedPostgresConfig(
+          service,
+          { ...env, VNS_POSTGRES_HOST: "external.example" },
+          reader,
+        ),
       /endpoint invalid/,
     );
     assert.equal(reads, 1);
