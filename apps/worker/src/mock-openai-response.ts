@@ -57,6 +57,16 @@ function boundedTokens(value: unknown, limit: number): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= limit;
 }
 
+function hasForbiddenControlChars(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const point = value.charCodeAt(index);
+    if ((point < 32 && point !== 9 && point !== 10 && point !== 13) || point === 127) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function validateRequest(input: unknown): {
   jobId: string;
   requestId: string;
@@ -137,7 +147,7 @@ export function evaluateMockOpenAiResponse(
     content.text.length < 10 ||
     content.text.length > 20_000 ||
     content.text.trim() !== content.text ||
-    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(content.text)
+    hasForbiddenControlChars(content.text)
   ) {
     throw new Error("Rejected offline OpenAI text");
   }
