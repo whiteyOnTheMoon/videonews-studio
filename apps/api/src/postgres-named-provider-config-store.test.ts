@@ -14,7 +14,7 @@ const ADMIN: EditorIdentity = {
 };
 const KEY = "sk-ci-synthetic-never-real-provider-secret-012345";
 
-test("named administrator and only encrypted bytes reach the personal SQL audit function", async () => {
+test("named SQL sends only sealed credentials and the verified identity", async () => {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
   const pool = {
     async query(sql: string, params: unknown[]) {
@@ -25,7 +25,10 @@ test("named administrator and only encrypted bytes reach the personal SQL audit 
   const store = new PostgresNamedProviderConfigStore(pool);
   const key = randomBytes(32);
   const sealed = sealProviderApiKey("openai", KEY, key);
-  await store.mutateAsNamedAdmin({ provider: "openai", action: "set_key", sealedKey: sealed }, ADMIN);
+  await store.mutateAsNamedAdmin(
+    { provider: "openai", action: "set_key", sealedKey: sealed },
+    ADMIN,
+  );
   assert.equal(calls.length, 1);
   assert.match(calls[0]?.sql ?? "", /admin_mutate_ai_provider_as_editor/);
   assert.deepEqual(calls[0]?.params.slice(0, 3), ["openai", "set_key", null]);
@@ -38,7 +41,7 @@ test("named administrator and only encrypted bytes reach the personal SQL audit 
   key.fill(0);
 });
 
-test("named store refuses non-admin, corrupt identity and malformed provider mutations before SQL", async () => {
+test("named store refuses invalid identity and provider mutations before SQL", async () => {
   let calls = 0;
   const pool = {
     async query() {

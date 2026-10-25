@@ -207,7 +207,14 @@ BEGIN
   THEN RAISE EXCEPTION 'Shared provider admission restore/ACLs invalid'; END IF;
 
   -- Named admin audit is empty on the test restore, but ACL and owner persist.
-  IF (SELECT count(*) FROM vns.ai_provider_named_config_events)<>0
+  IF (SELECT count(*) FROM vns.ai_provider_named_config_events)<>1
+    OR NOT EXISTS (
+      SELECT 1 FROM vns.ai_provider_named_config_events
+      WHERE provider='openai' AND action='set_model'
+        AND editor_id='caca1111-1111-4111-8111-111111111111'
+        AND editor_username='ci_restore_admin'
+        AND editor_auth_version=0 AND database_login='postgres'
+    )
     OR has_function_privilege('vns_provider_config_writer',
       'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
     OR NOT has_function_privilege('vns_provider_config_writer',
