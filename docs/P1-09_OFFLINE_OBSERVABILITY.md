@@ -50,5 +50,17 @@ Worker-Adapter. Die neue Tabelle weist Einträge ausdrücklich nur als
 `synthetic` aus und gewährt laufenden App-Rollen keine neuen Rechte.
 Migration 0013 wurde **nicht** auf dem VPS ausgeführt.
 
-**P1-09 bleibt offen:** Realer, autorisierter Verbrauch je Job, echte
-Preise, Limits sowie unabhängig getestete Offsite-Sicherung/Restore fehlen.
+## Architekturentscheidung für englischsprachige Erklärvideos
+
+OpenAI wird als zuerst vorzubereitender Textanbieter gewählt:
+`gpt-6-luna` für günstige Klassifizierung und `gpt-6.1-sol`
+für Skripte sowie Quellen-/Claim-Audit. Google Gemini TTS ist
+der erste Kandidat für die spätere englische Sprecherstimme.
+
+Der [inaktive Anbieter-/Budgetplan](P1-09_ENGLISH_AI_PROVIDER_POLICY.md)
+ist mit synthetischen Rechenfällen getestet. Er sendet nichts, hat
+keine Zugangsdaten und erteilt ausdrücklich keine Kostengenehmigung.
+
+**P1-09 bleibt offen:** Reale autorisierte KI-Anfragen, tatsächliche
+Verbrauchs-/Preis-/TTS-Erfassung, atomare Budgetreservierung und
+unabhängig getestete Offsite-Sicherung/Restore fehlen.

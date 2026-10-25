@@ -7,6 +7,7 @@ on:
       - "scripts/test_p1_09_cost_model.py"
       - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
       - "docs/P1-09_BESZEL_MONITORING.md"
+      - "docs/P1-09_ENGLISH_AI_PROVIDER_POLICY.md"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read
