@@ -3,11 +3,9 @@ import pg from "pg";
 import { readResearchRedisConfig } from "./research-redis-config.js";
 import { createDormantEditorialWorker } from "./editorial-worker.js";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
-import {
-  parseApprovedResearchCatalog,
-  createApprovedCatalogDiscovery,
-} from "./research-catalog.js";
+import { parseApprovedResearchCatalog } from "./research-catalog.js";
 import { readResearchLaunchGate } from "./research-service-config.js";
+import { createReviewedCatalogDiscovery, parseReviewedSourceRegistry } from "./source-registry.js";
 import { PostgresResearchEvidenceStore, createResearchProcessor } from "./research-process.js";
 import { fetchApprovedSourceDocument, readApprovedFetchPolicy } from "./source-fetch.js";
 
@@ -25,7 +23,14 @@ async function main() {
   } catch {
     throw new Error("Approved research catalog unavailable");
   }
+  let registryContents: string;
+  try {
+    registryContents = readFileSync(gate.registryPath, "utf8");
+  } catch {
+    throw new Error("Reviewed source registry unavailable");
+  }
   const catalog = parseApprovedResearchCatalog(catalogContents, policy);
+  const registry = parseReviewedSourceRegistry(registryContents, policy);
   const dbConfig = readDedicatedPostgresConfig("research");
   const redisConfig = readResearchRedisConfig();
   const pool = new pg.Pool({
@@ -47,7 +52,7 @@ async function main() {
   try {
     const handler = createResearchProcessor(
       new PostgresResearchEvidenceStore(pool),
-      createApprovedCatalogDiscovery(catalog),
+      createReviewedCatalogDiscovery(catalog, registry),
       { fetch: (sourceUrl) => fetchApprovedSourceDocument(sourceUrl, policy) },
     );
     worker = createDormantEditorialWorker(redisConfig, true, handler, gate.queue);

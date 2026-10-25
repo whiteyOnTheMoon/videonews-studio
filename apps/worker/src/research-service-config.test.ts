@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   readResearchLaunchGate,
   APPROVED_RESEARCH_CATALOG_PATH,
+  REVIEWED_SOURCE_REGISTRY_PATH,
 } from "./research-service-config.js";
 import { ISOLATED_RESEARCH_QUEUE } from "./editorial-worker.js";
 import { QUEUE_NAME } from "./queue.js";
@@ -15,6 +16,7 @@ const fullyOptedIn = {
   VNS_SOURCE_FETCH_ENABLED: "true",
   VNS_RESEARCH_QUEUE_NAME: "vns-research",
   VNS_RESEARCH_CATALOG_FILE: APPROVED_RESEARCH_CATALOG_PATH,
+  VNS_RESEARCH_REGISTRY_FILE: REVIEWED_SOURCE_REGISTRY_PATH,
 };
 
 test("research entry cannot enable itself and refuses each missing activation gate", () => {
@@ -36,6 +38,7 @@ test("approved entry always uses separate queue, never shared probe queue", () =
   assert.deepEqual(readResearchLaunchGate(fullyOptedIn), {
     queue: ISOLATED_RESEARCH_QUEUE,
     catalogPath: APPROVED_RESEARCH_CATALOG_PATH,
+    registryPath: REVIEWED_SOURCE_REGISTRY_PATH,
   });
   assert.throws(
     () => readResearchLaunchGate({ ...fullyOptedIn, VNS_RESEARCH_QUEUE_NAME: QUEUE_NAME }),
@@ -46,6 +49,14 @@ test("approved entry always uses separate queue, never shared probe queue", () =
       readResearchLaunchGate({
         ...fullyOptedIn,
         VNS_RESEARCH_CATALOG_FILE: "/tmp/allow-any.json",
+      }),
+    /disabled/,
+  );
+  assert.throws(
+    () =>
+      readResearchLaunchGate({
+        ...fullyOptedIn,
+        VNS_RESEARCH_REGISTRY_FILE: "/tmp/unreviewed.json",
       }),
     /disabled/,
   );
