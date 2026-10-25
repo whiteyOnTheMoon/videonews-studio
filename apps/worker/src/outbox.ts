@@ -28,6 +28,9 @@ const SELECT_PENDING = `
 `;
 
 export function validateOutboxRow(row: OutboxDelivery): void {
+  if (row.delivery_state !== "pending" && row.delivery_state !== "enqueued") {
+    throw new Error("Outbox delivery state invalid");
+  }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(row.job_id)) {
     throw new Error("Outbox job UUID invalid");
   }
