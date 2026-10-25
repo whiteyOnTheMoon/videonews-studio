@@ -1,6 +1,7 @@
 // Disposable CI PostgreSQL only. Validate additive NOLOGIN roles without assigning logins.
 import assert from "node:assert/strict";
 import pg from "pg";
+import { readFileSync } from "node:fs";
 if (process.env.CI !== "true" || process.env.GITHUB_ACTIONS !== "true") {
   throw new Error("CI-only role acceptance");
 }
@@ -27,6 +28,7 @@ const expected = {
   },
 };
 try {
+  await db.query(readFileSync("db/migrations/0012_runtime_least_privilege.up.sql", "utf8"));
   for (const [role, policy] of Object.entries(expected)) {
     const roleRow = await db.query("SELECT rolcanlogin, rolsuper, rolcreaterole FROM pg_roles WHERE rolname=$1", [role]);
     assert.deepEqual(roleRow.rows, [{ rolcanlogin: false, rolsuper: false, rolcreaterole: false }]);
