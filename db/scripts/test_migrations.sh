@@ -71,7 +71,35 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0015_ai_provider_admin_configuration.test.sql"
   sql < "$root/db/migrations/0016_ai_provider_audit_store.up.sql"
   sql < "$root/db/tests/0016_ai_provider_audit_store.test.sql"
+  sql < "$root/db/migrations/0017_ai_provider_mutation_admission.up.sql"
+  sql < "$root/db/tests/0017_ai_provider_mutation_admission.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
+    # Two independent SQL sessions compete for five shared admission slots.
+    admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_provider_config_writer; SELECT vns.admin_try_ai_provider_mutation_slot() FROM generate_series(1,4)" \
+        > "$admission_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then admission_pid_a=$!; else admission_pid_b=$!; fi
+    done
+    wait "$admission_pid_a" && wait "$admission_pid_b"
+    admission_allowed="$(cat "$admission_work/a" "$admission_work/b" | grep -c "^t")"
+    admission_denied="$(cat "$admission_work/a" "$admission_work/b" | grep -c "^f")"
+    test "$admission_allowed" = 5 && test "$admission_denied" = 3 || {
+      echo "FAIL: cross-session provider admission quota was bypassed" >&2
+      rm -rf -- "$admission_work"
+      exit 1
+    }
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      "SELECT attempts FROM vns.ai_provider_mutation_window WHERE singleton=true")" = 5 || {
+      echo "FAIL: provider admission counter not durable" >&2
+      rm -rf -- "$admission_work"
+      exit 1
+    }
+    rm -rf -- "$admission_work"
+    echo "PASS: two independent SQL sessions share five admission slots"
     # Two independent PostgreSQL connections race for the final $0.11
     # of a synthetic $2.00 day. Exactly one $0.09 request can pass.
     sql < "$root/db/tests/0014_synthetic_ai_budget_concurrency.setup.sql"
@@ -127,6 +155,7 @@ for iteration in 1 2; do
     rm -rf -- "$work"
     echo "PASS: parallel day cap and idempotent retry"
   fi
+  sql < "$root/db/migrations/0017_ai_provider_mutation_admission.down.sql"
   sql < "$root/db/migrations/0016_ai_provider_audit_store.down.sql"
   sql < "$root/db/migrations/0015_ai_provider_admin_configuration.down.sql"
   sql < "$root/db/migrations/0014_synthetic_ai_budget_reservations.down.sql"
@@ -148,4 +177,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0016 migrations, budgets and synthetic receipts twice"
+echo "PASS: reversible 0001–0017 migrations, budgets and provider admission twice"

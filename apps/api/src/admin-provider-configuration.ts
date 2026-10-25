@@ -1,6 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AdminAuth } from "./auth.js";
-import type { ProviderMutationLimiter } from "./provider-mutation-limiter.js";
 import {
   sealProviderApiKey,
   type AiProvider,
@@ -166,7 +165,7 @@ export class AdminProviderConfiguration {
     private readonly auth: Pick<AdminAuth, "hasAdminSession" | "originAllowed">,
     private readonly store: ProviderConfigStore,
     private readonly masterKey: Buffer,
-    private readonly limiter?: Pick<ProviderMutationLimiter, "allow">,
+    private readonly limiter?: { allow(): boolean | Promise<boolean> },
   ) {
     if (!Buffer.isBuffer(masterKey) || masterKey.length !== 32) {
       throw new Error("Invalid provider encryption configuration");
@@ -201,10 +200,20 @@ export class AdminProviderConfiguration {
       return true;
     }
 
-    // Explicitly injected process-local gate for synthetic tests only.
-    if (this.limiter && !this.limiter.allow()) {
-      respond(response, 429, { error: "too_many_requests" });
-      return true;
+    // Optional injected gate: durable adapters may be asynchronous. Reject
+    // failures before reading the request body or invoking provider storage.
+    if (this.limiter) {
+      let allowed = false;
+      try {
+        allowed = (await this.limiter.allow()) === true;
+      } catch {
+        respond(response, 503, { error: "temporarily_unavailable" });
+        return true;
+      }
+      if (!allowed) {
+        respond(response, 429, { error: "too_many_requests" });
+        return true;
+      }
     }
 
     const command = parseProviderAdminCommand(await readLimitedJson(request));

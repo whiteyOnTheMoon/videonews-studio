@@ -16,9 +16,10 @@ BEGIN
    '0010_editor_account_lifecycle_audit','0011_operator_registry_governance',
    '0012_runtime_least_privilege','0013_synthetic_token_usage',
    '0014_synthetic_ai_budget_reservations',
-   '0015_ai_provider_admin_configuration','0016_ai_provider_audit_store'
+   '0015_ai_provider_admin_configuration','0016_ai_provider_audit_store',
+   '0017_ai_provider_mutation_admission'
   );
-  IF total<>16 OR (SELECT count(*) FROM vns.schema_migrations)<>16 THEN
+  IF total<>17 OR (SELECT count(*) FROM vns.schema_migrations)<>17 THEN
     RAISE EXCEPTION 'Full migration ledger was not recovered';
   END IF;
 
@@ -191,6 +192,18 @@ BEGIN
     OR has_function_privilege('vns_api_runtime',
          'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
   THEN RAISE EXCEPTION 'Audited provider model restore or role isolation failed'; END IF;
+
+  -- Shared admission is restored, but unprivileged actors remain excluded.
+  IF (SELECT count(*) FROM vns.ai_provider_mutation_window)<>1
+    OR (SELECT attempts FROM vns.ai_provider_mutation_window
+        WHERE singleton=true)<>0
+    OR NOT has_function_privilege('vns_provider_config_writer',
+        'vns.admin_try_ai_provider_mutation_slot()','EXECUTE')
+    OR has_function_privilege('vns_api_runtime',
+        'vns.admin_try_ai_provider_mutation_slot()','EXECUTE')
+    OR has_table_privilege('vns_provider_config_writer',
+        'vns.ai_provider_mutation_window','SELECT')
+  THEN RAISE EXCEPTION 'Shared provider admission restore/ACLs invalid'; END IF;
 
   -- Mutation and uniqueness protections must still fail closed after restore.
   BEGIN
