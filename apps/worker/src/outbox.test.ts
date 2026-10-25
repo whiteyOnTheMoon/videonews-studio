@@ -34,3 +34,45 @@ test("reconciler rejects unbounded batch sizes before touching Postgres", async 
     await assert.rejects(dispatchOutboxBatch({} as Pool, {} as Queue, limit), /batch limit/);
   }
 });
+
+test("Redis identity conflicts roll back without acknowledging the outbox", async () => {
+  for (const mismatch of [
+    { name: "render" },
+    { data: { kind: "research", jobId: "different" } },
+    { opts: { attempts: 99 } },
+  ]) {
+    const sql: string[] = [];
+    let released = false;
+    const client = {
+      async query(statement: string) {
+        sql.push(statement);
+        if (statement.includes("SELECT ob.job_id::text")) return { rows: [valid] };
+        return { rows: [], rowCount: 0 };
+      },
+      release() {
+        released = true;
+      },
+    };
+    const pool = { connect: async () => client } as unknown as Pool;
+    const queue = {
+      getJob: async () => ({
+        name: valid.kind,
+        data: { kind: valid.kind, jobId: valid.job_id },
+        opts: {
+          attempts: valid.max_attempts,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: false,
+          removeOnFail: false,
+        },
+        ...mismatch,
+      }),
+      add: async () => {
+        throw new Error("must not enqueue when existing job conflicts");
+      },
+    } as unknown as Queue;
+    await assert.rejects(dispatchOutboxBatch(pool, queue), /Outbox delivery failed/);
+    assert.ok(sql.includes("ROLLBACK"));
+    assert.ok(!sql.some((statement) => statement.includes("UPDATE vns.job_outbox")));
+    assert.equal(released, true);
+  }
+});
