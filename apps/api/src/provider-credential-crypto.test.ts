@@ -64,14 +64,8 @@ test("secret material is validated but never put into a public status", () => {
   ]) {
     assert.throws(() => sealProviderApiKey("openai", input, master), /Invalid provider/);
   }
-  assert.throws(
-    () => sealProviderApiKey("openai", TEST_KEY, randomBytes(16)),
-    /Invalid provider/,
-  );
-  assert.throws(
-    () => sealProviderApiKey("other" as never, TEST_KEY, master),
-    /Invalid provider/,
-  );
+  assert.throws(() => sealProviderApiKey("openai", TEST_KEY, randomBytes(16)), /Invalid provider/);
+  assert.throws(() => sealProviderApiKey("other" as never, TEST_KEY, master), /Invalid provider/);
   assert.deepEqual(publicProviderKeyStatus({ provider: "openai", configured: true }), {
     provider: "openai",
     configured: true,

@@ -97,9 +97,7 @@ export function unsealProviderApiKey(
   const record = sealed as Record<string, unknown>;
   if (
     record.version !== 1 ||
-    !["version", "nonce", "ciphertext", "tag"].every((field) =>
-      Object.hasOwn(record, field),
-    )
+    !["version", "nonce", "ciphertext", "tag"].every((field) => Object.hasOwn(record, field))
   ) {
     throw new Error("Invalid encrypted provider credential");
   }
