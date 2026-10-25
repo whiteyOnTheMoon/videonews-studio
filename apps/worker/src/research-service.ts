@@ -3,7 +3,10 @@ import pg from "pg";
 import { readQueueConfig } from "./queue.js";
 import { createDormantEditorialWorker } from "./editorial-worker.js";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
-import { parseApprovedResearchCatalog, createApprovedCatalogDiscovery } from "./research-catalog.js";
+import {
+  parseApprovedResearchCatalog,
+  createApprovedCatalogDiscovery,
+} from "./research-catalog.js";
 import { readResearchLaunchGate } from "./research-service-config.js";
 import { PostgresResearchEvidenceStore, createResearchProcessor } from "./research-process.js";
 import { fetchApprovedSourceDocument, readApprovedFetchPolicy } from "./source-fetch.js";
@@ -48,7 +51,9 @@ async function main() {
       { fetch: (sourceUrl) => fetchApprovedSourceDocument(sourceUrl, policy) },
     );
     worker = createDormantEditorialWorker(redisConfig, true, handler, gate.queue);
-    worker.worker.on("error", () => console.error("Isolated research queue error (details omitted)"));
+    worker.worker.on("error", () =>
+      console.error("Isolated research queue error (details omitted)"),
+    );
     // Only an explicitly launched process runs the dormant factory.
     // This cannot consume the deployed probe queue.
     await worker.worker.run();
