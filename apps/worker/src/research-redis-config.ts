@@ -26,7 +26,12 @@ export function readResearchRedisConfig(
   }
   const host = env.VNS_REDIS_HOST ?? "redis";
   const port = Number(env.VNS_REDIS_PORT ?? "6379");
-  if (!["redis", "127.0.0.1"].includes(host) || !Number.isInteger(port) || port < 1 || port > 65535) {
+  if (
+    !["redis", "127.0.0.1"].includes(host) ||
+    !Number.isInteger(port) ||
+    port < 1 ||
+    port > 65535
+  ) {
     throw new Error("Research Redis address invalid");
   }
   let password: string;
