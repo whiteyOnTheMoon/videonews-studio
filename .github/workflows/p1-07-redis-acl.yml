@@ -1,0 +1,35 @@
+name: P1-07 isolated Redis ACL candidate CI
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/research_redis_acl.py"
+      - "scripts/test_research_redis_acl.py"
+      - "scripts/test_research_redis_acl_integration.mjs"
+      - "scripts/ci_research_redis_acl.sh"
+      - ".github/workflows/p1-07-redis-acl.yml"
+permissions:
+  contents: read
+jobs:
+  redis-acl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Node dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check fixture formatting
+        run: |
+          npx prettier --check scripts/test_research_redis_acl_integration.mjs
+          bash -n scripts/ci_research_redis_acl.sh
+      - name: Run offline ACL candidate tests
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_research_redis_acl.py' -v
+      - name: Run disposable authenticated Redis ACL and BullMQ test
+        run: bash scripts/ci_research_redis_acl.sh
+      - name: Ensure source unchanged
+        run: git diff --exit-code
