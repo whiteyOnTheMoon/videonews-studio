@@ -4,7 +4,7 @@ The migration 0012 defines three dormant NOLOGIN permission groups. The dispatch
 
 The dispatcher requires `VNS_PG_RUNTIME_IDENTITIES_ENABLED=true` with `VNS_POSTGRES_RUNTIME_PASSWORD_FILE=/run/secrets/pg_outbox_dispatch_password`; the status reconciler requires the same enable flag with `/run/secrets/pg_job_status_sync_password`. The future research writer's reserved secret path is `/run/secrets/pg_research_writer_password`. All three passwords must be provided through independently mounted Docker secrets. No passwords are committed.
 
-**Still blocked:** Dedicated LOGIN roles, membership to the corresponding NOLOGIN groups, independent credentials, Compose secret mounts, PostgreSQL authentication policy review and operator acceptance are not implemented. The research processor also has no production CLI wiring. The separate dispatcher/status entrypoints remain disabled on the VPS and cannot start successfully without this missing provisioning.
+**Still blocked:** Dedicated live LOGIN roles, membership to the NOLOGIN groups, deployment of unique credentials, PostgreSQL authentication policy review and operator acceptance are not completed. The optional, disabled Compose secret references exist in the repository but are not deployed. The research processor also has no production CLI wiring. The separate dispatcher/status entrypoints remain disabled on the VPS and cannot start successfully without this missing provisioning.
 
 No VPS deployment is authorized by this code change. The existing probe-only worker remains untouched. Require disposable CI authentication and permission-denial tests using actual distinct login users before any live rollout.
 
@@ -36,3 +36,11 @@ The optional `deploy/compose.editorial-ops.yaml` declares distinct dispatcher an
 The disposable end-to-end suite exercises the three separately authenticated logins for dispatch, research evidence persistence, and job-status reconciliation. It additionally asserts that dispatcher cannot modify job terminal status, status sync cannot modify outbox delivery, and research writer cannot modify editorial review verdicts. These negative operations are checked against the same disposable PostgreSQL instance **before** dispatching a synthetic research job. The database-owner account is used only for test fixtures and readback.
 
 **Operator read-only inventory remains a required separate gate** before live credential provisioning. Check actual `schema_migrations` and role existence against the running VPS without assuming that Git migrations have been applied, and confirm the currently deployed Compose configuration without printing secret values. If migration 0012 is not applied, the NOLOGIN groups may not exist; no login provisioning should proceed. No production operation is authorized by these CI checks.
+
+## Offline password-file staging (requires separate operator approval)
+
+The reviewed helper `scripts/stage_pg_runtime_secrets.py` can generate the three **independent**, untracked password files in `secrets/` without touching PostgreSQL or Docker. It is intentionally not called by any deployed service, migration, or workflow; CI only tests it in disposable temporary directories.
+
+When separately authorized, an operator running as UID 1000 may use `python3 scripts/stage_pg_runtime_secrets.py --stage`. It demands an owner-only `secrets/` directory, refuses symlinks and any existing/partial target, creates files with mode 0600, uses cryptographically random base64url values and prints no credentials. It will not rotate or replace an existing password. If a failure occurs during staging, only new files created by that invocation are removed. Confirm the host UID and the intended container UID before any operator action.
+
+**The host files are not database logins.** Role creation, SCRAM `pg_hba.conf` review, login authentication, per-service Compose activation, disaster recovery and service rollout require separate gates. Applying migration 0012 alone neither provisions credentials nor authorizes editorial services.
