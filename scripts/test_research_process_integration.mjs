@@ -10,6 +10,7 @@ import {
   PostgresResearchEvidenceStore,
 } from "../apps/worker/dist/research-process.js";
 import { dispatchOutboxBatch } from "../apps/worker/dist/outbox.js";
+import { createEditorialProcessor } from "../apps/worker/dist/editorial-process.js";
 import { QUEUE_NAME, QUEUE_PREFIX } from "../apps/worker/dist/queue.js";
 
 if (process.env.GITHUB_ACTIONS !== "true" || process.env.CI !== "true") {
@@ -57,7 +58,7 @@ const document = {
 let searches = 0;
 let fetches = 0;
 const store = new PostgresResearchEvidenceStore(db);
-const processor = createResearchProcessor(
+const researchHandler = createResearchProcessor(
   store,
   {
     async discover(foundTopic) {
@@ -74,6 +75,7 @@ const processor = createResearchProcessor(
     },
   },
 );
+const processor = createEditorialProcessor(researchHandler);
 try {
   await events.waitUntilReady();
   await queue.waitUntilReady();
