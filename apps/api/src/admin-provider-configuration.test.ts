@@ -120,9 +120,13 @@ test("unauthorized access or wrong origin never invokes the store", async () => 
   };
   const admin = new AdminProviderConfiguration(auth, never, MASTER_KEY);
   for (const method of ["GET", "POST"]) {
-    const req = fakeRequest(method, { action: "remove_key", provider: "openai" }, {
-      cookie: "invalid",
-    });
+    const req = fakeRequest(
+      method,
+      { action: "remove_key", provider: "openai" },
+      {
+        cookie: "invalid",
+      },
+    );
     const res = fakeResponse();
     assert.equal(await admin.handle(req, res), true);
     assert.equal(res.code, 401);
@@ -130,9 +134,13 @@ test("unauthorized access or wrong origin never invokes the store", async () => 
   }
   const res = fakeResponse();
   await admin.handle(
-    fakeRequest("POST", { action: "remove_key", provider: "openai" }, {
-      origin: "https://attacker.example",
-    }),
+    fakeRequest(
+      "POST",
+      { action: "remove_key", provider: "openai" },
+      {
+        origin: "https://attacker.example",
+      },
+    ),
     res,
   );
   assert.equal(res.code, 403);
@@ -211,8 +219,7 @@ test("invalid provider actions, forbidden model and key-bearing GET data fail cl
   assert.throws(
     () =>
       validatePublicProviderList([
-        { provider: "openai", selectedModel: "gpt-6.1-sol", configured: true,
-          apiKey: EXAMPLE_KEY },
+        { provider: "openai", selectedModel: "gpt-6.1-sol", configured: true, apiKey: EXAMPLE_KEY },
         { provider: "google_gemini", selectedModel: "gemini-3.8-flash-tts", configured: false },
       ]),
     /Invalid provider/,
@@ -228,17 +235,25 @@ test("unsupported methods, invalid body encoding, oversize data and store errors
 
   const badContentType = fakeResponse();
   await config.handle(
-    fakeRequest("POST", { action: "remove_key", provider: "openai" }, {
-      "content-type": "text/plain",
-    }),
+    fakeRequest(
+      "POST",
+      { action: "remove_key", provider: "openai" },
+      {
+        "content-type": "text/plain",
+      },
+    ),
     badContentType,
   );
   assert.equal(badContentType.code, 400);
 
   const huge = fakeResponse();
   await config.handle(
-    fakeRequest("POST", { action: "set_key", provider: "openai",
-      apiKey: EXAMPLE_KEY, junk: "x".repeat(1500) }),
+    fakeRequest("POST", {
+      action: "set_key",
+      provider: "openai",
+      apiKey: EXAMPLE_KEY,
+      junk: "x".repeat(1500),
+    }),
     huge,
   );
   assert.equal(huge.code, 400);
@@ -254,7 +269,10 @@ test("unsupported methods, invalid body encoding, oversize data and store errors
   const failed = new AdminProviderConfiguration(auth, broken, MASTER_KEY);
   for (const method of ["GET", "POST"]) {
     const response = fakeResponse();
-    await failed.handle(fakeRequest(method, { action: "remove_key", provider: "openai" }), response);
+    await failed.handle(
+      fakeRequest(method, { action: "remove_key", provider: "openai" }),
+      response,
+    );
     assert.equal(response.code, 503);
     assert.ok(!response.payload.includes("database-host"));
   }

@@ -38,8 +38,7 @@ type Command =
 
 function hasExactKeys(row: Record<string, unknown>, fields: readonly string[]) {
   return (
-    Object.keys(row).length === fields.length &&
-    fields.every((field) => Object.hasOwn(row, field))
+    Object.keys(row).length === fields.length && fields.every((field) => Object.hasOwn(row, field))
   );
 }
 
@@ -66,10 +65,7 @@ export function parseProviderAdminCommand(input: unknown): Command | null {
   ) {
     return { action: "set_key", provider, apiKey: row.apiKey };
   }
-  if (
-    row.action === "remove_key" &&
-    hasExactKeys(row, ["action", "provider"])
-  ) {
+  if (row.action === "remove_key" && hasExactKeys(row, ["action", "provider"])) {
     return { action: "remove_key", provider };
   }
   if (
@@ -117,10 +113,7 @@ export function validatePublicProviderList(data: unknown): ProviderMetadata[] {
 }
 
 async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
-  if (
-    request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !==
-    "application/json"
-  ) {
+  if (request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
     return null;
   }
   let size = 0;
