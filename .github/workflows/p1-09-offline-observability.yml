@@ -25,5 +25,25 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Capture pinned formatter output (temporary, then restore files)
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --write apps/web/src/lib/admin-ai-provider-write-contract.ts apps/web/src/lib/admin-ai-provider-write-contract.test.ts docs/P1-09_ADMIN_AI_PROVIDER_WRITE_CONTRACT.md
+          echo '===VNSFMT_START:provider-bff.ts==='
+          base64 -w0 apps/web/src/lib/admin-ai-provider-write-contract.ts
+          echo
+          echo '===VNSFMT_END:provider-bff.ts==='
+          echo '===VNSFMT_START:provider-bff.test.ts==='
+          base64 -w0 apps/web/src/lib/admin-ai-provider-write-contract.test.ts
+          echo
+          echo '===VNSFMT_END:provider-bff.test.ts==='
+          echo '===VNSFMT_START:provider-bff.md==='
+          base64 -w0 docs/P1-09_ADMIN_AI_PROVIDER_WRITE_CONTRACT.md
+          echo
+          echo '===VNSFMT_END:provider-bff.md==='
+          git restore -- apps/web/src/lib/admin-ai-provider-write-contract.ts apps/web/src/lib/admin-ai-provider-write-contract.test.ts docs/P1-09_ADMIN_AI_PROVIDER_WRITE_CONTRACT.md
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"
