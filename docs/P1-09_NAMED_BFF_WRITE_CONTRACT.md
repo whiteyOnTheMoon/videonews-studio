@@ -27,10 +27,11 @@ persönliche Editor-Authentifizierung angepasst:
 - **Proxy-Antworten:** nur statusbasierte, generische Fehler; erfolgreicher
   Status ausschließlich `{ saved: true, active: false }`. Kein Secret
   oder upstream-Fehlertext geht an den Browser. Keine Redirect-Folge.
-- **Isolierte Tests:** gemeinsames Admin-Cookie, fehlende persönliche
-  Rolle, gefälschter Benutzerstatus, fehlerhafte Framing-Header,
-  synthetische Credential-Weiterleitung, ungültige Payloads,
-  Upstream-Ablehnungen und Secret-Exfiltration.
+- **Isolierte Tests:** gemeinsames Admin-Cookie, ungültige persönliche
+  Cookies und Nicht-Admin-Rollen, synthetische Credential-Weiterleitung,
+  ungültige Payloads und Body-Formate, Upstream-Ablehnungen sowie
+  Secret-Exfiltration. Separate Randfalltests für fehlerhafte
+  Content-Length- und Content-Encoding-Header fehlen noch.
 
 ### Nicht abgenommen
 
