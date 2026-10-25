@@ -3,6 +3,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "apps/worker/src/research-redis-config.ts"
+      - "apps/worker/src/research-redis-config.test.ts"
       - "scripts/research_redis_acl.py"
       - "scripts/test_research_redis_acl.py"
       - "scripts/test_research_redis_acl_integration.mjs"
@@ -27,6 +29,12 @@ jobs:
         run: |
           npx prettier --check scripts/test_research_redis_acl_integration.mjs
           bash -n scripts/ci_research_redis_acl.sh
+      - name: Verify dedicated Redis config with worker tests
+        run: |
+          npx prettier --check apps/worker/src/research-redis-config.ts apps/worker/src/research-redis-config.test.ts
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+          npm test --workspace @vns/worker
       - name: Run offline ACL candidate tests
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_research_redis_acl.py' -v
       - name: Run disposable authenticated Redis ACL and BullMQ test
