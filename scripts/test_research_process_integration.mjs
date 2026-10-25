@@ -40,6 +40,30 @@ const db = new Pool({
   max: 2,
   connectionTimeoutMillis: 4000,
 });
+// These accounts are created only inside the disposable CI PostgreSQL service.
+// The owner pool above is restricted to creating and inspecting CI fixtures.
+const scoped = (user, password) =>
+  new Pool({
+    host: "127.0.0.1",
+    port: 15432,
+    user,
+    password,
+    database: "videonews",
+    max: 2,
+    connectionTimeoutMillis: 4000,
+  });
+const dispatchDb = scoped(
+  "vns_outbox_dispatch_login",
+  "ci-dispatch-fixture-only-not-a-real-secret-0001",
+);
+const statusDb = scoped(
+  "vns_job_status_sync_login",
+  "ci-status-fixture-only-not-a-real-secret-0002",
+);
+const researchDb = scoped(
+  "vns_research_writer_login",
+  "ci-research-fixture-only-not-a-real-secret-0003",
+);
 let worker;
 let workerConnection;
 const topic = "Municipal transport infrastructure and public accountability";
@@ -59,7 +83,7 @@ const document = {
 };
 let searches = 0;
 let fetches = 0;
-const store = new PostgresResearchEvidenceStore(db);
+const store = new PostgresResearchEvidenceStore(researchDb);
 const researchHandler = createResearchProcessor(
   store,
   {
@@ -102,7 +126,7 @@ try {
   // The test runner might still have earlier CI job fixtures; only require
   // that our deterministic ID appears, not that the batch inserted one.
   for (let i = 0; i < 10; i++) {
-    await dispatchOutboxBatch(db, queue, 10);
+    await dispatchOutboxBatch(dispatchDb, queue, 10);
     if (await queue.getJob("job-" + jobId.replaceAll("-", ""))) break;
   }
   const queued = await queue.getJob("job-" + jobId.replaceAll("-", ""));
@@ -189,7 +213,7 @@ try {
 
   // Complete the *same* SQL outbox -> authenticated Redis -> dormant editorial
   // factory -> evidence -> SQL status flow, with no live adapters or VPS work.
-  assert.equal((await reconcileJobStatusBatch(db, queue, 10)).updated, 1);
+  assert.equal((await reconcileJobStatusBatch(statusDb, queue, 10)).updated, 1);
   const completed = await db.query(
     "SELECT status, attempt_count, error_code FROM vns.jobs WHERE id=$1",
     [jobId],
@@ -199,14 +223,14 @@ try {
     attempt_count: 1,
     error_code: null,
   });
-  assert.equal((await reconcileJobStatusBatch(db, queue, 10)).updated, 0);
-  assert.equal((await dispatchOutboxBatch(db, queue, 10)).newlyEnqueued, 0);
+  assert.equal((await reconcileJobStatusBatch(statusDb, queue, 10)).updated, 0);
+  assert.equal((await dispatchOutboxBatch(dispatchDb, queue, 10)).newlyEnqueued, 0);
   console.log(
     "PASS: dormant editorial factory + outbox + PostgreSQL status complete synthetic job",
   );
 } finally {
   await Promise.allSettled(
-    [worker?.close(), events.close(), queue.close(), db.end()].filter(Boolean),
+    [worker?.close(), events.close(), queue.close(), db.end(), dispatchDb.end(), statusDb.end(), researchDb.end()].filter(Boolean),
   );
   await Promise.allSettled(
     [producerRedis, eventRedis, workerConnection].filter(Boolean).map((conn) => conn.quit()),
