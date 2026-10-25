@@ -2,14 +2,41 @@
 
 **Evidence level: secondary transcription**, not the original P0 files, raw terminal measurements, source-policy references or a new independent run. Source: operator-provided “VideoNews Studio – Abschluss- und Übergabebericht”, dated 22–23 October 2026, provided in the project conversation on 25 October. Treat the figures below as historical operator-reported evidence. Do not use them as current production acceptance.
 
-| Issue | Operator-reported result | Unverified original evidence / remaining gate |
-| --- | --- | --- |
-| [#10](https://github.com/whiteyOnTheMoon/videonews-studio/issues/10) P0-01 | Draft PRD: one English-language YouTube channel, up to one suitable video/day, 8–12 minutes only if justified; human approval before upload; maximum €100 extra monthly running cost, €3 variable cost/video, €25 weekly warning threshold; new paid coding agents €0 pending approval. | Original `VideoNews_Studio_PRD_v1_Entwurf.md` not yet imported; budget policy for the currently authorised experiment remains stricter (no new paid services). |
-| [#11](https://github.com/whiteyOnTheMoon/videonews-studio/issues/11) P0-02 | Ubuntu 24.04.4, 4 vCPUs, 7.8 GiB RAM, 116 GB disk/24 GB free at audit; synthetic 1080p 25-fps H.264 veryfast CRF27 benchmark in 1-vCPU/768-MiB container: 30 s input in 20.991 s (maxrss 182000 kB, 11 MB output); 10-min input in **416.081 s** (maxrss **187896 kB**, 215 MB MP4, exit 0). | Original VPS audit and raw command output absent; process RSS is not whole Remotion/Chromium worker RAM. Traffic/hosting limits, production rendering and offsite restore not proven. |
-| [#12](https://github.com/whiteyOnTheMoon/videonews-studio/issues/12) P0-03 | A 25-rule red/yellow/green policy matrix covering sources, YouTube disclosure, factual accuracy, stock/media/audio licenses and human release gates was reportedly drafted. | Original 25 entries, their cited policies and **individual check dates** absent; cannot represent policy freshness or original acceptance as independently verified. |
-| [#13](https://github.com/whiteyOnTheMoon/videonews-studio/issues/13) P0-04 | Weights: topic frequency 25%, visualisability 20%, media safety 25%, TTS 10%, cost 20%. Six reported scores: Earth & Climate Data Explained **4.40**; Space Missions & Astronomy **4.20**; AI & Software Breakthroughs **4.20**; Economy in Charts **4.10**; Cybersecurity & Digital Safety **3.70**; Consumer Devices & Product Updates **3.30** (out of 5). | Original category-by-category ratings and scoring spreadsheet absent; weights and aggregate scores alone do not reproduce the calculations. **Earth & Climate remains provisional**, with Space as alternative. Final niche authorization belongs to [#24](https://github.com/whiteyOnTheMoon/videonews-studio/issues/24). |
-| [#14](https://github.com/whiteyOnTheMoon/videonews-studio/issues/14) P0-05 | Three conceptual ten-minute storyboards of 15 scenes each: “What Satellite Data Can—and Cannot—Tell Us About a Changing Earth” (10 original graphics, 3 third-party candidates, 2 title/source cards); “How Astronomers Confirm a New Exoplanet” (10/3/2); “How to Read an AI Model Benchmark Without Falling for Hype” (13/0/2). Hypothesised variable costs €0.25–€2.80/video. | Original scene-by-scene storyboards / JSON, asset availability checks and licenses absent; **no third-party media approved** and no videos rendered. |
-| [#15](https://github.com/whiteyOnTheMoon/videonews-studio/issues/15) P0-06 | Development GO for an isolated TypeScript/Next.js–PostgreSQL–Redis/BullMQ–Remotion/FFmpeg Compose architecture, human review, no automatic public publishing. | Original architecture decision record absent; no final niche GO and no end-to-end rendering or publication GO. |
+### [#10](https://github.com/whiteyOnTheMoon/videonews-studio/issues/10) P0-01
+
+**Operator-reported result:** Draft PRD: one English-language YouTube channel, up to one suitable video/day, 8–12 minutes only if justified; human approval before upload; maximum €100 extra monthly running cost, €3 variable cost/video, €25 weekly warning threshold; new paid coding agents €0 pending approval.
+
+**Unverified original evidence / remaining gate:** Original `VideoNews_Studio_PRD_v1_Entwurf.md` not yet imported; budget policy for the currently authorised experiment remains stricter (no new paid services).
+
+### [#11](https://github.com/whiteyOnTheMoon/videonews-studio/issues/11) P0-02
+
+**Operator-reported result:** Ubuntu 24.04.4, 4 vCPUs, 7.8 GiB RAM, 116 GB disk/24 GB free at audit; synthetic 1080p 25-fps H.264 veryfast CRF27 benchmark in 1-vCPU/768-MiB container: 30 s input in 20.991 s (maxrss 182000 kB, 11 MB output); 10-min input in **416.081 s** (maxrss **187896 kB**, 215 MB MP4, exit 0).
+
+**Unverified original evidence / remaining gate:** Original VPS audit and raw command output absent; process RSS is not whole Remotion/Chromium worker RAM. Traffic/hosting limits, production rendering and offsite restore not proven.
+
+### [#12](https://github.com/whiteyOnTheMoon/videonews-studio/issues/12) P0-03
+
+**Operator-reported result:** A 25-rule red/yellow/green policy matrix covering sources, YouTube disclosure, factual accuracy, stock/media/audio licenses and human release gates was reportedly drafted.
+
+**Unverified original evidence / remaining gate:** Original 25 entries, their cited policies and **individual check dates** absent; cannot represent policy freshness or original acceptance as independently verified.
+
+### [#13](https://github.com/whiteyOnTheMoon/videonews-studio/issues/13) P0-04
+
+**Operator-reported result:** Weights: topic frequency 25%, visualisability 20%, media safety 25%, TTS 10%, cost 20%. Six reported scores: Earth & Climate Data Explained **4.40**; Space Missions & Astronomy **4.20**; AI & Software Breakthroughs **4.20**; Economy in Charts **4.10**; Cybersecurity & Digital Safety **3.70**; Consumer Devices & Product Updates **3.30** (out of 5).
+
+**Unverified original evidence / remaining gate:** Original category-by-category ratings and scoring spreadsheet absent; weights and aggregate scores alone do not reproduce the calculations. **Earth & Climate remains provisional**, with Space as alternative. Final niche authorization belongs to [#24](https://github.com/whiteyOnTheMoon/videonews-studio/issues/24).
+
+### [#14](https://github.com/whiteyOnTheMoon/videonews-studio/issues/14) P0-05
+
+**Operator-reported result:** Three conceptual ten-minute storyboards of 15 scenes each: “What Satellite Data Can—and Cannot—Tell Us About a Changing Earth” (10 original graphics, 3 third-party candidates, 2 title/source cards); “How Astronomers Confirm a New Exoplanet” (10/3/2); “How to Read an AI Model Benchmark Without Falling for Hype” (13/0/2). Hypothesised variable costs €0.25–€2.80/video.
+
+**Unverified original evidence / remaining gate:** Original scene-by-scene storyboards / JSON, asset availability checks and licenses absent; **no third-party media approved** and no videos rendered.
+
+### [#15](https://github.com/whiteyOnTheMoon/videonews-studio/issues/15) P0-06
+
+**Operator-reported result:** Development GO for an isolated TypeScript/Next.js–PostgreSQL–Redis/BullMQ–Remotion/FFmpeg Compose architecture, human review, no automatic public publishing.
+
+**Unverified original evidence / remaining gate:** Original architecture decision record absent; no final niche GO and no end-to-end rendering or publication GO.
 
 ## Provenance and correction rule
 
