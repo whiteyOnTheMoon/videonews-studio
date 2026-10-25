@@ -284,3 +284,50 @@ test("unsupported methods, invalid body encoding, oversize data and store errors
   unrelated.url = "/admin/unrelated";
   assert.equal(await config.handle(unrelated, fakeResponse()), false);
 });
+
+test("strict provider mutation body parsing rejects mismatched lengths and invalid UTF-8", async () => {
+  const { store, changes } = createFixtureStore();
+  const config = new AdminProviderConfiguration(auth, store, MASTER_KEY);
+  const valid = JSON.stringify({ action: "remove_key", provider: "openai" });
+  const invalidUtf8 = Buffer.concat([Buffer.from(valid, "utf8"), Buffer.from([0xff])]);
+  const samples: Array<{ bytes: Buffer; headers: Record<string, string> }> = [
+    { bytes: Buffer.from(valid), headers: { "content-length": "1" } },
+    { bytes: Buffer.from(valid), headers: { "content-length": "999" } },
+    { bytes: Buffer.from(valid), headers: { "content-length": "0001" } },
+    { bytes: Buffer.from(valid), headers: { "content-length": "1025" } },
+    { bytes: Buffer.from(valid), headers: { "content-encoding": "gzip" } },
+    { bytes: invalidUtf8, headers: {} },
+  ];
+  for (const sample of samples) {
+    const req = Object.assign(Readable.from([sample.bytes]), {
+      url: "/admin/ai-providers",
+      method: "POST",
+      headers: {
+        cookie: "session-fixture",
+        origin: ORIGIN,
+        "content-type": "application/json",
+        ...sample.headers,
+      },
+    }) as unknown as IncomingMessage;
+    const res = fakeResponse();
+    await config.handle(req, res);
+    assert.equal(res.code, 400);
+    assert.deepEqual(JSON.parse(res.payload), { error: "invalid_request" });
+    assert.ok(!res.payload.includes(EXAMPLE_KEY));
+  }
+  assert.equal(changes.length, 0);
+});
+
+test("valid bounded provider JSON with matching byte length still succeeds", async () => {
+  const { store, changes } = createFixtureStore();
+  const config = new AdminProviderConfiguration(auth, store, MASTER_KEY);
+  const body = { action: "remove_key", provider: "openai" };
+  const content = JSON.stringify(body);
+  const response = fakeResponse();
+  await config.handle(
+    fakeRequest("POST", body, { "content-length": String(Buffer.byteLength(content)) }),
+    response,
+  );
+  assert.equal(response.code, 200);
+  assert.deepEqual(changes, [{ action: "remove_key", provider: "openai" }]);
+});
