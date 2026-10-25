@@ -1,10 +1,11 @@
-import { clientAdminCookie, isAdminAuthorized, type AdminProxyConfig } from "./admin-proxy";
+import type { AdminProxyConfig } from "./admin-proxy";
+import { clientEditorCookie, editorProfile } from "./editor-proxy";
 import type { AdminAiProvider } from "./admin-ai-provider-view";
 
 /**
- * Dormant server-side key mutation contract: NOT imported by any Next.js route.
+ * Dormant named-admin key mutation contract: NOT imported by any Next.js route.
  * No real key entry or provider activation is permitted on the running system.
- * Provider keys may only transit to a separately enabled INTERNAL API someday.
+ * Personal editor-admin auth must be confirmed by the API before any forwarding.
  */
 export type AdminAiProviderMutation =
   | { action: "set_key"; provider: AdminAiProvider; apiKey: string }
@@ -92,9 +93,14 @@ async function limitedJsonBody(request: Request): Promise<unknown> {
   ) {
     return null;
   }
-  if (request.headers.has("content-length")) {
-    const declared = request.headers.get("content-length");
-    if (!declared || !/^\d+$/.test(declared) || Number(declared) > 1024) return null;
+  // Strict, byte-exact framing; compressed input is forbidden.
+  if (request.headers.has("content-encoding")) return null;
+  const declared = request.headers.get("content-length");
+  if (
+    declared !== null &&
+    (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > 1024)
+  ) {
+    return null;
   }
   const reader = request.body?.getReader();
   if (!reader) return null;
@@ -108,6 +114,7 @@ async function limitedJsonBody(request: Request): Promise<unknown> {
       if (size > 1024) return null;
       chunks.push(value);
     }
+    if (declared !== null && size !== Number(declared)) return null;
     const buffer = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) {
@@ -130,11 +137,11 @@ async function limitedJsonBody(request: Request): Promise<unknown> {
 }
 
 /**
- * Future BFF command handler; can be tested ONLY with explicit injected config
- * and synthetic fetcher. No production route calls it.
+ * Future BFF command handler. The currently deployed route stays GET-only.
+ * Offline tests inject configuration and a synthetic fetcher exclusively.
  *
- * Future activation needs server-side rate limits, approved role/DB/KEK custody,
- * HTTPS + CSRF controls and redacted request logging.
+ * Runtime activation requires the independently approved DB writer/KEK, personal
+ * session propagation, rate admission and private network rollout.
  */
 export async function dormantAdminAiProviderWriteProxy(
   request: Request,
@@ -147,12 +154,23 @@ export async function dormantAdminAiProviderWriteProxy(
     return safeReply(403, { error: "forbidden" });
   }
 
-  const cookie = clientAdminCookie(request.headers.get("cookie"));
+  // Shared-admin cookies must NEVER authorize or be forwarded for key changes.
+  const cookie = clientEditorCookie(request.headers.get("cookie"));
   if (!cookie) return safeReply(401, { error: "unauthorized" });
 
-  // Check actual backend admin session, not a browser-claimed role.
-  if (!(await isAdminAuthorized(config, cookie, fetcher))) {
-    return safeReply(401, { error: "unauthorized" });
+  // Verify the live personal editor session at the internal API, not a
+  // browser-claimed role. The backend will independently recheck on POST.
+  const profile = await editorProfile(request, config, fetcher);
+  if (profile.status === 401) return safeReply(401, { error: "unauthorized" });
+  if (profile.status !== 200) return safeReply(503, { error: "temporarily_unavailable" });
+  const identity: unknown = await profile.json();
+  if (
+    !identity ||
+    typeof identity !== "object" ||
+    !("role" in identity) ||
+    identity.role !== "admin"
+  ) {
+    return safeReply(403, { error: "forbidden" });
   }
 
   const payload = parseAdminAiProviderMutation(await limitedJsonBody(request));

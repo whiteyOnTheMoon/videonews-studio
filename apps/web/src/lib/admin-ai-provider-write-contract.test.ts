@@ -5,7 +5,8 @@ import {
   parseAdminAiProviderMutation,
 } from "./admin-ai-provider-write-contract";
 
-const COOKIE = "__Host-vns_session=" + "a".repeat(64);
+const COOKIE = "__Host-vns_editor=" + "a".repeat(64);
+const SHARED_COOKIE = "__Host-vns_session=" + "b".repeat(64);
 const ORIGIN = "https://studio.ap-pixels.com";
 const CFG = { origin: ORIGIN, api: "http://api:4000" };
 const FAKE_KEY = "sk-synthetic-fixture-never-a-real-credential-000001";
@@ -109,16 +110,18 @@ test("GET, wrong origin and malformed cookies never touch internal API", async (
   assert.equal(called, false);
 });
 
-test("forged browser role cannot substitute for verified internal admin session", async () => {
+test("non-admin personal session cannot authorize provider changes", async () => {
   const calls: string[] = [];
   const fetcher = (async (input: RequestInfo | URL) => {
     calls.push(String(input));
-    if (String(input).endsWith("/admin/me")) return Response.json({ role: "editor" });
+    if (String(input).endsWith("/editor/me")) {
+      return Response.json({ role: "editor", username: "ci_editor" });
+    }
     throw new Error("Must not submit provider key");
   }) as typeof fetch;
   const response = await dormantAdminAiProviderWriteProxy(req(), CFG, fetcher);
-  assert.equal(response.status, 401);
-  assert.deepEqual(calls, [CFG.api + "/admin/me"]);
+  assert.equal(response.status, 403);
+  assert.deepEqual(calls, [CFG.api + "/editor/me"]);
 });
 
 test("canonical command with fake key is forwarded ONLY after admin check", async () => {
@@ -129,7 +132,9 @@ test("canonical command with fake key is forwarded ONLY after admin check", asyn
     assert.equal(new Headers(init?.headers).get("Cookie"), COOKIE);
     assert.equal(init?.cache, "no-store");
     assert.equal(init?.redirect, "manual");
-    if (url.endsWith("/admin/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
     assert.equal(url, CFG.api + "/admin/ai-providers");
     assert.equal(init?.method, "POST");
     assert.equal(new Headers(init?.headers).get("Origin"), ORIGIN);
@@ -141,13 +146,15 @@ test("canonical command with fake key is forwarded ONLY after admin check", asyn
   assert.equal(result.status, 200);
   assert.deepEqual(await result.json(), { saved: true, active: false });
   assertSanitized(result);
-  assert.deepEqual(visited, [CFG.api + "/admin/me", CFG.api + "/admin/ai-providers"]);
+  assert.deepEqual(visited, [CFG.api + "/editor/me", CFG.api + "/admin/ai-providers"]);
 });
 
 test("invalid payloads, body formats and over-limit inputs never reach write endpoint", async () => {
   let writes = 0;
   const fetcher = (async (input: RequestInfo | URL) => {
-    if (String(input).endsWith("/admin/me")) return Response.json({ role: "admin" });
+    if (String(input).endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
     writes++;
     throw new Error("Unexpected write");
   }) as typeof fetch;
@@ -189,7 +196,9 @@ test("error or unexpected response does not echo credentials or upstream text", 
   ];
   for (const upstream of responses) {
     const fetcher = (async (input: RequestInfo | URL) => {
-      if (String(input).endsWith("/admin/me")) return Response.json({ role: "admin" });
+      if (String(input).endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
       return upstream;
     }) as typeof fetch;
     const response = await dormantAdminAiProviderWriteProxy(req(), CFG, fetcher);
@@ -209,11 +218,79 @@ test("backend rejections map to generic status with no raw secret data", async (
     [429, 429],
   ] as const) {
     const fetcher = (async (input: RequestInfo | URL) =>
-      String(input).endsWith("/admin/me")
-        ? Response.json({ role: "admin" })
+      String(input).endsWith("/editor/me")
+        ? Response.json({ role: "admin", username: "ci_admin" })
         : new Response(FAKE_KEY, { status: upstream })) as typeof fetch;
     const response = await dormantAdminAiProviderWriteProxy(req(), CFG, fetcher);
     assert.equal(response.status, expected);
     assert.ok(!(await response.text()).includes(FAKE_KEY));
   }
 });
+
+test("shared admin token is never used as provider write identity", async () => {
+  let upstreamCalls = 0;
+  const fetcher = (async () => {
+    upstreamCalls++;
+    return Response.json({ role: "admin", username: "ci_admin" });
+  }) as typeof fetch;
+  const sharedOnly = await dormantAdminAiProviderWriteProxy(
+    req(COMMAND, { cookie: SHARED_COOKIE }),
+    CFG,
+    fetcher,
+  );
+  assert.equal(sharedOnly.status, 401);
+  assert.equal(upstreamCalls, 0);
+});
+
+test("personal editor profile must pass exact validation before forwarding", async () => {
+  const values: Array<unknown> = [
+    { role: "admin" },
+    { role: "admin", username: "not valid" },
+    { role: "reviewer", username: "ci_editor" },
+    { role: "admin", username: "ci_admin", apiKey: FAKE_KEY },
+  ];
+  for (const value of values) {
+    let writes = 0;
+    const fetcher = (async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/editor/me")) return Response.json(value);
+      writes++;
+      return Response.json({ saved: true, active: false });
+    }) as typeof fetch;
+    const result = await dormantAdminAiProviderWriteProxy(req(), CFG, fetcher);
+    assert.notEqual(result.status, 200);
+    assert.equal(writes, 0);
+  }
+});
+
+test("invalid JSON framing and encoding are rejected before upstream writes", async () => {
+  let writes = 0;
+  const fetcher = (async (input: RequestInfo | URL) => {
+    if (String(input).endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
+    writes++;
+    return Response.json({ saved: true, active: false });
+  }) as typeof fetch;
+  for (const header of [
+    { "Content-Length": "1" },
+    { "Content-Length": "999" },
+    { "Content-Length": "0001" },
+    { "Content-Length": "1025" },
+    { "Content-Encoding": "gzip" },
+  ]) {
+    const request = new Request(ORIGIN + "/api/admin/ai-providers", {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        Cookie: COOKIE,
+        "Content-Type": "application/json",
+        ...header,
+      },
+      body: JSON.stringify(COMMAND),
+    });
+    const result = await dormantAdminAiProviderWriteProxy(request, CFG, fetcher);
+    assert.equal(result.status, 400);
+  }
+  assert.equal(writes, 0);
+});
+
