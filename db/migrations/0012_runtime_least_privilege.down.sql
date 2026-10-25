@@ -1,0 +1,11 @@
+BEGIN;
+REVOKE ALL PRIVILEGES ON vns.research_evidence FROM vns_research_writer;
+REVOKE ALL PRIVILEGES ON vns.research_requests FROM vns_research_writer;
+REVOKE ALL PRIVILEGES ON vns.job_outbox FROM vns_outbox_dispatch, vns_job_status_sync;
+REVOKE ALL PRIVILEGES ON vns.jobs FROM vns_outbox_dispatch, vns_job_status_sync, vns_research_writer;
+REVOKE USAGE ON SCHEMA vns FROM vns_outbox_dispatch, vns_job_status_sync, vns_research_writer;
+DELETE FROM vns.schema_migrations WHERE version = '0012_runtime_least_privilege';
+DROP ROLE vns_outbox_dispatch;
+DROP ROLE vns_job_status_sync;
+DROP ROLE vns_research_writer;
+COMMIT;
