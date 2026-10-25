@@ -183,6 +183,16 @@ export class EditorAuth {
     return identity;
   }
 
+  /**
+   * Server-side identity for future audited provider administration.
+   * Rechecks the active account and auth-version for EVERY call; shared admin
+   * cookies and caller-supplied names cannot create a named editor session.
+   */
+  async authenticatedAdminIdentity(req: IncomingMessage): Promise<EditorIdentity | null> {
+    const identity = await this.identity(req);
+    return identity?.role === "admin" ? identity : null;
+  }
+
   async handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const path = req.url;
     if (
