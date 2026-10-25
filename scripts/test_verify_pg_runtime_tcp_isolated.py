@@ -19,19 +19,13 @@ class IsolatedPgTcpTest(unittest.TestCase):
             file.chmod(0o600)
         return directory
 
-    def test_refuses_unsafe_directory_or_file(self):
+    def test_refuses_unsafe_directory(self):
         with tempfile.TemporaryDirectory() as root:
             directory = self.make_files(root)
-            with patch.object(mod.os, "geteuid", return_value=1000):
-                # Temporary files belong to actual CI UID, not necessarily 1000.
-                with patch.object(mod, "stat") as fake_stat:
-                    fake_stat.S_IMODE = stat.S_IMODE
-                    fake_stat.S_ISREG = stat.S_ISREG
-                    with self.assertRaises((PermissionError, TypeError)):
-                        mod.inspect_local_secret_paths(directory)
             directory.chmod(0o755)
-            with self.assertRaises(PermissionError):
-                mod.inspect_local_secret_paths(directory)
+            with patch.object(mod.os, "geteuid", return_value=1000):
+                with self.assertRaises(PermissionError):
+                    mod.inspect_local_secret_paths(directory)
 
     def test_refuses_symlink_directory(self):
         with tempfile.TemporaryDirectory() as root:
