@@ -61,7 +61,7 @@ Unit trägt dieses Flag. Sie ist durch unprivilegierten Benutzer,
 **Anders als der lokale Disk-Watch benötigt sie Netzwerkzugang.**
 
 Systemd speichert ihren Status ausschließlich unter
-`/var/lib/videonews-studio/email-alert` mit Berechtigung 0700.
+`/var/lib/vns-disk-email` mit Berechtigung 0700.
 Die Laufzeit legt dort ausschließlich einen Lock und eine 0600-Statusdatei an.
 Der lokale Disk-Watch-Dienst bleibt bewusst isoliert mit PrivateNetwork=yes.
 

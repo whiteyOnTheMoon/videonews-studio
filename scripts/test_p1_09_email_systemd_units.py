@@ -31,8 +31,8 @@ class EmailSystemdTests(unittest.TestCase):
         self.assertEqual(service["StandardOutput"], "journal")
         self.assertEqual(service["StandardError"], "journal")
         self.assertIn("p1_09_email_alert.py --send ", service["ExecStart"])
-        self.assertIn("--state-dir /var/lib/videonews-studio/email-alert", service["ExecStart"])
-        self.assertEqual(service["StateDirectory"], "videonews-studio/email-alert")
+        self.assertIn("--state-dir /var/lib/vns-disk-email", service["ExecStart"])
+        self.assertEqual(service["StateDirectory"], "vns-disk-email")
         self.assertEqual(service["StateDirectoryMode"], "0700")
         for forbidden in ("ExecStartPre", "ExecStartPost", "ExecStop", "ExecReload"):
             self.assertNotIn(forbidden, service)
