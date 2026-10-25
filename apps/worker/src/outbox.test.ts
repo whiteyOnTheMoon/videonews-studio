@@ -14,6 +14,13 @@ const valid = {
 
 test("valid outbox rows require fixed deterministic Redis IDs", () => {
   assert.doesNotThrow(() => validateOutboxRow(valid));
+  assert.doesNotThrow(() => validateOutboxRow({ ...valid, delivery_state: "enqueued" }));
+  for (const state of ["failed", "done", "", undefined]) {
+    assert.throws(
+      () => validateOutboxRow({ ...valid, delivery_state: state as never }),
+      /delivery state invalid/,
+    );
+  }
   assert.throws(
     () => validateOutboxRow({ ...valid, queue_job_id: "arbitrary" }),
     /deterministic queue ID/,
