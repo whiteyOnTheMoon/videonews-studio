@@ -226,3 +226,51 @@ test("backend rejections map to generic status with no raw secret data", async (
     assert.ok(!(await response.text()).includes(FAKE_KEY));
   }
 });
+
+test("invalid credential framing is rejected before any internal mutation", async () => {
+  let writes = 0;
+  const fetcher = (async (input: RequestInfo | URL) => {
+    if (String(input).endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
+    writes++;
+    return Response.json({ saved: true, active: false });
+  }) as typeof fetch;
+  const payload = JSON.stringify(COMMAND);
+  const invalid: Array<Record<string, string>> = [
+    { "Content-Length": "1" },
+    { "Content-Length": "999" },
+    { "Content-Length": "0001" },
+    { "Content-Length": "1025" },
+    { "Content-Length": "-1" },
+    { "Content-Encoding": "gzip" },
+  ];
+  for (const extra of invalid) {
+    const headers = new Headers({
+      Origin: ORIGIN,
+      Cookie: COOKIE,
+      "Content-Type": "application/json",
+    });
+    for (const [name, value] of Object.entries(extra)) {
+      headers.set(name, value);
+    }
+    const request = new Request(ORIGIN + "/api/admin/ai-providers", {
+      method: "POST",
+      headers,
+      body: payload,
+    });
+    const response = await dormantAdminAiProviderWriteProxy(request, CFG, fetcher);
+    assert.equal(response.status, 400);
+    assertSanitized(response);
+    assert.ok(!(await response.text()).includes(FAKE_KEY));
+  }
+  assert.equal(writes, 0);
+
+  const valid = req();
+  const headers = new Headers(valid.headers);
+  headers.set("Content-Length", String(Buffer.byteLength(payload)));
+  const accepted = new Request(valid, { headers });
+  const success = await dormantAdminAiProviderWriteProxy(accepted, CFG, fetcher);
+  assert.equal(success.status, 200);
+  assert.equal(writes, 1);
+});
