@@ -13,6 +13,10 @@ on:
       - "scripts/p1_09_telegram_alert.py"
       - "scripts/test_p1_09_telegram_alert.py"
       - "docs/P1-09_OPTIONAL_TELEGRAM_ALERTS.md"
+      - "scripts/p1_09_email_alert.py"
+      - "scripts/test_p1_09_email_alert.py"
+      - "scripts/test_p1_09_email_systemd_units.py"
+      - "docs/P1-09_EMAIL_ALERTS.md"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read

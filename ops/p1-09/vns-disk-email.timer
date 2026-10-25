@@ -1,0 +1,11 @@
+[Unit]
+Description=VideoNews Studio optional email disk warnings every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+AccuracySec=1min
+Persistent=true
+Unit=vns-disk-email.service
+
+[Install]
+WantedBy=timers.target
