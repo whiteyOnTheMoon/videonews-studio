@@ -12,7 +12,7 @@ import { QUEUE_NAME, QUEUE_PREFIX, type QueueConfig } from "./queue.js";
 export const ISOLATED_RESEARCH_QUEUE = "vns-research" as const;
 
 export function createDormantEditorialWorker(
-  config: QueueConfig,
+  config: QueueConfig & { username?: "vns_worker" | "vns_research" },
   enabled: boolean,
   researchHandler?: (job: Job) => Promise<ResearchProcessorResult>,
   queueName: typeof QUEUE_NAME | typeof ISOLATED_RESEARCH_QUEUE = QUEUE_NAME,
@@ -27,7 +27,7 @@ export function createDormantEditorialWorker(
   const connection = new Redis({
     host: config.host,
     port: config.port,
-    username: "vns_worker",
+    username: config.username ?? "vns_worker",
     password: config.password,
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
