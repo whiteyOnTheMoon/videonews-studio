@@ -47,7 +47,10 @@ export function parseApprovedResearchCatalog(
       item.topic.trim() !== item.topic ||
       item.topic.length < 12 ||
       item.topic.length > 160 ||
-      /[\u0000-\u001f\u007f]/.test(item.topic) ||
+      Array.from(item.topic).some((char) => {
+        const code = char.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) ||
       entries.has(item.topic) ||
       !Array.isArray(item.candidates) ||
       item.candidates.length < 1 ||
