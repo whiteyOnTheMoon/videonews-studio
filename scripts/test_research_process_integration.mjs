@@ -11,7 +11,10 @@ import {
 } from "../apps/worker/dist/research-process.js";
 import { dispatchOutboxBatch } from "../apps/worker/dist/outbox.js";
 import { createEditorialProcessor } from "../apps/worker/dist/editorial-process.js";
-import { createDormantEditorialWorker } from "../apps/worker/dist/editorial-worker.js";
+import {
+  createDormantEditorialWorker,
+  ISOLATED_RESEARCH_QUEUE,
+} from "../apps/worker/dist/editorial-worker.js";
 import { reconcileJobStatusBatch } from "../apps/worker/dist/job-status.js";
 import { QUEUE_NAME, QUEUE_PREFIX } from "../apps/worker/dist/queue.js";
 
@@ -28,8 +31,15 @@ const connection = {
 };
 const producerRedis = new Redis({ ...connection, maxRetriesPerRequest: 1 });
 const eventRedis = new Redis({ ...connection, maxRetriesPerRequest: null });
-const queue = new Queue(QUEUE_NAME, { connection: producerRedis, prefix: QUEUE_PREFIX });
-const events = new QueueEvents(QUEUE_NAME, { connection: eventRedis, prefix: QUEUE_PREFIX });
+const queue = new Queue(ISOLATED_RESEARCH_QUEUE, {
+  connection: producerRedis,
+  prefix: QUEUE_PREFIX,
+});
+const events = new QueueEvents(ISOLATED_RESEARCH_QUEUE, {
+  connection: eventRedis,
+  prefix: QUEUE_PREFIX,
+});
+const probeQueue = new Queue(QUEUE_NAME, { connection: producerRedis, prefix: QUEUE_PREFIX });
 const { Pool } = pg;
 const db = new Pool({
   host: "127.0.0.1",
@@ -116,6 +126,8 @@ try {
   await queue.waitUntilReady();
   // Fully disposable CI DB/Redis: isolate synthetic research from earlier test jobs.
   await queue.obliterate({ force: true });
+  const probeCountsBefore = await probeQueue.getJobCounts();
+  assert.notEqual(ISOLATED_RESEARCH_QUEUE, QUEUE_NAME);
   await db.query("DELETE FROM vns.research_evidence");
   await db.query("DELETE FROM vns.job_outbox");
   await db.query("DELETE FROM vns.research_requests");
@@ -144,11 +156,13 @@ try {
   }
   const queued = await queue.getJob("job-" + jobId.replaceAll("-", ""));
   assert.ok(queued);
+  assert.equal(await probeQueue.getJob(queued.id), undefined);
   // The production factory is dormant until this disposable CI test explicitly runs it.
   ({ worker, connection: workerConnection } = createDormantEditorialWorker(
     { host: connection.host, port: connection.port, password: connection.password },
     true,
     researchHandler,
+    ISOLATED_RESEARCH_QUEUE,
   ));
   assert.equal(worker.opts.autorun, false);
   assert.equal(worker.opts.concurrency, 1);
@@ -285,6 +299,7 @@ try {
     { host: connection.host, port: connection.port, password: connection.password },
     true,
     failingHandler,
+    ISOLATED_RESEARCH_QUEUE,
   ));
   assert.equal(worker.opts.autorun, false);
   worker.on("error", () => console.error("CI negative editorial worker error"));
@@ -322,6 +337,9 @@ try {
   assert.equal((await dispatchOutboxBatch(dispatchDb, queue, 10)).newlyEnqueued, 0);
   assert.equal(retainedFailure.id, failedQueueId);
   assert.equal(await failedJob.getState(), "failed");
+  assert.equal(await probeQueue.getJob(failedQueueId), undefined);
+  assert.deepEqual(await probeQueue.getJobCounts(), probeCountsBefore);
+  console.log("PASS: research dispatch and status remain isolated from running probe queue");
   console.log(
     "PASS: invalid synthetic research exhausts retries, retains failed job and sanitized SQL status",
   );
@@ -331,6 +349,7 @@ try {
       worker?.close(),
       events.close(),
       queue.close(),
+      probeQueue.close(),
       db.end(),
       dispatchDb.end(),
       statusDb.end(),
