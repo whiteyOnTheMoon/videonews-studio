@@ -5,7 +5,7 @@ on:
     paths:
       - "scripts/p1_07_live_probe_receipt.sh"
       - "scripts/test_live_receipt_baseline.py"
-      - '.github/workflows/live-ledger-audit.yml"
+      - ".github/workflows/live-ledger-audit.yml"
 permissions:
   contents: read
 jobs:
