@@ -247,7 +247,7 @@ try {
   // surface a sanitized PostgreSQL failure with no fabricated evidence.
   // Stop the successful synthetic worker first to avoid competing consumers.
   await worker.close();
-  await workerConnection.quit();
+  await workerConnection.quit().catch(() => undefined);
   worker = undefined;
   workerConnection = undefined;
 
@@ -297,7 +297,9 @@ try {
     /Research source count outside approved bounds/,
   );
   assert.equal(await failedJob.getState(), "failed");
-  assert.equal(failedJob.attemptsMade, 3);
+  const retainedFailure = await queue.getJob(failedQueueId);
+  assert.ok(retainedFailure);
+  assert.equal(retainedFailure.attemptsMade, 3);
   assert.equal(rejectedDiscoveries, 3);
   assert.equal(unexpectedFetches, 0);
   const evidenceAfterFailure = await db.query(
@@ -318,7 +320,7 @@ try {
   });
   assert.equal((await reconcileJobStatusBatch(statusDb, queue, 10)).updated, 0);
   assert.equal((await dispatchOutboxBatch(dispatchDb, queue, 10)).newlyEnqueued, 0);
-  assert.equal((await queue.getJob(failedQueueId)).id, failedQueueId);
+  assert.equal(retainedFailure.id, failedQueueId);
   assert.equal(await failedJob.getState(), "failed");
   console.log(
     "PASS: invalid synthetic research exhausts retries, retains failed job and sanitized SQL status",
