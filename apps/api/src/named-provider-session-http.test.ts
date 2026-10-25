@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { randomBytes, scryptSync } from "node:crypto";
 import { once } from "node:events";
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
+import { Readable } from "node:stream";
 import type { Pool } from "pg";
 import { AdminAuth } from "./auth.js";
 import { AdminEvidence } from "./admin-evidence.js";
@@ -21,12 +22,13 @@ const SHARED_PASSWORD = "ci-shared-admin-password";
 const SYNTHETIC_KEY = "sk-ci-not-a-real-credential-1234567890123";
 
 function hash(password: string, salt: string): string {
-  return "scrypt$" + salt + "$" + scryptSync(
-    password,
-    Buffer.from(salt, "hex"),
-    64,
-    { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 },
-  ).toString("hex");
+  const derived = scryptSync(password, Buffer.from(salt, "hex"), 64, {
+    N: 16384,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
+  });
+  return `scrypt${salt}${derived.toString("hex")}`;
 }
 
 test("real editor session drives named provider HTTP to sealed and audited SQL", async () => {
@@ -71,11 +73,7 @@ test("real editor session drives named provider HTTP to sealed and audited SQL",
         return [];
       },
     },
-    new AdminEvidence(
-      auth,
-      { list: async () => [], review: async () => "updated" },
-      false,
-    ),
+    new AdminEvidence(auth, { list: async () => [], review: async () => "updated" }, false),
   );
   const calls: Array<{ sql: string; params: unknown[] }> = [];
   let admissions = 0;
@@ -136,10 +134,10 @@ test("real editor session drives named provider HTTP to sealed and audited SQL",
     });
     assert.equal(sharedLogin.status, 200);
     const sharedCookie = (sharedLogin.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
-    assert.equal(
-      (await fetch(base + "/admin/ai-providers", { headers: { Cookie: sharedCookie } })).status,
-      401,
-    );
+    const sharedOnly = await fetch(base + "/admin/ai-providers", {
+      headers: { Cookie: sharedCookie },
+    });
+    assert.equal(sharedOnly.status, 401);
 
     const personalLogin = await fetch(base + "/editor/auth/login", {
       method: "POST",
@@ -164,41 +162,39 @@ test("real editor session drives named provider HTTP to sealed and audited SQL",
       ],
     });
 
-    assert.equal(
-      (await post(personalCookie, { action: "remove_key", provider: "openai" }, "https://forged.invalid"))
-        .status,
-      403,
+    const forged = await post(
+      personalCookie,
+      { action: "remove_key", provider: "openai" },
+      "https://forged.invalid",
     );
-    assert.equal(
-      (await post(personalCookie, {
-        action: "remove_key",
-        provider: "openai",
-        editorId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
-      })).status,
-      400,
-    );
-    assert.equal((await post(personalCookie, {
+    assert.equal(forged.status, 403);
+    const spoofed = await post(personalCookie, {
+      action: "remove_key",
+      provider: "openai",
+      editorId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    });
+    assert.equal(spoofed.status, 400);
+    const stored = await post(personalCookie, {
       action: "set_key",
       provider: "openai",
       apiKey: SYNTHETIC_KEY,
-    })).status, 200);
+    });
+    assert.equal(stored.status, 200);
 
-    const writes = calls.filter((call) => call.sql.includes("admin_mutate_ai_provider_as_editor"));
+    const namedWrites = () =>
+      calls.filter((call) => call.sql.includes("admin_mutate_ai_provider_as_editor"));
+    const writes = namedWrites();
     assert.equal(writes.length, 1);
     assert.equal(writes[0]?.params[6], EDITOR_ID);
     assert.equal(writes[0]?.params[7], 0);
     assert.ok(Buffer.isBuffer(writes[0]?.params[4]));
     assert.ok(!JSON.stringify(writes).includes(SYNTHETIC_KEY));
-    assert.equal(
-      (await post(personalCookie, { action: "remove_key", provider: "openai" })).status,
-      429,
-    );
+    const limited = await post(personalCookie, { action: "remove_key", provider: "openai" });
+    assert.equal(limited.status, 429);
     account.authVersion++;
-    assert.equal(
-      (await post(personalCookie, { action: "remove_key", provider: "openai" })).status,
-      401,
-    );
-    assert.equal(calls.filter((call) => call.sql.includes("admin_mutate_ai_provider_as_editor")).length, 1);
+    const revoked = await post(personalCookie, { action: "remove_key", provider: "openai" });
+    assert.equal(revoked.status, 401);
+    assert.equal(namedWrites().length, 1);
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -239,47 +235,58 @@ test("named provider dispatch cannot mount without editor authentication", () =>
   }
 });
 
-test("named admission database outages reject before consuming a credential body", async () => {
+test("failed named admission rejects before reading credential bytes", async () => {
   let reads = 0;
   let writes = 0;
   const key = randomBytes(32);
   try {
     const provider = new NamedAdminProviderConfiguration(
-      { authenticatedAdminIdentity: async () => ({
-        id: EDITOR_ID,
-        username: "ci_admin",
-        role: "admin",
-        authVersion: 0,
-      }) },
+      {
+        authenticatedAdminIdentity: async () => ({
+          id: EDITOR_ID,
+          username: "ci_admin",
+          role: "admin",
+          authVersion: 0,
+        }),
+      },
       { originAllowed: () => true },
       {
         list: async () => [],
-        mutateAsNamedAdmin: async () => { writes++; },
+        mutateAsNamedAdmin: async () => {
+          writes++;
+        },
       },
       key,
-      { allow: async () => { throw new Error("private-db-host-secret"); } },
+      {
+        allow: async () => {
+          throw new Error("private-db-host-secret");
+        },
+      },
     );
     const source = (async function* () {
       reads++;
       yield JSON.stringify({ action: "set_key", provider: "openai", apiKey: SYNTHETIC_KEY });
     })();
-    const request = Object.assign(
-      (await import("node:stream")).Readable.from(source),
-      {
-        method: "POST",
-        url: "/admin/ai-providers",
-        headers: { origin: ORIGIN, "content-type": "application/json" },
-      },
-    ) as IncomingMessage;
+    const request = Object.assign(Readable.from(source), {
+      method: "POST",
+      url: "/admin/ai-providers",
+      headers: { origin: ORIGIN, "content-type": "application/json" },
+    }) as unknown as IncomingMessage;
     const result = {
       status: 0,
       body: "",
       headers: {} as Record<string, string>,
-      setHeader(name: string, value: string) { this.headers[name] = value; },
-      writeHead(code: number) { this.status = code; },
-      end(data: string) { this.body = data; },
+      setHeader(name: string, value: string) {
+        this.headers[name] = value;
+      },
+      writeHead(code: number) {
+        this.status = code;
+      },
+      end(data: string) {
+        this.body = data;
+      },
     };
-    await provider.handle(request, result as unknown as import("node:http").ServerResponse);
+    await provider.handle(request, result as unknown as ServerResponse);
     assert.equal(result.status, 503);
     assert.deepEqual(JSON.parse(result.body), { error: "temporarily_unavailable" });
     assert.equal(reads, 0);
