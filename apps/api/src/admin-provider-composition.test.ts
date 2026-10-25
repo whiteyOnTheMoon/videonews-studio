@@ -54,7 +54,11 @@ function fixture() {
         return {
           rows: [
             { provider: "openai", selectedModel: "gpt-6.1-sol", configured: false },
-            { provider: "google_gemini", selectedModel: "gemini-3.8-flash-tts", configured: false },
+            {
+              provider: "google_gemini",
+              selectedModel: "gemini-3.8-flash-tts",
+              configured: false,
+            },
           ],
         };
       }
@@ -85,7 +89,12 @@ test("dormant API contract and PostgreSQL adapter compose for secret-free GET", 
     assert.deepEqual(data, {
       providers: [
         { provider: "openai", selectedModel: "gpt-6.1-sol", configured: false, active: false },
-        { provider: "google_gemini", selectedModel: "gemini-3.8-flash-tts", configured: false, active: false },
+        {
+          provider: "google_gemini",
+          selectedModel: "gemini-3.8-flash-tts",
+          configured: false,
+          active: false,
+        },
       ],
     });
     assert.equal(calls.length, 1);
@@ -126,7 +135,10 @@ test("unauthorized, forged-origin and forbidden activation never reach SQL", asy
   try {
     const cases: Array<[IncomingMessage, number]> = [
       [request("POST", { action: "remove_key", provider: "openai" }, { cookie: "invalid" }), 401],
-      [request("POST", { action: "remove_key", provider: "openai" }, { origin: "https://evil.invalid" }), 403],
+      [
+        request("POST", { action: "remove_key", provider: "openai" }, { origin: "https://evil.invalid" }),
+        403,
+      ],
       [request("POST", { action: "enable", provider: "openai" }), 400],
     ];
     for (const [req, expected] of cases) {
