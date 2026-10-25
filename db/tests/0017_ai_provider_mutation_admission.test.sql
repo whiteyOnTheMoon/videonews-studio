@@ -72,6 +72,32 @@ END;
 $limits$;
 RESET ROLE;
 
+DO $failure$
+DECLARE
+  v_denied boolean:=false;
+BEGIN
+  -- A clock moving backwards must never open fresh slots.
+  UPDATE vns.ai_provider_mutation_window
+     SET window_started=clock_timestamp()+INTERVAL '10 minutes';
+  IF vns.admin_try_ai_provider_mutation_slot() IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'Clock rollback reopened provider mutation slots';
+  END IF;
+  UPDATE vns.ai_provider_mutation_window
+     SET window_started=clock_timestamp();
+
+  -- A missing singleton must fail closed rather than mint a new one.
+  -- The exception subtransaction rolls back the temporary DELETE.
+  BEGIN
+    DELETE FROM vns.ai_provider_mutation_window;
+    PERFORM vns.admin_try_ai_provider_mutation_slot();
+  EXCEPTION WHEN SQLSTATE '55000' THEN v_denied:=true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'Missing provider admission row was tolerated';
+  END IF;
+END;
+$failure$;
+
 DO $final$
 BEGIN
   IF (SELECT attempts FROM vns.ai_provider_mutation_window
