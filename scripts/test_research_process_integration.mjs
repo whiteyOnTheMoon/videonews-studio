@@ -252,10 +252,10 @@ try {
   workerConnection = undefined;
 
   const failureTopic = "Synthetic research with unacceptable source candidates";
-  const failedCreate = await db.query(
-    "SELECT vns.create_research_request($1, $2) AS id",
-    ["ci-research-invalid-source-001", failureTopic],
-  );
+  const failedCreate = await db.query("SELECT vns.create_research_request($1, $2) AS id", [
+    "ci-research-invalid-source-001",
+    failureTopic,
+  ]);
   const failedId = failedCreate.rows[0].id;
   await dispatchOutboxBatch(dispatchDb, queue, 10);
   const failedQueueId = "job-" + failedId.replaceAll("-", "");
