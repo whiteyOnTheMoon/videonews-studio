@@ -2,7 +2,8 @@ import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import pg from "pg";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
-import { readQueueConfig, QUEUE_NAME, QUEUE_PREFIX } from "./queue.js";
+import { readEditorialQueueRoute } from "./editorial-routing.js";
+import { readQueueConfig, QUEUE_PREFIX } from "./queue.js";
 import { dispatchOutboxBatch } from "./outbox.js";
 
 // Separate, opt-in process. This is NOT run by the normal worker entrypoint.
@@ -11,6 +12,7 @@ import { dispatchOutboxBatch } from "./outbox.js";
 if (process.env.VNS_OUTBOX_DISPATCH_ENABLED !== "true") {
   throw new Error("Outbox dispatch must be separately enabled");
 }
+const editorialQueue = readEditorialQueueRoute("dispatch");
 const redisConfig = readQueueConfig();
 
 const dbConfig = readDedicatedPostgresConfig("dispatch");
@@ -32,7 +34,7 @@ const redisConnection = new Redis({
   connectTimeout: 3000,
   enableOfflineQueue: false,
 });
-const queue = new Queue(QUEUE_NAME, {
+const queue = new Queue(editorialQueue, {
   connection: redisConnection,
   prefix: QUEUE_PREFIX,
 });
