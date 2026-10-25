@@ -9,3 +9,9 @@ The checker requires the existing backend Docker network (internal), a healthy C
 Each client authenticates to `postgres:5432` using its own login, asserts a real non-loopback TCP connection and the expected inherited permissions, checks a permitted read and a denied cross-service read, then confirms another account refuses its own password. Read-only sessions and SQL statements only. Any mismatch fails closed without printing the secret or diagnostic command output.
 
 This operation creates short-lived diagnostic containers, but does not restart/reconfigure the running Postgres, Redis, Web, API, Cloudflare or probe worker; it does not create editorial jobs or enable editorial workers. It is **not** a disaster-recovery test or full P1-07 acceptance. The three LOGIN roles must not be provisioned a second time. Avoid running it concurrently with unrelated production maintenance.
+
+## First live attempt (operator console, 2026-10-25)
+
+The first operator run returned the safe `REFUSED` receipt without any preceding per-role PASS line. **Do not treat this as proof of a PostgreSQL login or grant failure.** The original script suppressed all underlying failure stages, and a code review found that its `concat_ws` privilege-result comparison relied on implicit PostgreSQL boolean-to-string formatting. The revised checker explicitly converts every SQL boolean to `true`/`false` text, and reports only a fixed generic stage code on failure (never raw SQL/Docker stderr or secret material). CI checks these rules without contacting the live VPS.
+
+No Login roles or passwords should be recreated. After the revised checker passes all latest-head CI checks, the operator can update the Git checkout and rerun only the read-only, isolated TCP acceptance script once. If it still fails, use the fixed stage label to determine the next safe read-only diagnosis; do not expose client stderr or credentials.
