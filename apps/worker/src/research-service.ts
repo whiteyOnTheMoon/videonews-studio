@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import pg from "pg";
-import { readQueueConfig } from "./queue.js";
+import { readResearchRedisConfig } from "./research-redis-config.js";
 import { createDormantEditorialWorker } from "./editorial-worker.js";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
 import {
@@ -27,7 +27,7 @@ async function main() {
   }
   const catalog = parseApprovedResearchCatalog(catalogContents, policy);
   const dbConfig = readDedicatedPostgresConfig("research");
-  const redisConfig = readQueueConfig();
+  const redisConfig = readResearchRedisConfig();
   const pool = new pg.Pool({
     ...dbConfig,
     max: 1,
