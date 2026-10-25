@@ -68,3 +68,40 @@ modelliert `set_key`, `remove_key` und `set_model` mit strikt
 validierten synthetischen Daten. Er bleibt **unregistriert** und kann
 im laufenden System keine API-Keys empfangen. Es existiert weiterhin
 keine schreibende Next.js-Route und keine produktive Master-Key-Datei.
+
+## Admin-Eingabemaske als nicht-interaktive Vorschau
+
+Die neue Komponente `apps/web/src/app/admin/ai-provider-settings-preview.tsx`
+zeigt pro Anbieter die vorgesehenen Eingabeelemente: API-Key,
+Modellauswahl und festgelegte Videosprache **English (en)**;
+für Gemini ist außerdem eine spätere Sprecherstimmenwahl erkennbar.
+Die Oberfläche stellt Speichern, Ersetzen, Entfernen und
+Modellübernahme dar, aber **jeder einzelne Eingabe-, Auswahl- und
+Aktionsknopf ist dauerhaft `disabled`**.
+
+Es gibt weder ein HTML-Formular noch `onSubmit`-/`onChange`-
+Routinen, Key-State, lokal gespeicherte Credentials oder schreibende
+Fetch-Aufrufe. Ein deaktiviertes Password-Feld trägt immer den leeren
+Wert, selbst wenn ein Backend später `configured:true` meldet;
+nur `hinterlegt`/ `nicht hinterlegt` darf erscheinen.
+Die Modelldarstellung wird zusätzlich auf die vorhandenen
+statischen Provider-Modelle begrenzt. Diese Testkennungen
+sind **keine** Freigabe realer Anbieterpreise oder Modelle.
+
+Die bestehende `/api/admin/ai-providers`-Next.js-Route bleibt
+**GET-only** und ist weiterhin standardmäßig ausgeschaltet.
+Die zukünftige schreibende BFF aus dem vorangegangenen Schritt
+wird von keinem produktiven Route-Handler importiert. Auch ein
+Setzen der Read-only-Flagge kann die deaktivierten Felder nicht
+freischalten.
+
+`apps/web/src/app/admin/ai-provider-settings-preview.test.tsx`
+und der aktualisierte `ai-providers.test.tsx` prüfen die
+Deaktivierung aller Controls, die leere Schlüsselanzeige,
+den festen Sprachhinweis, die Rollenbeschreibung und
+fehlende Formulare. Das sind isolierte SSR-/Unit-Tests,
+**keine Freigabe für echte Schlüssel**.
+
+Der Betreiber arbeitet ausdrücklich weiterhin vorerst ohne
+unabhängiges Backup. Es wird weder ein Backup eingerichtet,
+noch ein Master-Key bereitgestellt oder eine Migration ausgeführt.

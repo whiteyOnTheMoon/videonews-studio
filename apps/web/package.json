@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/lib/admin-proxy.test.ts src/lib/admin-jobs-proxy.test.ts src/lib/admin-jobs-list.test.ts src/app/admin/research-jobs.test.tsx src/lib/admin-evidence-proxy.test.ts src/app/admin/evidence-review.test.tsx src/lib/editor-proxy.test.ts src/app/admin/editor-login.test.tsx src/lib/admin-ai-providers-proxy.test.ts src/app/admin/ai-providers.test.tsx src/lib/admin-ai-provider-write-contract.test.ts"
+    "test": "tsx --test src/lib/admin-proxy.test.ts src/lib/admin-jobs-proxy.test.ts src/lib/admin-jobs-list.test.ts src/app/admin/research-jobs.test.tsx src/lib/admin-evidence-proxy.test.ts src/app/admin/evidence-review.test.tsx src/lib/editor-proxy.test.ts src/app/admin/editor-login.test.tsx src/lib/admin-ai-providers-proxy.test.ts src/app/admin/ai-providers.test.tsx src/app/admin/ai-provider-settings-preview.test.tsx src/lib/admin-ai-provider-write-contract.test.ts"
   },
   "dependencies": {
     "@vns/shared": "*",

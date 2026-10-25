@@ -238,3 +238,60 @@ p {
 #editor-login .admin-form input {
   max-width: 32rem;
 }
+
+/* P1-09 AI provider settings preview: no editable secrets or active commands. */
+.ai-provider-preview {
+  display: grid;
+  gap: 0.55rem;
+}
+.ai-provider-preview > p {
+  margin: 0;
+}
+.ai-provider-fields {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0.65rem 0 0.5rem;
+  padding: 1rem;
+  border: 1px dashed #42587a;
+  border-radius: 8px;
+}
+.ai-provider-fields legend {
+  padding: 0 0.35rem;
+  color: #c3cedf;
+  font-weight: 700;
+}
+.ai-provider-field {
+  display: grid;
+  gap: 0.4rem;
+}
+.ai-provider-field label {
+  font-weight: 700;
+}
+.ai-provider-field input,
+.ai-provider-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid #42587a;
+  border-radius: 8px;
+  background: #182234;
+  color: #c3cedf;
+  font: inherit;
+}
+.ai-provider-fields :disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.ai-provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ai-provider-actions button {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #42587a;
+  border-radius: 8px;
+  color: #f5f7fb;
+  background: #233957;
+  font: inherit;
+}
