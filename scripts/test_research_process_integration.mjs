@@ -120,6 +120,19 @@ try {
   await db.query("DELETE FROM vns.job_outbox");
   await db.query("DELETE FROM vns.research_requests");
   await db.query("DELETE FROM vns.jobs");
+  // Fail closed before dispatch: each live-equivalent principal must be unable
+  // to write into another service's ledger, even within the integrated chain.
+  for (const [pool, statement] of [
+    [dispatchDb, "UPDATE vns.jobs SET status='done' WHERE false"],
+    [statusDb, "UPDATE vns.job_outbox SET delivery_state='pending' WHERE false"],
+    [researchDb, "UPDATE vns.research_evidence SET review_status='verified' WHERE false"],
+  ]) {
+    await assert.rejects(pool.query(statement), (error) => error.code === "42501");
+  }
+  for (const pool of [dispatchDb, statusDb, researchDb]) {
+    const result = await pool.query("SELECT current_user AS role");
+    assert.notEqual(result.rows[0].role, "vns");
+  }
   const key = "ci-research-proc-job-001";
   const created = await db.query("SELECT vns.create_research_request($1, $2) AS id", [key, topic]);
   const jobId = created.rows[0].id;
