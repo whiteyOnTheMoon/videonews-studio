@@ -1,8 +1,6 @@
-import { makeSourceCandidate, type SourceCandidate } from "./source-policy.js";
+import { makeSourceCandidate, type SourceCandidateInput } from "./source-policy.js";
 import type { ResearchCandidateProvider } from "./research-process.js";
 import type { ApprovedFetchPolicy } from "./source-fetch.js";
-
-type CatalogEntry = { topic: string; candidates: SourceCandidate[] };
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -16,7 +14,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export function parseApprovedResearchCatalog(
   input: string,
   policy: ApprovedFetchPolicy,
-): ReadonlyMap<string, readonly SourceCandidate[]> {
+): ReadonlyMap<string, readonly SourceCandidateInput[]> {
   if (input.length < 1 || Buffer.byteLength(input, "utf8") > 32768) {
     throw new Error("Approved research catalog size refused");
   }
@@ -40,7 +38,7 @@ export function parseApprovedResearchCatalog(
     throw new Error("Approved research catalog envelope invalid");
   }
 
-  const entries = new Map<string, readonly SourceCandidate[]>();
+  const entries = new Map<string, readonly SourceCandidateInput[]>();
   for (const item of raw.topics as unknown[]) {
     if (
       !isObject(item) ||
@@ -57,7 +55,16 @@ export function parseApprovedResearchCatalog(
     ) {
       throw new Error("Approved research catalog topic invalid");
     }
-    const candidates = item.candidates.map((value: unknown) => makeSourceCandidate(value));
+    const candidates = item.candidates.map((value: unknown): SourceCandidateInput => {
+      const checked = makeSourceCandidate(value);
+      // Research processor adds the candidate-only status after validation.
+      return {
+        sourceUrl: checked.sourceUrl,
+        publisher: checked.publisher,
+        headline: checked.headline,
+        claim: checked.claim,
+      };
+    });
     const identities = new Set<string>();
     for (const candidate of candidates) {
       if (!policy.hosts.includes(new URL(candidate.sourceUrl).hostname)) {
