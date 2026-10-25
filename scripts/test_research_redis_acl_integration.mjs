@@ -1,7 +1,7 @@
 // Disposable GitHub Actions Redis ACL integration. No VPS or source access.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { Queue } from "bullmq";
+import { Queue, QueueEvents, Worker } from "bullmq";
 import { Redis } from "ioredis";
 
 if (
@@ -30,8 +30,33 @@ const probe = new Redis(settings("vns_worker", "redis_password"));
 const research = new Redis(settings("vns_research", "research_password"));
 const probeQueue = new Queue("vns-jobs", { connection: probe, prefix: "bull:vns" });
 const researchQueue = new Queue("vns-research", { connection: research, prefix: "bull:vns" });
+const workerRedis = new Redis({
+  ...settings("vns_research", "research_password"),
+  maxRetriesPerRequest: null,
+});
+const eventsRedis = new Redis({
+  ...settings("vns_research", "research_password"),
+  maxRetriesPerRequest: null,
+});
+const worker = new Worker(
+  "vns-research",
+  async (job) => {
+    assert.equal(job.name, "research");
+    return { ok: true };
+  },
+  { connection: workerRedis, prefix: "bull:vns", concurrency: 1 },
+);
+const events = new QueueEvents("vns-research", {
+  connection: eventsRedis,
+  prefix: "bull:vns",
+});
 try {
-  await Promise.all([probeQueue.waitUntilReady(), researchQueue.waitUntilReady()]);
+  await Promise.all([
+    probeQueue.waitUntilReady(),
+    researchQueue.waitUntilReady(),
+    worker.waitUntilReady(),
+    events.waitUntilReady(),
+  ]);
   assert.equal(await probe.ping(), "PONG");
   assert.equal(await research.ping(), "PONG");
   // Allowed commands and real BullMQ Lua operations in each distinct namespace.
@@ -39,6 +64,7 @@ try {
   const r = await researchQueue.add("research", { kind: "research" }, { jobId: "aclresearch" });
   assert.equal((await probeQueue.getJob(p.id))?.id, p.id);
   assert.equal((await researchQueue.getJob(r.id))?.id, r.id);
+  assert.deepEqual(await r.waitUntilFinished(events, 15000), { ok: true });
   const denied = async (operation) =>
     assert.rejects(operation(), (error) => /NOPERM/.test(String(error?.message)));
   await denied(() => probe.exists("bull:vns:vns-research:wait"));
@@ -52,6 +78,6 @@ try {
   console.log("PASS: isolated Redis users each operate own BullMQ queue");
   console.log("PASS: cross-queue key writes, reads and pub/sub publishing denied");
 } finally {
-  await Promise.allSettled([probeQueue.close(), researchQueue.close()]);
-  await Promise.allSettled([probe.quit(), research.quit()]);
+  await Promise.allSettled([worker.close(), events.close(), probeQueue.close(), researchQueue.close()]);
+  await Promise.allSettled([probe.quit(), research.quit(), workerRedis.quit(), eventsRedis.quit()]);
 }

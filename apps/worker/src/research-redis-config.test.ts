@@ -8,59 +8,40 @@ const approved = {
   VNS_REDIS_HOST: "redis",
   VNS_REDIS_PORT: "6379",
 };
+const validSecret = () => "r".repeat(60);
 
-test("research credential defaults off and cannot fall back to probe secret", () => {
-  assert.throws(() => readResearchRedisConfig({}, () => "x".repeat(50)), /not approved/);
-  assert.throws(
-    () =>
-      readResearchRedisConfig(
-        { ...approved, VNS_REDIS_RESEARCH_PASSWORD_FILE: "/run/secrets/redis_password" },
-        () => "x".repeat(50),
-      ),
-    /not approved/,
-  );
-  assert.throws(
-    () =>
-      readResearchRedisConfig(
-        { ...approved, VNS_RESEARCH_OPERATOR_APPROVED: "false" },
-        () => "x".repeat(50),
-      ),
-    /not approved/,
-  );
+test("research credentials are off by default and cannot fall back to probe", () => {
+  assert.throws(() => readResearchRedisConfig({}, validSecret), /not approved/);
+  const probeFile = {
+    ...approved,
+    VNS_REDIS_RESEARCH_PASSWORD_FILE: "/run/secrets/redis_password",
+  };
+  assert.throws(() => readResearchRedisConfig(probeFile, validSecret), /not approved/);
+  const disabled = { ...approved, VNS_RESEARCH_OPERATOR_APPROVED: "false" };
+  assert.throws(() => readResearchRedisConfig(disabled, validSecret), /not approved/);
 });
 
 test("research requires dedicated named-user secret without exposing it", () => {
-  const conf = readResearchRedisConfig(approved, (path) => {
+  const config = readResearchRedisConfig(approved, (path) => {
     assert.equal(path, RESEARCH_REDIS_SECRET);
     return "r".repeat(60) + "\n";
   });
-  assert.deepEqual(conf, {
+  assert.deepEqual(config, {
     host: "redis",
     port: 6379,
     username: "vns_research",
     password: "r".repeat(60),
   });
-  assert.throws(
-    () =>
-      readResearchRedisConfig(approved, () => {
-        throw Error("private");
-      }),
-    /secret unavailable/,
-  );
+  const failSecret = () => {
+    throw new Error("private");
+  };
+  assert.throws(() => readResearchRedisConfig(approved, failSecret), /secret unavailable/);
   assert.throws(() => readResearchRedisConfig(approved, () => "short"), /secret invalid/);
 });
 
 test("research Redis host and port are restricted", () => {
-  assert.throws(
-    () =>
-      readResearchRedisConfig(
-        { ...approved, VNS_REDIS_HOST: "internet.example" },
-        () => "r".repeat(60),
-      ),
-    /address invalid/,
-  );
-  assert.throws(
-    () => readResearchRedisConfig({ ...approved, VNS_REDIS_PORT: "0" }, () => "r".repeat(60)),
-    /address invalid/,
-  );
+  const foreignHost = { ...approved, VNS_REDIS_HOST: "internet.example" };
+  assert.throws(() => readResearchRedisConfig(foreignHost, validSecret), /address invalid/);
+  const invalidPort = { ...approved, VNS_REDIS_PORT: "0" };
+  assert.throws(() => readResearchRedisConfig(invalidPort, validSecret), /address invalid/);
 });

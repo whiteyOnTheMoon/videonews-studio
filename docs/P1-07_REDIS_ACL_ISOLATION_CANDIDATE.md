@@ -21,9 +21,11 @@ replaced by this candidate. The generator rejects identical credentials.
    lifecycle behavior and **NOPERM** on cross-queue keys and channels.
 3. Inspect BullMQ auxiliary keys, pub/sub channels, scripts and Redis versions.
    Tighten command categories and key patterns where proven safe.
-4. Change application credentials to select named identities per service,
-   and provide new secrets with separate approval. Current `readQueueConfig`
-   still uses `vns_worker`; this branch does **not** wire live research auth.
+4. The dormant research CLI, outbox dispatcher and status synchronizer now
+   select the separate `vns_research` identity with an exact, dedicated
+   password-secret path. The existing probe still uses `vns_worker`.
+   Provide the new research secret only under a separate reviewed rollout;
+   the planning Compose overlay remains explicitly disabled.
 5. Prepare backups, a tested rollback, secret permissions, operational
    monitoring and a maintenance window. Obtain explicit operator approval.
 6. Only after all gates, perform a separately reviewed production migration.

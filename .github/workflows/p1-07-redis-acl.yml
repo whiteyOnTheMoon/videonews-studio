@@ -3,6 +3,11 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "apps/worker/src/dispatch.ts"
+      - "apps/worker/src/status-sync.ts"
+      - "apps/worker/src/research-service.ts"
+      - "apps/worker/src/editorial-worker.ts"
+      - "deploy/compose.editorial-ops.yaml"
       - "apps/worker/src/research-redis-config.ts"
       - "apps/worker/src/research-redis-config.test.ts"
       - "scripts/research_redis_acl.py"

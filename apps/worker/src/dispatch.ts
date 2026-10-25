@@ -3,7 +3,8 @@ import { Redis } from "ioredis";
 import pg from "pg";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
 import { readEditorialQueueRoute } from "./editorial-routing.js";
-import { readQueueConfig, QUEUE_PREFIX } from "./queue.js";
+import { QUEUE_PREFIX } from "./queue.js";
+import { readResearchRedisConfig } from "./research-redis-config.js";
 import { dispatchOutboxBatch } from "./outbox.js";
 
 // Separate, opt-in process. This is NOT run by the normal worker entrypoint.
@@ -13,7 +14,7 @@ if (process.env.VNS_OUTBOX_DISPATCH_ENABLED !== "true") {
   throw new Error("Outbox dispatch must be separately enabled");
 }
 const editorialQueue = readEditorialQueueRoute("dispatch");
-const redisConfig = readQueueConfig();
+const redisConfig = readResearchRedisConfig();
 
 const dbConfig = readDedicatedPostgresConfig("dispatch");
 
@@ -28,7 +29,7 @@ const pool = new Pool({
 const redisConnection = new Redis({
   host: redisConfig.host,
   port: redisConfig.port,
-  username: "vns_worker",
+  username: redisConfig.username,
   password: redisConfig.password,
   maxRetriesPerRequest: 1,
   connectTimeout: 3000,
