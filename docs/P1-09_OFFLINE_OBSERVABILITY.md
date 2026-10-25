@@ -78,6 +78,15 @@ verhindert doppelte Vormerkungen. Separate parallele Datenbanksitzungen
 werden im isolierten PostgreSQL-17-Test gegeneinander geprüft.
 **Auf dem VPS weder installiert noch aktiviert; keine API-Kostenfreigabe.**
 
+## Zukünftige Administration der KI-Zugangsdaten
+
+Die [Sicherheitsvorbereitung für die Admin-Konfiguration](P1-09_ADMIN_PROVIDER_CREDENTIALS.md)
+führt eine deaktivierte Anbietereinstellung und ein separates Modell für
+verschlüsselte API-Keys ein. Die Verschlüsselung mit AES-256-GCM wird durch
+lokale Fixtures getestet, aber es gibt noch keine Oberfläche zur Eingabe
+echter Schlüssel, keinen produktiven Speicher und keine neuen Runtime-Rechte.
+Schlüssel gehören weder ins Git-Repository noch in Chatnachrichten.
+
 **P1-09 bleibt offen:** Reale autorisierte KI-Anfragen, tatsächliche
 Verbrauchs-/Preis-/TTS-Erfassung, atomare Budgetreservierung und
 unabhängig getestete Offsite-Sicherung/Restore fehlen.

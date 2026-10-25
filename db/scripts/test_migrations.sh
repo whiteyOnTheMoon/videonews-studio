@@ -67,6 +67,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0013_synthetic_token_usage.test.sql"
   sql < "$root/db/migrations/0014_synthetic_ai_budget_reservations.up.sql"
   sql < "$root/db/tests/0014_synthetic_ai_budget_reservations.test.sql"
+  sql < "$root/db/migrations/0015_ai_provider_admin_configuration.up.sql"
+  sql < "$root/db/tests/0015_ai_provider_admin_configuration.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent PostgreSQL connections race for the final $0.11
     # of a synthetic $2.00 day. Exactly one $0.09 request can pass.
@@ -123,6 +125,7 @@ for iteration in 1 2; do
     rm -rf -- "$work"
     echo "PASS: parallel day cap and idempotent retry"
   fi
+  sql < "$root/db/migrations/0015_ai_provider_admin_configuration.down.sql"
   sql < "$root/db/migrations/0014_synthetic_ai_budget_reservations.down.sql"
   sql < "$root/db/migrations/0013_synthetic_token_usage.down.sql"
   sql < "$root/db/migrations/0012_runtime_least_privilege.down.sql"
@@ -142,4 +145,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0014 migrations, budgets and synthetic receipts twice"
+echo "PASS: reversible 0001–0015 migrations, budgets and synthetic receipts twice"

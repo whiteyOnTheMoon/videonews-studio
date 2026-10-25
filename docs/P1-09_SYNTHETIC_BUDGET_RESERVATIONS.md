@@ -25,10 +25,10 @@ synthetische Reservierungen erstellen.
 
 ## Grenzen (Vorschlag, keine freigegebene Ausgabe)
 
-| Grenze | Betrag |
-| --- | ---: |
-| Pro synthetischer Textanfrage | 100.000 Mikro-USD = $0,10 |
-| Pro Job und synthetischem Kalendertag | 250.000 Mikro-USD = $0,25 |
+| Grenze                                               |                      Betrag |
+| ---------------------------------------------------- | --------------------------: |
+| Pro synthetischer Textanfrage                        |   100.000 Mikro-USD = $0,10 |
+| Pro Job und synthetischem Kalendertag                |   250.000 Mikro-USD = $0,25 |
 | Gemeinsam für alle Jobs je synthetischem Kalendertag | 2.000.000 Mikro-USD = $2,00 |
 
 Die drei englischen Stufen und ihre Höchsttokenzahlen entsprechen
