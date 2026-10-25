@@ -1,0 +1,28 @@
+name: P1-09 offline resource and usage checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_disk_watch.py"
+      - "scripts/test_p1_09_disk_watch.py"
+      - "scripts/p1_09_cost_model.py"
+      - "scripts/test_p1_09_cost_model.py"
+      - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
+      - ".github/workflows/p1-09-offline-observability.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p1-09-offline-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate offline disk and usage policy
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -m unittest discover -s scripts -p 'test_p1_09_*.py' -v
+      - name: Assert no tracked changes
+        run: test -z "$(git status --porcelain)"
