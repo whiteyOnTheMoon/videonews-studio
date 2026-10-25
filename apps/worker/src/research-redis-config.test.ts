@@ -12,11 +12,19 @@ const approved = {
 test("research credential defaults off and cannot fall back to probe secret", () => {
   assert.throws(() => readResearchRedisConfig({}, () => "x".repeat(50)), /not approved/);
   assert.throws(
-    () => readResearchRedisConfig({ ...approved, VNS_REDIS_RESEARCH_PASSWORD_FILE: "/run/secrets/redis_password" }, () => "x".repeat(50)),
+    () =>
+      readResearchRedisConfig(
+        { ...approved, VNS_REDIS_RESEARCH_PASSWORD_FILE: "/run/secrets/redis_password" },
+        () => "x".repeat(50),
+      ),
     /not approved/,
   );
   assert.throws(
-    () => readResearchRedisConfig({ ...approved, VNS_RESEARCH_OPERATOR_APPROVED: "false" }, () => "x".repeat(50)),
+    () =>
+      readResearchRedisConfig(
+        { ...approved, VNS_RESEARCH_OPERATOR_APPROVED: "false" },
+        () => "x".repeat(50),
+      ),
     /not approved/,
   );
 });
@@ -32,11 +40,27 @@ test("research requires dedicated named-user secret without exposing it", () => 
     username: "vns_research",
     password: "r".repeat(60),
   });
-  assert.throws(() => readResearchRedisConfig(approved, () => { throw Error("private"); }), /secret unavailable/);
+  assert.throws(
+    () =>
+      readResearchRedisConfig(approved, () => {
+        throw Error("private");
+      }),
+    /secret unavailable/,
+  );
   assert.throws(() => readResearchRedisConfig(approved, () => "short"), /secret invalid/);
 });
 
 test("research Redis host and port are restricted", () => {
-  assert.throws(() => readResearchRedisConfig({ ...approved, VNS_REDIS_HOST: "internet.example" }, () => "r".repeat(60)), /address invalid/);
-  assert.throws(() => readResearchRedisConfig({ ...approved, VNS_REDIS_PORT: "0" }, () => "r".repeat(60)), /address invalid/);
+  assert.throws(
+    () =>
+      readResearchRedisConfig(
+        { ...approved, VNS_REDIS_HOST: "internet.example" },
+        () => "r".repeat(60),
+      ),
+    /address invalid/,
+  );
+  assert.throws(
+    () => readResearchRedisConfig({ ...approved, VNS_REDIS_PORT: "0" }, () => "r".repeat(60)),
+    /address invalid/,
+  );
 });
