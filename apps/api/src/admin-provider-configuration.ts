@@ -6,8 +6,8 @@ import {
   type SealedProviderSecret,
 } from "./provider-credential-crypto.js";
 
-// NOT wired to server.ts or index.ts. No real secrets may be submitted.
-// A later deployment requires a dedicated audited PostgreSQL store and KEK custody.
+// Optional server dispatch exists, but index.ts never injects this handler.
+// No real secrets may be submitted. Production requires audited DB access and KEK custody.
 export interface ProviderMetadata {
   provider: AiProvider;
   selectedModel: string;
@@ -116,6 +116,14 @@ async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
   if (request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
     return null;
   }
+  const declared = request.headers["content-length"];
+  if (
+    typeof declared === "string" &&
+    (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > 1024)
+  ) {
+    return null;
+  }
+  if (Array.isArray(declared) || request.headers["content-encoding"]) return null;
   let size = 0;
   const chunks: Buffer[] = [];
   try {
@@ -125,9 +133,17 @@ async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
       if (size > 1024) return null;
       chunks.push(bytes);
     }
-    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+    if (declared !== undefined && size !== Number(declared)) return null;
+    const bytes = Buffer.concat(chunks);
+    try {
+      return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
+    } finally {
+      bytes.fill(0);
+    }
   } catch {
     return null;
+  } finally {
+    for (const chunk of chunks) chunk.fill(0);
   }
 }
 
@@ -142,7 +158,7 @@ function respond(response: ServerResponse, status: number, data: object) {
 
 /**
  * Admin-only API contract. Deliberately NOT reachable from the production
- * server; only fake stores are used by CI. No secret in GET, POST or error JSON.
+ * entrypoint; only fake stores are used by CI. No secret in GET, POST or error JSON.
  */
 export class AdminProviderConfiguration {
   constructor(
