@@ -50,22 +50,9 @@ function validateSealed(value: unknown): [Buffer, Buffer, Buffer] {
   return [nonce, encrypted, tag];
 }
 
-/** PostgreSQL wraps the mutation plus its secret-free audit event in ONE transaction. */
-export class PostgresProviderConfigStore implements ProviderConfigStore {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
-
-  async list(): Promise<ProviderMetadata[]> {
-    try {
-      const result = await this.pool.query<ProviderMetadata>(
-        'SELECT provider, "selectedModel", configured ' + "FROM vns.admin_list_ai_providers()",
-      );
-      return result.rows;
-    } catch {
-      throw new Error("Provider metadata unavailable");
-    }
-  }
-
-  async mutateWithAudit(change: ProviderMutation): Promise<void> {
+export function providerMutationArguments(
+  change: ProviderMutation,
+): [string, string, string | null, Buffer | null, Buffer | null, Buffer | null] {
     if (!validateProvider(change.provider)) {
       throw new Error("Invalid provider mutation");
     }
@@ -93,18 +80,38 @@ export class PostgresProviderConfigStore implements ProviderConfigStore {
       throw new Error("Invalid provider mutation");
     }
 
+  return [
+    change.provider,
+    change.action,
+    model,
+    envelope?.[0] ?? null,
+    envelope?.[1] ?? null,
+    envelope?.[2] ?? null,
+  ];
+}
+
+/** PostgreSQL wraps the mutation plus its secret-free audit event in ONE transaction. */
+export class PostgresProviderConfigStore implements ProviderConfigStore {
+  constructor(private readonly pool: Pick<Pool, "query">) {}
+
+  async list(): Promise<ProviderMetadata[]> {
+    try {
+      const result = await this.pool.query<ProviderMetadata>(
+        'SELECT provider, "selectedModel", configured ' + "FROM vns.admin_list_ai_providers()",
+      );
+      return result.rows;
+    } catch {
+      throw new Error("Provider metadata unavailable");
+    }
+  }
+
+  async mutateWithAudit(change: ProviderMutation): Promise<void> {
+    const params = providerMutationArguments(change);
     try {
       await this.pool.query(
         "SELECT vns.admin_mutate_ai_provider(" +
           "$1::text,$2::text,$3::text,$4::bytea,$5::bytea,$6::bytea)",
-        [
-          change.provider,
-          change.action,
-          model,
-          envelope?.[0] ?? null,
-          envelope?.[1] ?? null,
-          envelope?.[2] ?? null,
-        ],
+        params,
       );
     } catch {
       // No SQLSTATE diagnostics, ciphertext, session cookies or endpoints.
