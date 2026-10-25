@@ -201,10 +201,14 @@ try {
   });
   assert.equal((await reconcileJobStatusBatch(db, queue, 10)).updated, 0);
   assert.equal((await dispatchOutboxBatch(db, queue, 10)).newlyEnqueued, 0);
-  console.log("PASS: dormant editorial factory + outbox + PostgreSQL status complete synthetic job");
+  console.log(
+    "PASS: dormant editorial factory + outbox + PostgreSQL status complete synthetic job",
+  );
 } finally {
   await Promise.allSettled(
     [worker?.close(), events.close(), queue.close(), db.end()].filter(Boolean),
   );
-  await Promise.allSettled([producerRedis, eventRedis, workerConnection].filter(Boolean).map((conn) => conn.quit()));
+  await Promise.allSettled(
+    [producerRedis, eventRedis, workerConnection].filter(Boolean).map((conn) => conn.quit()),
+  );
 }
