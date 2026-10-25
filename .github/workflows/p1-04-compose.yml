@@ -18,6 +18,8 @@ on:
       - scripts/test_provision_pg_runtime_logins.py
       - scripts/verify_pg_runtime_tcp_isolated.py
       - scripts/test_verify_pg_runtime_tcp_isolated.py
+      - scripts/report_failed_editorial_jobs.py
+      - scripts/test_report_failed_editorial_jobs.py
       - scripts/test_check_compose.py
       - scripts/preflight_vps.py
       - scripts/test_preflight_vps.py
@@ -46,6 +48,8 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_provision_pg_runtime_logins.py'
       - name: Check single-secret isolated PostgreSQL TCP test policy (offline only)
         run: python3 -m unittest discover -s scripts -p 'test_verify_pg_runtime_tcp_isolated.py'
+      - name: Validate scoped failed-job report without live containers
+        run: python3 -m unittest discover -s scripts -p 'test_report_failed_editorial_jobs.py'
       - name: Check manual GHCR workflow safety gates (no uploads)
         run: python3 -m unittest discover -s scripts -p 'test_release_policy.py'
       - name: Read-only authenticated GHCR check (no upload)
