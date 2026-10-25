@@ -1,7 +1,9 @@
-# P1-07: future runtime PostgreSQL identity binding
+# P1-07: isolated PostgreSQL runtime identities
 
-The 0012 migration defines three NOLOGIN permission groups. These **cannot authenticate** and are not used by the running components. The new identity mapping in `apps/worker/src/runtime-db.ts` reserves distinct service login names and requires explicit approval when selected; it does not provision users or secrets.
+The migration 0012 defines three dormant NOLOGIN permission groups. The dispatcher and status reconciler now require a separate, explicitly enabled PostgreSQL login identity before making a database connection. No fallback to the owner account `vns` is permitted.
 
-**Not implemented:** PostgreSQL LOGIN provisioning, independent credentials, role membership, TLS / pg_hba review, integration of each service connection, and operator rollout. Current dispatcher and status CLI code still use `vns` and therefore must remain disabled.
+The dispatcher requires `VNS_PG_RUNTIME_IDENTITIES_ENABLED=true` with `VNS_POSTGRES_RUNTIME_PASSWORD_FILE=/run/secrets/pg_outbox_dispatch_password`; the status reconciler requires the same enable flag with `/run/secrets/pg_job_status_sync_password`. The future research writer's reserved secret path is `/run/secrets/pg_research_writer_password`. All three passwords must be provided through independently mounted Docker secrets. No passwords are committed.
 
-Do not create or enable live editorial runtime services based on this change. The probe-only worker remains untouched. Before actual activation, use CI-only service logins to exercise real SQL under each identity, verify denials, and approve secure operator secret generation and rollback separately.
+**Still blocked:** Dedicated LOGIN roles, membership to the corresponding NOLOGIN groups, independent credentials, Compose secret mounts, PostgreSQL authentication policy review and operator acceptance are not implemented. The research processor also has no production CLI wiring. The separate dispatcher/status entrypoints remain disabled on the VPS and cannot start successfully without this missing provisioning.
+
+No VPS deployment is authorized by this code change. The existing probe-only worker remains untouched. Require disposable CI authentication and permission-denial tests using actual distinct login users before any live rollout.
