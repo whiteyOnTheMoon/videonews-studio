@@ -31,7 +31,10 @@ function response(): ServerResponse & { status: number; payload: string } {
   const result = {
     status: 0,
     payload: "",
-    setHeader(_key: string, _value: string) {},
+    setHeader(name: string, value: string) {
+      void name;
+      void value;
+    },
     writeHead(status: number) {
       this.status = status;
     },
