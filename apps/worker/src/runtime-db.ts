@@ -15,7 +15,10 @@ const secretFiles = {
 
 export type RuntimeDbService = keyof typeof POSTGRES_SERVICE_IDENTITIES;
 
-export function requireDedicatedPostgresIdentity(service: RuntimeDbService, enabled: boolean): string {
+export function requireDedicatedPostgresIdentity(
+  service: RuntimeDbService,
+  enabled: boolean,
+): string {
   if (enabled !== true || !Object.hasOwn(POSTGRES_SERVICE_IDENTITIES, service)) {
     throw new Error("Dedicated PostgreSQL identity must be explicitly enabled");
   }
