@@ -15,5 +15,14 @@ for name, flag, secret in [
     assert service["read_only"] is True
     assert service["restart"] == "no"
     assert "frontend" not in service["networks"]
-    assert {item["source"] for item in service["secrets"]} == {secret, "redis_password"}
+    assert service["environment"]["VNS_RESEARCH_OPERATOR_APPROVED"] == "false"
+    assert service["environment"]["VNS_EDITORIAL_QUEUE_NAME"] == "vns-research"
+    assert (
+        service["environment"]["VNS_REDIS_RESEARCH_PASSWORD_FILE"]
+        == "/run/secrets/redis_research_password"
+    )
+    assert {item["source"] for item in service["secrets"]} == {
+        secret,
+        "redis_research_password",
+    }
     print("PASS:", name)

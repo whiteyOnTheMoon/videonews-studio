@@ -78,6 +78,8 @@ try {
   console.log("PASS: isolated Redis users each operate own BullMQ queue");
   console.log("PASS: cross-queue key writes, reads and pub/sub publishing denied");
 } finally {
-  await Promise.allSettled([worker.close(), events.close(), probeQueue.close(), researchQueue.close()]);
-  await Promise.allSettled([probe.quit(), research.quit(), workerRedis.quit(), eventsRedis.quit()]);
+  await Promise.allSettled([worker.close(), events.close()]);
+  await Promise.allSettled([probeQueue.close(), researchQueue.close()]);
+  await Promise.allSettled([workerRedis.quit(), eventsRedis.quit()]);
+  await Promise.allSettled([probe.quit(), research.quit()]);
 }
