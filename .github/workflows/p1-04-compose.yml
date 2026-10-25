@@ -10,6 +10,7 @@ on:
       - docs/IMAGE_DISTRIBUTION.md
       - .github/workflows/p1-04-publish-ghcr.yml
       - scripts/check_compose.py
+      - scripts/test_ci_editorial_ops_overlay.py
       - scripts/provision_redis_secrets.py
       - scripts/test_check_compose.py
       - scripts/preflight_vps.py
@@ -63,3 +64,9 @@ jobs:
           docker compose -f compose.yaml -f deploy/compose.images.yaml --profile preview --profile data --profile worker --profile ingress config --format json > /tmp/vns-preview-config.json
           python3 scripts/check_compose.py < /tmp/vns-preview-config.json
           python3 -c 'import json; cfg=json.load(open("/tmp/vns-preview-config.json")); s=cfg["services"]; assert all("build" not in s[n] and not s[n].get("ports") and s[n]["pull_policy"] == "never" and "@sha256:" in s[n]["image"] for n in ("web","api")); print("Digest override: no build and no published ports")'
+      - name: Validate disabled editorial-ops overlay (render only)
+        run: |
+          printf 'ci-only-placeholder-dispatch-password\n' > secrets/pg_outbox_dispatch_password
+          printf 'ci-only-placeholder-status-password\n' > secrets/pg_job_status_sync_password
+          chmod 600 secrets/pg_outbox_dispatch_password secrets/pg_job_status_sync_password
+          docker compose -f compose.yaml -f deploy/compose.editorial-ops.yaml --profile editorial-ops config --format json | python3 scripts/test_ci_editorial_ops_overlay.py
