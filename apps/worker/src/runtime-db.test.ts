@@ -82,7 +82,7 @@ test("separate secrets are required before any runtime database connection", () 
 });
 
 test("editorial Compose overlay remains dormant and service-scoped", () => {
-  const overlay = readFileSync("deploy/compose.editorial-ops.yaml", "utf8");
+  const overlay = readFileSync(new URL("../../../deploy/compose.editorial-ops.yaml", import.meta.url), "utf8");
   assert.match(overlay, /profiles: \[editorial-ops\]/);
   assert.match(overlay, /VNS_OUTBOX_DISPATCH_ENABLED: "false"/);
   assert.match(overlay, /VNS_STATUS_RECONCILE_ENABLED: "false"/);
