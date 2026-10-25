@@ -96,10 +96,7 @@ async function limitedJsonBody(request: Request): Promise<unknown> {
   // Strict, byte-exact framing; compressed input is forbidden.
   if (request.headers.has("content-encoding")) return null;
   const declared = request.headers.get("content-length");
-  if (
-    declared !== null &&
-    (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > 1024)
-  ) {
+  if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > 1024)) {
     return null;
   }
   const reader = request.body?.getReader();
