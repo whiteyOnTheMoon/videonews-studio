@@ -44,8 +44,17 @@ test("database outages and malformed replies fail closed without diagnostics", a
     new PostgresProviderMutationLimiter(broken).allow(),
     (error: Error) => error.message === "Provider mutation admission unavailable",
   );
-  for (const rows of [[], [{ allowed: "t" }], [{ allowed: true }, { allowed: false }]]) {
-    const pool = { async query() { return { rows }; } } as unknown as Pool;
+  const invalidRows: unknown[][] = [
+    [],
+    [{ allowed: "t" }],
+    [{ allowed: true }, { allowed: false }],
+  ];
+  for (const rows of invalidRows) {
+    const pool = {
+      async query() {
+        return { rows };
+      },
+    } as unknown as Pool;
     await assert.rejects(
       new PostgresProviderMutationLimiter(pool).allow(),
       /Provider mutation admission unavailable/,
