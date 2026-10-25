@@ -112,7 +112,7 @@ export function validatePublicProviderList(data: unknown): ProviderMetadata[] {
   return output;
 }
 
-async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
+export async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
   if (request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
     return null;
   }
@@ -147,7 +147,7 @@ async function readLimitedJson(request: IncomingMessage): Promise<unknown> {
   }
 }
 
-function respond(response: ServerResponse, status: number, data: object) {
+export function respond(response: ServerResponse, status: number, data: object) {
   response.setHeader("Cache-Control", "no-store");
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("Referrer-Policy", "no-referrer");
