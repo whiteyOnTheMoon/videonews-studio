@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import pg from "pg";
+import { readDedicatedPostgresConfig } from "./runtime-db.js";
 import { readQueueConfig, QUEUE_NAME, QUEUE_PREFIX } from "./queue.js";
 import { dispatchOutboxBatch } from "./outbox.js";
 
@@ -13,39 +13,11 @@ if (process.env.VNS_OUTBOX_DISPATCH_ENABLED !== "true") {
 }
 const redisConfig = readQueueConfig();
 
-const secretPath = process.env.VNS_POSTGRES_PASSWORD_FILE;
-if (secretPath !== "/run/secrets/postgres_password") {
-  throw new Error("Outbox requires the PostgreSQL Docker secret");
-}
-const dbHost = process.env.VNS_POSTGRES_HOST ?? "postgres";
-const dbPort = Number(process.env.VNS_POSTGRES_PORT ?? "5432");
-const dbName = process.env.VNS_POSTGRES_DB ?? "videonews";
-if (
-  !["postgres", "127.0.0.1"].includes(dbHost) ||
-  !Number.isInteger(dbPort) ||
-  dbPort < 1 ||
-  dbPort > 65535 ||
-  !/^[a-z][a-z0-9_]{0,62}$/.test(dbName)
-) {
-  throw new Error("Outbox database endpoint invalid");
-}
-let databasePassword: string;
-try {
-  databasePassword = readFileSync(secretPath, "utf8").trimEnd();
-} catch {
-  throw new Error("PostgreSQL secret unavailable");
-}
-if (databasePassword.length < 16) {
-  throw new Error("PostgreSQL secret invalid");
-}
+const dbConfig = readDedicatedPostgresConfig("dispatch");
 
 const { Pool } = pg;
 const pool = new Pool({
-  host: dbHost,
-  port: dbPort,
-  user: "vns",
-  database: dbName,
-  password: databasePassword,
+  ...dbConfig,
   max: 1,
   connectionTimeoutMillis: 4000,
   idleTimeoutMillis: 5000,
