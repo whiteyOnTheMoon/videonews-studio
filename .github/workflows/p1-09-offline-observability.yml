@@ -25,5 +25,21 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Export exact prettier formatting of offline admin API contract (temporary)
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --write apps/api/src/admin-provider-configuration.ts apps/api/src/admin-provider-configuration.test.ts
+          echo '===VNSFMT_START:admin-providers.ts==='
+          base64 -w0 apps/api/src/admin-provider-configuration.ts
+          echo
+          echo '===VNSFMT_END:admin-providers.ts==='
+          echo '===VNSFMT_START:admin-providers.test.ts==='
+          base64 -w0 apps/api/src/admin-provider-configuration.test.ts
+          echo
+          echo '===VNSFMT_END:admin-providers.test.ts==='
+          git restore -- apps/api/src/admin-provider-configuration.ts apps/api/src/admin-provider-configuration.test.ts
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"
