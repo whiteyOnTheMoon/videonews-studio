@@ -11,20 +11,20 @@ const config = {
 test(
   "editorial worker refuses activation without explicit authorization or handler",
   () => {
-  assert.throws(
-    () => createDormantEditorialWorker(config, false),
-    /explicit authorization/,
-  );
-  assert.throws(
-    () => createDormantEditorialWorker(config, true),
-    /research handler/,
-  );
-  assert.throws(
-    () => createDormantEditorialWorker(config, false, async () => ({
-      candidatesRecorded: 1,
-      needsEditorialReview: true,
-    })),
-    /explicit authorization/,
-  );
+    assert.throws(
+      () => createDormantEditorialWorker(config, false),
+      /explicit authorization/,
+    );
+    assert.throws(
+      () => createDormantEditorialWorker(config, true),
+      /research handler/,
+    );
+    assert.throws(
+      () => createDormantEditorialWorker(config, false, async () => ({
+        candidatesRecorded: 1,
+        needsEditorialReview: true,
+      })),
+      /explicit authorization/,
+    );
   },
 );
