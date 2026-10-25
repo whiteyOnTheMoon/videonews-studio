@@ -40,6 +40,14 @@ UPDATE vns.editor_accounts SET role='reviewer'
 UPDATE vns.editor_accounts SET active=false
  WHERE username='ci_restore_editor';
 
+-- Dedicated disposable admin identity for recovery testing only.
+INSERT INTO vns.editor_accounts
+ (id,username,display_name,role,password_hash,active)
+VALUES
+ ('caca1111-1111-4111-8111-111111111111','ci_restore_admin',
+  'CI Restore Admin','admin',
+  'scrypt$'||repeat('a',32)||'$'||repeat('b',128),true);
+
 -- The earlier restore seed has already created a legacy shared-admin review
 -- event. Create a named, scoped source-review event as a separate identity.
 DO $review$
@@ -102,11 +110,12 @@ BEGIN
 END;
 $budget_seed$;
 
--- The audit fixture is model-only, with no real or encrypted API key material.
--- Using the dormant NOLOGIN role proves function grants, not a VPS login.
+-- Synthetic named model-only audit fixture; no API key material.
+-- Dormant NOLOGIN writer verifies grants, not a VPS service login.
 SET ROLE vns_provider_config_writer;
-SELECT vns.admin_mutate_ai_provider(
-  'openai','set_model','gpt-6-luna',NULL,NULL,NULL
+SELECT vns.admin_mutate_ai_provider_as_editor(
+  'openai','set_model','gpt-6-luna',NULL,NULL,NULL,
+  'caca1111-1111-4111-8111-111111111111',0
 );
 RESET ROLE;
 

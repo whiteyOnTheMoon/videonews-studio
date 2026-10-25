@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { scryptSync } from "node:crypto";
 import { once } from "node:events";
+import type { IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 import { AdminAuth } from "./auth.js";
@@ -12,6 +13,7 @@ import {
   editorAuthFromEnv,
   type EditorStore,
   type EditorAccount,
+  type EditorRole,
 } from "./editor-auth.js";
 
 const ORIGIN = "https://studio.example.invalid";
@@ -54,7 +56,7 @@ async function serverFixture(
     account: {
       id: ID,
       username: "test_editor",
-      role: "reviewer" as const,
+      role: "reviewer" as EditorRole,
       active: true,
       passwordHash: HASH,
       authVersion: 0,
@@ -273,5 +275,35 @@ test("password rotation invalidates old sessions even after a quick reactivation
       401,
     );
     assert.equal((await login(base, "test_editor", newPassword)).status, 200);
+  });
+});
+
+test("named provider administration requires current editor admin session", async () => {
+  await serverFixture(async (base, editor, state) => {
+    const cookieRequest = (cookie: string): IncomingMessage =>
+      ({ headers: { cookie } }) as IncomingMessage;
+    assert.equal(await editor.authenticatedAdminIdentity(cookieRequest("")), null);
+    const reviewerLogin = await login(base);
+    assert.equal(reviewerLogin.status, 200);
+    const reviewerCookie = (reviewerLogin.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+    assert.equal(await editor.authenticatedAdminIdentity(cookieRequest(reviewerCookie)), null);
+
+    // A role change revokes the reviewer session even when promoted to admin.
+    state.account.role = "admin";
+    state.account.authVersion++;
+    assert.equal(await editor.authenticatedAdminIdentity(cookieRequest(reviewerCookie)), null);
+
+    const adminLogin = await login(base);
+    assert.equal(adminLogin.status, 200);
+    const adminCookie = (adminLogin.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+    assert.deepEqual(await editor.authenticatedAdminIdentity(cookieRequest(adminCookie)), {
+      id: ID,
+      username: "test_editor",
+      role: "admin",
+      authVersion: 1,
+    });
+
+    state.account.active = false;
+    assert.equal(await editor.authenticatedAdminIdentity(cookieRequest(adminCookie)), null);
   });
 });

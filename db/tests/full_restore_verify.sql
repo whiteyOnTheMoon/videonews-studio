@@ -17,9 +17,10 @@ BEGIN
    '0012_runtime_least_privilege','0013_synthetic_token_usage',
    '0014_synthetic_ai_budget_reservations',
    '0015_ai_provider_admin_configuration','0016_ai_provider_audit_store',
-   '0017_ai_provider_mutation_admission'
+   '0017_ai_provider_mutation_admission',
+   '0018_ai_provider_named_audit'
   );
-  IF total<>17 OR (SELECT count(*) FROM vns.schema_migrations)<>17 THEN
+  IF total<>18 OR (SELECT count(*) FROM vns.schema_migrations)<>18 THEN
     RAISE EXCEPTION 'Full migration ledger was not recovered';
   END IF;
 
@@ -187,7 +188,7 @@ BEGIN
          'vns.ai_provider_sealed_credentials','SELECT')
     OR has_table_privilege('vns_provider_config_writer',
          'vns.ai_provider_config_events','INSERT')
-    OR NOT has_function_privilege('vns_provider_config_writer',
+    OR has_function_privilege('vns_provider_config_writer',
          'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
     OR has_function_privilege('vns_api_runtime',
          'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
@@ -204,6 +205,33 @@ BEGIN
     OR has_table_privilege('vns_provider_config_writer',
         'vns.ai_provider_mutation_window','SELECT')
   THEN RAISE EXCEPTION 'Shared provider admission restore/ACLs invalid'; END IF;
+
+  -- The synthetic named admin audit must survive restore with ACL and owner intact.
+  IF (SELECT count(*) FROM vns.ai_provider_named_config_events)<>1
+    OR NOT EXISTS (
+      SELECT 1 FROM vns.ai_provider_named_config_events
+      WHERE provider='openai' AND action='set_model'
+        AND editor_id='caca1111-1111-4111-8111-111111111111'
+        AND editor_username='ci_restore_admin'
+        AND editor_auth_version=0 AND database_login='postgres'
+    )
+    OR has_function_privilege('vns_provider_config_writer',
+      'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
+    OR NOT has_function_privilege('vns_provider_config_writer',
+      'vns.admin_mutate_ai_provider_as_editor(text,text,text,bytea,bytea,bytea,uuid,integer)',
+      'EXECUTE')
+    OR has_function_privilege('vns_api_runtime',
+      'vns.admin_mutate_ai_provider_as_editor(text,text,text,bytea,bytea,bytea,uuid,integer)',
+      'EXECUTE')
+    OR has_table_privilege('vns_provider_config_writer',
+      'vns.ai_provider_named_config_events','INSERT')
+    OR NOT has_table_privilege('vns_audit_reader',
+      'vns.ai_provider_named_config_events','SELECT')
+    OR (SELECT pg_get_userbyid(proowner) FROM pg_proc
+        WHERE oid='vns.admin_mutate_ai_provider_as_editor(
+          text,text,text,bytea,bytea,bytea,uuid,integer)'::regprocedure)
+        <>'vns_provider_config_executor'
+  THEN RAISE EXCEPTION 'Named provider audit restore or ACLs invalid'; END IF;
 
   -- Mutation and uniqueness protections must still fail closed after restore.
   BEGIN

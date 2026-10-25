@@ -50,6 +50,46 @@ function validateSealed(value: unknown): [Buffer, Buffer, Buffer] {
   return [nonce, encrypted, tag];
 }
 
+export function providerMutationArguments(
+  change: ProviderMutation,
+): [string, string, string | null, Buffer | null, Buffer | null, Buffer | null] {
+  if (!validateProvider(change.provider)) {
+    throw new Error("Invalid provider mutation");
+  }
+  let model: string | null = null;
+  let envelope: [Buffer, Buffer, Buffer] | null = null;
+  if (change.action === "set_key") {
+    if (change.selectedModel !== undefined) {
+      throw new Error("Invalid provider mutation");
+    }
+    envelope = validateSealed(change.sealedKey);
+  } else if (change.action === "set_model") {
+    if (
+      change.sealedKey !== undefined ||
+      typeof change.selectedModel !== "string" ||
+      !MODELS[change.provider].includes(change.selectedModel)
+    ) {
+      throw new Error("Invalid provider mutation");
+    }
+    model = change.selectedModel;
+  } else if (change.action === "remove_key") {
+    if (change.selectedModel !== undefined || change.sealedKey !== undefined) {
+      throw new Error("Invalid provider mutation");
+    }
+  } else {
+    throw new Error("Invalid provider mutation");
+  }
+
+  return [
+    change.provider,
+    change.action,
+    model,
+    envelope?.[0] ?? null,
+    envelope?.[1] ?? null,
+    envelope?.[2] ?? null,
+  ];
+}
+
 /** PostgreSQL wraps the mutation plus its secret-free audit event in ONE transaction. */
 export class PostgresProviderConfigStore implements ProviderConfigStore {
   constructor(private readonly pool: Pick<Pool, "query">) {}
@@ -66,45 +106,12 @@ export class PostgresProviderConfigStore implements ProviderConfigStore {
   }
 
   async mutateWithAudit(change: ProviderMutation): Promise<void> {
-    if (!validateProvider(change.provider)) {
-      throw new Error("Invalid provider mutation");
-    }
-    let model: string | null = null;
-    let envelope: [Buffer, Buffer, Buffer] | null = null;
-    if (change.action === "set_key") {
-      if (change.selectedModel !== undefined) {
-        throw new Error("Invalid provider mutation");
-      }
-      envelope = validateSealed(change.sealedKey);
-    } else if (change.action === "set_model") {
-      if (
-        change.sealedKey !== undefined ||
-        typeof change.selectedModel !== "string" ||
-        !MODELS[change.provider].includes(change.selectedModel)
-      ) {
-        throw new Error("Invalid provider mutation");
-      }
-      model = change.selectedModel;
-    } else if (change.action === "remove_key") {
-      if (change.selectedModel !== undefined || change.sealedKey !== undefined) {
-        throw new Error("Invalid provider mutation");
-      }
-    } else {
-      throw new Error("Invalid provider mutation");
-    }
-
+    const params = providerMutationArguments(change);
     try {
       await this.pool.query(
         "SELECT vns.admin_mutate_ai_provider(" +
           "$1::text,$2::text,$3::text,$4::bytea,$5::bytea,$6::bytea)",
-        [
-          change.provider,
-          change.action,
-          model,
-          envelope?.[0] ?? null,
-          envelope?.[1] ?? null,
-          envelope?.[2] ?? null,
-        ],
+        params,
       );
     } catch {
       // No SQLSTATE diagnostics, ciphertext, session cookies or endpoints.
