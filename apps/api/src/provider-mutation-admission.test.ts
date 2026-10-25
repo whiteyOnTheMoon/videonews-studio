@@ -7,7 +7,7 @@ import { AdminProviderConfiguration } from "./admin-provider-configuration.js";
 import { ProviderMutationLimiter } from "./provider-mutation-limiter.js";
 
 function request(): IncomingMessage {
-  return Object.assign(Readable.from(['{"action":"remove_key","provider":"openai"}']), {
+  return Object.assign(Readable.from([JSON.stringify({ action: "remove_key", provider: "openai" })]), {
     url: "/admin/ai-providers",
     method: "POST",
     headers: {
@@ -64,7 +64,12 @@ test("invalid session and origin remain forbidden before limiter invocation", as
     { hasAdminSession: () => false, originAllowed: () => false },
     { list: async () => [], mutateWithAudit: async () => undefined },
     randomBytes(32),
-    { allow: () => { checks++; return false; } },
+    {
+      allow: () => {
+        checks++;
+        return false;
+      },
+    },
   );
   const res = response();
   await handler.handle(request(), res);
