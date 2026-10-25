@@ -58,6 +58,7 @@ docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
 docker exec -i "$pg_name" psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews \
   < "$root/db/migrations/0005_editorial_review_audit.up.sql"
 node "$root/scripts/test_ci_runtime_roles.mjs"
+node "$root/scripts/test_ci_runtime_logins.mjs"
 node "$root/scripts/test_outbox_integration.mjs"
 node "$root/scripts/test_job_status_integration.mjs"
 # A separate synthetic read-only PostgreSQL LOGIN inspects CI-only queue

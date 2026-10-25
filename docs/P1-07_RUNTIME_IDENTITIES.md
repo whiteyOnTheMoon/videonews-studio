@@ -7,3 +7,7 @@ The dispatcher requires `VNS_PG_RUNTIME_IDENTITIES_ENABLED=true` with `VNS_POSTG
 **Still blocked:** Dedicated LOGIN roles, membership to the corresponding NOLOGIN groups, independent credentials, Compose secret mounts, PostgreSQL authentication policy review and operator acceptance are not implemented. The research processor also has no production CLI wiring. The separate dispatcher/status entrypoints remain disabled on the VPS and cannot start successfully without this missing provisioning.
 
 No VPS deployment is authorized by this code change. The existing probe-only worker remains untouched. Require disposable CI authentication and permission-denial tests using actual distinct login users before any live rollout.
+
+## Disposable login acceptance
+
+The worker CI harness now provisions three distinct LOGIN fixtures in an ephemeral PostgreSQL 17 container, maps each fixture to its scoped NOLOGIN grant group, authenticates over TCP with its own fixture password, verifies the authenticated SQL identity, and refuses cross-component access. These fixed fixture passwords are never production credentials. The harness does not modify the VPS database or create operational logins. Production account provisioning, independent Docker secrets, login authentication review, controlled migration and operator acceptance remain blocked.
