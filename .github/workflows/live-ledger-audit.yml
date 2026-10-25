@@ -1,0 +1,16 @@
+name: Verify live ledger policy
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/p1_07_live_probe_receipt.sh'
+      - 'scripts/test_live_receipt_baseline.py'
+      - '.github/workflows/live-ledger-audit.yml'
+permissions:
+  contents: read
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts -p 'test_live_receipt_baseline.py'
