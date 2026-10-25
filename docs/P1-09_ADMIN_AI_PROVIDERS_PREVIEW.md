@@ -60,3 +60,11 @@ weiterzuarbeiten. Das bedeutet bewusstes Datenverlust- und
 Master-Key-Wiederherstellungsrisiko, kein bestehendes Backup.
 Keine Schlüssel sollten vor der getrennten Schutz-/Rolloutfreigabe
 in VideoNews Studio eingegeben werden.
+
+## Inaktiver BFF-Schreibvertrag (PR-Folgeschritt)
+
+Der [serverseitig geprüfte Admin-Schreibvertrag](P1-09_ADMIN_AI_PROVIDER_WRITE_CONTRACT.md)
+modelliert `set_key`, `remove_key` und `set_model` mit strikt
+validierten synthetischen Daten. Er bleibt **unregistriert** und kann
+im laufenden System keine API-Keys empfangen. Es existiert weiterhin
+keine schreibende Next.js-Route und keine produktive Master-Key-Datei.
