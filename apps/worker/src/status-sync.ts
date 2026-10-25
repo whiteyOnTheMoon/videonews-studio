@@ -2,7 +2,8 @@ import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import pg from "pg";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
-import { readQueueConfig, QUEUE_NAME, QUEUE_PREFIX } from "./queue.js";
+import { readEditorialQueueRoute } from "./editorial-routing.js";
+import { readQueueConfig, QUEUE_PREFIX } from "./queue.js";
 import { reconcileJobStatusBatch } from "./job-status.js";
 
 // Intentionally separate from the normal probe worker and from the dispatcher.
@@ -11,6 +12,7 @@ import { reconcileJobStatusBatch } from "./job-status.js";
 if (process.env.VNS_STATUS_RECONCILE_ENABLED !== "true") {
   throw new Error("Job status reconciler must be explicitly enabled");
 }
+const editorialQueue = readEditorialQueueRoute("statusSync");
 const redisConfig = readQueueConfig();
 const dbConfig = readDedicatedPostgresConfig("statusSync");
 
@@ -31,7 +33,7 @@ const redis = new Redis({
   connectTimeout: 3000,
   enableOfflineQueue: false,
 });
-const queue = new Queue(QUEUE_NAME, { connection: redis, prefix: QUEUE_PREFIX });
+const queue = new Queue(editorialQueue, { connection: redis, prefix: QUEUE_PREFIX });
 queue.on("error", () => console.error("Job status Redis connection error"));
 let running = true;
 process.once("SIGTERM", () => {
