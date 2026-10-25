@@ -97,6 +97,18 @@ Read-only inspection after separately approved installation could use
 A separately gated Telegram Bot API client, test fixtures and documented
 credential/storage restrictions are prepared in
 [P1-09 optional Telegram alerts](P1-09_OPTIONAL_TELEGRAM_ALERTS.md).
-No notification channel has been chosen, no external messages were sent,
+No Telegram notification channel was approved and no Telegram messages were sent,
 and the **already active disk-watch timer remains unchanged**. This adapter
 is not activated by CI, merging or the existing timer.
+
+## Operator selection: Email warnings (code-only)
+
+The operator has selected **email** as the intended remote notification
+channel. A strict SMTP-over-TLS port-465 client, isolated (disabled) systemd
+timer/service, private credential policy, test-only send mode and offline
+unit tests are documented in [P1-09 email warnings](P1-09_EMAIL_ALERTS.md).
+The running local journal check is **not modified**. No mail credentials,
+provider, recipient address, server installation or actual mail delivery have
+been verified. Email delivery requires separate account setup and operator
+approval. The earlier optional Telegram adapter remains unconnected and is
+not involved in sending SMTP messages.
