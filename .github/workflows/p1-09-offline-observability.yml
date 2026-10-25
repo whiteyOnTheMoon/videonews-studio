@@ -10,6 +10,9 @@ on:
       - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
       - "ops/p1-09/**"
       - "scripts/test_p1_09_systemd_units.py"
+      - "scripts/p1_09_telegram_alert.py"
+      - "scripts/test_p1_09_telegram_alert.py"
+      - "docs/P1-09_OPTIONAL_TELEGRAM_ALERTS.md"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read
