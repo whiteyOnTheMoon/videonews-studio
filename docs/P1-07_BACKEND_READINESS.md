@@ -1,5 +1,9 @@
 # P1-07 — Data and job queue rollout gates
 
+> **Aktueller Status — 25.10.2026 (Abgleich nach PR #168):** Dieser Leitfaden enthält darunter historische Pre-Deployment-Gates und Aussagen aus der ursprünglichen Phase-1-Planung. Diese sind **kein aktueller VPS-Status**. Der Betreiber hat PostgreSQL 17, ACL-geschütztes Redis 7, elf Migrationen und einen isolierten **Probe-only**-Worker samt einmaligem Live-Probe und kontrolliertem Idle-Neustart nachgewiesen. Details und Beweisgrenzen: [P1-07 Live Acceptance](P1-07_LIVE_ACCEPTANCE_STATUS.md). Der Operator hat das begrenzte Experiment ohne Backups bewusst erlaubt; eine Wiederherstellung/Offsite-Sicherung ist **nicht** nachgewiesen. Der separate Outbox-Dispatcher, der Jobstatus-Reconciler und echte redaktionelle Worker-Handler sind **nicht** auf dem VPS aktiviert. Die im Git vorhandenen synthetischen End-to-End- und Recovery-Tests sind **keine Live-Abnahme**. Die ursprünglichen Abschlusskriterien werden weiter in [#7](https://github.com/whiteyOnTheMoon/videonews-studio/issues/7) und [#87](https://github.com/whiteyOnTheMoon/videonews-studio/issues/87) verfolgt; **#9** bleibt für Backup-/Monitoring-Gates offen.
+
+## Historische Implementierungs- und Rollout-Planung (nicht aktueller VPS-Iststand)
+
 Status: **implementation in progress, not deployed**.
 
 ## Existing evidence
