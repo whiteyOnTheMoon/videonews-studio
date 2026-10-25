@@ -30,3 +30,9 @@ Disposable PostgreSQL tests authenticate all three service LOGIN identities and 
 ## Planning-only Compose overlay
 
 The optional `deploy/compose.editorial-ops.yaml` declares distinct dispatcher and status service containers with private backend networking, separated Docker secret mounts, resource bounds and no host ports. Both component activation flags and the shared runtime-identity activation flag are explicitly `false`. Merely selecting its `editorial-ops` profile cannot enable editorial processing. The overlay does not provision secrets or PostgreSQL login roles; missing secret files are expected until a separately approved rollout. Do not use `docker compose up` with this overlay on the VPS. The research writer is intentionally not defined as a runnable service.
+
+## Scoped research pipeline acceptance boundary
+
+The disposable end-to-end suite exercises the three separately authenticated logins for dispatch, research evidence persistence, and job-status reconciliation. It additionally asserts that dispatcher cannot modify job terminal status, status sync cannot modify outbox delivery, and research writer cannot modify editorial review verdicts. These negative operations are checked against the same disposable PostgreSQL instance **before** dispatching a synthetic research job. The database-owner account is used only for test fixtures and readback.
+
+**Operator read-only inventory remains a required separate gate** before live credential provisioning. Check actual `schema_migrations` and role existence against the running VPS without assuming that Git migrations have been applied, and confirm the currently deployed Compose configuration without printing secret values. If migration 0012 is not applied, the NOLOGIN groups may not exist; no login provisioning should proceed. No production operation is authorized by these CI checks.
