@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  POSTGRES_SERVICE_IDENTITIES,
-  requireDedicatedPostgresIdentity,
-} from "./runtime-db.js";
+import { POSTGRES_SERVICE_IDENTITIES, requireDedicatedPostgresIdentity } from "./runtime-db.js";
 
 test("distinct database identities are reserved for each service", () => {
   const users = Object.values(POSTGRES_SERVICE_IDENTITIES);
@@ -13,10 +10,7 @@ test("distinct database identities are reserved for each service", () => {
 
 test("identity selection fails closed unless separately enabled", () => {
   for (const service of ["dispatch", "statusSync", "research"] as const) {
-    assert.throws(
-      () => requireDedicatedPostgresIdentity(service, false),
-      /explicitly enabled/,
-    );
+    assert.throws(() => requireDedicatedPostgresIdentity(service, false), /explicitly enabled/);
     assert.equal(
       requireDedicatedPostgresIdentity(service, true),
       POSTGRES_SERVICE_IDENTITIES[service],
