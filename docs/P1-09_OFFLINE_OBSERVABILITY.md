@@ -61,6 +61,14 @@ Der [inaktive Anbieter-/Budgetplan](P1-09_ENGLISH_AI_PROVIDER_POLICY.md)
 ist mit synthetischen Rechenfällen getestet. Er sendet nichts, hat
 keine Zugangsdaten und erteilt ausdrücklich keine Kostengenehmigung.
 
+## Simulierte OpenAI-Antworten ohne API-Nutzung
+
+Das zusätzliche [OpenAI-Mock-Protokoll](P1-09_MOCK_OPENAI_RESPONSES.md)
+prüft abgeschlossene, synthetische Textantworten für die drei englischen
+Redaktionsstufen samt Token-Zählung und geschätztem Kostenbeleg.
+Es führt weder HTTP-Anfragen aus noch greift es auf echte Inhalte,
+Zugangsdaten oder Datenbanken zu. Es bleibt vom produktiven Worker getrennt.
+
 **P1-09 bleibt offen:** Reale autorisierte KI-Anfragen, tatsächliche
 Verbrauchs-/Preis-/TTS-Erfassung, atomare Budgetreservierung und
 unabhängig getestete Offsite-Sicherung/Restore fehlen.
