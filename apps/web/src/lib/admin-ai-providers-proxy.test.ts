@@ -82,7 +82,11 @@ test("non-GET and invalid cookie never leave the BFF", async () => {
     const result = await readOnlyAdminAiProvidersProxy(req(method), CFG, fetcher);
     assert.equal(result.status, 405);
   }
-  for (const cookie of ["", "__Host-vns_session=short", COOKIE + "; __Host-vns_session=" + "b".repeat(64)]) {
+  for (const cookie of [
+    "",
+    "__Host-vns_session=short",
+    COOKIE + "; __Host-vns_session=" + "b".repeat(64),
+  ]) {
     const result = await readOnlyAdminAiProvidersProxy(req("GET", cookie), CFG, fetcher);
     assert.equal(result.status, 401);
   }
@@ -106,14 +110,16 @@ test("admin verification and a strictly validated upstream status are mandatory"
   assert.equal(result.headers.get("cache-control"), "no-store");
   assert.deepEqual(await result.json(), {
     providers: [
-      { provider: "google_gemini", selectedModel: "gemini-3.8-flash-tts", configured: false, active: false },
+      {
+        provider: "google_gemini",
+        selectedModel: "gemini-3.8-flash-tts",
+        configured: false,
+        active: false,
+      },
       { provider: "openai", selectedModel: "gpt-6.1-sol", configured: false, active: false },
     ],
   });
-  assert.deepEqual(urls, [
-    CFG.api + "/admin/me",
-    CFG.api + "/admin/ai-providers",
-  ]);
+  assert.deepEqual(urls, [CFG.api + "/admin/me", CFG.api + "/admin/ai-providers"]);
 });
 
 test("a valid cookie but a non-admin server session cannot reach provider endpoint", async () => {

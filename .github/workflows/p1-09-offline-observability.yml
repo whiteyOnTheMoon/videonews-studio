@@ -25,25 +25,5 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Export pinned Prettier outputs for preview (temporary)
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/web/src/app/admin/ai-providers.tsx apps/web/src/app/api/admin/ai-providers/route.ts apps/web/src/lib/admin-ai-providers-proxy.test.ts
-          echo '===VNSFMT_START:preview.tsx==='
-          base64 -w0 apps/web/src/app/admin/ai-providers.tsx
-          echo
-          echo '===VNSFMT_END:preview.tsx==='
-          echo '===VNSFMT_START:api-route.ts==='
-          base64 -w0 apps/web/src/app/api/admin/ai-providers/route.ts
-          echo
-          echo '===VNSFMT_END:api-route.ts==='
-          echo '===VNSFMT_START:bff-test.ts==='
-          base64 -w0 apps/web/src/lib/admin-ai-providers-proxy.test.ts
-          echo
-          echo '===VNSFMT_END:bff-test.ts==='
-          git restore -- apps/web/src/app/admin/ai-providers.tsx apps/web/src/app/api/admin/ai-providers/route.ts apps/web/src/lib/admin-ai-providers-proxy.test.ts
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"

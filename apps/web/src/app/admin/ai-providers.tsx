@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  parseAdminAiProviders,
-  type AdminAiProviderView,
-} from "../../lib/admin-ai-provider-view";
+import { parseAdminAiProviders, type AdminAiProviderView } from "../../lib/admin-ai-provider-view";
 
 const planned = [
   { provider: "openai", label: "OpenAI", use: "Englische Nachrichtenanalyse und Skripte" },
-  { provider: "google_gemini", label: "Google Gemini", use: "Englische Sprecherstimme (TTS-Kandidat)" },
+  {
+    provider: "google_gemini",
+    label: "Google Gemini",
+    use: "Englische Sprecherstimme (TTS-Kandidat)",
+  },
 ] as const;
 
 export default function AiProviders({ readOnlyEnabled }: { readOnlyEnabled: boolean }) {
@@ -52,13 +53,12 @@ export default function AiProviders({ readOnlyEnabled }: { readOnlyEnabled: bool
     <section className="jobs-section" aria-labelledby="ai-providers-title">
       <h2 id="ai-providers-title">KI-Anbieter</h2>
       <p>
-        Hier werden später API-Keys, englische Textmodelle und Sprecherstimmen
-        verwaltet. Zurzeit ist diese Ansicht nur eine sichere Vorschau.
+        Hier werden später API-Keys, englische Textmodelle und Sprecherstimmen verwaltet. Zurzeit
+        ist diese Ansicht nur eine sichere Vorschau.
       </p>
       <div className="notice" role="status">
-        <strong>Schlüsselverwaltung noch nicht freigeschaltet.</strong>{" "}
-        Bitte keine API-Schlüssel in Chat, GitHub oder andere Formulare eintragen.
-        Es werden keine KI-Anfragen ausgelöst.
+        <strong>Schlüsselverwaltung noch nicht freigeschaltet.</strong> Bitte keine API-Schlüssel in
+        Chat, GitHub oder andere Formulare eintragen. Es werden keine KI-Anfragen ausgelöst.
       </div>
       {loading ? <p role="status">Lade Anbieterstatus …</p> : null}
       {error ? <p role="alert">{error}</p> : null}
@@ -69,9 +69,7 @@ export default function AiProviders({ readOnlyEnabled }: { readOnlyEnabled: bool
             <li className="jobs-entry" key={item.provider}>
               <strong>{item.label}</strong>
               <span>{item.use}</span>
-              <span>
-                Modell: {status?.selectedModel ?? "Noch nicht aus der Datenbank geladen"}
-              </span>
+              <span>Modell: {status?.selectedModel ?? "Noch nicht aus der Datenbank geladen"}</span>
               <span>
                 API-Key:{" "}
                 {status
@@ -86,8 +84,8 @@ export default function AiProviders({ readOnlyEnabled }: { readOnlyEnabled: bool
         })}
       </ul>
       <p>
-        Schlüssel eintragen, austauschen oder löschen sowie das Modell ändern
-        wird erst nach gesonderter Sicherheits- und Betriebsfreigabe möglich.
+        Schlüssel eintragen, austauschen oder löschen sowie das Modell ändern wird erst nach
+        gesonderter Sicherheits- und Betriebsfreigabe möglich.
       </p>
     </section>
   );
