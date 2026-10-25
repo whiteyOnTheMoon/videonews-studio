@@ -102,7 +102,7 @@ test("rejects unreviewed registry data, permissive wildcard and unsafe URLs", ()
   for (const input of broken) {
     assert.throws(
       () => parseReviewedSourceRegistry(input as string, POLICY),
-      undefined,
+      /Reviewed source/,
       String(input).slice(0, 70),
     );
   }

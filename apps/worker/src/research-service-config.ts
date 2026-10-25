@@ -2,8 +2,7 @@ import { ISOLATED_RESEARCH_QUEUE } from "./editorial-worker.js";
 
 export const APPROVED_RESEARCH_CATALOG_PATH =
   "/run/secrets/approved_research_sources.json" as const;
-export const REVIEWED_SOURCE_REGISTRY_PATH =
-  "/run/secrets/reviewed_research_sources.json" as const;
+export const REVIEWED_SOURCE_REGISTRY_PATH = "/run/secrets/reviewed_research_sources.json" as const;
 
 /**
  * This is an intentionally redundant rollout gate. No environment defaults

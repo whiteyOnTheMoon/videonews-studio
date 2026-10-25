@@ -5,10 +5,7 @@ import { createDormantEditorialWorker } from "./editorial-worker.js";
 import { readDedicatedPostgresConfig } from "./runtime-db.js";
 import { parseApprovedResearchCatalog } from "./research-catalog.js";
 import { readResearchLaunchGate } from "./research-service-config.js";
-import {
-  createReviewedCatalogDiscovery,
-  parseReviewedSourceRegistry,
-} from "./source-registry.js";
+import { createReviewedCatalogDiscovery, parseReviewedSourceRegistry } from "./source-registry.js";
 import { PostgresResearchEvidenceStore, createResearchProcessor } from "./research-process.js";
 import { fetchApprovedSourceDocument, readApprovedFetchPolicy } from "./source-fetch.js";
 
