@@ -8,6 +8,7 @@ on:
       - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
       - "docs/P1-09_BESZEL_MONITORING.md"
       - "docs/P1-09_ENGLISH_AI_PROVIDER_POLICY.md"
+      - "docs/P1-09_MOCK_OPENAI_RESPONSES.md"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read
