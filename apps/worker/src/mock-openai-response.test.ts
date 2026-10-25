@@ -20,7 +20,7 @@ function request(stage: keyof typeof TEXT_STAGES = "script_draft") {
     maxOutputTokens: policy.maxOutputTokens,
   };
 }
-function fixture(model = TEXT_STAGES.script_draft.model) {
+function fixture(model: string = TEXT_STAGES.script_draft.model) {
   return {
     id: RESPONSE_ID,
     object: "response",
