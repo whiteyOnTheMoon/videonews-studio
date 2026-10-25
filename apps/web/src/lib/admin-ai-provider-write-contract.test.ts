@@ -296,3 +296,16 @@ test("invalid JSON framing and encoding are rejected before upstream writes", as
   }
   assert.equal(writes, 0);
 });
+
+// P1_09_FORMAT_DEBUG_START
+test("temporary formatter diagnostic for exact CI formatting", async () => {
+  const fs = await import("node:fs/promises");
+  const prettier = await import("prettier");
+  const filename = new URL("./admin-ai-provider-write-contract.test.ts", import.meta.url).pathname;
+  const content = await fs.readFile(filename, "utf8");
+  const clean = content.slice(0, content.indexOf("// P1_09_FORMAT_DEBUG_START")).trimEnd() + "\n";
+  const options = await prettier.resolveConfig(filename);
+  const formatted = await prettier.format(clean, { ...options, filepath: filename });
+  console.log("P1_09_PRETTIER_FORMATTED=" + JSON.stringify(formatted));
+});
+// P1_09_FORMAT_DEBUG_END
