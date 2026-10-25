@@ -23,5 +23,25 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Export Prettier reference from synthetic source only (temporary)
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --write apps/worker/src/token-usage.ts apps/worker/src/token-usage.test.ts docs/P1-09_BESZEL_MONITORING.md
+          echo '===VNSFMT_START:token-usage.ts==='
+          base64 -w0 apps/worker/src/token-usage.ts
+          echo
+          echo '===VNSFMT_END:token-usage.ts==='
+          echo '===VNSFMT_START:token-usage.test.ts==='
+          base64 -w0 apps/worker/src/token-usage.test.ts
+          echo
+          echo '===VNSFMT_END:token-usage.test.ts==='
+          echo '===VNSFMT_START:beszel.md==='
+          base64 -w0 docs/P1-09_BESZEL_MONITORING.md
+          echo
+          echo '===VNSFMT_END:beszel.md==='
+          git restore -- apps/worker/src/token-usage.ts apps/worker/src/token-usage.test.ts docs/P1-09_BESZEL_MONITORING.md
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"
