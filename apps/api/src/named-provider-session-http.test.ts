@@ -28,7 +28,7 @@ function hash(password: string, salt: string): string {
     p: 1,
     maxmem: 64 * 1024 * 1024,
   });
-  return `scrypt${salt}${derived.toString("hex")}`;
+  return "scrypt$" + salt + "$" + derived.toString("hex");
 }
 
 test("real editor session drives named provider HTTP to sealed and audited SQL", async () => {
@@ -221,13 +221,14 @@ test("named provider dispatch cannot mount without editor authentication", () =>
       /requires personal editor authentication/,
     );
     assert.throws(
-      () => new NamedAdminProviderConfiguration(
-        { authenticatedAdminIdentity: async () => null },
-        { originAllowed: () => true },
-        { list: async () => [], mutateAsNamedAdmin: async () => undefined },
-        key,
-        undefined as unknown as { allow(): Promise<boolean> },
-      ),
+      () =>
+        new NamedAdminProviderConfiguration(
+          { authenticatedAdminIdentity: async () => null },
+          { originAllowed: () => true },
+          { list: async () => [], mutateAsNamedAdmin: async () => undefined },
+          key,
+          undefined as unknown as { allow(): Promise<boolean> },
+        ),
       /rate admission is required/,
     );
   } finally {
