@@ -101,10 +101,7 @@ test("strict simulated request identity, stage, language, ceilings and secret re
     { ...baseline, maxInputTokens: 0 },
     { ...baseline, maxOutputTokens: -1 },
   ]) {
-    assert.throws(
-      () => evaluateMockOpenAiResponse(altered, fixture()),
-      /Invalid|exceeds|Rejected/,
-    );
+    assert.throws(() => evaluateMockOpenAiResponse(altered, fixture()), /Invalid|exceeds|Rejected/);
   }
 });
 
@@ -139,17 +136,21 @@ test("unknown provider features, incomplete responses and extra output are denie
     },
     {
       ...response,
-      output: [{ ...response.output[0], content: [{ type: "output_text", text: "Bad\u0000text data" }] }],
+      output: [
+        { ...response.output[0], content: [{ type: "output_text", text: "Bad\u0000text data" }] },
+      ],
     },
     {
       ...response,
-      output: [{ ...response.output[0], content: [{ ...response.output[0]?.content[0], annotations: [] }] }],
+      output: [
+        {
+          ...response.output[0],
+          content: [{ ...response.output[0]?.content[0], annotations: [] }],
+        },
+      ],
     },
   ]) {
-    assert.throws(
-      () => evaluateMockOpenAiResponse(request(), altered),
-      /Invalid|Rejected/,
-    );
+    assert.throws(() => evaluateMockOpenAiResponse(request(), altered), /Invalid|Rejected/);
   }
 });
 
