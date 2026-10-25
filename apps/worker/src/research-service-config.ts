@@ -2,6 +2,8 @@ import { ISOLATED_RESEARCH_QUEUE } from "./editorial-worker.js";
 
 export const APPROVED_RESEARCH_CATALOG_PATH =
   "/run/secrets/approved_research_sources.json" as const;
+export const REVIEWED_SOURCE_REGISTRY_PATH =
+  "/run/secrets/reviewed_research_sources.json" as const;
 
 /**
  * This is an intentionally redundant rollout gate. No environment defaults
@@ -11,6 +13,7 @@ export const APPROVED_RESEARCH_CATALOG_PATH =
 export function readResearchLaunchGate(env: NodeJS.ProcessEnv = process.env): {
   queue: typeof ISOLATED_RESEARCH_QUEUE;
   catalogPath: typeof APPROVED_RESEARCH_CATALOG_PATH;
+  registryPath: typeof REVIEWED_SOURCE_REGISTRY_PATH;
 } {
   if (
     env.VNS_RESEARCH_WORKER_ENABLED !== "true" ||
@@ -19,9 +22,14 @@ export function readResearchLaunchGate(env: NodeJS.ProcessEnv = process.env): {
     env.VNS_PG_RUNTIME_IDENTITIES_ENABLED !== "true" ||
     env.VNS_SOURCE_FETCH_ENABLED !== "true" ||
     env.VNS_RESEARCH_QUEUE_NAME !== ISOLATED_RESEARCH_QUEUE ||
-    env.VNS_RESEARCH_CATALOG_FILE !== APPROVED_RESEARCH_CATALOG_PATH
+    env.VNS_RESEARCH_CATALOG_FILE !== APPROVED_RESEARCH_CATALOG_PATH ||
+    env.VNS_RESEARCH_REGISTRY_FILE !== REVIEWED_SOURCE_REGISTRY_PATH
   ) {
     throw new Error("Research worker activation is disabled");
   }
-  return { queue: ISOLATED_RESEARCH_QUEUE, catalogPath: APPROVED_RESEARCH_CATALOG_PATH };
+  return {
+    queue: ISOLATED_RESEARCH_QUEUE,
+    catalogPath: APPROVED_RESEARCH_CATALOG_PATH,
+    registryPath: REVIEWED_SOURCE_REGISTRY_PATH,
+  };
 }
