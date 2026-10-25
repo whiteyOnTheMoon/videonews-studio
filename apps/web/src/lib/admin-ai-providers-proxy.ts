@@ -1,9 +1,5 @@
-import {
-  adminProxyConfig,
-  clientAdminCookie,
-  isAdminAuthorized,
-  type AdminProxyConfig,
-} from "./admin-proxy";
+import type { AdminProxyConfig } from "./admin-proxy";
+import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 import { parseAdminAiProviders } from "./admin-ai-provider-view";
 
 // Backend endpoint and master key are dormant. This flag is deliberately
@@ -13,7 +9,7 @@ export function aiProviderReadOnlyProxyConfig(
   env: Record<string, string | undefined>,
 ): AdminProxyConfig | null {
   if (env.VNS_WEB_AI_PROVIDER_READONLY_ENABLED !== "true") return null;
-  return adminProxyConfig(env);
+  return editorProxyConfig(env);
 }
 
 function reply(status: number, body: object): Response {
@@ -34,13 +30,22 @@ export async function readOnlyAdminAiProvidersProxy(
 ): Promise<Response> {
   if (!config) return reply(404, { error: "not_found" });
   if (request.method !== "GET") return reply(405, { error: "method_not_allowed" });
-  const safeCookie = clientAdminCookie(request.headers.get("cookie"));
+  const safeCookie = clientEditorCookie(request.headers.get("cookie"));
   if (!safeCookie) return reply(401, { error: "unauthorized" });
 
-  // Explicitly verify the admin role with the live internal API. The
-  // browser's raw cookie cannot grant access without server verification.
-  if (!(await isAdminAuthorized(config, safeCookie, fetcher))) {
-    return reply(401, { error: "unauthorized" });
+  // A shared-admin cookie never authorizes provider reads. The backend
+  // verifies this personal editor session again at the provider endpoint.
+  const profile = await editorProfile(request, config, fetcher);
+  if (profile.status === 401) return reply(401, { error: "unauthorized" });
+  if (profile.status !== 200) return reply(503, { error: "temporarily_unavailable" });
+  const identity: unknown = await profile.json();
+  if (
+    !identity ||
+    typeof identity !== "object" ||
+    !("role" in identity) ||
+    identity.role !== "admin"
+  ) {
+    return reply(403, { error: "forbidden" });
   }
 
   try {

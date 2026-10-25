@@ -6,7 +6,8 @@ import {
 } from "./admin-ai-providers-proxy";
 import { parseAdminAiProviders } from "./admin-ai-provider-view";
 
-const COOKIE = "__Host-vns_session=" + "a".repeat(64);
+const COOKIE = "__Host-vns_editor=" + "a".repeat(64);
+const SHARED_COOKIE = "__Host-vns_session=" + "b".repeat(64);
 const CFG = { origin: "https://studio.ap-pixels.com", api: "http://api:4000" };
 
 function req(method = "GET", cookie = COOKIE): Request {
@@ -40,6 +41,8 @@ test("read-only feature defaults off, never enabled by normal admin flags", () =
     VNS_WEB_ADMIN_ENABLED: "true",
     VNS_ADMIN_ORIGIN: CFG.origin,
     VNS_API_INTERNAL_URL: CFG.api,
+    VNS_WEB_ADMIN_JOBS_ENABLED: "true",
+    VNS_WEB_EDITOR_AUTH_ENABLED: "true",
   };
   assert.equal(aiProviderReadOnlyProxyConfig(env), null);
   assert.deepEqual(
@@ -48,6 +51,14 @@ test("read-only feature defaults off, never enabled by normal admin flags", () =
   );
   assert.equal(
     aiProviderReadOnlyProxyConfig({ ...env, VNS_WEB_AI_PROVIDER_READONLY_ENABLED: "false" }),
+    null,
+  );
+  assert.equal(
+    aiProviderReadOnlyProxyConfig({ ...env, VNS_WEB_EDITOR_AUTH_ENABLED: "false" }),
+    null,
+  );
+  assert.equal(
+    aiProviderReadOnlyProxyConfig({ ...env, VNS_WEB_ADMIN_JOBS_ENABLED: "false" }),
     null,
   );
   assert.equal(
@@ -84,8 +95,9 @@ test("non-GET and invalid cookie never leave the BFF", async () => {
   }
   for (const cookie of [
     "",
-    "__Host-vns_session=short",
-    COOKIE + "; __Host-vns_session=" + "b".repeat(64),
+    "__Host-vns_editor=short",
+    SHARED_COOKIE,
+    COOKIE + "; __Host-vns_editor=" + "b".repeat(64),
   ]) {
     const result = await readOnlyAdminAiProvidersProxy(req("GET", cookie), CFG, fetcher);
     assert.equal(result.status, 401);
@@ -101,7 +113,9 @@ test("admin verification and a strictly validated upstream status are mandatory"
     assert.equal(init?.redirect, "manual");
     assert.equal(init?.cache, "no-store");
     assert.equal(new Headers(init?.headers).get("Cookie"), COOKIE);
-    if (url.endsWith("/admin/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/editor/me")) {
+      return Response.json({ role: "admin", username: "ci_admin" });
+    }
     if (url.endsWith("/admin/ai-providers")) return Response.json(payload());
     throw new Error("Invalid upstream URL");
   }) as typeof fetch;
@@ -119,7 +133,7 @@ test("admin verification and a strictly validated upstream status are mandatory"
       { provider: "openai", selectedModel: "gpt-6.1-sol", configured: false, active: false },
     ],
   });
-  assert.deepEqual(urls, [CFG.api + "/admin/me", CFG.api + "/admin/ai-providers"]);
+  assert.deepEqual(urls, [CFG.api + "/editor/me", CFG.api + "/admin/ai-providers"]);
 });
 
 test("a valid cookie but a non-admin server session cannot reach provider endpoint", async () => {
@@ -127,10 +141,10 @@ test("a valid cookie but a non-admin server session cannot reach provider endpoi
   const fetcher = (async () => {
     calls++;
     if (calls > 1) throw new Error("Provider endpoint must not be queried");
-    return Response.json({ role: "editor" });
+    return Response.json({ role: "editor", username: "ci_editor" });
   }) as typeof fetch;
   const response = await readOnlyAdminAiProvidersProxy(req(), CFG, fetcher);
-  assert.equal(response.status, 401);
+  assert.equal(response.status, 403);
   assert.equal(calls, 1);
 });
 
@@ -153,7 +167,9 @@ test("all unknown, key-bearing or incomplete upstream data fail closed", async (
   for (const invalid of examples) {
     assert.equal(parseAdminAiProviders(invalid), null);
     const fetcher = (async (input: RequestInfo | URL) => {
-      if (String(input).endsWith("/admin/me")) return Response.json({ role: "admin" });
+      if (String(input).endsWith("/editor/me")) {
+        return Response.json({ role: "admin", username: "ci_admin" });
+      }
       return Response.json(invalid);
     }) as typeof fetch;
     const response = await readOnlyAdminAiProvidersProxy(req(), CFG, fetcher);
@@ -171,7 +187,9 @@ test("HTTP errors, redirects, oversized and malformed bodies never leak upstream
     new Response("not-json-key=sk-secret", { status: 200 }),
   ]) {
     const fetcher = (async (input: RequestInfo | URL) => {
-      if (String(input).endsWith("/admin/me")) return Response.json({ role: "admin" });
+      if (String(input).endsWith("/editor/me")) {
+        return Response.json({ role: "admin", username: "ci_admin" });
+      }
       return upstream;
     }) as typeof fetch;
     const result = await readOnlyAdminAiProvidersProxy(req(), CFG, fetcher);
