@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { scryptSync } from "node:crypto";
 import { once } from "node:events";
-import type { AddressInfo } from "node:net";
 import type { IncomingMessage } from "node:http";
+import type { AddressInfo } from "node:net";
 import test from "node:test";
 import { AdminAuth } from "./auth.js";
 import { AdminJobs } from "./admin-jobs.js";
