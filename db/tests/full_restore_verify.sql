@@ -13,9 +13,10 @@ BEGIN
    '0004_research_evidence','0005_editorial_review_audit',
    '0006_offline_role_boundaries','0007_runtime_role_boundaries',
    '0008_editor_session_revocation','0009_scoped_editor_review',
-   '0010_editor_account_lifecycle_audit','0011_operator_registry_governance'
+   '0010_editor_account_lifecycle_audit','0011_operator_registry_governance',
+   '0012_runtime_least_privilege','0013_synthetic_token_usage'
   );
-  IF total<>11 OR (SELECT count(*) FROM vns.schema_migrations)<>11 THEN
+  IF total<>13 OR (SELECT count(*) FROM vns.schema_migrations)<>13 THEN
     RAISE EXCEPTION 'Full migration ledger was not recovered';
   END IF;
 
@@ -24,9 +25,10 @@ BEGIN
     'vns_editor_provisioner','vns_audit_reader','vns_api_runtime',
     'vns_outbox_dispatcher','vns_review_event_writer',
     'vns_editor_review_executor','vns_lifecycle_audit_writer',
-    'vns_operator_governor','vns_operator_registry_executor'
+    'vns_operator_governor','vns_operator_registry_executor',
+    'vns_outbox_dispatch','vns_job_status_sync','vns_research_writer'
   ) AND NOT rolcanlogin AND NOT rolsuper;
-  IF total<>9 THEN RAISE EXCEPTION 'A NOLOGIN application role was not restored'; END IF;
+  IF total<>12 THEN RAISE EXCEPTION 'A NOLOGIN application role was not restored'; END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_roles WHERE rolname='vns_ci_restore_operator'
@@ -116,6 +118,24 @@ BEGIN
     OR (SELECT count(*) FROM vns.stories
         WHERE slug='restore-fixture-story')<>1
   THEN RAISE EXCEPTION 'Core editorial/outbox data is missing'; END IF;
+
+  -- New token receipts must survive independent logical archive/role restore.
+  IF (SELECT count(*) FROM vns.job_token_usage)<>1
+     OR NOT EXISTS(
+       SELECT 1 FROM vns.job_token_usage t
+       JOIN vns.jobs j ON j.id=t.job_id
+       WHERE j.idempotency_key='ci-restore-job'
+         AND t.provider='ci_fixture'
+         AND t.model='restore_model'
+         AND t.request_id='ci_restore_req_001'
+         AND t.input_tokens=1000
+         AND t.output_tokens=500
+         AND t.estimated_cost_micro_usd=6000
+         AND t.source_type='synthetic'
+     )
+     OR has_table_privilege('vns_api_runtime','vns.job_token_usage','SELECT')
+     OR has_table_privilege('vns_research_writer','vns.job_token_usage','INSERT')
+  THEN RAISE EXCEPTION 'Synthetic token ledger restore/ACLs invalid'; END IF;
 
   -- Mutation and uniqueness protections must still fail closed after restore.
   BEGIN

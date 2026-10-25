@@ -4,8 +4,8 @@
 gemäß Betreiberentscheidung mit der bestehenden **Beszel-Installation**.
 Siehe [Monitoring-Betriebsentscheidung](P1-09_BESZEL_MONITORING.md).
 Die ehemals projektspezifischen Disk-, Telegram- und E-Mail-Tools wurden
-als redundant zurückgenommen. Der ursprüngliche P1-09-Disk-Timer muss vor
-dem Merge dieser Bereinigung auf dem VPS deaktiviert und entfernt werden.
+als redundant entfernt. Der ursprüngliche P1-09-Disk-Timer ist auf dem VPS
+bereits deaktiviert und deinstalliert (Betreiberprotokoll vom 25.10.2026).
 
 ## Offline-Kostenmodell bleibt erhalten
 
@@ -39,6 +39,16 @@ Das bestehende ressourcenschonende GitHub-Actions-Workflow-Skelett
 `p1-09-offline-observability.yml` führt nur noch die Unit-Tests des
 Kostenmodells aus. Kein Docker, SMTP, Redis, PostgreSQL, Beszel-Zugriff
 oder kostenpflichtiger Drittanbieter wird aufgerufen.
+
+## Synthetische Datenbank- und Worker-Anbindung
+
+Eine getrennte, **nicht aktivierte** Erweiterung ist unter
+[P1-09 Token Usage Ledger](P1-09_TOKEN_USAGE_LEDGER.md) dokumentiert.
+Sie enthält PostgreSQL-Migration 0013 für append-only synthetische
+Job-/Request-Belege, idempotente SQL-Funktion und einen Test-gesteuerten
+Worker-Adapter. Die neue Tabelle weist Einträge ausdrücklich nur als
+`synthetic` aus und gewährt laufenden App-Rollen keine neuen Rechte.
+Migration 0013 wurde **nicht** auf dem VPS ausgeführt.
 
 **P1-09 bleibt offen:** Realer, autorisierter Verbrauch je Job, echte
 Preise, Limits sowie unabhängig getestete Offsite-Sicherung/Restore fehlen.

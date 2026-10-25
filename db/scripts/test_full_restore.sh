@@ -70,14 +70,15 @@ assert_empty_schema() {
   test "$state" = 0 || { echo "FAIL: incomplete restore left schema behind" >&2; exit 1; }
 }
 
-echo "P1-07: initialize disposable PostgreSQL 17 source with all 11 migrations"
+echo "P1-07: initialize disposable PostgreSQL 17 source with all 13 migrations"
 start_pg "$source_name" "$source_db" postgres
 for migration in \
   0001_editorial_core 0002_job_outbox 0003_research_requests \
   0004_research_evidence 0005_editorial_review_audit \
   0006_offline_role_boundaries 0007_runtime_role_boundaries \
   0008_editor_session_revocation 0009_scoped_editor_review \
-  0010_editor_account_lifecycle_audit 0011_operator_registry_governance
+  0010_editor_account_lifecycle_audit 0011_operator_registry_governance \
+  0012_runtime_least_privilege 0013_synthetic_token_usage
 do
   run_sql "$source_name" "$source_db" postgres "$root/db/migrations/$migration.up.sql"
 done
@@ -162,7 +163,7 @@ test "$expected" = "$restored" || {
   echo "FAIL: source and restored vns table data fingerprints differ" >&2
   exit 1
 }
-echo "PASS: restored full 0011 schema, all row data, global role grants and definer ownership"
+echo "PASS: restored full 0013 schema, all row data, global role grants and definer ownership"
 
 # A second restore into existing application state must reject and preserve it.
 if docker exec -i "$target_name" pg_restore -U restore_admin -d "$target_db" \

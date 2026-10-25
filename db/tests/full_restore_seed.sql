@@ -64,4 +64,23 @@ BEGIN
 END;
 $review$;
 
+-- Two token usage entries are synthetic; no provider billed any account.
+DO $token_seed$
+DECLARE
+  created_id uuid;
+  receipt_id uuid;
+BEGIN
+  SELECT id INTO created_id FROM vns.jobs WHERE idempotency_key='ci-restore-job';
+  receipt_id := vns.record_synthetic_token_usage(
+    created_id, 'ci_fixture', 'restore_model', 'ci_restore_req_001',
+    1000, 500, 2000000, 8000000);
+  IF receipt_id IS NULL
+     OR vns.record_synthetic_token_usage(
+       created_id, 'ci_fixture', 'restore_model', 'ci_restore_req_001',
+       1000, 500, 2000000, 8000000)<>receipt_id THEN
+    RAISE EXCEPTION 'Synthetic token receipt seed not idempotent';
+  END IF;
+END;
+$token_seed$;
+
 COMMIT;
