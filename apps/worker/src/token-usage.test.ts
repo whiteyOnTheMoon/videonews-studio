@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Pool } from "pg";
-import {
-  estimateMicroUsd,
-  syntheticUsageStore,
-  validateSyntheticUsage,
-} from "./token-usage.js";
+import { estimateMicroUsd, syntheticUsageStore, validateSyntheticUsage } from "./token-usage.js";
 
 const JOB_ID = "b274db39-cfd5-46bf-8438-27557b89201a";
 const RECEIPT_ID = "b274db39-cfd5-46bf-8438-27557b89201b";
@@ -33,13 +29,27 @@ test("strict synthetic usage shape and integer micro-USD rounding", () => {
   const event = sample();
   assert.deepEqual(validateSyntheticUsage(event), event);
   assert.equal(estimateMicroUsd(event), "6000");
-  assert.equal(estimateMicroUsd({ ...event, inputTokens: 1, outputTokens: 0,
-    inputMicroUsdPerMillion: 1, outputMicroUsdPerMillion: 0 }), "1");
+  assert.equal(
+    estimateMicroUsd({
+      ...event,
+      inputTokens: 1,
+      outputTokens: 0,
+      inputMicroUsdPerMillion: 1,
+      outputMicroUsdPerMillion: 0,
+    }),
+    "1",
+  );
   assert.equal(estimateMicroUsd({ ...event, inputTokens: 0, outputTokens: 0 }), "0");
-  assert.equal(estimateMicroUsd({ ...event,
-    inputTokens: 100_000_000, outputTokens: 100_000_000,
-    inputMicroUsdPerMillion: 1_000_000_000_000,
-    outputMicroUsdPerMillion: 1_000_000_000_000 }), "200000000000000");
+  assert.equal(
+    estimateMicroUsd({
+      ...event,
+      inputTokens: 100_000_000,
+      outputTokens: 100_000_000,
+      inputMicroUsdPerMillion: 1_000_000_000_000,
+      outputMicroUsdPerMillion: 1_000_000_000_000,
+    }),
+    "200000000000000",
+  );
   for (const bad of [
     null,
     [],
@@ -79,8 +89,14 @@ test("synthetic receipt write is parameterized and returns only a bounded acknow
   assert.match(call.sql, /record_synthetic_token_usage/);
   assert.match(call.sql, /\$8::bigint/);
   assert.deepEqual(call.params, [
-    JOB_ID, "ci_fixture", "ci-model-1", "ci_request_000001",
-    "1000", "500", "2000000", "8000000",
+    JOB_ID,
+    "ci_fixture",
+    "ci-model-1",
+    "ci_request_000001",
+    "1000",
+    "500",
+    "2000000",
+    "8000000",
   ]);
 });
 
@@ -125,8 +141,16 @@ test("summary returns only decimal strings and cannot be queried for arbitrary I
     async query(sql: string, params: unknown[]) {
       assert.match(sql, /sum\(estimated_cost_micro_usd\)/);
       assert.deepEqual(params, [JOB_ID]);
-      return { rows: [{ requests: "2", input_tokens: "2000",
-        output_tokens: "1000", estimated_cost_micro_usd: "12000" }] };
+      return {
+        rows: [
+          {
+            requests: "2",
+            input_tokens: "2000",
+            output_tokens: "1000",
+            estimated_cost_micro_usd: "12000",
+          },
+        ],
+      };
     },
   } as unknown as Pool;
   const store = syntheticUsageStore(pool, true);
@@ -145,8 +169,16 @@ test("summary returns only decimal strings and cannot be queried for arbitrary I
 test("malformed summary and SQL errors are fail-closed", async () => {
   const pool = {
     async query() {
-      return { rows: [{ requests: "private", input_tokens: "0",
-        output_tokens: "0", estimated_cost_micro_usd: "0" }] };
+      return {
+        rows: [
+          {
+            requests: "private",
+            input_tokens: "0",
+            output_tokens: "0",
+            estimated_cost_micro_usd: "0",
+          },
+        ],
+      };
     },
   } as unknown as Pool;
   await assert.rejects(
