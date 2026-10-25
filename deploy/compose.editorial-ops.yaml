@@ -21,6 +21,8 @@ services:
     environment:
       VNS_OUTBOX_DISPATCH_ENABLED: "false"
       VNS_PG_RUNTIME_IDENTITIES_ENABLED: "false"
+      VNS_RESEARCH_OPERATOR_APPROVED: "false"
+      VNS_EDITORIAL_QUEUE_NAME: vns-research
       VNS_POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/pg_outbox_dispatch_password
       VNS_REDIS_HOST: redis
       VNS_REDIS_PORT: "6379"
@@ -33,6 +35,8 @@ services:
     environment:
       VNS_STATUS_RECONCILE_ENABLED: "false"
       VNS_PG_RUNTIME_IDENTITIES_ENABLED: "false"
+      VNS_RESEARCH_OPERATOR_APPROVED: "false"
+      VNS_EDITORIAL_QUEUE_NAME: vns-research
       VNS_POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/pg_job_status_sync_password
       VNS_REDIS_HOST: redis
       VNS_REDIS_PORT: "6379"
