@@ -296,4 +296,3 @@ test("invalid JSON framing and encoding are rejected before upstream writes", as
   }
   assert.equal(writes, 0);
 });
-
