@@ -114,3 +114,12 @@ prüft bereits `set_key`, `remove_key` und `set_model` mit simuliertem
 Speicher und einer echten AES-256-GCM-Testverschlüsselung. Er ist bewusst
 nicht in den laufenden API-Server eingebunden; Master-Key-Datei, auditierter
 DB-Zugang, browserseitiges Formular und echte Schlüsselannahme fehlen noch.
+
+## Vorbereitung für Master-Key-Dateien (Git-only)
+
+Die [geprüfte Master-Key-Dateigrenze](P1-09_MASTER_KEY_CUSTODY.md)
+verlangt eine private Datei mit exakt 32 Rohbytes, sicherem Eigentümer,
+ohne Symlink und ohne Gruppen-/Fremdrechte. Sie läuft bisher nur in
+isolierten Tests. Auf dem VPS wurde weder ein Schlüssel erzeugt noch
+an den laufenden API-Server angeschlossen. Die bewusst vertagte
+Backup-Entscheidung bleibt unverändert.
