@@ -1,22 +1,12 @@
-name: P1-09 offline resource and usage checks
+name: P1-09 offline cost model checks
 on:
   pull_request:
     branches: [main]
     paths:
-      - "scripts/p1_09_disk_watch.py"
-      - "scripts/test_p1_09_disk_watch.py"
       - "scripts/p1_09_cost_model.py"
       - "scripts/test_p1_09_cost_model.py"
       - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
-      - "ops/p1-09/**"
-      - "scripts/test_p1_09_systemd_units.py"
-      - "scripts/p1_09_telegram_alert.py"
-      - "scripts/test_p1_09_telegram_alert.py"
-      - "docs/P1-09_OPTIONAL_TELEGRAM_ALERTS.md"
-      - "scripts/p1_09_email_alert.py"
-      - "scripts/test_p1_09_email_alert.py"
-      - "scripts/test_p1_09_email_systemd_units.py"
-      - "docs/P1-09_EMAIL_ALERTS.md"
+      - "docs/P1-09_BESZEL_MONITORING.md"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read
@@ -29,9 +19,9 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
-      - name: Validate offline disk and usage policy
+      - name: Validate offline per-job token cost estimates
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -m unittest discover -s scripts -p 'test_p1_09_*.py' -v
+        run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"
