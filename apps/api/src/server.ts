@@ -3,7 +3,6 @@ import { createHealth } from "@vns/shared";
 import type { AdminAuth } from "./auth.js";
 import type { AdminJobs } from "./admin-jobs.js";
 import type { EditorAuth } from "./editor-auth.js";
-import type { AdminProviderConfiguration } from "./admin-provider-configuration.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
 
 export function createApiServer(
@@ -11,13 +10,18 @@ export function createApiServer(
     auth?: AdminAuth;
     jobs?: AdminJobs;
     editor?: EditorAuth;
-    providerConfig?: AdminProviderConfiguration | NamedAdminProviderConfiguration;
+    providerConfig?: NamedAdminProviderConfiguration;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
   if (options.providerConfig && !options.auth)
     throw new Error("Provider configuration requires authentication");
-  if (options.providerConfig instanceof NamedAdminProviderConfiguration && !options.editor)
+  if (
+    options.providerConfig &&
+    !(options.providerConfig instanceof NamedAdminProviderConfiguration)
+  )
+    throw new Error("Legacy provider configuration is forbidden");
+  if (options.providerConfig && !options.editor)
     throw new Error("Named provider configuration requires personal editor authentication");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
