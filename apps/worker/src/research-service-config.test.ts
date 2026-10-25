@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readResearchLaunchGate, APPROVED_RESEARCH_CATALOG_PATH } from "./research-service-config.js";
+import {
+  readResearchLaunchGate,
+  APPROVED_RESEARCH_CATALOG_PATH,
+} from "./research-service-config.js";
 import { ISOLATED_RESEARCH_QUEUE } from "./editorial-worker.js";
 import { QUEUE_NAME } from "./queue.js";
 
@@ -20,7 +23,11 @@ test("research entry cannot enable itself and refuses each missing activation ga
     const without = { ...fullyOptedIn };
     delete (without as Partial<typeof fullyOptedIn>)[key];
     assert.throws(() => readResearchLaunchGate(without), /disabled/, key);
-    assert.throws(() => readResearchLaunchGate({ ...fullyOptedIn, [key]: "false" }), /disabled/, key);
+    assert.throws(
+      () => readResearchLaunchGate({ ...fullyOptedIn, [key]: "false" }),
+      /disabled/,
+      key,
+    );
   }
 });
 
