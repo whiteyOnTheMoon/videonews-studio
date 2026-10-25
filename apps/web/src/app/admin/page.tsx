@@ -6,6 +6,8 @@ import SignOut from "./sign-out";
 import EditorLogin from "./editor-login";
 import { editorProxyConfig } from "../../lib/editor-proxy";
 import ResearchJobs from "./research-jobs";
+import AiProviders from "./ai-providers";
+import { aiProviderReadOnlyProxyConfig } from "../../lib/admin-ai-providers-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,7 @@ export default async function AdminPage() {
       <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
       <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
       <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
+      <AiProviders readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );
