@@ -26,3 +26,7 @@ Stop if the operator login cannot be authenticated independently, if any denied 
 ### CI coverage
 
 Disposable PostgreSQL tests authenticate all three service LOGIN identities and reject cross-service writes. They also reject the use of one service's password to authenticate to another and deny schema creation. These checks do not prove VPS credential installation or safe live rollout.
+
+## Planning-only Compose overlay
+
+The optional `deploy/compose.editorial-ops.yaml` declares distinct dispatcher and status service containers with private backend networking, separated Docker secret mounts, resource bounds and no host ports. Both component activation flags and the shared runtime-identity activation flag are explicitly `false`. Merely selecting its `editorial-ops` profile cannot enable editorial processing. The overlay does not provision secrets or PostgreSQL login roles; missing secret files are expected until a separately approved rollout. Do not use `docker compose up` with this overlay on the VPS. The research writer is intentionally not defined as a runnable service.
