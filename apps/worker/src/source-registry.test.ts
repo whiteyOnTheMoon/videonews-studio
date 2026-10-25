@@ -22,11 +22,7 @@ const CANDIDATE = {
   claim: "The agency released its annual transport investment report.",
 };
 
-function entry(
-  id: string,
-  baseUrl: string,
-  status: "approved" | "pending" | "blocked",
-) {
+function entry(id: string, baseUrl: string, status: "approved" | "pending" | "blocked") {
   return {
     id,
     baseUrl,

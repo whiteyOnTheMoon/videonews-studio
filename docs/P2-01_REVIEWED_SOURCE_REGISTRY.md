@@ -1,24 +1,27 @@
 # P2-01 – Redaktionsseitiges Quellenregister (Offline-Vertrag)
 
-**Status:** ausschließlich Git/CI. Das produktive VideoNews-Studio ruft noch keine RSS-Feeds ab. Die isolierte Research-Queue ist nicht aktiviert. Keine echten externen Requests oder Quellenfreigaben.
+**Status:** Ausschließlich Git/CI. Das produktive VideoNews Studio ruft
+noch keine RSS-Feeds ab. Die isolierte Research-Queue ist nicht
+aktiviert. Keine externen Requests und keine echten Quellenfreigaben.
 
-## Verpflichtende Prüfung pro Quelle
+## Prüfpflichten für jede Quelle
 
-Die Datei `/run/secrets/reviewed_research_sources.json` enthält ein vom Betreiber geprüftes Register. Das Format `version:1` fordert pro Eintrag genau die folgenden Felder:
+Die operatorgeprüfte Datei
+`/run/secrets/reviewed_research_sources.json`
+enthält `version: 1` und eine Liste `sources`.
+Jeder Eintrag erfordert genau diese Felder:
 
-| Feld | Bedeutung |
-|---|---|
-| `id` | Eindeutiger redaktioneller Kennzeichner |
-| `baseUrl` | Exakt geprüfter HTTPS-Hostname **und Pfadpräfix**, mit abschließendem `/` |
-| `status` | `pending`, `approved` oder `blocked` – nur `approved` wird verwendet |
-| `access` | `rss`, `atom`, `official_api` oder `html` |
-| `intervalMinutes` | Dokumentierter Mindestabstand 15–10080 Minuten; spätere Polling-Implementierung in #17 |
-| `termsUrl` | Öffentlich zugänglicher HTTPS-Verweis auf Bedingungen |
-| `usage` | `metadata_only` oder `reviewed_excerpt`; keine Volltextlizenz impliziert |
-| `licenseNotes` | Freitext mit Nutzungseinschränkungen und Attribution |
-| `reviewedAt` | Datum der letzten **menschlichen** Quellenprüfung (`YYYY-MM-DD`) |
+- `id`: eindeutiger redaktioneller Kennzeichner
+- `baseUrl`: kanonischer HTTPS-Hostname und Pfadpräfix, mit `/` am Ende
+- `status`: `pending`, `approved` oder `blocked`; nur `approved` zählt
+- `access`: `rss`, `atom`, `official_api` oder `html`
+- `intervalMinutes`: 15–10080 Minuten; Polling erfolgt erst in #17
+- `termsUrl`: öffentlicher HTTPS-Link zu den Nutzungsbedingungen
+- `usage`: `metadata_only` oder `reviewed_excerpt`
+- `licenseNotes`: Lizenz- und Attributionseinschränkungen
+- `reviewedAt`: Datum der menschlichen Prüfung (`YYYY-MM-DD`)
 
-Beispiel **ohne tatsächliche Freigabe**:
+Beispiel ohne tatsächliche Freigabe:
 
 ```json
 {
@@ -39,8 +42,22 @@ Beispiel **ohne tatsächliche Freigabe**:
 }
 ```
 
-Die separate bestehende Host-Allowlist `VNS_ALLOWED_SOURCE_HOSTS` bleibt **zusätzlich** erforderlich. Unbekannte Hosts, nichtkanonische/pfadmanipulierte URLs und nicht freigegebene Präfixe werden verworfen. Die **spezifischste** passende Regel gewinnt: Ein `blocked`-Unterpfad überschreibt eine allgemein `approved`-Quelle. Nicht genehmigte Kandidaten werden vor Fetch und Speicherung entfernt. Ein Thema ohne freigegebene Kandidaten schlägt geschlossen fehl. Schon der frühere Themenkatalog verlangt explizite Themenfreigaben.
+Die getrennte Host-Allowlist `VNS_ALLOWED_SOURCE_HOSTS` bleibt zusätzlich
+erforderlich. Unbekannte Hosts, manipulierte URL-Pfade und nicht
+freigegebene Präfixe werden abgewiesen. Die spezifischste Regel gewinnt:
+Ein `blocked`-Unterpfad überschreibt ein allgemeines `approved`.
+Nicht zugelassene Kandidaten werden vor Fetch und Speicherung entfernt.
+Ohne freigegebene Kandidaten schlägt der Forschungsauftrag geschlossen
+fehl. Auch der bestehende Themenkatalog muss separat freigegeben sein.
 
-Der bislang **nicht deployte** `research-service.ts` verlangt beim Start über `VNS_RESEARCH_REGISTRY_FILE` den exakten Pfad zu diesem Register; ohne Datei/Opt-in kann der Prozess keine DB-/Redis-Clients oder Netzabrufe starten. Der laufende Probe-Worker und die vorhandene BullMQ-Queue bleiben unverändert.
+Der nicht deployte `research-service.ts` verlangt zusätzlich
+`VNS_RESEARCH_REGISTRY_FILE` mit dem festgelegten Secret-Pfad.
+Ohne diese Freigabe kann der Worker nicht starten.
+Probe-Worker und produktive Redis-Queue bleiben unverändert.
 
-**Abgrenzung:** Dieses Register **führt keine periodischen Abfragen aus**, kontrolliert noch keine realen Abrufintervalle/ETags und entscheidet nicht automatisch über Lizenzrechte von Artikeln oder Medien. Ein solcher Scheduler und RSS-/Feed-Adapter sind gesonderter Umfang von #17 (P2-02). Die Registrierung allein verifiziert weder Claims noch erlaubt sie Volltext-/Asset-Reuse. Keine kostenpflichtigen Dienste, Produktionsmigrationen, API-Keys, VPS-/Docker-Änderungen oder Backups.
+**Abgrenzung:** Dieses Register plant keine periodischen Abfragen,
+erzwingt noch keine Zeitintervalle oder ETags und erteilt keine
+pauschale Lizenzfreigabe. Der Scheduler und die Feed-Adapter folgen
+in #17 (P2-02). Ein URL-Eintrag verifiziert keine Claims und erlaubt
+keine Wiederverwendung kompletter Artikel oder Assets.
+Keine Kosten, echten Schlüssel, VPS-/Docker-Eingriffe oder Backups.
