@@ -241,6 +241,90 @@ try {
   console.log(
     "PASS: dormant editorial factory + outbox + PostgreSQL status complete synthetic job",
   );
+
+  // Negative integrated scenario: deliberately invalid source discovery must
+  // exhaust the bounded queue retry policy, retain a failed Redis job and
+  // surface a sanitized PostgreSQL failure with no fabricated evidence.
+  // Stop the successful synthetic worker first to avoid competing consumers.
+  await worker.close();
+  await workerConnection.quit().catch(() => undefined);
+  worker = undefined;
+  workerConnection = undefined;
+
+  const failureTopic = "Synthetic research with unacceptable source candidates";
+  const failedCreate = await db.query("SELECT vns.create_research_request($1, $2) AS id", [
+    "ci-research-invalid-source-001",
+    failureTopic,
+  ]);
+  const failedId = failedCreate.rows[0].id;
+  await dispatchOutboxBatch(dispatchDb, queue, 10);
+  const failedQueueId = "job-" + failedId.replaceAll("-", "");
+  const failedJob = await queue.getJob(failedQueueId);
+  assert.ok(failedJob, "negative research job must be in the queue");
+  assert.equal(failedJob.opts.attempts, 3);
+
+  let rejectedDiscoveries = 0;
+  let unexpectedFetches = 0;
+  const failingHandler = createResearchProcessor(
+    store,
+    {
+      async discover(topicToReject) {
+        assert.equal(topicToReject, failureTopic);
+        rejectedDiscoveries += 1;
+        return []; // Never a source candidate, never an editorial verdict.
+      },
+    },
+    {
+      async fetch() {
+        unexpectedFetches += 1;
+        throw new Error("CI negative discovery must not reach fetch");
+      },
+    },
+  );
+  ({ worker, connection: workerConnection } = createDormantEditorialWorker(
+    { host: connection.host, port: connection.port, password: connection.password },
+    true,
+    failingHandler,
+  ));
+  assert.equal(worker.opts.autorun, false);
+  worker.on("error", () => console.error("CI negative editorial worker error"));
+  const negativeRun = worker.run();
+  negativeRun.catch(() => console.error("CI negative editorial worker stopped"));
+  await worker.waitUntilReady();
+
+  await assert.rejects(
+    failedJob.waitUntilFinished(events, 25000),
+    /Research source count outside approved bounds/,
+  );
+  assert.equal(await failedJob.getState(), "failed");
+  const retainedFailure = await queue.getJob(failedQueueId);
+  assert.ok(retainedFailure);
+  assert.equal(retainedFailure.attemptsMade, 3);
+  assert.equal(rejectedDiscoveries, 3);
+  assert.equal(unexpectedFetches, 0);
+  const evidenceAfterFailure = await db.query(
+    "SELECT count(*)::int AS total FROM vns.research_evidence WHERE job_id = $1",
+    [failedId],
+  );
+  assert.equal(evidenceAfterFailure.rows[0].total, 0);
+
+  assert.equal((await reconcileJobStatusBatch(statusDb, queue, 10)).updated, 1);
+  const failedLedger = await db.query(
+    "SELECT status, attempt_count, error_code FROM vns.jobs WHERE id = $1",
+    [failedId],
+  );
+  assert.deepEqual(failedLedger.rows[0], {
+    status: "failed",
+    attempt_count: 3,
+    error_code: "bullmq_failed",
+  });
+  assert.equal((await reconcileJobStatusBatch(statusDb, queue, 10)).updated, 0);
+  assert.equal((await dispatchOutboxBatch(dispatchDb, queue, 10)).newlyEnqueued, 0);
+  assert.equal(retainedFailure.id, failedQueueId);
+  assert.equal(await failedJob.getState(), "failed");
+  console.log(
+    "PASS: invalid synthetic research exhausts retries, retains failed job and sanitized SQL status",
+  );
 } finally {
   await Promise.allSettled(
     [
