@@ -8,7 +8,7 @@ import {
 test("distinct database identities are reserved for each service", () => {
   const users = Object.values(POSTGRES_SERVICE_IDENTITIES);
   assert.equal(new Set(users).size, 3);
-  assert.ok(users.every((user) => user !== "vns"));
+  assert.equal((users as string[]).includes("vns"), false);
 });
 
 test("identity selection fails closed unless separately enabled", () => {
