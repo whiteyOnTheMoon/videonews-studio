@@ -204,6 +204,15 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired):
-        print("REFUSED: isolated PostgreSQL network test failed; secrets not displayed", file=sys.stderr)
+    except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+        # Only fixed stage names reach stdout/stderr; never expose subprocess diagnostics.
+        message = str(error) if isinstance(error, RuntimeError) else ""
+        known = ("CLIENT_START", "SCOPE", "ALLOWED", "DENIED", "CROSSAUTH", "PREFLIGHT")
+        stage = next((name for name in known
+                      if message == f"guarded check failed at {name}"), "PRECHECK")
+        print(
+            f"REFUSED: isolated PostgreSQL network test failed at {stage}; "
+            "secrets not displayed",
+            file=sys.stderr,
+        )
         raise SystemExit(1)
