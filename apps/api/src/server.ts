@@ -16,7 +16,10 @@ export function createApiServer(
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
   if (options.providerConfig && !options.auth)
     throw new Error("Provider configuration requires authentication");
-  if (options.providerConfig && !(options.providerConfig instanceof NamedAdminProviderConfiguration))
+  if (
+    options.providerConfig &&
+    !(options.providerConfig instanceof NamedAdminProviderConfiguration)
+  )
     throw new Error("Legacy provider configuration is forbidden");
   if (options.providerConfig && !options.editor)
     throw new Error("Named provider configuration requires personal editor authentication");
