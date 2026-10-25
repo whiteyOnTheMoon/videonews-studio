@@ -3,10 +3,14 @@ import { randomBytes } from "node:crypto";
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
+import type { AdminAuth } from "./auth.js";
+import type { AdminJobs } from "./admin-jobs.js";
 import { AdminProviderConfiguration } from "./admin-provider-configuration.js";
+import type { EditorAuth } from "./editor-auth.js";
+import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
 import { createApiServer } from "./server.js";
 
-test("provider route stays unavailable unless an authenticated handler is explicitly injected", async () => {
+test("provider route stays unavailable unless a named handler is explicitly injected", async () => {
   const server = createApiServer();
   try {
     server.listen(0, "127.0.0.1");
@@ -20,10 +24,29 @@ test("provider route stays unavailable unless an authenticated handler is explic
   }
 });
 
-test("provider handler without the core auth dependency is rejected before listening", () => {
+test("only a personally authenticated provider handler can be mounted", () => {
   const key = randomBytes(32);
   try {
-    const handler = new AdminProviderConfiguration(
+    const named = new NamedAdminProviderConfiguration(
+      { authenticatedAdminIdentity: async () => null },
+      { originAllowed: () => true },
+      {
+        list: async () => [],
+        mutateAsNamedAdmin: async () => undefined,
+      },
+      key,
+      { allow: async () => true },
+    );
+    assert.throws(
+      () => createApiServer({ providerConfig: named }),
+      /Provider configuration requires authentication/,
+    );
+    assert.throws(
+      () => createApiServer({ auth: {} as AdminAuth, providerConfig: named }),
+      /requires personal editor authentication/,
+    );
+
+    const legacy = new AdminProviderConfiguration(
       { hasAdminSession: () => true, originAllowed: () => true },
       {
         list: async () => [],
@@ -32,8 +55,14 @@ test("provider handler without the core auth dependency is rejected before liste
       key,
     );
     assert.throws(
-      () => createApiServer({ providerConfig: handler }),
-      /Provider configuration requires authentication/,
+      () =>
+        createApiServer({
+          auth: {} as AdminAuth,
+          jobs: {} as AdminJobs,
+          editor: {} as EditorAuth,
+          providerConfig: legacy as unknown as NamedAdminProviderConfiguration,
+        }),
+      /Legacy provider configuration is forbidden/,
     );
   } finally {
     key.fill(0);

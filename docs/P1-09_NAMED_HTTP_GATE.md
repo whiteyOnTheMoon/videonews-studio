@@ -25,6 +25,10 @@ Key-Eingabe. Im laufenden System bleibt die Route unverändert gesperrt.
   dem Aufruf des benannten SQL-Stores. Antworten bleiben generisch und
   enthalten weder Key noch SQL-/Crypto-Diagnostik. GET zeigt nur
   das öffentliche Provider-Metadatenformat und stets `active:false`.
+- **Kein Shared-Handler-Mount:** `createApiServer` akzeptiert als Provider-
+  Handler ausschließlich eine echte `NamedAdminProviderConfiguration`-Instanz.
+  Alte `AdminProviderConfiguration`-Objekte werden auch zur Laufzeit vor dem
+  Serverstart abgewiesen, selbst wenn sie mit Typumwandlung eingeschleust werden.
 - **Separater Server-Dispatch:** Auch das optionale Test-Mount benötigt
   einen EditorAuth-Handler zusätzlich zu den bereits bestehenden
   Admin-/Job-Gates. Ohne Injektion bleibt HTTP 404.
