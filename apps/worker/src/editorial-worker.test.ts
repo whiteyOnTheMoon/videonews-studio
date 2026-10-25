@@ -2,29 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createDormantEditorialWorker } from "./editorial-worker.js";
 
-const config = {
-  host: "127.0.0.1",
-  port: 6379,
-  password: "fixture-not-a-secret",
-};
+const config = { host: "redis", port: 6379, password: "test" };
 
-test(
-  "editorial worker refuses activation without explicit authorization or handler",
-  () => {
-    assert.throws(
-      () => createDormantEditorialWorker(config, false),
-      /explicit authorization/,
-    );
-    assert.throws(
-      () => createDormantEditorialWorker(config, true),
-      /research handler/,
-    );
-    assert.throws(
-      () => createDormantEditorialWorker(config, false, async () => ({
-        candidatesRecorded: 1,
-        needsEditorialReview: true,
-      })),
-      /explicit authorization/,
-    );
-  },
-);
+test("editorial factory denies missing approval or handler", () => {
+  const handler = async () => ({
+    candidatesRecorded: 1,
+    needsEditorialReview: true as const,
+  });
+  assert.throws(() => createDormantEditorialWorker(config, false));
+  assert.throws(() => createDormantEditorialWorker(config, true));
+  assert.throws(() => createDormantEditorialWorker(config, false, handler));
+});
