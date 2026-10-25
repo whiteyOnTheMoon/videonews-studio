@@ -25,25 +25,5 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Export pinned Prettier output for disabled AI provider UI (temporary)
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/web/src/app/admin/ai-provider-settings-preview.tsx apps/web/src/app/admin/ai-provider-settings-preview.test.tsx apps/web/src/app/admin/ai-providers.tsx
-          echo '===VNSFMT_START:settings-preview.tsx==='
-          base64 -w0 apps/web/src/app/admin/ai-provider-settings-preview.tsx
-          echo
-          echo '===VNSFMT_END:settings-preview.tsx==='
-          echo '===VNSFMT_START:settings-preview.test.tsx==='
-          base64 -w0 apps/web/src/app/admin/ai-provider-settings-preview.test.tsx
-          echo
-          echo '===VNSFMT_END:settings-preview.test.tsx==='
-          echo '===VNSFMT_START:admin-ai-providers.tsx==='
-          base64 -w0 apps/web/src/app/admin/ai-providers.tsx
-          echo
-          echo '===VNSFMT_END:admin-ai-providers.tsx==='
-          git restore -- apps/web/src/app/admin/ai-provider-settings-preview.tsx apps/web/src/app/admin/ai-provider-settings-preview.test.tsx apps/web/src/app/admin/ai-providers.tsx
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"

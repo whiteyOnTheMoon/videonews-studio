@@ -87,13 +87,7 @@ export default function AiProviderSettingsPreview({
         </div>
         <div className="ai-provider-field">
           <label htmlFor={prefix + "-language"}>Videosprache</label>
-          <input
-            id={prefix + "-language"}
-            type="text"
-            value="English (en)"
-            readOnly
-            disabled
-          />
+          <input id={prefix + "-language"} type="text" value="English (en)" readOnly disabled />
         </div>
         {plan.voicePreview ? (
           <div className="ai-provider-field">

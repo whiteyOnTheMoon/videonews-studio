@@ -45,8 +45,8 @@ export default function AiProviders({ readOnlyEnabled }: { readOnlyEnabled: bool
     <section className="jobs-section" aria-labelledby="ai-providers-title">
       <h2 id="ai-providers-title">KI-Anbieter</h2>
       <p>
-        Die geplanten Einstellungen für API-Keys, englische Textmodelle und Sprecherstimmen
-        sind sichtbar, bleiben aber vollständig deaktiviert.
+        Die geplanten Einstellungen für API-Keys, englische Textmodelle und Sprecherstimmen sind
+        sichtbar, bleiben aber vollständig deaktiviert.
       </p>
       <div className="notice" role="status">
         <strong>Schlüsselverwaltung noch nicht freigeschaltet.</strong> Bitte keine API-Schlüssel in

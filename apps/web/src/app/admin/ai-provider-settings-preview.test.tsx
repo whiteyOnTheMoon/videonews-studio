@@ -23,9 +23,7 @@ test("each provider has a labelled but completely disabled credential and model 
     assert.doesNotMatch(html, /<form\b/);
     assert.doesNotMatch(html, /<textarea\b/);
 
-    const fields = [...html.matchAll(/<(?:input|select|button)\b[^>]*>/g)].map(
-      (match) => match[0],
-    );
+    const fields = [...html.matchAll(/<(?:input|select|button)\b[^>]*>/g)].map((match) => match[0]);
     assert.ok(fields.length >= 6);
     for (const field of fields) {
       assert.match(field, /\bdisabled(?:="")?/);
@@ -40,9 +38,7 @@ test("each provider has a labelled but completely disabled credential and model 
 });
 
 test("Gemini includes disabled voice placeholder; OpenAI does not claim a TTS voice", () => {
-  const gemini = renderToStaticMarkup(
-    <AiProviderSettingsPreview provider="google_gemini" />,
-  );
+  const gemini = renderToStaticMarkup(<AiProviderSettingsPreview provider="google_gemini" />);
   assert.match(gemini, /Sprecherstimme/);
   assert.match(gemini, /Noch nicht festgelegt/);
   assert.match(gemini, /gemini-3.8-flash-tts/);
