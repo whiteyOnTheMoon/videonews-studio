@@ -114,15 +114,42 @@ JS
 if [[ "$ci" == 0 ]]; then
   # Only SELECT, and explicit schema qualification. This intentionally fails
   # closed if new editorial jobs/accounts appeared in the experimental DB.
-  totals="$(docker exec "$pg" psql -X -A -t -q -v ON_ERROR_STOP=1 \
+  totals="$(docker exec -e 'PGOPTIONS=-c default_transaction_read_only=on -c statement_timeout=10000' \
+    "$pg" psql -X -w -A -t -q -v ON_ERROR_STOP=1 \
     -U vns -d videonews -c \
     "SELECT (SELECT count(*) FROM vns.schema_migrations) || '|' ||
+            (SELECT max(version) FROM vns.schema_migrations) || '|' ||
             (SELECT count(*) FROM vns.jobs) || '|' ||
             (SELECT count(*) FROM vns.job_outbox) || '|' ||
-            (SELECT count(*) FROM vns.editor_operator_registry)")" ||
+            (SELECT count(*) FROM vns.editor_operator_registry) || '|' ||
+            (SELECT count(*) FROM pg_roles
+             WHERE rolname IN ('vns_outbox_dispatch', 'vns_job_status_sync',
+                               'vns_research_writer')
+               AND NOT rolcanlogin AND NOT rolinherit AND NOT rolsuper
+               AND NOT rolcreaterole AND NOT rolcreatedb) || '|' ||
+            (SELECT count(*) FROM pg_roles
+             WHERE rolname IN ('vns_outbox_dispatch_login',
+                               'vns_job_status_sync_login',
+                               'vns_research_writer_login')
+               AND rolcanlogin AND rolinherit AND NOT rolsuper
+               AND NOT rolcreaterole AND NOT rolcreatedb
+               AND NOT rolreplication AND NOT rolbypassrls) || '|' ||
+            (SELECT count(*) FROM pg_auth_members m
+             JOIN pg_roles g ON g.oid = m.roleid
+             JOIN pg_roles u ON u.oid = m.member
+             WHERE (g.rolname, u.rolname) IN (
+               ('vns_outbox_dispatch', 'vns_outbox_dispatch_login'),
+               ('vns_job_status_sync', 'vns_job_status_sync_login'),
+               ('vns_research_writer', 'vns_research_writer_login'))
+               AND m.inherit_option) || '|' ||
+            (SELECT count(*) FROM pg_auth_members m
+             JOIN pg_roles u ON u.oid = m.member
+             WHERE u.rolname IN ('vns_outbox_dispatch_login',
+                                 'vns_job_status_sync_login',
+                                 'vns_research_writer_login'))")" ||
     die "PostgreSQL read-only ledger check failed"
-  [[ "$totals" == '11|0|0|0' ]] ||
-    die "PostgreSQL ledger no longer matches the empty probe-only baseline"
-  echo "PASS: 11 migrations, zero editorial jobs, zero outbox intents, zero operators"
+  [[ "$totals" == '12|0012_runtime_least_privilege|0|0|0|3|3|3|3' ]] ||
+    die "PostgreSQL ledger or scoped runtime identity baseline drifted"
+  echo "PASS: 12 migrations, zero editorial jobs/outbox/operators, three scoped runtime logins"
 fi
 echo "PASS: probe receipt audit finished without modifying services or state"
