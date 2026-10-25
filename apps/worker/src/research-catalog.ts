@@ -81,7 +81,7 @@ export function parseApprovedResearchCatalog(
 
 /** Exact topic lookup only: unknown jobs cannot trigger source discovery. */
 export function createApprovedCatalogDiscovery(
-  catalog: ReadonlyMap<string, readonly SourceCandidate[]>,
+  catalog: ReadonlyMap<string, readonly SourceCandidateInput[]>,
 ): ResearchCandidateProvider {
   return {
     async discover(topic: string): Promise<unknown> {
