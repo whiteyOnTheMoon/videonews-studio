@@ -1,3 +1,5 @@
+> **Aktueller Status (25.10.2026; Audit-Nachtrag zu #152):** Die nachfolgende Datei enthält einen historischen P1-02-Einführungsplan aus dem 23.10.2026. Auf `main` sind inzwischen `backlog/issues.json`, die Import-/Governance-Skripte, die Issue-/PR-Vorlagen, CODEOWNERS und der PR-Metadatenworkflow vorhanden. Der Betreiberbericht bestätigt 69 importierte Issues, Labels und Meilensteine. P1-08-CI-Workflows sind hinzugekommen; ihre Existenz erzwingt **keine** Merge-Sperre. Der Branchschutz für das private Repository wurde laut Betreiberprüfung mit HTTP 403 verweigert. Es gibt **keinen nachgewiesenen technisch erzwungenen Pflichtreview oder Pflichtstatuscheck**. Die ausdrücklich dokumentierte P1-Ausnahme von unabhängigem Review ist kein durchgeführtes Review. P1-02 ist als Betreiber-Ausnahme geschlossen, nicht als vollständig technisch durchgesetzt. Dies ist ein Dokumentationsabgleich, keine neue technische Freigabe oder Live-Prüfung.
+
 # P1-02 — GitHub project governance
 
 This is the **proposed configuration**, not a claim that GitHub settings were already applied.
