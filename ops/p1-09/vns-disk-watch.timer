@@ -1,0 +1,11 @@
+[Unit]
+Description=VideoNews Studio local disk pressure check every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+AccuracySec=1min
+Persistent=true
+Unit=vns-disk-watch.service
+
+[Install]
+WantedBy=timers.target

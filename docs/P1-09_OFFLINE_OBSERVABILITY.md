@@ -62,3 +62,32 @@ The workflow runs one Python standard-library test job with a three-minute
 limit and cancels superseded PR runs. No Docker images, paid SaaS, or test
 databases are started. Existing disposable restore tests are not an off-VPS
 production backup or a measured recovery target. P1-09 **remains open**.
+
+## Optional systemd timer — local journal warning only
+
+The **disabled templates** in `ops/p1-09/vns-disk-watch.service` and
+`ops/p1-09/vns-disk-watch.timer` can be installed later on the operator's
+Ubuntu VPS, but **this pull request does not install, enable, start or reload
+systemd**. No network access, secrets, Docker changes or new provider costs
+are required.
+
+If *separately* approved and installed as system units, the timer invokes the
+existing read-only check every 15 minutes under the unprivileged `ap` account.
+It runs with `PrivateNetwork=yes`, `ProtectSystem=strict`, dropped Linux
+capabilities and a memory/task budget. Its output is recorded in the **local
+systemd journal** under `videonews-disk-watch`; a WARN, CRITICAL or UNKNOWN
+exit code is deliberately nonzero so systemd also records a failed execution.
+The timer does not restart services, clean storage or retry indefinitely.
+
+The units contain **no `systemctl enable` or deployment step** and require
+a separate operator review of paths, service restrictions and installation.
+They do not send push messages, email or remote alerts. A notification
+destination, its privacy policy and explicit enablement remain separate
+P1-09 work. Local journal events are **not** proof of timely user notification.
+`scripts/test_p1_09_systemd_units.py` statically checks the unit's restricted
+execution and timer schedule without starting any process. Syntax was also
+checked locally using `systemd-analyze verify`.
+
+Read-only inspection after separately approved installation could use
+`systemctl status vns-disk-watch.timer` and
+`journalctl -t videonews-disk-watch`. Neither command is performed here.
