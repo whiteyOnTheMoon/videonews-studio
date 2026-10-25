@@ -15,9 +15,10 @@ BEGIN
    '0008_editor_session_revocation','0009_scoped_editor_review',
    '0010_editor_account_lifecycle_audit','0011_operator_registry_governance',
    '0012_runtime_least_privilege','0013_synthetic_token_usage',
-   '0014_synthetic_ai_budget_reservations'
+   '0014_synthetic_ai_budget_reservations',
+   '0015_ai_provider_admin_configuration'
   );
-  IF total<>14 OR (SELECT count(*) FROM vns.schema_migrations)<>14 THEN
+  IF total<>15 OR (SELECT count(*) FROM vns.schema_migrations)<>15 THEN
     RAISE EXCEPTION 'Full migration ledger was not recovered';
   END IF;
 
@@ -163,6 +164,14 @@ BEGIN
          'vns.reserve_synthetic_ai_budget(uuid,text,text,text,integer,integer,date)',
          'EXECUTE')
   THEN RAISE EXCEPTION 'Synthetic budget restore/ACLs invalid'; END IF;
+
+  -- Admin provider configuration remains disabled and contains no credentials.
+  IF (SELECT count(*) FROM vns.ai_provider_settings)<>2
+     OR EXISTS (SELECT 1 FROM vns.ai_provider_settings WHERE enabled)
+     OR (SELECT count(*) FROM vns.ai_provider_sealed_credentials)<>0
+     OR has_table_privilege('vns_api_runtime','vns.ai_provider_sealed_credentials','SELECT')
+     OR has_table_privilege('vns_research_writer','vns.ai_provider_sealed_credentials','SELECT')
+  THEN RAISE EXCEPTION 'Provider key vault was enabled, populated or exposed on restore'; END IF;
 
   -- Mutation and uniqueness protections must still fail closed after restore.
   BEGIN
