@@ -58,6 +58,7 @@ printf 'postgres:5432:videonews:%s:%s\n' "$LOGIN" \
   "$(cat /run/secrets/own_pg_password)" > "$PGPASSFILE"
 chmod 600 "$PGPASSFILE"
 
+printf "VNS_CHECK_SCOPE\n" >&2
 RESULT="$(psql -X -w -A -t -q -v ON_ERROR_STOP=1 \
   -h postgres -p 5432 -U "$LOGIN" -d videonews -c "
 SELECT concat_ws('|',
@@ -65,18 +66,20 @@ SELECT concat_ws('|',
   CASE WHEN inet_client_addr() IS NOT NULL
     AND inet_client_addr()::text NOT IN ('127.0.0.1','::1')
     THEN 'tcp' ELSE 'local' END,
-  pg_has_role(current_user, '$GROUP', 'USAGE'),
-  pg_has_role(current_user, 'vns', 'MEMBER'),
-  has_column_privilege(current_user, 'vns.jobs', 'status', 'UPDATE'),
-  has_column_privilege(current_user, 'vns.job_outbox', 'delivery_state', 'UPDATE'),
-  has_table_privilege(current_user, 'vns.research_evidence', 'INSERT'),
-  has_column_privilege(current_user, 'vns.research_evidence', 'review_status', 'UPDATE'),
-  has_schema_privilege(current_user, 'vns', 'CREATE'));")"
+  CASE WHEN pg_has_role(current_user, '$GROUP', 'USAGE') THEN 'true' ELSE 'false' END,
+  CASE WHEN pg_has_role(current_user, 'vns', 'MEMBER') THEN 'true' ELSE 'false' END,
+  CASE WHEN has_column_privilege(current_user, 'vns.jobs', 'status', 'UPDATE') THEN 'true' ELSE 'false' END,
+  CASE WHEN has_column_privilege(current_user, 'vns.job_outbox', 'delivery_state', 'UPDATE') THEN 'true' ELSE 'false' END,
+  CASE WHEN has_table_privilege(current_user, 'vns.research_evidence', 'INSERT') THEN 'true' ELSE 'false' END,
+  CASE WHEN has_column_privilege(current_user, 'vns.research_evidence', 'review_status', 'UPDATE') THEN 'true' ELSE 'false' END,
+  CASE WHEN has_schema_privilege(current_user, 'vns', 'CREATE') THEN 'true' ELSE 'false' END);")"
 test "$RESULT" = "$LOGIN|tcp|true|false|$GRANTS|false|false"
 
+printf "VNS_CHECK_ALLOWED\n" >&2
 psql -X -w -A -t -q -v ON_ERROR_STOP=1 \
   -h postgres -U "$LOGIN" -d videonews -c "$ALLOWED" >/dev/null
 
+printf 'VNS_CHECK_DENIED\n' >&2
 if psql -X -w -A -t -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate \
   -h postgres -U "$LOGIN" -d videonews -c "$DENIED" \
   >/tmp/deny.out 2>/tmp/deny.err; then
@@ -87,6 +90,7 @@ grep -q '42501' /tmp/deny.err || exit 11
 # Same secret, *different* login: must be rejected over Docker TCP.
 printf 'postgres:5432:videonews:%s:%s\n' "$OTHER" \
   "$(cat /run/secrets/own_pg_password)" > "$PGPASSFILE"
+printf "VNS_CHECK_CROSSAUTH\n" >&2
 if psql -X -w -A -t -q -v ON_ERROR_STOP=1 \
   -h postgres -U "$OTHER" -d videonews -c 'SELECT 1' \
   >/tmp/wrong.out 2>/tmp/wrong.err; then
@@ -99,10 +103,17 @@ printf 'PASS\n'
 
 
 def safe_run(args: list[str], timeout: int = 20) -> str:
-    # Never echo stderr: it can contain connection metadata or paths.
+    # Never echo raw stderr/stdout, which can contain connection metadata.
     result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
     if result.returncode != 0:
-        raise RuntimeError("guarded command failed")
+        # Only allow literal stage markers from fixed reviewed client code.
+        # A Docker launch failure has no marker and is reported generically.
+        stages = ("SCOPE", "ALLOWED", "DENIED", "CROSSAUTH")
+        stage = next(
+            (name for name in reversed(stages) if f"VNS_CHECK_{name}" in result.stderr),
+            "CLIENT_START",
+        ) if "--rm" in args and "docker" in args else "PREFLIGHT"
+        raise RuntimeError(f"guarded check failed at {stage}")
     return result.stdout.strip()
 
 
@@ -193,5 +204,15 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired):
-        raise SystemExit("REFUSED: isolated PostgreSQL network test failed; secrets not displayed")
+    except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+        # Only fixed stage names reach stdout/stderr; never expose subprocess diagnostics.
+        message = str(error) if isinstance(error, RuntimeError) else ""
+        known = ("CLIENT_START", "SCOPE", "ALLOWED", "DENIED", "CROSSAUTH", "PREFLIGHT")
+        stage = next((name for name in known
+                      if message == f"guarded check failed at {name}"), "PRECHECK")
+        print(
+            f"REFUSED: isolated PostgreSQL network test failed at {stage}; "
+            "secrets not displayed",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
