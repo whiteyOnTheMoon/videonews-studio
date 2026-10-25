@@ -13,6 +13,17 @@
 
 **Last observed resources following the restart:** root disk 116 GB total / 93 GB used / **24 GB free (80% used)**; available RAM **3.0 GiB** of 7.8 GiB; swap use about **830 MiB** of 2.0 GiB. Resource readings are operator snapshots, not capacity guarantees.
 
+## Operator follow-up evidence: replayed controlled restart and read-only receipt (2026-10-25)
+
+The operator supplied two terminal transcripts in chat, **not** direct assistant SSH observations:
+
+1. At checkout `2989974`, `scripts/p1_07_worker_restart.sh preflight` reported PASS; then `scripts/p1_07_worker_restart.sh restart` restarted **only** `videonews-studio-worker-1` and reported PASS for unchanged dependencies and the retained probe. `scripts/p1_07_worker_canary.sh status` passed. The probe-only queue was idle, the one previously completed probe remained intact, PostgreSQL had 11 migrations, 0 editorial jobs, 0 outbox records and 0 operators, and Redis ACL checks passed. This repeats/clarifies the earlier controlled idle restart evidence; it is **not** Redis or PostgreSQL crash recovery.
+2. The operator then fast-forwarded `main` from `2989974` to `03ec275` and executed **only** `scripts/p1_07_live_probe_receipt.sh`. It reported PASS for authenticated Redis, existing retained completed probe, isolation and unchanged PostgreSQL counts. **No additional restart or enqueue** was performed by this second command.
+
+The displayed resource snapshot after the restart showed root volume **116 GB**, used **93 GB**, available **24 GB** (**80%** occupied); memory **7.8 GiB** total, **3.0 GiB available**; swap **2.0 GiB** total, **830 MiB used**. These are historical observed values, not current capacity guarantees.
+
+**Evidence scope:** The successful operator checks confirm the existing probe-only deployed service and retained test record. They do **not** establish editorial outbox dispatch, status reconciler deployment, actual research/render/upload handlers, least-privilege SQL runtime access, offsite backup or restore. The operator transcripts are secondary evidence (no signed archive or direct independent inspection). Retain issues #7 and #87 as open.
+
 ## Acceptance matrix (do not overstate the evidence)
 
 | Dimension                       | Current verified scope                                                                     | Still not verified or intentionally disabled                                                                                                                        |
