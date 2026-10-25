@@ -152,3 +152,15 @@ retention rules, trusted independent archive, restored live media, Redis
 queue reconstruction, measured recovery objectives or VPS cutover
 permission. This change neither selects/purchases storage nor deploys
 anything.
+
+## 2026-10-25 — Git-only synthetic token receipt extension (P1-09)
+
+The original sections above are historical acceptance descriptions for
+migrations up to 0011. The evolving disposable full-schema restore script
+now includes **0012** and the proposed **0013_synthetic_token_usage**.
+The restored source/destination fixture includes an immutable **synthetic**
+per-job token/cost receipt; the all-table fingerprint and SQL assertions
+include its values and deny application-role access. This does **not**
+confirm 0013 is deployed, a real provider event was ingested or any VPS
+PostgreSQL backup exists. The synthetic-only extension is detailed in
+[P1-09 token usage ledger](P1-09_TOKEN_USAGE_LEDGER.md).

@@ -62,6 +62,11 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0010_editor_account_lifecycle_audit.test.sql"
   sql < "$root/db/migrations/0011_operator_registry_governance.up.sql"
   sql < "$root/db/tests/0011_operator_registry_governance.test.sql"
+  sql < "$root/db/migrations/0012_runtime_least_privilege.up.sql"
+  sql < "$root/db/migrations/0013_synthetic_token_usage.up.sql"
+  sql < "$root/db/tests/0013_synthetic_token_usage.test.sql"
+  sql < "$root/db/migrations/0013_synthetic_token_usage.down.sql"
+  sql < "$root/db/migrations/0012_runtime_least_privilege.down.sql"
   sql < "$root/db/migrations/0011_operator_registry_governance.down.sql"
   sql < "$root/db/migrations/0010_editor_account_lifecycle_audit.down.sql"
   sql < "$root/db/migrations/0009_scoped_editor_review.down.sql"
@@ -78,4 +83,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: 0001 + 0002 reversible migration and outbox constraints twice"
+echo "PASS: reversible 0001–0013 migrations and synthetic cost receipt guards twice"

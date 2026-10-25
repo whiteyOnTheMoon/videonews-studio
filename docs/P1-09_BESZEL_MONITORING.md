@@ -74,7 +74,7 @@ Beszel- und andere Docker-/systemd-Dienste bleiben unberührt.
   in `vns.costs`, Preisdefinitionen und spätere Budgetgrenzen sind nicht
   durch Beszel abgedeckt. Das Offline-Kostenmodell wird weiter getestet.
 - **Offsite-Backup, unabhängiger Restore und RPO/RTO** sind nicht belegt.
-  Beszel-Metriken oder ein Backup seiner *eigenen* Monitoring-Daten sind
+  Beszel-Metriken oder ein Backup seiner _eigenen_ Monitoring-Daten sind
   kein Backup von VideoNews-PostgreSQL-/Redis-/Mediendaten.
 - Ein dedizierter VideoNews-Live-Beszel-Alarmtest wird erst nach
   Freigabe und ohne gefährliche oder produktionsstörende Tests durchgeführt.
