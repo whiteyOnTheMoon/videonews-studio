@@ -74,9 +74,11 @@ test("synthetic receipt write is parameterized and returns only a bounded acknow
     currency: "USD",
   });
   assert.equal(captured.length, 1);
-  assert.match(captured[0].sql, /record_synthetic_token_usage/);
-  assert.match(captured[0].sql, /\$8::bigint/);
-  assert.deepEqual(captured[0].params, [
+  const call = captured[0];
+  assert.ok(call);
+  assert.match(call.sql, /record_synthetic_token_usage/);
+  assert.match(call.sql, /\$8::bigint/);
+  assert.deepEqual(call.params, [
     JOB_ID, "ci_fixture", "ci-model-1", "ci_request_000001",
     "1000", "500", "2000000", "8000000",
   ]);
