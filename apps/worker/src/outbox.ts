@@ -37,7 +37,9 @@ export function validateOutboxRow(row: OutboxDelivery): void {
   if (row.queue_job_id !== "job-" + row.job_id.replaceAll("-", "")) {
     throw new Error("Outbox deterministic queue ID invalid");
   }
-  if (!["research", "script", "render", "upload"].includes(row.kind)) {
+  // The only available editorial worker processes research. Never enqueue
+  // script/render/upload into its shared queue: those handlers do not exist.
+  if (row.kind !== "research") {
     throw new Error("Unsupported editorial queue job kind");
   }
   if (!Number.isInteger(row.max_attempts) || row.max_attempts < 1 || row.max_attempts > 20) {

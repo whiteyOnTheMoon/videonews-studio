@@ -25,7 +25,9 @@ test("valid outbox rows require fixed deterministic Redis IDs", () => {
     () => validateOutboxRow({ ...valid, queue_job_id: "arbitrary" }),
     /deterministic queue ID/,
   );
-  assert.throws(() => validateOutboxRow({ ...valid, kind: "probe" }), /Unsupported editorial/);
+  for (const kind of ["probe", "script", "render", "upload"]) {
+    assert.throws(() => validateOutboxRow({ ...valid, kind }), /Unsupported editorial/);
+  }
   assert.throws(() => validateOutboxRow({ ...valid, max_attempts: 21 }), /retry count/);
 });
 
