@@ -53,32 +53,32 @@ function validateSealed(value: unknown): [Buffer, Buffer, Buffer] {
 export function providerMutationArguments(
   change: ProviderMutation,
 ): [string, string, string | null, Buffer | null, Buffer | null, Buffer | null] {
-    if (!validateProvider(change.provider)) {
+  if (!validateProvider(change.provider)) {
+    throw new Error("Invalid provider mutation");
+  }
+  let model: string | null = null;
+  let envelope: [Buffer, Buffer, Buffer] | null = null;
+  if (change.action === "set_key") {
+    if (change.selectedModel !== undefined) {
       throw new Error("Invalid provider mutation");
     }
-    let model: string | null = null;
-    let envelope: [Buffer, Buffer, Buffer] | null = null;
-    if (change.action === "set_key") {
-      if (change.selectedModel !== undefined) {
-        throw new Error("Invalid provider mutation");
-      }
-      envelope = validateSealed(change.sealedKey);
-    } else if (change.action === "set_model") {
-      if (
-        change.sealedKey !== undefined ||
-        typeof change.selectedModel !== "string" ||
-        !MODELS[change.provider].includes(change.selectedModel)
-      ) {
-        throw new Error("Invalid provider mutation");
-      }
-      model = change.selectedModel;
-    } else if (change.action === "remove_key") {
-      if (change.selectedModel !== undefined || change.sealedKey !== undefined) {
-        throw new Error("Invalid provider mutation");
-      }
-    } else {
+    envelope = validateSealed(change.sealedKey);
+  } else if (change.action === "set_model") {
+    if (
+      change.sealedKey !== undefined ||
+      typeof change.selectedModel !== "string" ||
+      !MODELS[change.provider].includes(change.selectedModel)
+    ) {
       throw new Error("Invalid provider mutation");
     }
+    model = change.selectedModel;
+  } else if (change.action === "remove_key") {
+    if (change.selectedModel !== undefined || change.sealedKey !== undefined) {
+      throw new Error("Invalid provider mutation");
+    }
+  } else {
+    throw new Error("Invalid provider mutation");
+  }
 
   return [
     change.provider,
