@@ -28,6 +28,11 @@ on:
       - "scripts/test_ci_aof_archive_preflight.mjs"
       - "db/scripts/test_redis_aof_restore.sh"
       - ".github/workflows/p1-07-worker.yml"
+# Cancel only superseded runs of this workflow on the same pull request.
+# Latest-head checks still have to pass before merging.
+concurrency:
+  group: p1-07-worker-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

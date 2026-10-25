@@ -9,6 +9,11 @@ on:
       - apps/**
       - packages/**
       - .github/workflows/p1-04-build.yml
+# Cancel only superseded runs of this workflow on the same pull request.
+# Latest-head checks still have to pass before merging.
+concurrency:
+  group: p1-04-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
