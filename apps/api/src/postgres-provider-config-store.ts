@@ -37,9 +37,7 @@ function validateSealed(value: unknown): [Buffer, Buffer, Buffer] {
   if (
     Object.keys(row).length !== 4 ||
     row.version !== 1 ||
-    !["version", "nonce", "ciphertext", "tag"].every((field) =>
-      Object.hasOwn(row, field),
-    )
+    !["version", "nonce", "ciphertext", "tag"].every((field) => Object.hasOwn(row, field))
   ) {
     throw new Error("Invalid sealed provider envelope");
   }
@@ -59,8 +57,7 @@ export class PostgresProviderConfigStore implements ProviderConfigStore {
   async list(): Promise<ProviderMetadata[]> {
     try {
       const result = await this.pool.query<ProviderMetadata>(
-        "SELECT provider, \"selectedModel\", configured " +
-          "FROM vns.admin_list_ai_providers()",
+        'SELECT provider, "selectedModel", configured ' + "FROM vns.admin_list_ai_providers()",
       );
       return result.rows;
     } catch {
@@ -115,4 +112,3 @@ export class PostgresProviderConfigStore implements ProviderConfigStore {
     }
   }
 }
-

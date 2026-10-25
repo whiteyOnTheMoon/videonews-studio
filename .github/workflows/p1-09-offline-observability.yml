@@ -25,17 +25,5 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Export exact formatted SQL adapter (temporary)
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/api/src/postgres-provider-config-store.ts
-          echo '===VNSFMT_START:provider-store.ts==='
-          base64 -w0 apps/api/src/postgres-provider-config-store.ts
-          echo
-          echo '===VNSFMT_END:provider-store.ts==='
-          git restore -- apps/api/src/postgres-provider-config-store.ts
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"
