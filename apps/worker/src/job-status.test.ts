@@ -77,3 +77,54 @@ test("status sync fails closed when Redis claims more attempts than PostgreSQL a
   assert.ok(!queries.some((sql) => sql.includes("UPDATE vns.jobs")));
   assert.equal(released, true);
 });
+
+test("missing Redis job preserves persisted status and reports missing count", async () => {
+  const sql: string[] = [];
+  let released = false;
+  const client = {
+    async query(statement: string) {
+      sql.push(statement);
+      if (statement.includes("SELECT j.id::text")) return { rows: [candidate] };
+      return { rows: [], rowCount: 0 };
+    },
+    release() {
+      released = true;
+    },
+  };
+  const pool = { connect: async () => client } as unknown as Pool;
+  const queue = { getJob: async () => null } as unknown as Queue;
+  assert.deepEqual(await reconcileJobStatusBatch(pool, queue), {
+    examined: 1,
+    updated: 0,
+    missingRedis: 1,
+  });
+  assert.ok(sql.includes("COMMIT"));
+  assert.ok(!sql.some((query) => query.includes("UPDATE vns.jobs")));
+  assert.equal(released, true);
+});
+
+test("Redis connection errors roll back without changing PostgreSQL status", async () => {
+  const sql: string[] = [];
+  let released = false;
+  const client = {
+    async query(statement: string) {
+      sql.push(statement);
+      if (statement.includes("SELECT j.id::text")) return { rows: [candidate] };
+      return { rows: [], rowCount: 0 };
+    },
+    release() {
+      released = true;
+    },
+  };
+  const pool = { connect: async () => client } as unknown as Pool;
+  const queue = {
+    getJob: async () => {
+      throw new Error("CI simulated Redis outage");
+    },
+  } as unknown as Queue;
+  await assert.rejects(reconcileJobStatusBatch(pool, queue), /reconciliation failed/);
+  assert.ok(sql.includes("ROLLBACK"));
+  assert.ok(!sql.includes("COMMIT"));
+  assert.ok(!sql.some((query) => query.includes("UPDATE vns.jobs")));
+  assert.equal(released, true);
+});
