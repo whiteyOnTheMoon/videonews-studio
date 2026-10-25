@@ -12,16 +12,9 @@ export const PROVIDER_MASTER_KEY_FILENAME = "provider-master-key";
 
 const UNAVAILABLE = "Provider master key unavailable";
 
-function privateOwner(stats: {
-  uid: number;
-  mode: number;
-}): boolean {
+function privateOwner(stats: { uid: number; mode: number }): boolean {
   const currentUid = process.getuid?.();
-  return (
-    currentUid !== undefined &&
-    stats.uid === currentUid &&
-    (stats.mode & 0o077) === 0
-  );
+  return currentUid !== undefined && stats.uid === currentUid && (stats.mode & 0o077) === 0;
 }
 
 /**
@@ -47,11 +40,7 @@ export async function withProviderMasterKey<T>(
     }
 
     const directory = await lstat(trustedDirectory);
-    if (
-      !directory.isDirectory() ||
-      directory.isSymbolicLink() ||
-      !privateOwner(directory)
-    ) {
+    if (!directory.isDirectory() || directory.isSymbolicLink() || !privateOwner(directory)) {
       throw new Error(UNAVAILABLE);
     }
 
@@ -66,8 +55,7 @@ export async function withProviderMasterKey<T>(
       !file.isFile() ||
       file.isSymbolicLink() ||
       !privateOwner(file) ||
-      (file.mode & 0o777) !== 0o400 &&
-        (file.mode & 0o777) !== 0o600 ||
+      ((file.mode & 0o777) !== 0o400 && (file.mode & 0o777) !== 0o600) ||
       file.nlink !== 1 ||
       file.size !== 32
     ) {

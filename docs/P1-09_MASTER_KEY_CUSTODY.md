@@ -41,7 +41,7 @@ Fixtures in einem selbst wieder entfernten CI-Verzeichnis.
 **Wichtige Betriebsgrenze:** Der geplante Container-Benutzer muss die
 Master-Key-Datei lesen dürfen. Docker-Secrets-Bindmounts oder root-eigene
 Dateien mit unpassenden Besitzrechten werden absichtlich abgelehnt.
-Eine zukünftige Lösung muss diese Berechtigungen im *separat genehmigten*
+Eine zukünftige Lösung muss diese Berechtigungen im _separat genehmigten_
 Deployment sicher festlegen; kein automatisches `chmod`/`chown`, kein
 Fallback auf Umgebungsvariablen oder unverschlüsselte Speicherung.
 

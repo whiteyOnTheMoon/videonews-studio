@@ -5,10 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { sealProviderApiKey, unsealProviderApiKey } from "./provider-credential-crypto.js";
-import {
-  PROVIDER_MASTER_KEY_FILENAME,
-  withProviderMasterKey,
-} from "./provider-master-key-file.js";
+import { PROVIDER_MASTER_KEY_FILENAME, withProviderMasterKey } from "./provider-master-key-file.js";
 
 const TEST_CREDENTIAL = "sk-ci-synthetic-not-an-actual-provider-key-01234";
 
