@@ -1,0 +1,32 @@
+[Unit]
+Description=VideoNews Studio read-only disk pressure check
+Documentation=https://github.com/whiteyOnTheMoon/videonews-studio/blob/main/docs/P1-09_OFFLINE_OBSERVABILITY.md
+
+[Service]
+Type=oneshot
+User=ap
+Group=ap
+WorkingDirectory=/home/ap/www/videonews-studio
+ExecStart=/usr/bin/python3 /home/ap/www/videonews-studio/scripts/p1_09_disk_watch.py --path /home/ap/www/videonews-studio
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=videonews-disk-watch
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX
+UMask=0077
+TasksMax=16
+MemoryMax=64M
+TimeoutStartSec=20s

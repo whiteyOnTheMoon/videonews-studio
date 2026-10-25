@@ -8,6 +8,8 @@ on:
       - "scripts/p1_09_cost_model.py"
       - "scripts/test_p1_09_cost_model.py"
       - "docs/P1-09_OFFLINE_OBSERVABILITY.md"
+      - "ops/p1-09/**"
+      - "scripts/test_p1_09_systemd_units.py"
       - ".github/workflows/p1-09-offline-observability.yml"
 permissions:
   contents: read
