@@ -1,5 +1,4 @@
 import { ISOLATED_RESEARCH_QUEUE } from "./editorial-worker.js";
-import { QUEUE_NAME } from "./queue.js";
 
 export type EditorialQueueService = "dispatch" | "statusSync";
 
@@ -14,15 +13,12 @@ export function readEditorialQueueRoute(
   env: NodeJS.ProcessEnv = process.env,
 ): typeof ISOLATED_RESEARCH_QUEUE {
   const flag =
-    service === "dispatch"
-      ? "VNS_OUTBOX_DISPATCH_ENABLED"
-      : "VNS_STATUS_RECONCILE_ENABLED";
+    service === "dispatch" ? "VNS_OUTBOX_DISPATCH_ENABLED" : "VNS_STATUS_RECONCILE_ENABLED";
   if (
     (service !== "dispatch" && service !== "statusSync") ||
     env[flag] !== "true" ||
     env.VNS_RESEARCH_OPERATOR_APPROVED !== "true" ||
-    env.VNS_EDITORIAL_QUEUE_NAME !== ISOLATED_RESEARCH_QUEUE ||
-    env.VNS_EDITORIAL_QUEUE_NAME === QUEUE_NAME
+    env.VNS_EDITORIAL_QUEUE_NAME !== ISOLATED_RESEARCH_QUEUE
   ) {
     throw new Error("Editorial queue routing not approved");
   }
