@@ -73,6 +73,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0016_ai_provider_audit_store.test.sql"
   sql < "$root/db/migrations/0017_ai_provider_mutation_admission.up.sql"
   sql < "$root/db/tests/0017_ai_provider_mutation_admission.test.sql"
+  sql < "$root/db/migrations/0018_ai_provider_named_audit.up.sql"
+  sql < "$root/db/tests/0018_ai_provider_named_audit.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -155,6 +157,7 @@ for iteration in 1 2; do
     rm -rf -- "$work"
     echo "PASS: parallel day cap and idempotent retry"
   fi
+  sql < "$root/db/migrations/0018_ai_provider_named_audit.down.sql"
   sql < "$root/db/migrations/0017_ai_provider_mutation_admission.down.sql"
   sql < "$root/db/migrations/0016_ai_provider_audit_store.down.sql"
   sql < "$root/db/migrations/0015_ai_provider_admin_configuration.down.sql"
@@ -177,4 +180,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0017 migrations, budgets and provider admission twice"
+echo "PASS: reversible 0001–0018 migrations, budgets and named provider audit twice"
