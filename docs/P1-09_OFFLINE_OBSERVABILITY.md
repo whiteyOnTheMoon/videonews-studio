@@ -91,3 +91,12 @@ checked locally using `systemd-analyze verify`.
 Read-only inspection after separately approved installation could use
 `systemctl status vns-disk-watch.timer` and
 `journalctl -t videonews-disk-watch`. Neither command is performed here.
+
+## Optional messaging adapter (code-only)
+
+A separately gated Telegram Bot API client, test fixtures and documented
+credential/storage restrictions are prepared in
+[P1-09 optional Telegram alerts](P1-09_OPTIONAL_TELEGRAM_ALERTS.md).
+No notification channel has been chosen, no external messages were sent,
+and the **already active disk-watch timer remains unchanged**. This adapter
+is not activated by CI, merging or the existing timer.
