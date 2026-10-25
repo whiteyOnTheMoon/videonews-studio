@@ -230,7 +230,15 @@ try {
   );
 } finally {
   await Promise.allSettled(
-    [worker?.close(), events.close(), queue.close(), db.end(), dispatchDb.end(), statusDb.end(), researchDb.end()].filter(Boolean),
+    [
+      worker?.close(),
+      events.close(),
+      queue.close(),
+      db.end(),
+      dispatchDb.end(),
+      statusDb.end(),
+      researchDb.end(),
+    ].filter(Boolean),
   );
   await Promise.allSettled(
     [producerRedis, eventRedis, workerConnection].filter(Boolean).map((conn) => conn.quit()),
