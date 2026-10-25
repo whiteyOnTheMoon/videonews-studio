@@ -5,6 +5,7 @@ operational migration. The existing `provision_redis_secrets.py`, local secret
 files, running Redis, worker, dispatcher, and Compose deployments are unchanged.
 
 The proposed key/channel namespaces are:
+
 - Probe: `vns_worker` → `bull:vns:vns-jobs:*`
 - Research: `vns_research` → `bull:vns:vns-research:*`
 
