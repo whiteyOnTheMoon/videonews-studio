@@ -136,7 +136,11 @@ test("unauthorized, forged-origin and forbidden activation never reach SQL", asy
     const cases: Array<[IncomingMessage, number]> = [
       [request("POST", { action: "remove_key", provider: "openai" }, { cookie: "invalid" }), 401],
       [
-        request("POST", { action: "remove_key", provider: "openai" }, { origin: "https://evil.invalid" }),
+        request(
+          "POST",
+          { action: "remove_key", provider: "openai" },
+          { origin: "https://evil.invalid" },
+        ),
         403,
       ],
       [request("POST", { action: "enable", provider: "openai" }), 400],
