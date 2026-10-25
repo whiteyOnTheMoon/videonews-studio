@@ -188,7 +188,7 @@ BEGIN
          'vns.ai_provider_sealed_credentials','SELECT')
     OR has_table_privilege('vns_provider_config_writer',
          'vns.ai_provider_config_events','INSERT')
-    OR NOT has_function_privilege('vns_provider_config_writer',
+    OR has_function_privilege('vns_provider_config_writer',
          'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
     OR has_function_privilege('vns_api_runtime',
          'vns.admin_mutate_ai_provider(text,text,text,bytea,bytea,bytea)','EXECUTE')
@@ -206,7 +206,7 @@ BEGIN
         'vns.ai_provider_mutation_window','SELECT')
   THEN RAISE EXCEPTION 'Shared provider admission restore/ACLs invalid'; END IF;
 
-  -- Named admin audit is empty on the test restore, but ACL and owner persist.
+  -- The synthetic named admin audit must survive restore with ACL and owner intact.
   IF (SELECT count(*) FROM vns.ai_provider_named_config_events)<>1
     OR NOT EXISTS (
       SELECT 1 FROM vns.ai_provider_named_config_events
