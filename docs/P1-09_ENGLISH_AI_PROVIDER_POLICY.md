@@ -18,11 +18,11 @@ service activation is part of this change. The VPS remains unchanged.
 
 ## Primary English text roles
 
-| Stage | Proposed model ID | Purpose | Input max | Output max |
-| --- | --- | --- | ---: | ---: |
-| Topic triage | `gpt-6-luna` | Classify/normalize approved sources | 4,000 | 700 |
-| Script draft | `gpt-6.1-sol` | Explain the news clearly in English | 20,000 | 5,000 |
-| Fact audit | `gpt-6.1-sol` | Flag unsupported claims for human checking | 12,000 | 2,500 |
+| Stage        | Proposed model ID | Purpose                                    | Input max | Output max |
+| ------------ | ----------------- | ------------------------------------------ | --------: | ---------: |
+| Topic triage | `gpt-6-luna`      | Classify/normalize approved sources        |     4,000 |        700 |
+| Script draft | `gpt-6.1-sol`     | Explain the news clearly in English        |    20,000 |      5,000 |
+| Fact audit   | `gpt-6.1-sol`     | Flag unsupported claims for human checking |    12,000 |      2,500 |
 
 Stage values are enforced in the dormant
 `apps/worker/src/ai-provider-policy.ts`. Input type is metadata **only**:
@@ -43,10 +43,10 @@ without existing editorial approval.
 
 Snapshot inspected on **2026-10-25**, OpenAI API Standard short-context:
 
-| Model | Input micro-USD / million tokens | Output micro-USD / million tokens |
-| --- | ---: | ---: |
-| `gpt-6-luna` | 100,000 ($0.10) | 500,000 ($0.50) |
-| `gpt-6.1-sol` | 2,000,000 ($2.00) | 10,000,000 ($10.00) |
+| Model         | Input micro-USD / million tokens | Output micro-USD / million tokens |
+| ------------- | -------------------------------: | --------------------------------: |
+| `gpt-6-luna`  |                  100,000 ($0.10) |                   500,000 ($0.50) |
+| `gpt-6.1-sol` |                2,000,000 ($2.00) |               10,000,000 ($10.00) |
 
 Source: https://developers.openai.com/api/docs/pricing
 Model catalog: https://developers.openai.com/api/docs/models
@@ -68,16 +68,16 @@ Conservative, deliberately **unapproved** proposed ceilings:
 
 At maximum displayed token limits, hypothetical cost of one text job:
 
-| Step | Upper-bound estimated USD |
-| --- | ---: |
-| Topic triage | $0.000750 |
-| Script draft | $0.090000 |
-| Fact audit | $0.049000 |
-| **Total for text stages** | **$0.139750** |
+| Step                      | Upper-bound estimated USD |
+| ------------------------- | ------------------------: |
+| Topic triage              |                 $0.000750 |
+| Script draft              |                 $0.090000 |
+| Fact audit                |                 $0.049000 |
+| **Total for text stages** |             **$0.139750** |
 
 The policy uses BigInt arithmetic, round-up to integer micro-USD and
 rejects unknown stages, model mismatches, non-English plans, prompts,
-fractional limits and duplicate/missing stages. This is *planning*;
+fractional limits and duplicate/missing stages. This is _planning_;
 not actual usage or an approved payment. Actual per-call cost depends
 on the provider's authenticated consumption records, pricing version
 and available budget. A later separately approved implementation
@@ -113,7 +113,7 @@ with two human-reviewed samples before selecting a permanent voice.
    idempotency, matching authorized prices and the `vns.job_token_usage`
    synthetic-only boundaries by **separate reviewed migration**.
 5. Add independently approved Google TTS transport and usage/cost model
-   *after* spoken-English quality and vendor terms pass review.
+   _after_ spoken-English quality and vendor terms pass review.
 6. Safely migrate/test isolated data before enabling any billing;
    Offsite backups/restores remain deferred by the operator and
    must not be implicitly represented as available.

@@ -72,12 +72,7 @@ export type OfflineTextReservation = {
 };
 
 function checkedPositiveSafeInt(value: unknown, maximum: number): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 1 &&
-    value <= maximum
-  );
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= maximum;
 }
 
 function ownFieldsOnly(data: object, expected: readonly string[]): boolean {
@@ -93,13 +88,7 @@ export function proposeOfflineTextReservation(value: unknown): OfflineTextReserv
   }
   const request = value as Record<string, unknown>;
   if (
-    !ownFieldsOnly(request, [
-      "stage",
-      "model",
-      "language",
-      "maxInputTokens",
-      "maxOutputTokens",
-    ]) ||
+    !ownFieldsOnly(request, ["stage", "model", "language", "maxInputTokens", "maxOutputTokens"]) ||
     typeof request.stage !== "string" ||
     !Object.hasOwn(TEXT_STAGES, request.stage)
   ) {
@@ -141,9 +130,7 @@ export function proposeOfflineTextReservation(value: unknown): OfflineTextReserv
   });
 }
 
-export function proposeOfflineJobBudget(
-  items: unknown,
-): {
+export function proposeOfflineJobBudget(items: unknown): {
   requests: readonly OfflineTextReservation[];
   estimatedWorstCaseMicroUsd: string;
   proposedDailyCapMicroUsd: string;
@@ -165,10 +152,7 @@ export function proposeOfflineJobBudget(
   ) {
     throw new Error("Offline plan contains duplicated or missing stages");
   }
-  const cost = requests.reduce(
-    (sum, item) => sum + BigInt(item.estimatedWorstCaseMicroUsd),
-    0n,
-  );
+  const cost = requests.reduce((sum, item) => sum + BigInt(item.estimatedWorstCaseMicroUsd), 0n);
   if (cost > PROPOSED_JOB_CAP_MICRO_USD) {
     throw new Error("Offline job exceeds proposed ceiling");
   }

@@ -24,25 +24,5 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s scripts -p 'test_p1_09_cost_model.py' -v
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Export exact Prettier output for synthetic files (temporary)
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/worker/src/ai-provider-policy.ts apps/worker/src/ai-provider-policy.test.ts docs/P1-09_ENGLISH_AI_PROVIDER_POLICY.md
-          echo '===VNSFMT_START:provider-policy.ts==='
-          base64 -w0 apps/worker/src/ai-provider-policy.ts
-          echo
-          echo '===VNSFMT_END:provider-policy.ts==='
-          echo '===VNSFMT_START:provider-policy.test.ts==='
-          base64 -w0 apps/worker/src/ai-provider-policy.test.ts
-          echo
-          echo '===VNSFMT_END:provider-policy.test.ts==='
-          echo '===VNSFMT_START:provider-policy.md==='
-          base64 -w0 docs/P1-09_ENGLISH_AI_PROVIDER_POLICY.md
-          echo
-          echo '===VNSFMT_END:provider-policy.md==='
-          git restore -- apps/worker/src/ai-provider-policy.ts apps/worker/src/ai-provider-policy.test.ts docs/P1-09_ENGLISH_AI_PROVIDER_POLICY.md
       - name: Assert no tracked changes
         run: test -z "$(git status --porcelain)"

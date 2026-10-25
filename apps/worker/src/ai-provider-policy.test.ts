@@ -61,8 +61,9 @@ test("integer cost ceilings are transparent estimates, not spending authorizatio
   assert.equal(output.proposedDailyCapMicroUsd, PROPOSED_DAILY_CAP_MICRO_USD.toString());
   assert.ok(BigInt(output.estimatedWorstCaseMicroUsd) < PROPOSED_JOB_CAP_MICRO_USD);
   assert.ok(PROPOSED_JOB_CAP_MICRO_USD < PROPOSED_DAILY_CAP_MICRO_USD);
-  assert.ok(output.requests.every((item) =>
-    item.estimated && !item.networkAllowed && !item.spendApproved));
+  assert.ok(
+    output.requests.every((item) => item.estimated && !item.networkAllowed && !item.spendApproved),
+  );
 });
 
 test("all request fields are exact and English-only; no prompts, secrets or URLs allowed", () => {
@@ -105,11 +106,7 @@ test("lower input/output upper bounds always lower the exact reserved amount", (
 });
 
 test("missing, repeated, unexpected and malformed stages must fail closed", () => {
-  const full = [
-    fullStage("topic_triage"),
-    fullStage("script_draft"),
-    fullStage("fact_audit"),
-  ];
+  const full = [fullStage("topic_triage"), fullStage("script_draft"), fullStage("fact_audit")];
   assert.equal(proposeOfflineJobBudget(full).estimatedWorstCaseMicroUsd, "139750");
   for (const altered of [
     [],
