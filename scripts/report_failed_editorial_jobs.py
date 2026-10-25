@@ -88,7 +88,7 @@ def preflight() -> str:
 
 def render(raw: str) -> list[str]:
     rows = raw.splitlines()
-    if not rows or not re.fullmatch(r"TOTAL\\|[0-9]{1,12}", rows[0]):
+    if not rows or not re.fullmatch(r"TOTAL\|[0-9]{1,12}", rows[0]):
         raise ValueError("invalid count receipt")
     total = int(rows[0].split("|")[1])
     if len(rows) - 1 != min(total, 20):
