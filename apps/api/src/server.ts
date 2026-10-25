@@ -3,11 +3,19 @@ import { createHealth } from "@vns/shared";
 import type { AdminAuth } from "./auth.js";
 import type { AdminJobs } from "./admin-jobs.js";
 import type { EditorAuth } from "./editor-auth.js";
+import type { AdminProviderConfiguration } from "./admin-provider-configuration.js";
 
 export function createApiServer(
-  options: { auth?: AdminAuth; jobs?: AdminJobs; editor?: EditorAuth } = {},
+  options: {
+    auth?: AdminAuth;
+    jobs?: AdminJobs;
+    editor?: EditorAuth;
+    providerConfig?: AdminProviderConfiguration;
+  } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
+  if (options.providerConfig && !options.auth)
+    throw new Error("Provider configuration requires authentication");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -19,6 +27,18 @@ export function createApiServer(
     if (request.method === "GET" && request.url === "/healthz") {
       response.writeHead(200);
       response.end(JSON.stringify(createHealth("api")));
+      return;
+    }
+
+    // Default OFF: production index.ts never passes providerConfig.
+    // Future opt-in must provide audited DB role, session, KEK and rate limiting.
+    if (request.url === "/admin/ai-providers" && options.auth && options.providerConfig) {
+      void options.providerConfig.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded) {
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        }
+      });
       return;
     }
 
