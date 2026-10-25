@@ -46,7 +46,9 @@ await admin.connect();
 try {
   for (const identity of identities) {
     // All identifiers are fixed test literals above; passwords are parameters.
-    await admin.query(`CREATE ROLE "${identity.login}" LOGIN INHERIT PASSWORD '${identity.password}'`);
+    await admin.query(
+      `CREATE ROLE "${identity.login}" LOGIN INHERIT PASSWORD '${identity.password}'`,
+    );
     await admin.query(`GRANT "${identity.group}" TO "${identity.login}"`);
     const role = await admin.query(
       "SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname=$1",
@@ -55,6 +57,17 @@ try {
     assert.deepEqual(role.rows, [
       { rolcanlogin: true, rolsuper: false, rolcreatedb: false, rolcreaterole: false },
     ]);
+  }
+  // Credentials from one service must never authenticate as another.
+  for (const identity of identities) {
+    const other = identities.find((entry) => entry.login !== identity.login);
+    const invalid = new pg.Client({
+      ...connection,
+      user: identity.login,
+      password: other.password,
+    });
+    await assert.rejects(invalid.connect(), (error) => error.code === "28P01");
+    await invalid.end().catch(() => undefined);
   }
   for (const identity of identities) {
     const client = new pg.Client({
@@ -67,10 +80,23 @@ try {
       const current = await client.query("SELECT current_user AS identity");
       assert.equal(current.rows[0].identity, identity.login);
       await client.query(identity.allow);
+      const membership = await client.query(
+        "SELECT pg_has_role(current_user, $1, 'USAGE') AS permitted",
+        [identity.group],
+      );
+      assert.equal(membership.rows[0].permitted, true);
+      await assert.rejects(
+        client.query("CREATE TABLE vns.ci_forbidden_runtime_table (id integer)"),
+        (error) => error.code === "42501",
+      );
       await assert.rejects(client.query(identity.deny), (error) => error.code === "42501");
-      const owner = await client.query("SELECT pg_has_role(current_user, 'vns', 'MEMBER') AS member");
+      const owner = await client.query(
+        "SELECT pg_has_role(current_user, 'vns', 'MEMBER') AS member",
+      );
       assert.equal(owner.rows[0].member, false);
-      console.log(`PASS: scoped login ${identity.login} authenticates and denies cross-service SQL`);
+      console.log(
+        `PASS: scoped login ${identity.login} authenticates and denies cross-service SQL`,
+      );
     } finally {
       await client.end();
     }
