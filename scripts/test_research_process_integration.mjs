@@ -2,7 +2,7 @@
 // No external network fetching, provider credentials, research, AI calls or publication.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { Queue, QueueEvents, Worker } from "bullmq";
+import { Queue, QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
 import pg from "pg";
 import {
@@ -11,6 +11,8 @@ import {
 } from "../apps/worker/dist/research-process.js";
 import { dispatchOutboxBatch } from "../apps/worker/dist/outbox.js";
 import { createEditorialProcessor } from "../apps/worker/dist/editorial-process.js";
+import { createDormantEditorialWorker } from "../apps/worker/dist/editorial-worker.js";
+import { reconcileJobStatusBatch } from "../apps/worker/dist/job-status.js";
 import { QUEUE_NAME, QUEUE_PREFIX } from "../apps/worker/dist/queue.js";
 
 if (process.env.GITHUB_ACTIONS !== "true" || process.env.CI !== "true") {
@@ -26,7 +28,6 @@ const connection = {
 };
 const producerRedis = new Redis({ ...connection, maxRetriesPerRequest: 1 });
 const eventRedis = new Redis({ ...connection, maxRetriesPerRequest: null });
-const workerRedis = new Redis({ ...connection, maxRetriesPerRequest: null });
 const queue = new Queue(QUEUE_NAME, { connection: producerRedis, prefix: QUEUE_PREFIX });
 const events = new QueueEvents(QUEUE_NAME, { connection: eventRedis, prefix: QUEUE_PREFIX });
 const { Pool } = pg;
@@ -40,6 +41,7 @@ const db = new Pool({
   connectionTimeoutMillis: 4000,
 });
 let worker;
+let workerConnection;
 const topic = "Municipal transport infrastructure and public accountability";
 const candidate = {
   sourceUrl: "https://www.example.org/reports/mobility-2026",
@@ -105,12 +107,17 @@ try {
   }
   const queued = await queue.getJob("job-" + jobId.replaceAll("-", ""));
   assert.ok(queued);
-  worker = new Worker(QUEUE_NAME, processor, {
-    connection: workerRedis,
-    prefix: QUEUE_PREFIX,
-    concurrency: 1,
-  });
-  worker.on("error", () => console.error("CI worker error"));
+  // The production factory is dormant until this disposable CI test explicitly runs it.
+  ({ worker, connection: workerConnection } = createDormantEditorialWorker(
+    { host: connection.host, port: connection.port, password: connection.password },
+    true,
+    researchHandler,
+  ));
+  assert.equal(worker.opts.autorun, false);
+  assert.equal(worker.opts.concurrency, 1);
+  worker.on("error", () => console.error("CI editorial worker error"));
+  const running = worker.run();
+  running.catch(() => console.error("CI editorial worker stopped"));
   await worker.waitUntilReady();
   const result = await queued.waitUntilFinished(events, 20000);
   assert.deepEqual(result, { candidatesRecorded: 1, needsEditorialReview: true });
@@ -179,9 +186,25 @@ try {
   );
   await assert.rejects(conflict(queued), /conflicts with existing provenance/);
   console.log("PASS: conflicting replays fail closed without rewriting provenance");
+
+  // Complete the *same* SQL outbox -> authenticated Redis -> dormant editorial
+  // factory -> evidence -> SQL status flow, with no live adapters or VPS work.
+  assert.equal((await reconcileJobStatusBatch(db, queue, 10)).updated, 1);
+  const completed = await db.query(
+    "SELECT status, attempt_count, error_code FROM vns.jobs WHERE id=$1",
+    [jobId],
+  );
+  assert.deepEqual(completed.rows[0], {
+    status: "done",
+    attempt_count: 1,
+    error_code: null,
+  });
+  assert.equal((await reconcileJobStatusBatch(db, queue, 10)).updated, 0);
+  assert.equal((await dispatchOutboxBatch(db, queue, 10)).newlyEnqueued, 0);
+  console.log("PASS: dormant editorial factory + outbox + PostgreSQL status complete synthetic job");
 } finally {
   await Promise.allSettled(
     [worker?.close(), events.close(), queue.close(), db.end()].filter(Boolean),
   );
-  await Promise.allSettled([producerRedis, eventRedis, workerRedis].map((conn) => conn.quit()));
+  await Promise.allSettled([producerRedis, eventRedis, workerConnection].filter(Boolean).map((conn) => conn.quit()));
 }
