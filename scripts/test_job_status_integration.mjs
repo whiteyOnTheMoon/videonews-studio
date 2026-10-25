@@ -189,7 +189,19 @@ try {
   assert.equal(snapshot.missingRedis, 1);
   assert.equal((await status(missing.id)).status, "pending");
   assert.equal((await dispatchOutboxBatch(db, producer, 10)).newlyEnqueued, 1);
-  console.log("PASS: missing Redis record never falsely marks PostgreSQL failed/done");
+  const restored = await producer.getJob("job-" + missing.id.replaceAll("-", ""));
+  assert.ok(restored);
+  assert.equal(restored.name, "research");
+  assert.deepEqual(restored.data, { kind: "research", jobId: missing.id });
+  assert.equal(await restored.getState(), "waiting");
+  assert.equal((await sync()).updated, 0);
+  assert.deepEqual(await status(missing.id), {
+    status: "pending",
+    attempt_count: 0,
+    error_code: null,
+  });
+  assert.equal((await dispatchOutboxBatch(db, producer, 10)).newlyEnqueued, 0);
+  console.log("PASS: missing Redis record rebuilt from Outbox without false status or duplicate");
 
   const mismatch = await create("ci-lifecycle-collision");
   await mismatch.job.remove();
