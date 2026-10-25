@@ -14,7 +14,10 @@ test("distinct database identities are reserved for each service", () => {
 test("identity selection fails closed unless separately enabled", () => {
   for (const service of ["dispatch", "statusSync", "research"] as const) {
     assert.throws(() => requireDedicatedPostgresIdentity(service, false), /explicitly enabled/);
-    assert.equal(requireDedicatedPostgresIdentity(service, true), POSTGRES_SERVICE_IDENTITIES[service]);
+    assert.equal(
+      requireDedicatedPostgresIdentity(service, true),
+      POSTGRES_SERVICE_IDENTITIES[service],
+    );
   }
   assert.throws(
     () => requireDedicatedPostgresIdentity("unknown" as never, true),
