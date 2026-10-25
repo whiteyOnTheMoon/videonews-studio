@@ -66,7 +66,7 @@ try {
   console.log("PASS: database idempotency + deterministic Redis delivery");
 
   // Simulate successful Redis enqueue followed by lost PG acknowledgement.
-  const second = await create("script", "ci-outbox-2");
+  const second = await create("research", "ci-outbox-2");
   const lostAcknowledge = {
     getJob: (key) => queue.getJob(key),
     add: async (...args) => {
@@ -89,7 +89,7 @@ try {
   console.log("PASS: missing Redis job rebuilt from durable PostgreSQL ledger");
 
   // Fail closed instead of accepting a Redis job ID with mismatched content.
-  const third = await create("render", "ci-outbox-3");
+  const third = await create("research", "ci-outbox-3");
   await queue.add(
     "probe",
     { kind: "probe", jobId: third },
@@ -169,6 +169,15 @@ try {
   assert.equal((await dispatchOutboxBatch(pool, queue)).newlyEnqueued, 0);
   assert.ok(!(await queue.getJob(bullId(id))));
   console.log("PASS: finished PostgreSQL jobs are not inadvertently replayed");
+
+  // Persisted unsupported kinds must remain pending, never dispatched to a
+  // worker without corresponding handlers. This is intentionally terminal
+  // for this disposable test transaction sequence.
+  const unsupported = await create("script", "ci-outbox-unsupported-script");
+  await assert.rejects(dispatchOutboxBatch(pool, queue), /safe to retry/);
+  assert.equal((await outbox(unsupported)).delivery_state, "pending");
+  assert.equal(await queue.getJob(bullId(unsupported)), undefined);
+  console.log("PASS: unsupported editorial kind cannot reach Redis");
 } finally {
   await Promise.allSettled([queue.close(), pool.end()]);
   await redis.quit().catch(() => undefined);
