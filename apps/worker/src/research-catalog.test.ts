@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApprovedCatalogDiscovery, parseApprovedResearchCatalog } from "./research-catalog.js";
+import {
+  createApprovedCatalogDiscovery,
+  parseApprovedResearchCatalog,
+} from "./research-catalog.js";
 
 const topic = "Regional investment in sustainable public transport";
 const candidate = {
@@ -19,7 +22,7 @@ test("only exact operator-catalog topics can be discovered", async () => {
   assert.deepEqual(await discovery.discover(topic), [candidate]);
   await assert.rejects(discovery.discover(topic.toLowerCase()), /not operator approved/);
   await assert.rejects(discovery.discover("A totally unrelated headline"), /not operator approved/);
-  assert.equal("verified" in (await discovery.discover(topic) as object[])[0]!, false);
+  assert.equal("verified" in ((await discovery.discover(topic)) as object[])[0]!, false);
 });
 
 test("refuse missing catalog, malformed envelope and auto-verified input", () => {
@@ -60,7 +63,9 @@ test("deny unapproved source hosts and non-HTTPS/internal URLs", () => {
 });
 
 test("exact allowlist and no editorial side effects", () => {
-  assert.throws(() => parseApprovedResearchCatalog(catalogJson([valid()]), { enabled: true, hosts: [] }));
+  assert.throws(() =>
+    parseApprovedResearchCatalog(catalogJson([valid()]), { enabled: true, hosts: [] }),
+  );
   const result = parseApprovedResearchCatalog(catalogJson([valid()]), policy);
   assert.equal(result.size, 1);
 });
