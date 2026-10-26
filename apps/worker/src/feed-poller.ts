@@ -80,7 +80,7 @@ function textField(xml: string, name: string): string | null {
   return value.length > 0 && value.length <= 200 ? value : null;
 }
 
-function validTitle(value: string | null): value is string {
+function validTitle(value: unknown): value is string {
   return (
     typeof value === "string" &&
     value === value.trim() &&
@@ -204,6 +204,7 @@ export function decodeApprovedFeed(
       reviewStatus: "candidate",
     });
   }
+  if (items.length === 0) throw new Error("Feed has no approved metadata");
   return items;
 }
 
