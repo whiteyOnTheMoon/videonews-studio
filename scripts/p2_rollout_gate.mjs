@@ -21,7 +21,7 @@ export const REQUIREMENTS = Object.freeze([
   "operator_rollout_approval",
 ]);
 
-export function evaluateRolloutEvidence(input) {
+export function evaluateRolloutEvidence(input, { expectedSha, now = new Date() } = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Invalid P2 evidence manifest");
   }
@@ -36,10 +36,29 @@ export function evaluateRolloutEvidence(input) {
   ) {
     throw new Error("Invalid P2 evidence manifest");
   }
+  if (expectedSha !== undefined && (!/^[0-9a-f]{40}$/.test(expectedSha) || input.mainSha !== expectedSha)) {
+    throw new Error("Release SHA mismatch");
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+    throw new Error("Invalid evaluation clock");
+  }
   if (Object.keys(input.evidence).some((key) => !REQUIREMENTS.includes(key))) {
     throw new Error("Unknown P2 evidence gate");
   }
   const failures = [];
+  const safeReference = (value) => {
+    if (typeof value !== "string" || value.length > 1000) return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && !!url.hostname &&
+        !url.username && !url.password && !url.hash &&
+        !["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase()) &&
+        !url.hostname.toLowerCase().endsWith(".local") &&
+        !url.hostname.toLowerCase().endsWith(".internal");
+    } catch {
+      return false;
+    }
+  };
   for (const key of REQUIREMENTS) {
     const item = input.evidence[key];
     if (
@@ -50,12 +69,12 @@ export function evaluateRolloutEvidence(input) {
       item.status !== "passed" ||
       typeof item.approver !== "string" ||
       !/^[a-zA-Z0-9_.-]{3,80}$/.test(item.approver) ||
-      typeof item.reference !== "string" ||
-      !/^https:\/\//.test(item.reference) ||
-      item.reference.length > 1000 ||
+      !safeReference(item.reference) ||
       typeof item.approvedAt !== "string" ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(item.approvedAt) ||
-      !Number.isFinite(Date.parse(item.approvedAt))
+      !Number.isFinite(Date.parse(item.approvedAt)) ||
+      new Date(item.approvedAt).toISOString() !== item.approvedAt.replace(/\.0+Z$/, "Z") ||
+      Date.parse(item.approvedAt) > now.getTime()
     ) {
       failures.push(key);
     }
@@ -65,10 +84,10 @@ export function evaluateRolloutEvidence(input) {
 
 if (process.argv[1]?.endsWith("/p2_rollout_gate.mjs")) {
   try {
-    if (process.argv.length !== 3) throw new Error("Expected one evidence JSON path");
+    if (process.argv.length !== 3 && process.argv.length !== 4) throw new Error("Expected evidence JSON path and optional expected SHA");
     const data = readFileSync(process.argv[2], "utf8");
     if (Buffer.byteLength(data, "utf8") > 65536) throw new Error("Oversized manifest");
-    const result = evaluateRolloutEvidence(JSON.parse(data));
+    const result = evaluateRolloutEvidence(JSON.parse(data), { expectedSha: process.argv[3] });
     console.log(JSON.stringify(result));
     // Even complete evidence does not grant permission to operate the VPS.
     process.exitCode = result.readyForOperatorReview ? 0 : 2;
