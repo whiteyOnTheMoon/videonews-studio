@@ -278,9 +278,7 @@ export function groupConservativeEventCandidates(
     ids.add(article.id);
   }
   const tokens = (text: string): Set<string> =>
-    new Set(
-      text.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]{2,}/gu) ?? [],
-    );
+    new Set(text.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]{2,}/gu) ?? []);
   const similar = (a: NormalizedArticle, b: NormalizedArticle): boolean => {
     if (a.titleFingerprint === b.titleFingerprint) return true;
     if (Math.abs(Date.parse(a.publishedAt) - Date.parse(b.publishedAt)) > 48 * 3600000) {
