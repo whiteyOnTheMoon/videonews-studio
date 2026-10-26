@@ -4,11 +4,7 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const CODE = /^[a-z][a-z0-9_]{1,39}$/;
 export type CheckpointStage =
-  | "ranking"
-  | "claim_review"
-  | "freshness"
-  | "script_revision"
-  | "quality";
+  "ranking" | "claim_review" | "freshness" | "script_revision" | "quality";
 export type CheckpointOutcome = "candidate" | "blocked" | "needs_review";
 
 export interface CheckpointRecord {
@@ -56,11 +52,14 @@ export class DormantEditorialCheckpointStore {
     if (
       !UUID.test(eventId) ||
       !Number.isSafeInteger(expectedRevision) ||
-      expectedRevision < 0 || expectedRevision > 9999 ||
+      expectedRevision < 0 ||
+      expectedRevision > 9999 ||
       !["ranking", "claim_review", "freshness", "script_revision", "quality"].includes(stage) ||
       !["candidate", "blocked", "needs_review"].includes(outcome) ||
       !DIGEST.test(artifactDigest) ||
-      !Array.isArray(reasons) || reasons.length < 1 || reasons.length > 20 ||
+      !Array.isArray(reasons) ||
+      reasons.length < 1 ||
+      reasons.length > 20 ||
       reasons.some((reason) => typeof reason !== "string" || !CODE.test(reason)) ||
       (score !== null && (!Number.isSafeInteger(score) || score < 0 || score > 1000))
     ) {
@@ -86,8 +85,12 @@ export class DormantEditorialCheckpointStore {
     limit: number,
   ): Promise<readonly CheckpointRecord[]> {
     if (
-      !UUID.test(eventId) || !Number.isSafeInteger(afterRevision) || afterRevision < 0 ||
-      !Number.isSafeInteger(limit) || limit < 1 || limit > 100
+      !UUID.test(eventId) ||
+      !Number.isSafeInteger(afterRevision) ||
+      afterRevision < 0 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
     ) {
       throw new Error("Named editorial checkpoint query invalid");
     }
@@ -102,11 +105,15 @@ export class DormantEditorialCheckpointStore {
       let previous = afterRevision;
       for (const row of result.rows) {
         if (
-          !Number.isSafeInteger(row.revision) || row.revision <= previous ||
-          !UUID.test(row.actor_id) || !DIGEST.test(row.artifact_sha256) ||
-          !DIGEST.test(row.previous_sha256) || !DIGEST.test(row.chain_sha256) ||
+          !Number.isSafeInteger(row.revision) ||
+          row.revision <= previous ||
+          !UUID.test(row.actor_id) ||
+          !DIGEST.test(row.artifact_sha256) ||
+          !DIGEST.test(row.previous_sha256) ||
+          !DIGEST.test(row.chain_sha256) ||
           !Array.isArray(row.reason_codes) ||
-          row.reason_codes.length < 1 || row.reason_codes.length > 20 ||
+          row.reason_codes.length < 1 ||
+          row.reason_codes.length > 20 ||
           row.reason_codes.some((code) => !CODE.test(code)) ||
           !(row.recorded_at instanceof Date) ||
           !Number.isFinite(row.recorded_at.getTime())
