@@ -1,0 +1,156 @@
+-- P2-01 0021: require source transitions to be validated inside PostgreSQL.
+-- CI-only until operator-approved deployment; source feeds remain completely dormant.
+BEGIN;
+CREATE OR REPLACE FUNCTION vns.admin_commit_source_registry(
+ p_expected bigint, p_next bigint, p_sources jsonb, p_source_id text,
+ p_action text, p_editor_id uuid, p_auth_version integer, p_recorded_at timestamptz
+) RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path=pg_catalog,vns,pg_temp
+AS $guard$
+DECLARE
+  v_username text;
+  v_revision bigint;
+  v_previous jsonb;
+  v_item jsonb;
+  v_old_target jsonb;
+  v_new_target jsonb;
+  v_old_others jsonb;
+  v_new_others jsonb;
+  v_host text;
+  v_url text;
+  v_key text;
+  v_review_date text;
+  v_count integer;
+BEGIN
+  IF p_expected IS NULL OR p_expected < 0 OR p_expected >= 9007199254740991
+    OR p_next IS DISTINCT FROM p_expected+1
+    OR p_sources IS NULL OR jsonb_typeof(p_sources) IS DISTINCT FROM 'array'
+    OR jsonb_array_length(p_sources) > 20
+    OR p_source_id IS NULL OR p_source_id !~ '^[a-z][a-z0-9_-]{2,40}$'
+    OR p_action IS NULL
+    OR p_action NOT IN ('create_pending','replace_pending','approve','block','reopen')
+    OR p_editor_id IS NULL OR p_auth_version IS NULL OR p_auth_version NOT BETWEEN 0 AND 2147483647
+    OR p_recorded_at IS NULL OR NOT isfinite(p_recorded_at)
+  THEN RAISE EXCEPTION 'invalid source mutation' USING ERRCODE='22023'; END IF;
+
+  -- Revalidate on the database clock/active account lock, not browser-supplied claims.
+  SELECT username INTO v_username FROM vns.editor_accounts
+    WHERE id=p_editor_id AND role='admin' AND active=true
+      AND auth_version=p_auth_version FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'admin identity unavailable' USING ERRCODE='42501'; END IF;
+
+  -- Lock and compare *before* writing. Concurrent writers cannot commit the same revision.
+  SELECT revision,sources INTO v_revision,v_previous FROM vns.admin_source_registry
+    WHERE singleton=true FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'source registry unavailable' USING ERRCODE='55000'; END IF;
+  IF v_revision<>p_expected THEN RETURN false; END IF;
+
+  -- Every new snapshot entry must be a complete, typed, unique, canonical
+  -- source record. The API performs stricter URL canonicalization separately.
+  v_count:=0;
+  FOR v_item IN SELECT value FROM jsonb_array_elements(p_sources) LOOP
+    v_count:=v_count+1;
+    IF jsonb_typeof(v_item) IS DISTINCT FROM 'object'
+       OR (SELECT count(*) FROM jsonb_object_keys(v_item))<>9
+       OR NOT (v_item ?& ARRAY['id','baseUrl','access','intervalMinutes','termsUrl',
+                                'usage','licenseNotes','status','reviewedAt'])
+       OR jsonb_typeof(v_item->'id') IS DISTINCT FROM 'string'
+       OR (v_item->>'id') !~ '^[a-z][a-z0-9_-]{2,40}$'
+       OR jsonb_typeof(v_item->'baseUrl') IS DISTINCT FROM 'string'
+       OR jsonb_typeof(v_item->'termsUrl') IS DISTINCT FROM 'string'
+       OR jsonb_typeof(v_item->'access') IS DISTINCT FROM 'string'
+       OR (v_item->>'access') NOT IN ('rss','atom','official_api','html')
+       OR jsonb_typeof(v_item->'intervalMinutes') IS DISTINCT FROM 'number'
+       OR (v_item->>'intervalMinutes') !~ '^(0|[1-9][0-9]*)$'
+       OR length(v_item->>'intervalMinutes') > 5
+       OR jsonb_typeof(v_item->'usage') IS DISTINCT FROM 'string'
+       OR (v_item->>'usage') NOT IN ('metadata_only','reviewed_excerpt')
+       OR jsonb_typeof(v_item->'licenseNotes') IS DISTINCT FROM 'string'
+       OR length(v_item->>'licenseNotes') NOT BETWEEN 12 AND 300
+       OR btrim(v_item->>'licenseNotes') <> v_item->>'licenseNotes'
+       OR (v_item->>'licenseNotes') ~ '[[:cntrl:]]'
+       OR jsonb_typeof(v_item->'status') IS DISTINCT FROM 'string'
+       OR (v_item->>'status') NOT IN ('pending','approved','blocked')
+       OR jsonb_typeof(v_item->'reviewedAt') IS DISTINCT FROM 'string'
+       OR (v_item->>'reviewedAt') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+    THEN RAISE EXCEPTION 'invalid source record' USING ERRCODE='22023'; END IF;
+    IF (v_item->>'intervalMinutes')::integer NOT BETWEEN 15 AND 10080
+    THEN RAISE EXCEPTION 'invalid source interval' USING ERRCODE='22023'; END IF;
+    IF to_char((v_item->>'reviewedAt')::date,'YYYY-MM-DD') <> v_item->>'reviewedAt'
+    THEN RAISE EXCEPTION 'invalid source review date' USING ERRCODE='22023'; END IF;
+    FOREACH v_key IN ARRAY ARRAY['baseUrl','termsUrl'] LOOP
+      v_url:=v_item->>v_key;
+      IF length(v_url) NOT BETWEEN 18 AND 512
+         OR v_url !~ '^https://[a-z0-9-]+([.][a-z0-9-]+)+(/[^?#%:@\\]*)?$'
+         OR v_url ~ '[[:space:][:cntrl:]]'
+         OR (v_key='baseUrl' AND right(v_url,1)<>'/')
+      THEN RAISE EXCEPTION 'invalid source URL' USING ERRCODE='22023'; END IF;
+      v_host:=split_part(split_part(v_url,'https://',2),'/',1);
+      IF length(v_host)>253
+        OR v_host ~ '^[0-9]+([.][0-9]+){3}$'
+        OR v_host ~ '[.](local|internal|localhost)$'
+        OR EXISTS(
+          SELECT 1 FROM unnest(string_to_array(v_host,'.')) AS host_label
+          WHERE length(host_label)>63 OR host_label !~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'
+        )
+      THEN RAISE EXCEPTION 'invalid source hostname' USING ERRCODE='22023'; END IF;
+    END LOOP;
+  END LOOP;
+  IF (SELECT count(DISTINCT entry->>'id') FROM jsonb_array_elements(p_sources) AS entry)<>v_count
+    OR (SELECT count(DISTINCT entry->>'baseUrl') FROM jsonb_array_elements(p_sources) AS entry)<>v_count
+  THEN RAISE EXCEPTION 'duplicate source' USING ERRCODE='22023'; END IF;
+
+  SELECT value INTO v_old_target FROM jsonb_array_elements(v_previous) AS value
+    WHERE value->>'id'=p_source_id;
+  SELECT value INTO v_new_target FROM jsonb_array_elements(p_sources) AS value
+    WHERE value->>'id'=p_source_id;
+  v_old_others:=COALESCE(
+    (SELECT jsonb_agg(value ORDER BY value->>'id')
+     FROM jsonb_array_elements(v_previous) AS value WHERE value->>'id'<>p_source_id),
+    '[]'::jsonb);
+  v_new_others:=COALESCE(
+    (SELECT jsonb_agg(value ORDER BY value->>'id')
+     FROM jsonb_array_elements(p_sources) AS value WHERE value->>'id'<>p_source_id),
+    '[]'::jsonb);
+  v_review_date:=to_char(p_recorded_at AT TIME ZONE 'UTC','YYYY-MM-DD');
+
+  IF v_new_target IS NULL OR v_old_others IS DISTINCT FROM v_new_others
+    OR v_new_target->>'reviewedAt' IS DISTINCT FROM v_review_date
+  THEN RAISE EXCEPTION 'source state transition denied' USING ERRCODE='22023'; END IF;
+  IF p_action='create_pending' THEN
+    IF v_old_target IS NOT NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)+1
+       OR v_new_target->>'status'<>'pending'
+    THEN RAISE EXCEPTION 'create transition denied' USING ERRCODE='22023'; END IF;
+  ELSIF p_action='replace_pending' THEN
+    IF v_old_target IS NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)
+       OR v_new_target->>'status'<>'pending'
+    THEN RAISE EXCEPTION 'replace transition denied' USING ERRCODE='22023'; END IF;
+  ELSE
+    IF v_old_target IS NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)
+      OR (v_old_target - 'status' - 'reviewedAt') IS DISTINCT FROM
+         (v_new_target - 'status' - 'reviewedAt')
+    THEN RAISE EXCEPTION 'review metadata change denied' USING ERRCODE='22023'; END IF;
+    IF (p_action='approve' AND
+        (v_old_target->>'status'<>'pending' OR v_new_target->>'status'<>'approved'))
+       OR (p_action='block' AND
+        (v_old_target->>'status'='blocked' OR v_new_target->>'status'<>'blocked'))
+       OR (p_action='reopen' AND
+        (v_old_target->>'status'<>'blocked' OR v_new_target->>'status'<>'pending'))
+    THEN RAISE EXCEPTION 'review status transition denied' USING ERRCODE='22023'; END IF;
+  END IF;
+
+  UPDATE vns.admin_source_registry SET revision=p_next,sources=p_sources
+    WHERE singleton=true AND revision=p_expected;
+  IF NOT FOUND THEN RETURN false; END IF;
+  INSERT INTO vns.admin_source_audit
+    (revision,source_id,action,editor_id,editor_username,editor_auth_version,recorded_at)
+    VALUES(p_next,p_source_id,p_action,p_editor_id,v_username,p_auth_version,p_recorded_at);
+  RETURN true;
+END;
+$guard$;
+COMMENT ON FUNCTION vns.admin_commit_source_registry(
+ bigint,bigint,jsonb,text,text,uuid,integer,timestamptz) IS
+ 'CI-only: locked named admin, CAS, exact source schema, one-source status transition and atomic audit. Not a substitute for real session authentication.';
+INSERT INTO vns.schema_migrations(version) VALUES ('0021_source_transition_guard');
+COMMIT;
