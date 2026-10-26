@@ -1,0 +1,68 @@
+# Optional overlay. Never included by the default docker compose command.
+# Operator MUST use both --profile data and --profile feed-observation.
+# A successful build DOES NOT authorize contacting real news sources.
+services:
+  feed-observer:
+    profiles: [feed-observation]
+    image: vns-worker:local
+    entrypoint: ["node", "apps/worker/dist/feed-observe-once.js", "--once"]
+    restart: "no"
+    init: true
+    read_only: true
+    user: node
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 96
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.50
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m
+    secrets:
+      - vns_feed_db_password
+      - vns_feed_redis_password
+      - reviewed_research_sources
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VNS_FEED_RUNTIME_ENABLED: "${VNS_FEED_RUNTIME_ENABLED:-false}"
+      VNS_FEED_RUNTIME_OPERATOR_ACK: "${VNS_FEED_RUNTIME_OPERATOR_ACK:-false}"
+      VNS_FEED_RIGHTS_ATTESTED: "${VNS_FEED_RIGHTS_ATTESTED:-false}"
+      VNS_FEED_NETWORK_APPROVED: "${VNS_FEED_NETWORK_APPROVED:-false}"
+      VNS_FEED_RUNTIME_MODE: "${VNS_FEED_RUNTIME_MODE:-disabled}"
+      VNS_FEED_OFFLINE_COMPOSITION_ENABLED: "${VNS_FEED_OFFLINE_COMPOSITION_ENABLED:-false}"
+      VNS_FEED_OFFLINE_OPERATOR_ACK: "${VNS_FEED_OFFLINE_OPERATOR_ACK:-false}"
+      VNS_FEED_QUEUE_CONTRACT_ENABLED: "${VNS_FEED_QUEUE_CONTRACT_ENABLED:-false}"
+      VNS_FEED_QUEUE_OPERATOR_ACK: "${VNS_FEED_QUEUE_OPERATOR_ACK:-false}"
+      VNS_FEED_BULLMQ_BRIDGE_ENABLED: "${VNS_FEED_BULLMQ_BRIDGE_ENABLED:-false}"
+      VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK: "${VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK:-false}"
+      VNS_SOURCE_FETCH_ENABLED: "${VNS_SOURCE_FETCH_ENABLED:-false}"
+      VNS_ALLOWED_SOURCE_HOSTS: "${VNS_ALLOWED_SOURCE_HOSTS:-}"
+      VNS_FEED_QUEUE_NAME: vns-feed-poll
+      VNS_FEED_REGISTRY_FILE: /run/secrets/reviewed_research_sources.json
+      VNS_FEED_DB_PASSWORD_FILE: /run/secrets/vns_feed_db_password
+      VNS_FEED_REDIS_PASSWORD_FILE: /run/secrets/vns_feed_redis_password
+      VNS_FEED_DB_HOST: postgres
+      VNS_FEED_REDIS_HOST: redis
+      VNS_FEED_DB_USER: "${VNS_FEED_DB_USER:-}"
+      VNS_FEED_REDIS_USER: "${VNS_FEED_REDIS_USER:-}"
+    networks:
+      - backend
+      - feed_egress
+
+# Separate egress network is needed because the regular backend is internal.
+# Only the dedicated feed observer connects here; no ports are published.
+networks:
+  feed_egress: {}
+
+secrets:
+  vns_feed_db_password:
+    file: ./secrets/vns_feed_db_password
+  vns_feed_redis_password:
+    file: ./secrets/vns_feed_redis_password
+  reviewed_research_sources:
+    file: ./secrets/reviewed_research_sources.json
