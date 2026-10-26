@@ -114,7 +114,9 @@ export function createDormantFeedQueueContract(
     !Array.isArray(scheduler.sourceIds) ||
     scheduler.sourceIds.length < 3 ||
     scheduler.sourceIds.length > 5 ||
-    scheduler.sourceIds.some((id) => typeof id !== "string" || !/^[a-z][a-z0-9_-]{2,40}$/.test(id)) ||
+    scheduler.sourceIds.some(
+      (id) => typeof id !== "string" || !/^[a-z][a-z0-9_-]{2,40}$/.test(id),
+    ) ||
     new Set(scheduler.sourceIds).size !== scheduler.sourceIds.length
   ) {
     throw new Error("Feed queue ports not approved");

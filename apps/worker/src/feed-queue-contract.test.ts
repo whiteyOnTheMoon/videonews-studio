@@ -124,7 +124,10 @@ test("shared/probe/research queue jobs and forged URLs or stale slots are reject
     { ...valid, queueName: "vns-research" },
     { ...valid, name: "probe" },
     { ...valid, id: "arbitrary" },
-    { ...valid, data: { kind: FEED_TICK_JOB_NAME, slot: Math.floor(START / 900000), url: "https://bad" } },
+    {
+      ...valid,
+      data: { kind: FEED_TICK_JOB_NAME, slot: Math.floor(START / 900000), url: "https://bad" },
+    },
     { ...valid, data: { kind: FEED_TICK_JOB_NAME, slot: -1 } },
     { ...valid, data: { kind: "render", slot: Math.floor(START / 900000) } },
     { ...valid, data: {} },
@@ -133,10 +136,7 @@ test("shared/probe/research queue jobs and forged URLs or stale slots are reject
     await assert.rejects(service.process(item, now), /delivery refused/);
   }
   await assert.rejects(service.process(valid, new Date(START - 1)), /delivery refused/);
-  await assert.rejects(
-    service.process(valid, new Date(START + 30 * 60000)),
-    /delivery refused/,
-  );
+  await assert.rejects(service.process(valid, new Date(START + 30 * 60000)), /delivery refused/);
   assert.equal(f.ticks, 0);
 });
 
@@ -157,7 +157,12 @@ test("fail-closed flags and incorrect queue name cannot schedule anything", asyn
   }
   const f = fixture();
   assert.throws(
-    () => createDormantFeedQueueContract({ ...ENV, VNS_FEED_QUEUE_NAME: "vns-jobs" }, f.scheduler, f.queue),
+    () =>
+      createDormantFeedQueueContract(
+        { ...ENV, VNS_FEED_QUEUE_NAME: "vns-jobs" },
+        f.scheduler,
+        f.queue,
+      ),
     /disabled/,
   );
   assert.throws(
@@ -165,7 +170,8 @@ test("fail-closed flags and incorrect queue name cannot schedule anything", asyn
     /ports not approved/,
   );
   assert.throws(
-    () => createDormantFeedQueueContract(ENV, { ...f.scheduler, sourceIds: IDS.slice(0, 2) }, f.queue),
+    () =>
+      createDormantFeedQueueContract(ENV, { ...f.scheduler, sourceIds: IDS.slice(0, 2) }, f.queue),
     /ports not approved/,
   );
   assert.equal(f.records.length, 0);
@@ -204,7 +210,8 @@ test("execution and enqueue errors are sanitized; concurrent delivery is refused
   const failedEnqueue = createDormantFeedQueueContract(ENV, f.scheduler, queue);
   await assert.rejects(
     failedEnqueue.enqueue(new Date(START)),
-    (error: unknown) => error instanceof Error && error.message === "Feed queue enqueue unavailable",
+    (error: unknown) =>
+      error instanceof Error && error.message === "Feed queue enqueue unavailable",
   );
 
   let release: (() => void) | undefined;
