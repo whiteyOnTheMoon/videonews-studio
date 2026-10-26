@@ -8,8 +8,10 @@ REVOKE EXECUTE ON FUNCTION vns.commit_editorial_profiles(bigint,jsonb,uuid,integ
   vns.append_editorial_timeline(uuid,text,uuid,integer,text,text,jsonb),
   vns.read_editorial_timeline(uuid,uuid,integer,integer)
   FROM vns_p2_named_executor;
-REVOKE SELECT ON vns.editor_db_principals,vns.editor_accounts,
+REVOKE SELECT ON vns.editor_db_principals,
   vns.editorial_profile_registry FROM vns_p2_named_executor;
+REVOKE SELECT(id,active,role,auth_version) ON vns.editor_accounts
+  FROM vns_p2_named_executor;
 DROP TABLE vns.editor_db_principals;
 REVOKE USAGE ON SCHEMA vns FROM vns_p2_named_client,vns_p2_named_executor;
 DROP ROLE vns_p2_named_client;
