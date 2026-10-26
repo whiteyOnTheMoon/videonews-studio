@@ -51,3 +51,24 @@ P2-10 bis zur separaten Abnahme offen.
 hartkodierte echte News-Anbieter, Modelle/Provider, produktive Timer oder
 Login-Vergabe. Aktivierungen müssen durch explizit geprüfte Operator-
 Konfiguration und einen getrennten Rollout erfolgen.
+
+## Separater, default-off BullMQ-Bridge-Vertrag
+
+`apps/worker/src/feed-bullmq-bridge.ts` kapselt jetzt den tatsächlich
+getesteten Queue-/Worker-Aufbau. Er verwendet den eigenen Prefix
+`bull:vns:feed` und die Queue `vns-feed-poll` (getrennt von bestehenden
+Probe- und Research-Queues), strikt `concurrency: 1`, ausschließlich
+injizierte Redis-Verbindungen und die vorhandene Feed-Job-Validierung.
+Zusätzlich zu den bestehenden Offline-/Queue-Gates müssen die beiden
+Flags `VNS_FEED_BULLMQ_BRIDGE_ENABLED=true` und
+`VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK=true` gesetzt sein. Fehlende
+Schalter oder ungültige Ports werden vor dem Aufbau von BullMQ-Objekten
+zurückgewiesen.
+
+Die Bridge besitzt **keinen automatischen Zeitgeber** und wird weiterhin
+weder von `apps/worker/src/index.ts` noch von der produktiven
+Docker-Komposition importiert. Die Redis-Zugänge werden weder erzeugt
+noch aus einer hartkodierten Quelle bezogen. Der bestehende CI-Test
+verwendet diese Bridge jetzt selbst, statt einen abweichenden Test-Worker
+manuell zu konstruieren. Das ist eine Integration des Anwendungscodes,
+**keine** Freischaltung eines produktiven Services.
