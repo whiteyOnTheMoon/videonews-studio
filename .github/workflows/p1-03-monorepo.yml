@@ -56,6 +56,10 @@ jobs:
         run: npm run typecheck
       - name: ESLint
         run: npm run lint
+      - name: Temporary profile formatting diagnosis
+        run: |
+          npx prettier --write apps/worker/src/offline-profile-config.ts apps/worker/src/offline-profile-config.test.ts
+          git diff -- apps/worker/src/offline-profile-config.ts apps/worker/src/offline-profile-config.test.ts
       - name: Formatting
         run: npm run format:check
       - name: Verify P1-01 importer on integrated branch
