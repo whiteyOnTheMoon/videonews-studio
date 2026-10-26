@@ -21,19 +21,24 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function exact(value: Record<string, unknown>, names: readonly string[]): boolean {
-  return Object.keys(value).length === names.length && names.every((key) => Object.hasOwn(value, key));
+  return (
+    Object.keys(value).length === names.length && names.every((key) => Object.hasOwn(value, key))
+  );
 }
 export function validApprovalHost(value: unknown): value is string {
   if (typeof value !== "string" || value.length < 4 || value.length > 253 || !HOST.test(value)) {
     return false;
   }
   if (/\.(?:localhost|local|internal|onion)$/.test(value)) return false;
-  return value.split(".").every((part) =>
-    part.length <= 63 &&
-    !part.startsWith("-") &&
-    !part.endsWith("-") &&
-    !part.startsWith("xn--"),
-  );
+  return value
+    .split(".")
+    .every(
+      (part) =>
+        part.length <= 63 &&
+        !part.startsWith("-") &&
+        !part.endsWith("-") &&
+        !part.startsWith("xn--"),
+    );
 }
 export function parseHostApprovalCommand(value: unknown): HostApprovalCommand | null {
   if (
@@ -50,7 +55,8 @@ export function parseHostApprovalCommand(value: unknown): HostApprovalCommand | 
     value.reason.length > 300 ||
     value.reason.trim() !== value.reason ||
     [...value.reason].some((letter) => letter.charCodeAt(0) < 32)
-  ) return null;
+  )
+    return null;
   return {
     action: value.action,
     expectedRevision: value.expectedRevision as number,
@@ -68,7 +74,8 @@ export function parseHostApprovalView(value: unknown): HostApprovalView | null {
     value.feedActive !== false ||
     !Array.isArray(value.approvedHosts) ||
     value.approvedHosts.length > 5
-  ) return null;
+  )
+    return null;
   const hosts: string[] = [];
   for (const item of value.approvedHosts as unknown[]) {
     if (!validApprovalHost(item) || hosts.includes(item)) return null;
@@ -96,9 +103,11 @@ function respond(status: number, payload: object): Response {
 }
 async function boundedJson(request: Request): Promise<unknown> {
   if (
-    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
+      "application/json" ||
     request.headers.has("content-encoding")
-  ) return null;
+  )
+    return null;
   const declared = request.headers.get("content-length");
   if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_BODY)) {
     return null;
@@ -158,9 +167,8 @@ export async function dormantHostApprovalProxy(
     if (!object(identity) || identity.role !== "admin") {
       return respond(403, { error: "forbidden" });
     }
-    const command = request.method === "POST"
-      ? parseHostApprovalCommand(await boundedJson(request))
-      : null;
+    const command =
+      request.method === "POST" ? parseHostApprovalCommand(await boundedJson(request)) : null;
     if (request.method === "POST" && !command) {
       return respond(400, { error: "invalid_request" });
     }
