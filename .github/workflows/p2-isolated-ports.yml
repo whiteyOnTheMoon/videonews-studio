@@ -1,0 +1,78 @@
+name: P2 isolated Redis PostgreSQL handoff
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/**"
+      - "db/migrations/**"
+      - "scripts/ci_p2_integrated_ports.mjs"
+      - ".github/workflows/p2-isolated-ports.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-ports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vns_p2_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_only_postgres_for_disposable_runner
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vns_p2_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      VNS_P2_ISOLATED_PORT_TEST: "true"
+      VNS_P2_CI_PG_PASSWORD: ci_only_postgres_for_disposable_runner
+      VNS_P2_CI_FEED_PASSWORD: ci_only_feed_for_disposable_runner
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: vns_p2_ci
+      PGUSER: postgres
+      PGPASSWORD: ci_only_postgres_for_disposable_runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check code formatting and lint
+        run: |
+          npm run format:check
+          npm run lint
+      - name: Compile shared and worker contracts
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Build complete disposable schema and isolated least-privilege login
+        run: |
+          set -euo pipefail
+          for migration in db/migrations/*.up.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
+          done
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE vns_p2_ci_feed LOGIN INHERIT PASSWORD 'ci_only_feed_for_disposable_runner';
+          GRANT vns_feed_poll_writer TO vns_p2_ci_feed;
+          GRANT USAGE ON SCHEMA vns TO vns_p2_ci_feed;
+          SQL
+      - name: Verify Redis queue, PostgreSQL persistence and never-publish review
+        run: node --test scripts/ci_p2_integrated_ports.mjs
