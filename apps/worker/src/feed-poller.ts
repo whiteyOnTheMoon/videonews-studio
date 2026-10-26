@@ -1,7 +1,4 @@
-import {
-  approvedSourceForUrl,
-  type RegisteredResearchSource,
-} from "./source-registry.js";
+import { approvedSourceForUrl, type RegisteredResearchSource } from "./source-registry.js";
 import { isPlausiblePublicSourceUrl } from "./source-policy.js";
 
 export interface FeedItem {
@@ -58,10 +55,9 @@ const MAX_FEED_CHARS = 131072;
 const MAX_ITEMS = 20;
 
 function textField(xml: string, name: string): string | null {
-  const match = new RegExp(
-    "<" + name + "(?:\\s[^<>]*)?>([\\s\\S]*?)</" + name + ">",
-    "i",
-  ).exec(xml);
+  const match = new RegExp("<" + name + "(?:\\s[^<>]*)?>([\\s\\S]*?)</" + name + ">", "i").exec(
+    xml,
+  );
   if (!match) return null;
   let value = match[1]?.trim() ?? "";
   if (value.startsWith("<![CDATA[") && value.endsWith("]]>")) {
@@ -140,10 +136,10 @@ function parseXmlItems(body: string, source: RegisteredResearchSource): unknown[
     const headline = textField(fragment, "title");
     const anchor = rss
       ? textField(fragment, "link")
-      : /<link\s+[^>]*href="([^"]+)"[^>]*\/?>/i.exec(fragment)?.[1] ?? null;
+      : (/<link\s+[^>]*href="([^"]+)"[^>]*\/?>/i.exec(fragment)?.[1] ?? null);
     const publishedAt = rss
       ? textField(fragment, "pubDate")
-      : textField(fragment, "updated") ?? textField(fragment, "published");
+      : (textField(fragment, "updated") ?? textField(fragment, "published"));
     records.push({ headline, url: anchor, publishedAt });
   }
   if (records.length === 0) throw new Error("Feed has no supported items");

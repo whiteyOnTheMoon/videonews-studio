@@ -43,17 +43,21 @@ const registry = () =>
   parseReviewedSourceRegistry(JSON.stringify({ version: 1, sources: records }), policy);
 const rssBody =
   '<rss version="2.0"><channel>' +
-  '<item><title>Regional bus funding announced</title><link>' +
-  prefix + 'rss/news-1</link><pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>' +
-  '<item><title>Regional bus funding announced</title><link>' +
-  prefix + 'rss/news-1</link></item>' +
-  '<item><title>Blocked candidate must be ignored</title><link>' +
-  prefix + 'blocked/no</link></item></channel></rss>';
+  "<item><title>Regional bus funding announced</title><link>" +
+  prefix +
+  "rss/news-1</link><pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>" +
+  "<item><title>Regional bus funding announced</title><link>" +
+  prefix +
+  "rss/news-1</link></item>" +
+  "<item><title>Blocked candidate must be ignored</title><link>" +
+  prefix +
+  "blocked/no</link></item></channel></rss>";
 const atomBody =
   '<feed xmlns="http://www.w3.org/2005/Atom"><entry>' +
   '<title>Regional railway policy adopted</title><link href="' +
-  prefix + 'atom/news-2" rel="alternate" />' +
-  '<updated>2026-10-25T12:00:00Z</updated></entry></feed>';
+  prefix +
+  'atom/news-2" rel="alternate" />' +
+  "<updated>2026-10-25T12:00:00Z</updated></entry></feed>";
 const apiBody = JSON.stringify({
   items: [
     {
@@ -137,7 +141,10 @@ test("approved feeds poll with ETags and an enforced minimum interval", async ()
     { sourceId: "feed_atom", status: "ingested", newItems: 1 },
     { sourceId: "feed_api", status: "ingested", newItems: 1 },
   ]);
-  assert.deepEqual(f.requested.map((x) => x.id), ["feed_rss", "feed_atom", "feed_api"]);
+  assert.deepEqual(
+    f.requested.map((x) => x.id),
+    ["feed_rss", "feed_atom", "feed_api"],
+  );
   assert.equal(f.items.size, 3);
   assert.deepEqual(await poller.poll(at(59)), []);
   for (const id of ["feed_rss", "feed_atom", "feed_api"]) {
@@ -150,11 +157,10 @@ test("approved feeds poll with ETags and an enforced minimum interval", async ()
     };
   }
   assert.ok((await poller.poll(at(60))).every((x) => x.status === "not_modified"));
-  assert.deepEqual(f.requested.slice(3).map((x) => x.validators.etag), [
-    '"rss-v1"',
-    '"atom-v1"',
-    '"api-v1"',
-  ]);
+  assert.deepEqual(
+    f.requested.slice(3).map((x) => x.validators.etag),
+    ['"rss-v1"', '"atom-v1"', '"api-v1"'],
+  );
   f.responses.feed_rss = rss;
   f.responses.feed_atom = atom;
   f.responses.feed_api = api;
@@ -173,12 +179,13 @@ test("unknown and blocked sources never trigger a transport call", async () => {
     /three to five reviewed sources/,
   );
   assert.throws(
-    () => createDormantFeedPoller(
-      registry().map((src) => ({ ...src, status: "pending" as const })),
-      true,
-      f.store,
-      f.transport,
-    ),
+    () =>
+      createDormantFeedPoller(
+        registry().map((src) => ({ ...src, status: "pending" as const })),
+        true,
+        f.store,
+        f.transport,
+      ),
     /three to five reviewed sources/,
   );
   assert.equal(f.requested.length, 0);
@@ -209,16 +216,14 @@ test("unsafe XML, invalid media, and unbounded feeds fail closed", () => {
   const src = sources[0]!;
   for (const body of [
     '<!DOCTYPE rss [<!ENTITY external SYSTEM "file:///etc/passwd">]>' + rssBody,
-    '<rss><item><title>Bad metadata entry</title></item></rss>',
-    '<rss><channel><item><title>Broken entry</title></channel></rss>',
-    '<feed><entry><title>Wrong feed type</title></entry></feed>',
+    "<rss><item><title>Bad metadata entry</title></item></rss>",
+    "<rss><channel><item><title>Broken entry</title></channel></rss>",
+    "<feed><entry><title>Wrong feed type</title></entry></feed>",
   ]) {
     assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, body }));
   }
   assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, mediaType: "text/html" }));
-  assert.throws(() =>
-    decodeApprovedFeed(src, sources, { ...rss, body: "x".repeat(131073) }),
-  );
+  assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, body: "x".repeat(131073) }));
   assert.throws(() =>
     decodeApprovedFeed(src, sources, {
       ...rss,
