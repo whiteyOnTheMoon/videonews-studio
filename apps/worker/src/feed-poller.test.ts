@@ -55,11 +55,13 @@ const atomBody =
   prefix + 'atom/news-2" rel="alternate" />' +
   '<updated>2026-10-25T12:00:00Z</updated></entry></feed>';
 const apiBody = JSON.stringify({
-  items: [{
-    url: prefix + "api/news-3",
-    headline: "City publishes transport strategy",
-    publishedAt: "2026-10-25T12:00:00Z",
-  }],
+  items: [
+    {
+      url: prefix + "api/news-3",
+      headline: "City publishes transport strategy",
+      publishedAt: "2026-10-25T12:00:00Z",
+    },
+  ],
 });
 const rss: FeedResponse = {
   status: 200,
@@ -88,7 +90,9 @@ function fixture() {
   const items = new Map<string, FeedItem>();
   const requested: Array<{ id: string; validators: FeedValidators }> = [];
   const responses: Record<string, FeedResponse> = {
-    feed_rss: rss, feed_atom: atom, feed_api: api,
+    feed_rss: rss,
+    feed_atom: atom,
+    feed_api: api,
   };
   const store: FeedPollStore = {
     async claim(id, now, minutes) {
@@ -105,7 +109,10 @@ function fixture() {
       for (const item of additions) {
         assert.equal(item.reviewStatus, "candidate");
         const key = id + "|" + item.url;
-        if (!items.has(key)) { items.set(key, item); created++; }
+        if (!items.has(key)) {
+          items.set(key, item);
+          created++;
+        }
       }
       claims.get(id)!.validators = validators;
       return created;
@@ -135,12 +142,18 @@ test("approved feeds poll with ETags and an enforced minimum interval", async ()
   assert.deepEqual(await poller.poll(at(59)), []);
   for (const id of ["feed_rss", "feed_atom", "feed_api"]) {
     f.responses[id] = {
-      status: 304, mediaType: null, body: "", etag: null, lastModified: null,
+      status: 304,
+      mediaType: null,
+      body: "",
+      etag: null,
+      lastModified: null,
     };
   }
   assert.ok((await poller.poll(at(60))).every((x) => x.status === "not_modified"));
   assert.deepEqual(f.requested.slice(3).map((x) => x.validators.etag), [
-    '"rss-v1"', '"atom-v1"', '"api-v1"',
+    '"rss-v1"',
+    '"atom-v1"',
+    '"api-v1"',
   ]);
   f.responses.feed_rss = rss;
   f.responses.feed_atom = atom;
@@ -162,7 +175,9 @@ test("unknown and blocked sources never trigger a transport call", async () => {
   assert.throws(
     () => createDormantFeedPoller(
       registry().map((src) => ({ ...src, status: "pending" as const })),
-      true, f.store, f.transport,
+      true,
+      f.store,
+      f.transport,
     ),
     /three to five reviewed sources/,
   );
@@ -176,13 +191,15 @@ test("unknown and blocked sources never trigger a transport call", async () => {
 test("RSS metadata is deduplicated and blocked article scopes are excluded", () => {
   const sources = registry();
   const entries = decodeApprovedFeed(sources[0]!, sources, rss);
-  assert.deepEqual(entries, [{
-    sourceId: "feed_rss",
-    url: prefix + "rss/news-1",
-    headline: "Regional bus funding announced",
-    publishedAt: "2026-10-25T09:00:00.000Z",
-    reviewStatus: "candidate",
-  }]);
+  assert.deepEqual(entries, [
+    {
+      sourceId: "feed_rss",
+      url: prefix + "rss/news-1",
+      headline: "Regional bus funding announced",
+      publishedAt: "2026-10-25T09:00:00.000Z",
+      reviewStatus: "candidate",
+    },
+  ]);
   assert.equal(JSON.stringify(entries).includes("Blocked candidate"), false);
   assert.equal(JSON.stringify(entries).includes("description"), false);
 });

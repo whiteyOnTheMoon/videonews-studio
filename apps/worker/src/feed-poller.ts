@@ -58,7 +58,10 @@ const MAX_FEED_CHARS = 131072;
 const MAX_ITEMS = 20;
 
 function textField(xml: string, name: string): string | null {
-  const match = new RegExp("<" + name + "(?:\\s[^<>]*)?>([\\s\\S]*?)</" + name + ">", "i").exec(xml);
+  const match = new RegExp(
+    "<" + name + "(?:\\s[^<>]*)?>([\\s\\S]*?)</" + name + ">",
+    "i",
+  ).exec(xml);
   if (!match) return null;
   let value = match[1]?.trim() ?? "";
   if (value.startsWith("<![CDATA[") && value.endsWith("]]>")) {
@@ -80,13 +83,21 @@ function textField(xml: string, name: string): string | null {
   return value.length > 0 && value.length <= 200 ? value : null;
 }
 
+function hasControlCharacters(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127;
+  });
+}
+
 function validTitle(value: unknown): value is string {
   return (
     typeof value === "string" &&
     value === value.trim() &&
     value.length >= 8 &&
     value.length <= 200 &&
-    !/[<>\u0000-\u001f\u007f]/.test(value)
+    !/[<>]/.test(value) &&
+    !hasControlCharacters(value)
   );
 }
 
@@ -185,7 +196,9 @@ export function decodeApprovedFeed(
           : [];
   if (!mediaType || !permitted.includes(mediaType)) throw new Error("Feed media type refused");
   const raw =
-    source.access === "official_api" ? parseJsonItems(response.body) : parseXmlItems(response.body, source);
+    source.access === "official_api"
+      ? parseJsonItems(response.body)
+      : parseXmlItems(response.body, source);
   const items: FeedItem[] = [];
   const seen = new Set<string>();
   for (const value of raw) {
@@ -213,7 +226,7 @@ function safeValidator(value: unknown): string | null {
   if (typeof value !== "string" || value.length < 1 || value.length > 200) {
     throw new Error("Feed cache validator invalid");
   }
-  if (/[\u0000-\u001f\u007f]/.test(value)) throw new Error("Feed cache validator invalid");
+  if (hasControlCharacters(value)) throw new Error("Feed cache validator invalid");
   return value;
 }
 
