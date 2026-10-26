@@ -16,7 +16,7 @@
     "typecheck": "npm run build --workspace @vns/shared && npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/api/src/admin-source-registry.ts apps/api/src/admin-source-registry.test.ts apps/web/src/app/admin/news-source-editor.tsx apps/web/src/app/admin/news-source-editor.test.tsx && git diff --no-color -- apps/api/src/admin-source-registry.ts apps/api/src/admin-source-registry.test.ts apps/web/src/app/admin/news-source-editor.tsx apps/web/src/app/admin/news-source-editor.test.tsx && git diff --exit-code -- apps/api/src/admin-source-registry.ts apps/api/src/admin-source-registry.test.ts apps/web/src/app/admin/news-source-editor.tsx apps/web/src/app/admin/news-source-editor.test.tsx && prettier --check .",
+    "format:check": "prettier --check .",
     "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker && npm run test --workspace @vns/web"
   },
   "devDependencies": {

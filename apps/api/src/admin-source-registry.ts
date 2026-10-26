@@ -53,7 +53,13 @@ export interface SourceAdminStore {
 
 const SOURCE_ID = /^[a-z][a-z0-9_-]{2,40}$/;
 const DRAFT_FIELDS = [
-  "access", "baseUrl", "id", "intervalMinutes", "licenseNotes", "termsUrl", "usage",
+  "access",
+  "baseUrl",
+  "id",
+  "intervalMinutes",
+  "licenseNotes",
+  "termsUrl",
+  "usage",
 ];
 const RECORD_FIELDS = [...DRAFT_FIELDS, "reviewedAt", "status"];
 const MAX_BODY_BYTES = 4096;
@@ -62,7 +68,9 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function exact(value: Record<string, unknown>, fields: readonly string[]): boolean {
-  return Object.keys(value).length === fields.length && fields.every((key) => Object.hasOwn(value, key));
+  return (
+    Object.keys(value).length === fields.length && fields.every((key) => Object.hasOwn(value, key))
+  );
 }
 function safeUrl(value: unknown, trailingSlash: boolean): value is string {
   if (typeof value !== "string" || value.length < 18 || value.length > 512) return false;
@@ -81,7 +89,15 @@ function safeUrl(value: unknown, trailingSlash: boolean): value is string {
       (!trailingSlash || url.pathname.endsWith("/")) &&
       host.length <= 253 &&
       /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(host) &&
-      host.split(".").every((label) => label.length > 0 && label.length <= 63 && !label.startsWith("-") && !label.endsWith("-")) &&
+      host
+        .split(".")
+        .every(
+          (label) =>
+            label.length > 0 &&
+            label.length <= 63 &&
+            !label.startsWith("-") &&
+            !label.endsWith("-"),
+        ) &&
       !/^(?:[0-9]+\.){3}[0-9]+$/.test(host) &&
       !host.endsWith(".local") &&
       !host.endsWith(".internal") &&
@@ -113,7 +129,8 @@ export function validateSourceDraft(value: unknown): SourceDraft | null {
     value.licenseNotes.length < 12 ||
     value.licenseNotes.length > 300 ||
     Array.from(value.licenseNotes).some((char) => char.charCodeAt(0) < 32)
-  ) return null;
+  )
+    return null;
   return {
     id: value.id,
     baseUrl: value.baseUrl,
@@ -125,9 +142,14 @@ export function validateSourceDraft(value: unknown): SourceDraft | null {
   };
 }
 export function validateSourceSnapshot(value: unknown): SourceSnapshot {
-  if (!object(value) || !exact(value, ["revision", "sources"]) ||
-    !Number.isSafeInteger(value.revision) || (value.revision as number) < 0 ||
-    !Array.isArray(value.sources) || value.sources.length > 20) {
+  if (
+    !object(value) ||
+    !exact(value, ["revision", "sources"]) ||
+    !Number.isSafeInteger(value.revision) ||
+    (value.revision as number) < 0 ||
+    !Array.isArray(value.sources) ||
+    value.sources.length > 20
+  ) {
     throw new Error("Source registry unavailable");
   }
   const ids = new Set<string>();
@@ -144,7 +166,8 @@ export function validateSourceSnapshot(value: unknown): SourceSnapshot {
       !dateString(row.reviewedAt) ||
       ids.has(draft.id) ||
       urls.has(draft.baseUrl)
-    ) throw new Error("Source registry unavailable");
+    )
+      throw new Error("Source registry unavailable");
     ids.add(draft.id);
     urls.add(draft.baseUrl);
     sources.push({
@@ -156,8 +179,12 @@ export function validateSourceSnapshot(value: unknown): SourceSnapshot {
   return { revision: value.revision as number, sources };
 }
 export function parseSourceAdminCommand(value: unknown): SourceAdminCommand | null {
-  if (!object(value) || !Number.isSafeInteger(value.expectedRevision) ||
-      (value.expectedRevision as number) < 0) return null;
+  if (
+    !object(value) ||
+    !Number.isSafeInteger(value.expectedRevision) ||
+    (value.expectedRevision as number) < 0
+  )
+    return null;
   if (value.action === "create_pending" || value.action === "replace_pending") {
     if (!exact(value, ["action", "expectedRevision", "source"])) return null;
     const source = validateSourceDraft(value.source);
@@ -165,9 +192,12 @@ export function parseSourceAdminCommand(value: unknown): SourceAdminCommand | nu
       ? { action: value.action, expectedRevision: value.expectedRevision as number, source }
       : null;
   }
-  if (["approve", "block", "reopen"].includes(value.action as string) &&
-      exact(value, ["action", "expectedRevision", "sourceId"]) &&
-      typeof value.sourceId === "string" && SOURCE_ID.test(value.sourceId)) {
+  if (
+    ["approve", "block", "reopen"].includes(value.action as string) &&
+    exact(value, ["action", "expectedRevision", "sourceId"]) &&
+    typeof value.sourceId === "string" &&
+    SOURCE_ID.test(value.sourceId)
+  ) {
     return {
       action: value.action as "approve" | "block" | "reopen",
       expectedRevision: value.expectedRevision as number,
@@ -182,22 +212,32 @@ export function applySourceAdminCommand(
   command: SourceAdminCommand,
   reviewDate: string,
 ): { next: SourceSnapshot; id: string; status: ManagedSource["status"] } | null {
-  if (!dateString(reviewDate) || current.revision !== command.expectedRevision ||
-      current.revision >= Number.MAX_SAFE_INTEGER) return null;
+  if (
+    !dateString(reviewDate) ||
+    current.revision !== command.expectedRevision ||
+    current.revision >= Number.MAX_SAFE_INTEGER
+  )
+    return null;
   const sources = current.sources.map((source) => ({ ...source }));
   let id: string;
   let status: ManagedSource["status"];
   if (command.action === "create_pending") {
     id = command.source.id;
-    if (sources.length >= 20 || sources.some((source) =>
-      source.id === id || source.baseUrl === command.source.baseUrl)) return null;
+    if (
+      sources.length >= 20 ||
+      sources.some((source) => source.id === id || source.baseUrl === command.source.baseUrl)
+    )
+      return null;
     sources.push({ ...command.source, status: "pending", reviewedAt: reviewDate });
     status = "pending";
   } else if (command.action === "replace_pending") {
     id = command.source.id;
     const index = sources.findIndex((source) => source.id === id);
-    if (index === -1 || sources.some((source) =>
-      source.id !== id && source.baseUrl === command.source.baseUrl)) return null;
+    if (
+      index === -1 ||
+      sources.some((source) => source.id !== id && source.baseUrl === command.source.baseUrl)
+    )
+      return null;
     sources[index] = { ...command.source, status: "pending", reviewedAt: reviewDate };
     status = "pending";
   } else {
@@ -222,11 +262,18 @@ export function applySourceAdminCommand(
 }
 
 async function boundedJson(request: IncomingMessage): Promise<unknown> {
-  if (request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
-      request.headers["content-encoding"]) return null;
+  if (
+    request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
+    request.headers["content-encoding"]
+  )
+    return null;
   const declared = request.headers["content-length"];
-  if (Array.isArray(declared) || (declared !== undefined &&
-      (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_BODY_BYTES))) return null;
+  if (
+    Array.isArray(declared) ||
+    (declared !== undefined &&
+      (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_BODY_BYTES))
+  )
+    return null;
   let size = 0;
   const chunks: Buffer[] = [];
   try {

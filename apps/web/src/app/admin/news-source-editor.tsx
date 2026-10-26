@@ -82,12 +82,7 @@ export default function NewsSourceEditor({
 
   function saveDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (
-      !draft.id ||
-      !draft.baseUrl ||
-      !draft.termsUrl ||
-      draft.licenseNotes.trim().length < 12
-    ) {
+    if (!draft.id || !draft.baseUrl || !draft.termsUrl || draft.licenseNotes.trim().length < 12) {
       setMessage("Bitte Pflichtfelder und Lizenzhinweise vollständig ausfüllen.");
       return;
     }
@@ -111,8 +106,8 @@ export default function NewsSourceEditor({
   return (
     <section aria-label="Nachrichtenquellen verwalten" className="admin-source-editor">
       <p role="status">
-        Neue oder bearbeitete Quellen bleiben zunächst ungeprüft. Freigabe und Sperrung
-        erfolgen ausdrücklich durch einen persönlichen Administrator.
+        Neue oder bearbeitete Quellen bleiben zunächst ungeprüft. Freigabe und Sperrung erfolgen
+        ausdrücklich durch einen persönlichen Administrator.
       </p>
       <ul>
         {sources.map((source) => (
@@ -213,9 +208,7 @@ export default function NewsSourceEditor({
           max={10080}
           step={1}
           value={draft.intervalMinutes}
-          onChange={(event) =>
-            setDraft({ ...draft, intervalMinutes: Number(event.target.value) })
-          }
+          onChange={(event) => setDraft({ ...draft, intervalMinutes: Number(event.target.value) })}
           required
           disabled={busy}
         />
@@ -255,7 +248,11 @@ export default function NewsSourceEditor({
           {editing ? "Änderung als ungeprüft speichern" : "Quelle ungeprüft anlegen"}
         </button>
       </form>
-      {message ? <p role="status" aria-live="polite">{message}</p> : null}
+      {message ? (
+        <p role="status" aria-live="polite">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }

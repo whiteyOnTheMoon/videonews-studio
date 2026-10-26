@@ -95,11 +95,21 @@ function setup() {
     handler,
     store,
     audits,
-    get state() { return state; },
-    get reads() { return reads; },
-    get identityCalls() { return identityCalls; },
-    get admissionCalls() { return admissionCalls; },
-    denyRate() { allowed = false; },
+    get state() {
+      return state;
+    },
+    get reads() {
+      return reads;
+    },
+    get identityCalls() {
+      return identityCalls;
+    },
+    get admissionCalls() {
+      return admissionCalls;
+    },
+    denyRate() {
+      allowed = false;
+    },
   };
 }
 async function serve(
@@ -110,7 +120,11 @@ async function serve(
 ) {
   const result = response();
   assert.equal(await handler.handle(request(method, body, headers), result), true);
-  return { code: result.code, data: JSON.parse(result.body) as Record<string, unknown>, headers: result.headers };
+  return {
+    code: result.code,
+    data: JSON.parse(result.body) as Record<string, unknown>,
+    headers: result.headers,
+  };
 }
 
 test("no hardcoded publisher: strict operator-entered metadata and URL policy", () => {
@@ -135,9 +149,14 @@ test("no hardcoded publisher: strict operator-entered metadata and URL policy", 
 });
 
 test("commands exclude client role, review date, active flags and forged actors", () => {
-  assert.deepEqual(parseSourceAdminCommand({
-    action: "create_pending", expectedRevision: 0, source: sample,
-  }), { action: "create_pending", expectedRevision: 0, source: sample });
+  assert.deepEqual(
+    parseSourceAdminCommand({
+      action: "create_pending",
+      expectedRevision: 0,
+      source: sample,
+    }),
+    { action: "create_pending", expectedRevision: 0, source: sample },
+  );
   for (const bad of [
     { action: "create_pending", expectedRevision: 0, source: { ...sample, status: "approved" } },
     { action: "approve", expectedRevision: 1, sourceId: sample.id, role: "admin" },
@@ -146,37 +165,72 @@ test("commands exclude client role, review date, active flags and forged actors"
     { action: "activate", expectedRevision: 0, sourceId: sample.id },
     { action: "delete", expectedRevision: 0, sourceId: sample.id },
     { action: "replace_pending", expectedRevision: 0, source: { ...sample, apiKey: "synthetic" } },
-  ]) assert.equal(parseSourceAdminCommand(bad), null);
+  ])
+    assert.equal(parseSourceAdminCommand(bad), null);
 });
 
 test("source changes always reset to pending; approvals only from explicit review", () => {
   const state = validateSourceSnapshot({ revision: 0, sources: [] });
   const create = parseSourceAdminCommand({
-    action: "create_pending", expectedRevision: 0, source: sample,
+    action: "create_pending",
+    expectedRevision: 0,
+    source: sample,
   })!;
   const first = applySourceAdminCommand(state, create, "2026-10-25")!;
   assert.equal(first.status, "pending");
   assert.equal(first.next.sources[0]?.status, "pending");
   assert.equal(applySourceAdminCommand(first.next, create, "2026-10-25"), null);
-  const approval = applySourceAdminCommand(first.next, {
-    action: "approve", expectedRevision: 1, sourceId: sample.id,
-  }, "2026-10-25")!;
+  const approval = applySourceAdminCommand(
+    first.next,
+    {
+      action: "approve",
+      expectedRevision: 1,
+      sourceId: sample.id,
+    },
+    "2026-10-25",
+  )!;
   assert.equal(approval.next.sources[0]?.status, "approved");
-  assert.equal(applySourceAdminCommand(approval.next, {
-    action: "approve", expectedRevision: 2, sourceId: sample.id,
-  }, "2026-10-25"), null);
-  const revised = applySourceAdminCommand(approval.next, {
-    action: "replace_pending", expectedRevision: 2,
-    source: { ...sample, intervalMinutes: 120 },
-  }, "2026-10-25")!;
+  assert.equal(
+    applySourceAdminCommand(
+      approval.next,
+      {
+        action: "approve",
+        expectedRevision: 2,
+        sourceId: sample.id,
+      },
+      "2026-10-25",
+    ),
+    null,
+  );
+  const revised = applySourceAdminCommand(
+    approval.next,
+    {
+      action: "replace_pending",
+      expectedRevision: 2,
+      source: { ...sample, intervalMinutes: 120 },
+    },
+    "2026-10-25",
+  )!;
   assert.equal(revised.next.sources[0]?.status, "pending");
-  const blocked = applySourceAdminCommand(revised.next, {
-    action: "block", expectedRevision: 3, sourceId: sample.id,
-  }, "2026-10-25")!;
+  const blocked = applySourceAdminCommand(
+    revised.next,
+    {
+      action: "block",
+      expectedRevision: 3,
+      sourceId: sample.id,
+    },
+    "2026-10-25",
+  )!;
   assert.equal(blocked.next.sources[0]?.status, "blocked");
-  const reopened = applySourceAdminCommand(blocked.next, {
-    action: "reopen", expectedRevision: 4, sourceId: sample.id,
-  }, "2026-10-25")!;
+  const reopened = applySourceAdminCommand(
+    blocked.next,
+    {
+      action: "reopen",
+      expectedRevision: 4,
+      sourceId: sample.id,
+    },
+    "2026-10-25",
+  )!;
   assert.equal(reopened.next.sources[0]?.status, "pending");
 });
 
@@ -188,7 +242,8 @@ test("snapshot rejects duplicate scopes, forged statuses and invalid revisions",
     { revision: 1, sources: [{ ...pending, reviewedAt: "2026-02-30" }] },
     { revision: 1, sources: [pending, pending] },
     { revision: 1, sources: [{ ...pending, apiKey: "synthetic" }] },
-  ]) assert.throws(() => validateSourceSnapshot(invalid), /unavailable/);
+  ])
+    assert.throws(() => validateSourceSnapshot(invalid), /unavailable/);
 });
 
 test("personal admin can create, approve, block and list sources with audited revision", async () => {
@@ -197,7 +252,11 @@ test("personal admin can create, approve, block and list sources with audited re
   assert.deepEqual((await serve(f.handler, "GET")).data, { revision: 0, sources: [] });
   const created = await serve(f.handler, "POST", command);
   assert.deepEqual(created.data, {
-    saved: true, revision: 1, sourceId: sample.id, status: "pending", feedActive: false,
+    saved: true,
+    revision: 1,
+    sourceId: sample.id,
+    status: "pending",
+    feedActive: false,
   });
   assert.equal(created.headers["cache-control"], "no-store");
   assert.equal(f.audits.length, 1);
@@ -213,13 +272,27 @@ test("personal admin can create, approve, block and list sources with audited re
   const conflict = await serve(f.handler, "POST", command);
   assert.equal(conflict.code, 409);
   assert.equal(f.audits.length, 1);
-  assert.equal((await serve(f.handler, "POST", {
-    action: "approve", expectedRevision: 1, sourceId: sample.id,
-  })).code, 200);
+  assert.equal(
+    (
+      await serve(f.handler, "POST", {
+        action: "approve",
+        expectedRevision: 1,
+        sourceId: sample.id,
+      })
+    ).code,
+    200,
+  );
   assert.equal(f.state.sources[0]?.status, "approved");
-  assert.equal((await serve(f.handler, "POST", {
-    action: "block", expectedRevision: 2, sourceId: sample.id,
-  })).code, 200);
+  assert.equal(
+    (
+      await serve(f.handler, "POST", {
+        action: "block",
+        expectedRevision: 2,
+        sourceId: sample.id,
+      })
+    ).code,
+    200,
+  );
   assert.equal(f.state.sources[0]?.status, "blocked");
   assert.equal(f.audits.length, 3);
 });
@@ -228,18 +301,32 @@ test("disabled endpoint, wrong editor cookie, forbidden origin and rate gate blo
   const f = setup();
   const command = { action: "create_pending", expectedRevision: 0, source: sample };
   const disabled = new DormantNamedSourceAdmin(
-    { authenticatedAdminIdentity: async () => { throw new Error("must not query"); } },
+    {
+      authenticatedAdminIdentity: async () => {
+        throw new Error("must not query");
+      },
+    },
     { originAllowed: () => true },
     f.store,
     { allow: async () => true },
   );
   assert.equal((await serve(disabled, "POST", command)).code, 404);
-  assert.equal((await serve(f.handler, "POST", command, {
-    cookie: "__Host-vns_session=shared-admin",
-  })).code, 401);
-  assert.equal((await serve(f.handler, "POST", command, {
-    origin: "https://other.example.org",
-  })).code, 403);
+  assert.equal(
+    (
+      await serve(f.handler, "POST", command, {
+        cookie: "__Host-vns_session=shared-admin",
+      })
+    ).code,
+    401,
+  );
+  assert.equal(
+    (
+      await serve(f.handler, "POST", command, {
+        origin: "https://other.example.org",
+      })
+    ).code,
+    403,
+  );
   f.denyRate();
   assert.equal((await serve(f.handler, "POST", command)).code, 429);
   assert.equal(f.reads, 0);
@@ -267,13 +354,22 @@ test("bad framing, unknown fields and malicious encoding cannot reach storage", 
 test("store failures and CAS races never expose implementation details", async () => {
   const f = setup();
   const failed = new DormantNamedSourceAdmin(
-    { authenticatedAdminIdentity: async () => ({
-      id: EDITOR_ID, username: "ci_admin", role: "admin", authVersion: 3,
-    }) },
+    {
+      authenticatedAdminIdentity: async () => ({
+        id: EDITOR_ID,
+        username: "ci_admin",
+        role: "admin",
+        authVersion: 3,
+      }),
+    },
     { originAllowed: () => true },
     {
-      async read() { return { revision: 0, sources: [] }; },
-      async saveWithAudit() { throw new Error("private DB details"); },
+      async read() {
+        return { revision: 0, sources: [] };
+      },
+      async saveWithAudit() {
+        throw new Error("private DB details");
+      },
     },
     { allow: async () => true },
     true,
