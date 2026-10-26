@@ -23,7 +23,9 @@ VALUES('ca290003-3333-4333-8333-333333333333',
 
 DO $test$
 BEGIN
- IF has_function_privilege('vns_api_runtime','vns.named_profile_commit(bigint,jsonb)','EXECUTE')
+ IF has_column_privilege('vns_p2_named_executor',
+   'vns.editor_accounts','password_hash','SELECT')
+ OR has_function_privilege('vns_api_runtime','vns.named_profile_commit(bigint,jsonb)','EXECUTE')
  OR has_function_privilege('vns_api_runtime','vns.named_timeline_append(uuid,text,text,text,jsonb)','EXECUTE')
  OR has_function_privilege('vns_feed_poll_writer','vns.named_profile_commit(bigint,jsonb)','EXECUTE')
  OR has_table_privilege('vns_p2_named_client','vns.editor_db_principals','INSERT')
