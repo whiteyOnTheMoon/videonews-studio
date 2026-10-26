@@ -42,14 +42,20 @@ export function assessEditorialCandidate(
 ): CandidateAssessment {
   validateEditorialProfile(profile);
   if (
-    !now || !Number.isFinite(now.getTime()) ||
-    !event || !DIGEST.test(event.id) ||
-    event.articles.length < 1 || event.articles.length > 100 ||
-    !Number.isSafeInteger(policy.maxAgeHours) || policy.maxAgeHours < 1 ||
+    !now ||
+    !Number.isFinite(now.getTime()) ||
+    !event ||
+    !DIGEST.test(event.id) ||
+    event.articles.length < 1 ||
+    event.articles.length > 100 ||
+    !Number.isSafeInteger(policy.maxAgeHours) ||
+    policy.maxAgeHours < 1 ||
     policy.maxAgeHours > 720 ||
     !Number.isSafeInteger(policy.minimumPublisherGroups) ||
-    policy.minimumPublisherGroups < 2 || policy.minimumPublisherGroups > 5 ||
-    !Array.isArray(policy.blockedTerms) || policy.blockedTerms.length > 30
+    policy.minimumPublisherGroups < 2 ||
+    policy.minimumPublisherGroups > 5 ||
+    !Array.isArray(policy.blockedTerms) ||
+    policy.blockedTerms.length > 30
   ) {
     throw new Error("Editorial assessment configuration invalid");
   }
@@ -73,10 +79,13 @@ export function assessEditorialCandidate(
   const declared = new Map<string, SourceProvenance>();
   for (const source of provenance) {
     if (
-      !source || !IDENTIFIER.test(source.sourceId) ||
+      !source ||
+      !IDENTIFIER.test(source.sourceId) ||
       !IDENTIFIER.test(source.publisherGroup) ||
-      !Number.isSafeInteger(source.quality) || source.quality < 0 ||
-      source.quality > 5 || typeof source.rightsApproved !== "boolean" ||
+      !Number.isSafeInteger(source.quality) ||
+      source.quality < 0 ||
+      source.quality > 5 ||
+      typeof source.rightsApproved !== "boolean" ||
       declared.has(source.sourceId)
     ) {
       throw new Error("Editorial source provenance invalid");
@@ -94,14 +103,20 @@ export function assessEditorialCandidate(
   if (groups.size < policy.minimumPublisherGroups) reasons.push("publisher_groups_insufficient");
   const timestamps = event.articles.map((article) => Date.parse(article.publishedAt));
   if (
-    timestamps.some((time) => !Number.isFinite(time) || time > now.getTime() ||
-      now.getTime() - time > policy.maxAgeHours * 3600000)
+    timestamps.some(
+      (time) =>
+        !Number.isFinite(time) ||
+        time > now.getTime() ||
+        now.getTime() - time > policy.maxAgeHours * 3600000,
+    )
   ) {
     reasons.push("stale_or_future_article");
   }
   const combinedBlocklist = [...profile.blockedTerms, ...policy.blockedTerms];
   if (
-    combinedBlocklist.some((term) => event.headline.toLocaleLowerCase().includes(term.toLocaleLowerCase()))
+    combinedBlocklist.some((term) =>
+      event.headline.toLocaleLowerCase().includes(term.toLocaleLowerCase()),
+    )
   ) {
     reasons.push("editorial_blocklisted");
   }
@@ -112,19 +127,25 @@ export function assessEditorialCandidate(
   const hours = Math.max(0, (now.getTime() - newest) / 3600000);
   const quality = [...sourceIds].reduce((sum, id) => sum + (declared.get(id)?.quality ?? 0), 0);
   const qualityMean = quality / sourceIds.size;
-  const score = reasons.length ? 0 : Math.max(0, Math.round(
-    keywords * policy.relevanceWeight +
-    Math.max(0, 1 - hours / policy.maxAgeHours) * policy.freshnessWeight +
-    qualityMean / 5 * policy.qualityWeight +
-    Math.min(groups.size, 5) * policy.explanatoryWeight,
-  ));
+  const score = reasons.length
+    ? 0
+    : Math.max(
+        0,
+        Math.round(
+          keywords * policy.relevanceWeight +
+            Math.max(0, 1 - hours / policy.maxAgeHours) * policy.freshnessWeight +
+            (qualityMean / 5) * policy.qualityWeight +
+            Math.min(groups.size, 5) * policy.explanatoryWeight,
+        ),
+      );
   return {
     eventId: event.id,
     eligible: reasons.length === 0,
     score,
     publisherGroups: groups.size,
-    reasons: reasons.length ? [...new Set(reasons)].sort() :
-      ["metadata_candidate_only", "independent_confirmation_not_established"],
+    reasons: reasons.length
+      ? [...new Set(reasons)].sort()
+      : ["metadata_candidate_only", "independent_confirmation_not_established"],
   };
 }
 
@@ -170,35 +191,53 @@ export function generateBoundedMockScript(
 ): BoundedMockScript {
   validateEditorialProfile(profile);
   if (
-    !event || !DIGEST.test(event.id) || !Array.isArray(claims) ||
-    claims.length < 1 || claims.length > 30 ||
-    !Number.isSafeInteger(revision) || revision < 1 ||
-    !Number.isSafeInteger(limits.maxRevisions) || limits.maxRevisions < 1 ||
-    limits.maxRevisions > 3 || revision > limits.maxRevisions ||
-    !Number.isSafeInteger(limits.maxCharacters) || limits.maxCharacters < 20 ||
+    !event ||
+    !DIGEST.test(event.id) ||
+    !Array.isArray(claims) ||
+    claims.length < 1 ||
+    claims.length > 30 ||
+    !Number.isSafeInteger(revision) ||
+    revision < 1 ||
+    !Number.isSafeInteger(limits.maxRevisions) ||
+    limits.maxRevisions < 1 ||
+    limits.maxRevisions > 3 ||
+    revision > limits.maxRevisions ||
+    !Number.isSafeInteger(limits.maxCharacters) ||
+    limits.maxCharacters < 20 ||
     limits.maxCharacters > 20000 ||
-    !Number.isSafeInteger(limits.maxMockTokens) || limits.maxMockTokens < 1 ||
+    !Number.isSafeInteger(limits.maxMockTokens) ||
+    limits.maxMockTokens < 1 ||
     limits.maxMockTokens > 10000 ||
-    !Number.isSafeInteger(limits.maxMicroUsd) || limits.maxMicroUsd < 0 ||
+    !Number.isSafeInteger(limits.maxMicroUsd) ||
+    limits.maxMicroUsd < 0 ||
     !Number.isSafeInteger(limits.mockMicroUsdPerToken) ||
-    limits.mockMicroUsdPerToken < 0 || limits.mockMicroUsdPerToken > 1000
+    limits.mockMicroUsdPerToken < 0 ||
+    limits.mockMicroUsdPerToken > 1000
   ) {
     throw new Error("Mock script generation not authorized");
   }
   const text = scaffold[profile.format];
   if (
-    typeof text !== "string" || text.trim() !== text || text.length < 20 ||
-    text.length > 2000 || Array.from(text).some((letter) => letter.charCodeAt(0) < 32)
+    typeof text !== "string" ||
+    text.trim() !== text ||
+    text.length < 20 ||
+    text.length > 2000 ||
+    Array.from(text).some((letter) => letter.charCodeAt(0) < 32)
   ) {
     throw new Error("Script scaffold invalid");
   }
   const ids = new Set<string>();
   for (const claim of claims) {
     if (
-      !claim || !IDENTIFIER.test(claim.id) || ids.has(claim.id) ||
-      typeof claim.statement !== "string" || claim.statement.length < 8 ||
-      claim.statement.length > 2000 || !Array.isArray(claim.articleIds) ||
-      claim.articleIds.length < 1 || claim.articleIds.length > 20 ||
+      !claim ||
+      !IDENTIFIER.test(claim.id) ||
+      ids.has(claim.id) ||
+      typeof claim.statement !== "string" ||
+      claim.statement.length < 8 ||
+      claim.statement.length > 2000 ||
+      !Array.isArray(claim.articleIds) ||
+      claim.articleIds.length < 1 ||
+      claim.articleIds.length > 20 ||
       !["unverified", "disputed", "rejected"].includes(claim.status)
     ) {
       throw new Error("Script claim candidate invalid");
@@ -244,10 +283,20 @@ export function independentlyReviewMockScript(
   policy: WeightedRankingPolicy,
   provenance: readonly SourceProvenance[],
   now: Date,
-): { acceptedForHumanReview: boolean; approvedForPublication: false; reasons: readonly string[]; digest: string } {
+): {
+  acceptedForHumanReview: boolean;
+  approvedForPublication: false;
+  reasons: readonly string[];
+  digest: string;
+} {
   const reasons: string[] = [];
-  if (!script || script.eventId !== event.id || script.provider !== "offline_mock" ||
-    script.approvedForPublication !== false || !Number.isSafeInteger(script.revision)) {
+  if (
+    !script ||
+    script.eventId !== event.id ||
+    script.provider !== "offline_mock" ||
+    script.approvedForPublication !== false ||
+    !Number.isSafeInteger(script.revision)
+  ) {
     throw new Error("Independent script input invalid");
   }
   const articleIds = new Set(event.articles.map((article) => article.id));
@@ -260,7 +309,8 @@ export function independentlyReviewMockScript(
       reasons.push("claim_evidence_mismatch");
     }
   }
-  if (!script.sections.length || script.sections.length > 30) reasons.push("script_sections_invalid");
+  if (!script.sections.length || script.sections.length > 30)
+    reasons.push("script_sections_invalid");
   for (const section of script.sections) {
     if (!section.narration.trim() || !section.claimIds.length) {
       reasons.push("unattributed_script_section");
@@ -284,11 +334,16 @@ export function independentlyReviewMockScript(
   if (provenance.some((source) => !source.rightsApproved)) reasons.push("source_rights_missing");
   if (!Number.isSafeInteger(policy.maxAgeHours) || policy.maxAgeHours < 1) {
     reasons.push("invalid_freshness_policy");
-  } else if (event.articles.some((article) => {
-    const timestamp = Date.parse(article.publishedAt);
-    return !Number.isFinite(timestamp) || timestamp > now.getTime() ||
-      now.getTime() - timestamp > policy.maxAgeHours * 3600000;
-  })) {
+  } else if (
+    event.articles.some((article) => {
+      const timestamp = Date.parse(article.publishedAt);
+      return (
+        !Number.isFinite(timestamp) ||
+        timestamp > now.getTime() ||
+        now.getTime() - timestamp > policy.maxAgeHours * 3600000
+      );
+    })
+  ) {
     reasons.push("stale_or_future_article");
   }
   reasons.push("independent_claim_verification_required");
@@ -296,8 +351,11 @@ export function independentlyReviewMockScript(
   const finalReasons = [...new Set(reasons)].sort();
   return {
     acceptedForHumanReview: reasons.every((reason) =>
-      ["independent_claim_verification_required", "manual_copyright_and_fact_review_required"]
-        .includes(reason)),
+      [
+        "independent_claim_verification_required",
+        "manual_copyright_and_fact_review_required",
+      ].includes(reason),
+    ),
     approvedForPublication: false,
     reasons: finalReasons,
     digest: hash(JSON.stringify({ eventId: event.id, script, reasons: finalReasons })),
