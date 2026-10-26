@@ -145,4 +145,13 @@ test("distinct and time-separated stories remain separate, independent of input 
   );
   assert.equal(groupConservativeEventCandidates(stale).length, 3);
   assert.throws(() => groupConservativeEventCandidates([articles[0]!, articles[0]!]));
+  const sameHeadlineDifferentDay = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/other", "Science update worldwide"),
+  ])[0]!;
+  const historic = {
+    ...sameHeadlineDifferentDay,
+    id: articles[1]!.id,
+    publishedAt: "2026-10-01T12:00:00.000Z",
+  };
+  assert.equal(groupConservativeEventCandidates([sameHeadlineDifferentDay, historic]).length, 2);
 });
