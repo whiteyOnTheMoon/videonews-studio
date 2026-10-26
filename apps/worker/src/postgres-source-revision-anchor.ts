@@ -16,7 +16,8 @@ export interface AnchorQuery {
 }
 
 const SHA256 = /^[a-f0-9]{64}$/;
-const ADVANCE_SQL = "SELECT vns_source_anchor.advance($1::bigint, $2::bigint, $3::text) AS accepted";
+const ADVANCE_SQL =
+  "SELECT vns_source_anchor.advance($1::bigint, $2::bigint, $3::text) AS accepted";
 
 /**
  * Atomic, compare-and-advance against an already initialized authority row.
