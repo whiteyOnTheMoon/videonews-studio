@@ -1,5 +1,8 @@
 import { createHash, type KeyObject } from "node:crypto";
-import { verifyDormantSourceSignature, type SignedDormantSourceExport } from "./source-export-signature.js";
+import {
+  verifyDormantSourceSignature,
+  type SignedDormantSourceExport,
+} from "./source-export-signature.js";
 import type { RegisteredResearchSource } from "./source-registry.js";
 import type { ApprovedFetchPolicy } from "./source-fetch.js";
 
@@ -38,7 +41,11 @@ export function verifyRotatingSourceExport(
   policy: ApprovedFetchPolicy,
   rotation: PinnedSigningKeyRotation,
   minimum: { sourceRevision: number; hostApprovalRevision: number },
-): { sealed: SignedDormantSourceExport; sources: readonly RegisteredResearchSource[]; keyId: string } {
+): {
+  sealed: SignedDormantSourceExport;
+  sources: readonly RegisteredResearchSource[];
+  keyId: string;
+} {
   if (
     !revision(minimum.sourceRevision) ||
     !revision(minimum.hostApprovalRevision) ||
@@ -58,26 +65,39 @@ export function verifyRotatingSourceExport(
   const proposed = envelope.export;
   const source = proposed.sourceRevision;
   const host = proposed.hostApprovalRevision;
-  if (typeof source !== "number" || !revision(source) || typeof host !== "number" || !revision(host)) {
+  if (
+    typeof source !== "number" ||
+    !revision(source) ||
+    typeof host !== "number" ||
+    !revision(host)
+  ) {
     throw new Error("Signed export revision invalid");
   }
   const ids = new Set<string>();
   const eligible: PinnedSigningKeyEpoch[] = [];
   for (const epoch of rotation.epochs) {
     const id = signingPublicKeyId(epoch.publicKey);
-    if (!SHA.test(id) || ids.has(id) || !revision(epoch.fromSourceRevision) ||
-        !revision(epoch.fromHostApprovalRevision) ||
-        (epoch.untilSourceRevision !== undefined &&
-          (!revision(epoch.untilSourceRevision) || epoch.untilSourceRevision < epoch.fromSourceRevision)) ||
-        (epoch.untilHostApprovalRevision !== undefined &&
-          (!revision(epoch.untilHostApprovalRevision) ||
-            epoch.untilHostApprovalRevision < epoch.fromHostApprovalRevision))) {
+    if (
+      !SHA.test(id) ||
+      ids.has(id) ||
+      !revision(epoch.fromSourceRevision) ||
+      !revision(epoch.fromHostApprovalRevision) ||
+      (epoch.untilSourceRevision !== undefined &&
+        (!revision(epoch.untilSourceRevision) ||
+          epoch.untilSourceRevision < epoch.fromSourceRevision)) ||
+      (epoch.untilHostApprovalRevision !== undefined &&
+        (!revision(epoch.untilHostApprovalRevision) ||
+          epoch.untilHostApprovalRevision < epoch.fromHostApprovalRevision))
+    ) {
       throw new Error("Pinned signing key epoch invalid");
     }
     ids.add(id);
-    if (source >= epoch.fromSourceRevision && host >= epoch.fromHostApprovalRevision &&
-        (epoch.untilSourceRevision === undefined || source <= epoch.untilSourceRevision) &&
-        (epoch.untilHostApprovalRevision === undefined || host <= epoch.untilHostApprovalRevision)) {
+    if (
+      source >= epoch.fromSourceRevision &&
+      host >= epoch.fromHostApprovalRevision &&
+      (epoch.untilSourceRevision === undefined || source <= epoch.untilSourceRevision) &&
+      (epoch.untilHostApprovalRevision === undefined || host <= epoch.untilHostApprovalRevision)
+    ) {
       eligible.push(epoch);
     }
   }
