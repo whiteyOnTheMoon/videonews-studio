@@ -149,7 +149,7 @@ test("authorized GET and POST use only forwarded editor cookie and canonical fie
   });
   const read = await dormantSourceAdminProxy(req("GET"), CFG, fetcher);
   assert.equal(read.status, 200);
-  assert.equal((await read.json() as { sources: unknown[] }).sources.length, 1);
+  assert.equal(((await read.json()) as { sources: unknown[] }).sources.length, 1);
   assert.deepEqual(calls, [
     CFG.api + "/editor/me",
     CFG.api + "/admin/news-sources",

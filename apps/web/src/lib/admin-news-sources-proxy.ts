@@ -42,8 +42,7 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 function exact(value: Record<string, unknown>, names: readonly string[]): boolean {
   return (
-    Object.keys(value).length === names.length &&
-    names.every((key) => Object.hasOwn(value, key))
+    Object.keys(value).length === names.length && names.every((key) => Object.hasOwn(value, key))
   );
 }
 function safeUrl(value: unknown, slash: boolean): value is string {
@@ -85,7 +84,8 @@ function sourceDraft(value: unknown): SourceDraft | null {
     value.licenseNotes.length > 300 ||
     value.licenseNotes.trim() !== value.licenseNotes ||
     Array.from(value.licenseNotes).some((letter) => letter.charCodeAt(0) < 32)
-  ) return null;
+  )
+    return null;
   return value as unknown as SourceDraft;
 }
 export function parseSourceAdminProxyCommand(value: unknown): SourceCommand | null {
@@ -93,7 +93,8 @@ export function parseSourceAdminProxyCommand(value: unknown): SourceCommand | nu
     !object(value) ||
     !Number.isSafeInteger(value.expectedRevision) ||
     (value.expectedRevision as number) < 0
-  ) return null;
+  )
+    return null;
   if (value.action === "create_pending" || value.action === "replace_pending") {
     if (!exact(value, ["action", "expectedRevision", "source"])) return null;
     const source = sourceDraft(value.source);
@@ -123,7 +124,8 @@ function parseSnapshot(value: unknown): { revision: number; sources: ManagedSour
     (value.revision as number) < 0 ||
     !Array.isArray(value.sources) ||
     value.sources.length > 20
-  ) return null;
+  )
+    return null;
   const seen = new Set<string>();
   const urls = new Set<string>();
   const sources: ManagedSource[] = [];
@@ -139,7 +141,8 @@ function parseSnapshot(value: unknown): { revision: number; sources: ManagedSour
       !/^\d{4}-\d{2}-\d{2}$/.test(raw.reviewedAt) ||
       seen.has(source.id) ||
       urls.has(source.baseUrl)
-    ) return null;
+    )
+    return null;
     seen.add(source.id);
     urls.add(source.baseUrl);
     sources.push({
@@ -166,12 +169,11 @@ async function boundedJson(request: Request): Promise<unknown> {
     request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
       "application/json" ||
     request.headers.has("content-encoding")
-  ) return null;
+  )
+    return null;
   const declared = request.headers.get("content-length");
-  if (
-    declared !== null &&
-    (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_POST)
-  ) return null;
+  if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_POST))
+    return null;
   const reader = request.body?.getReader();
   if (!reader) return null;
   const chunks: Uint8Array[] = [];
@@ -232,9 +234,8 @@ export async function dormantSourceAdminProxy(
     return reply(403, { error: "forbidden" });
   }
 
-  const command = request.method === "POST"
-    ? parseSourceAdminProxyCommand(await boundedJson(request))
-    : null;
+  const command =
+    request.method === "POST" ? parseSourceAdminProxyCommand(await boundedJson(request)) : null;
   if (request.method === "POST" && !command) return reply(400, { error: "invalid_request" });
 
   try {
@@ -262,9 +263,12 @@ export async function dormantSourceAdminProxy(
       const snapshot = parseSnapshot(value);
       return snapshot ? reply(200, snapshot) : reply(503, { error: "temporarily_unavailable" });
     }
-    if (!object(value) || !command || !exact(value, [
-      "saved", "revision", "sourceId", "status", "feedActive",
-    ])) return reply(503, { error: "temporarily_unavailable" });
+    if (
+      !object(value) ||
+      !command ||
+      !exact(value, ["saved", "revision", "sourceId", "status", "feedActive"])
+    )
+      return reply(503, { error: "temporarily_unavailable" });
     const sourceId = "source" in command ? command.source.id : command.sourceId;
     const expectedStatus =
       command.action === "approve"
@@ -278,7 +282,8 @@ export async function dormantSourceAdminProxy(
       value.revision !== command.expectedRevision + 1 ||
       value.sourceId !== sourceId ||
       value.status !== expectedStatus
-    ) return reply(503, { error: "temporarily_unavailable" });
+    )
+      return reply(503, { error: "temporarily_unavailable" });
     return reply(200, {
       saved: true,
       revision: value.revision,

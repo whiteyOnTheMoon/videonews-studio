@@ -53,7 +53,11 @@ test("explicitly injected source API remains isolated from production runtime", 
         };
       },
     },
-    { originAllowed() { return true; } },
+    {
+      originAllowed() {
+        return true;
+      },
+    },
     {
       async read() {
         return { revision: 0, sources: [] };
@@ -70,7 +74,11 @@ test("explicitly injected source API remains isolated from production runtime", 
     true,
   );
   const server = createApiServer({
-    auth: { originAllowed() { return true; } } as unknown as AdminAuth,
+    auth: {
+      originAllowed() {
+        return true;
+      },
+    } as unknown as AdminAuth,
     jobs: {} as AdminJobs,
     editor: {} as EditorAuth,
     sourceRegistry: registry,
