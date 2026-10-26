@@ -2,8 +2,7 @@ import type { AnchorQuery } from "./postgres-source-revision-anchor.js";
 import type { IndependentTrustPolicyAnchor } from "./source-trust-policy-anchor.js";
 
 const SHA256 = /^[a-f0-9]{64}$/;
-const SQL =
-  "SELECT vns_source_anchor.advance_trust_policy($1::bigint, $2::text) AS accepted";
+const SQL = "SELECT vns_source_anchor.advance_trust_policy($1::bigint, $2::text) AS accepted";
 
 /** Dormant adapter: requires independently provisioned EXECUTE-only SQL client. */
 export function postgresTrustPolicyAnchor(db: AnchorQuery): IndependentTrustPolicyAnchor {
@@ -14,7 +13,11 @@ export function postgresTrustPolicyAnchor(db: AnchorQuery): IndependentTrustPoli
       }
       try {
         const result = await db.query(SQL, [revision, sha256]);
-        if (result.rowCount !== 1 || result.rows.length !== 1 || result.rows[0]?.accepted !== true) {
+        if (
+          result.rowCount !== 1 ||
+          result.rows.length !== 1 ||
+          result.rows[0]?.accepted !== true
+        ) {
           throw new Error("Trust policy admission refused");
         }
       } catch {
