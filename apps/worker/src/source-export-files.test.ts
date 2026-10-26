@@ -15,7 +15,12 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { acceptDormantSourceFile, publishDormantSourceFile } from "./source-export-files.js";
+import {
+  acceptDormantSourceFile,
+  publishDormantSourceFile,
+  type IndependentSourceRevisionAnchor,
+  type SourceRevisionAnchorState,
+} from "./source-export-files.js";
 import {
   sealDormantSourceExport,
   verifyDormantSourceSignature,
@@ -222,6 +227,72 @@ test("stale exclusive locks, untrusted folders, and symlink files fail closed", 
     const handle = await open(join(publisher, "source-export.signed.json"), constants.O_WRONLY);
     await handle.close();
     await acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, true);
+  } finally {
+    await cleanup(root);
+  }
+});
+
+test("independent anchor refuses joint signed-export and checkpoint rollback", async () => {
+  const { root, publisher, consumer } = await paths();
+  try {
+    const keys = pair();
+    let highWater: SourceRevisionAnchorState | undefined;
+    const anchor: IndependentSourceRevisionAnchor = {
+      async advance(candidate) {
+        if (highWater && candidate.sourceRevision < highWater.sourceRevision) {
+          throw new Error("Independent anchor rejects rollback");
+        }
+        if (highWater && candidate.hostApprovalRevision < highWater.hostApprovalRevision) {
+          throw new Error("Independent anchor rejects rollback");
+        }
+        if (
+          highWater &&
+          candidate.sourceRevision === highWater.sourceRevision &&
+          candidate.hostApprovalRevision === highWater.hostApprovalRevision &&
+          candidate.envelopeSha256 !== highWater.envelopeSha256
+        ) {
+          throw new Error("Independent anchor rejects equivocation");
+        }
+        highWater = { ...candidate };
+      },
+    };
+    await publishDormantSourceFile(publisher, defaultBundle, policy, keys.privateKey);
+    await acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, true, anchor);
+    const oldExport = await readFile(join(publisher, "source-export.signed.json"));
+    const oldCheckpoint = await readFile(join(consumer, "source-export.checkpoint.json"));
+    const newer = prepareDormantSourceExport(
+      { revision: 9, sources: [source, blocked] },
+      { revision: 4, approvedHosts: ["news.example.org"] },
+    );
+    await publishDormantSourceFile(publisher, newer, policy, keys.privateKey);
+    await acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, false, anchor);
+    await writeFile(join(publisher, "source-export.signed.json"), oldExport);
+    await writeFile(join(consumer, "source-export.checkpoint.json"), oldCheckpoint);
+    await assert.rejects(
+      acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, false, anchor),
+      /Independent anchor rejects rollback/,
+    );
+  } finally {
+    await cleanup(root);
+  }
+});
+
+test("anchor error prevents checkpoint creation and source release", async () => {
+  const { root, publisher, consumer } = await paths();
+  try {
+    const keys = pair();
+    await publishDormantSourceFile(publisher, defaultBundle, policy, keys.privateKey);
+    await assert.rejects(
+      acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, true, {
+        async advance() {
+          throw new Error("independent store unavailable");
+        },
+      }),
+      /independent store unavailable/,
+    );
+    await assert.rejects(lstat(join(consumer, "source-export.checkpoint.json")), {
+      code: "ENOENT",
+    });
   } finally {
     await cleanup(root);
   }
