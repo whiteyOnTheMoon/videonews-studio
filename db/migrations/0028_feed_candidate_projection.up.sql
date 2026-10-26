@@ -29,12 +29,69 @@ BEGIN
   -- No verification or publishing authority is inferred from an article.
   FOR candidate IN
     SELECT source_id,article_url,headline,published_at
-    FROM vns.feed_poll_candidates
-    WHERE source_id=p_source AND review_status='candidate'
-      AND published_at IS NOT NULL
-      AND published_at <= clock_timestamp()
-      AND article_url ~ '^https://[^[:space:]?#]+$'
-    ORDER BY article_url LIMIT p_limit
+    FROM vns.feed_poll_candidates AS feed
+    LEFT JOIN vns.research_articles AS prior
+      ON prior.canonical_url=feed.article_url
+    LEFT JOIN vns.research_event_articles AS mapped
+      ON mapped.article_id=prior.article_id
+    WHERE feed.source_id=p_source AND feed.review_status='candidate'
+      AND feed.published_at IS NOT NULL
+      AND feed.published_at <= clock_timestamp()
+      AND feed.article_url ~ '^https://[^[:space:]?#]+
+  LOOP
+    fingerprint := encode(sha256(convert_to(
+      lower(regexp_replace(btrim(candidate.headline),'[[:space:]]+',' ','g')),'UTF8'
+    )),'hex');
+    article := NULL;
+    INSERT INTO vns.research_articles(
+      source_key,canonical_url,headline,headline_sha256,published_at
+    ) VALUES(
+      candidate.source_id,candidate.article_url,candidate.headline,
+      fingerprint,candidate.published_at
+    )
+    ON CONFLICT (canonical_url) DO NOTHING
+    RETURNING article_id INTO article;
+    IF article IS NULL THEN
+      -- Existing canonical URL must match original source, fingerprint and time;
+      -- never relabel evidence or overwrite the original provenance.
+      SELECT article_id INTO article FROM vns.research_articles
+      WHERE canonical_url=candidate.article_url
+        AND source_key=candidate.source_id
+        AND headline_sha256=fingerprint
+        AND published_at=candidate.published_at;
+    END IF;
+    IF article IS NULL THEN CONTINUE; END IF;
+    event_key := NULL;
+    INSERT INTO vns.research_events(event_fingerprint,label)
+      VALUES(fingerprint,candidate.headline)
+      ON CONFLICT (event_fingerprint) DO NOTHING
+      RETURNING event_id INTO event_key;
+    IF event_key IS NULL THEN
+      SELECT event_id INTO event_key FROM vns.research_events
+      WHERE event_fingerprint=fingerprint;
+    END IF;
+    IF event_key IS NULL THEN
+      RAISE EXCEPTION 'Feed projection event not available' USING ERRCODE='23503';
+    END IF;
+    INSERT INTO vns.research_event_articles(event_id,article_id)
+      VALUES(event_key,article)
+      ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS changed = ROW_COUNT;
+    added := added + changed;
+  END LOOP;
+  RETURN added;
+END;
+$body$;
+
+REVOKE ALL ON FUNCTION vns.project_feed_candidates(text,integer) FROM PUBLIC;
+ALTER FUNCTION vns.project_feed_candidates(text,integer) OWNER TO vns_feed_project_executor;
+-- Only this NOLOGIN owner can run the function in disposable CI.
+-- No EXECUTE granted to API, running worker, feed polling role or PUBLIC.
+INSERT INTO vns.schema_migrations(version) VALUES ('0028_feed_candidate_projection');
+COMMIT;
+
+      AND mapped.article_id IS NULL
+    ORDER BY feed.article_url LIMIT p_limit
   LOOP
     fingerprint := encode(sha256(convert_to(
       lower(regexp_replace(btrim(candidate.headline),'[[:space:]]+',' ','g')),'UTF8'
