@@ -55,6 +55,10 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
+      - name: Check code formatting and lint
+        run: |
+          npm run format:check
+          npm run lint
       - name: Compile shared and worker contracts
         run: |
           npm run build --workspace @vns/shared
