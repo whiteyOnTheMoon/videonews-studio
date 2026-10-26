@@ -187,7 +187,7 @@ for iteration in 1 2; do
     for label in a b; do
       docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
         -U postgres -d vns_schema_test -c \
-        "SET ROLE vns_source_admin_writer; SELECT vns.admin_commit_source_registry(0,1,\$\${source_payload}\$\$::jsonb,'ci_parallel_source','create_pending','ca110003-3333-4333-8333-333333333333'::uuid,0,'2026-10-26T12:00:00Z');" \
+        "SET ROLE vns_source_admin_writer; SELECT vns.admin_commit_source_registry(0,1,\$\$${source_payload}\$\$::jsonb,'ci_parallel_source','create_pending','ca110003-3333-4333-8333-333333333333'::uuid,0,'2026-10-26T12:00:00Z');" \
         > "$source_work/$label" 2>&1 &
       if [[ "$label" = a ]]; then source_pid_a=$!; else source_pid_b=$!; fi
     done
