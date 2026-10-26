@@ -109,7 +109,8 @@ test("strict host and reason commands reject forged identities and untrusted ext
     { ...command, expectedSourceRevision: 0 },
     { ...command, reason: "too short" },
     { ...command, action: "activate" },
-  ]) assert.equal(parseHostApprovalCommand(invalid), null);
+  ])
+    assert.equal(parseHostApprovalCommand(invalid), null);
   assert.deepEqual(validateHostApprovalSnapshot({ revision: 0, approvedHosts: [] }), {
     revision: 0,
     approvedHosts: [],
@@ -118,7 +119,10 @@ test("strict host and reason commands reject forged identities and untrusted ext
     validateHostApprovalSnapshot({ revision: 1, approvedHosts: ["news.example.org"], apiKey: "x" }),
   );
   assert.throws(() =>
-    validateHostApprovalSnapshot({ revision: 1, approvedHosts: ["news.example.org", "news.example.org"] }),
+    validateHostApprovalSnapshot({
+      revision: 1,
+      approvedHosts: ["news.example.org", "news.example.org"],
+    }),
   );
 });
 test("personal named admin can grant and revoke, but no feed becomes active", async () => {
@@ -136,19 +140,27 @@ test("personal named admin can grant and revoke, but no feed becomes active", as
   assert.equal(f.events[0]?.actor, admin.id);
   assert.equal((await f.serve("POST", command)).status, 409);
   assert.equal(
-    (await f.serve("POST", {
-      ...command,
-      action: "revoke",
-      expectedRevision: 1,
-    })).status,
+    (
+      await f.serve("POST", {
+        ...command,
+        action: "revoke",
+        expectedRevision: 1,
+      })
+    ).status,
     200,
   );
   assert.equal(f.events.length, 2);
 });
 test("disabled, wrong session, foreign origin, throttled or malformed request never mutates", async () => {
   const f = fixture();
-  assert.equal((await f.serve("POST", command, { cookie: "__Host-vns_session=shared" })).status, 401);
-  assert.equal((await f.serve("POST", command, { origin: "https://evil.example.org" })).status, 403);
+  assert.equal(
+    (await f.serve("POST", command, { cookie: "__Host-vns_session=shared" })).status,
+    401,
+  );
+  assert.equal(
+    (await f.serve("POST", command, { origin: "https://evil.example.org" })).status,
+    403,
+  );
   f.setRateAllowed(false);
   assert.equal((await f.serve("POST", command)).status, 429);
   f.setRateAllowed(true);
@@ -156,9 +168,18 @@ test("disabled, wrong session, foreign origin, throttled or malformed request ne
   assert.equal((await f.serve("POST", command, { "content-type": "text/plain" })).status, 400);
   assert.equal(f.operations, 0);
   const disabled = new DormantNamedHostApproval(
-    { authenticatedAdminIdentity: async () => { throw new Error("do not read"); } },
+    {
+      authenticatedAdminIdentity: async () => {
+        throw new Error("do not read");
+      },
+    },
     { originAllowed: () => true },
-    { read: async () => { throw new Error("do not read"); }, commit: async () => "saved" },
+    {
+      read: async () => {
+        throw new Error("do not read");
+      },
+      commit: async () => "saved",
+    },
     { allow: async () => true },
   );
   const res = response();
@@ -181,7 +202,13 @@ test("detached SQL adapter uses positional parameters and denies invalid actor l
   assert.equal(await adapter.commit(command, admin), "saved");
   assert.match(String(calls[1]?.[0]), /admin_change_source_host_approval/);
   assert.deepEqual(calls[1]?.slice(1), [
-    0, 2, "grant", command.host, command.reason, admin.id, admin.authVersion,
+    0,
+    2,
+    "grant",
+    command.host,
+    command.reason,
+    admin.id,
+    admin.authVersion,
   ]);
   await assert.rejects(adapter.commit(command, { ...admin, role: "editor" }));
   await assert.rejects(adapter.commit({ ...command, host: "localhost" }, admin));

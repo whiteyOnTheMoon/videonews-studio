@@ -16,10 +16,7 @@ export interface HostApprovalCommand {
 }
 export interface HostApprovalStore {
   read(): Promise<HostApprovalSnapshot>;
-  commit(
-    command: HostApprovalCommand,
-    identity: EditorIdentity,
-  ): Promise<"saved" | "conflict">;
+  commit(command: HostApprovalCommand, identity: EditorIdentity): Promise<"saved" | "conflict">;
 }
 const HOST = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/;
 
@@ -27,13 +24,15 @@ export function validHost(value: unknown): value is string {
   if (typeof value !== "string" || value.length < 4 || value.length > 253) return false;
   if (!HOST.test(value) || /^(?:[0-9]+\.){3}[0-9]+$/.test(value)) return false;
   if (/\.(?:localhost|local|internal|onion)$/.test(value)) return false;
-  return value.split(".").every(
-    (label) =>
-      label.length <= 63 &&
-      !label.startsWith("-") &&
-      !label.endsWith("-") &&
-      !label.startsWith("xn--"),
-  );
+  return value
+    .split(".")
+    .every(
+      (label) =>
+        label.length <= 63 &&
+        !label.startsWith("-") &&
+        !label.endsWith("-") &&
+        !label.startsWith("xn--"),
+    );
 }
 export function validateHostApprovalSnapshot(value: unknown): HostApprovalSnapshot {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -66,8 +65,8 @@ export function parseHostApprovalCommand(input: unknown): HostApprovalCommand | 
   const row = input as Record<string, unknown>;
   if (
     Object.keys(row).length !== 5 ||
-    !["action", "expectedRevision", "expectedSourceRevision", "host", "reason"].every(
-      (key) => Object.hasOwn(row, key),
+    !["action", "expectedRevision", "expectedSourceRevision", "host", "reason"].every((key) =>
+      Object.hasOwn(row, key),
     ) ||
     (row.action !== "grant" && row.action !== "revoke") ||
     !Number.isSafeInteger(row.expectedRevision) ||
