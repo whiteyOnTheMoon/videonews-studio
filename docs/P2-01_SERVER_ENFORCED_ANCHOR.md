@@ -1,0 +1,5 @@
+# P2-01 — Server-side monotonic anchor (offline only)
+
+The separate authority database now has an independently owned `SECURITY DEFINER` compare-and-advance function with a fixed `pg_catalog` search path, schema-qualified data access, REVOKE from PUBLIC and no implicit runtime grants or bootstrap. Worker code only calls the function and validates its strict boolean result. A disposable PostgreSQL CI workflow checks privileges, rollback/equivocation denial and concurrent same-revision writes. It does **not** prove independent production storage.
+
+Production checklist (requires separate operator authorization): independent physical/administrative authority, non-login function/table owner, dedicated LOGIN consumer granted only schema USAGE and function EXECUTE, audited human-approved initialization and recovery, access limited at network/TLS level, tested immutable audit/restore. Do not grant raw table DML to the runtime. Protect the authority owner's credentials outside worker and publisher. This package changes no production DB, VPS, feeds, scheduler, signing keys or expenses. P2-01 #16 stays open.
