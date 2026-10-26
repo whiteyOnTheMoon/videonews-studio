@@ -6,10 +6,7 @@ import {
 import type { RegisteredResearchSource } from "./source-registry.js";
 import type { ApprovedFetchPolicy } from "./source-fetch.js";
 
-/**
- * Operator-pinned trust configuration; never parsed from the signed export.
- * This is a dormant, offline-only verification gate, not a key provisioning API.
- */
+/** Independently pinned configuration, never obtained from an export. */
 export interface PinnedSigningKeyEpoch {
   readonly publicKey: KeyObject;
   readonly fromSourceRevision: number;
@@ -17,13 +14,15 @@ export interface PinnedSigningKeyEpoch {
   readonly untilSourceRevision?: number;
   readonly untilHostApprovalRevision?: number;
 }
+
 export interface PinnedSigningKeyRotation {
   readonly epochs: readonly PinnedSigningKeyEpoch[];
 }
-const SHA = /^[a-f0-9]{64}$/;
+
 function revision(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
+
 export function signingPublicKeyId(key: KeyObject): string {
   if (key.type !== "public" || key.asymmetricKeyType !== "ed25519") {
     throw new Error("Invalid pinned signing public key");
@@ -31,11 +30,42 @@ export function signingPublicKeyId(key: KeyObject): string {
   return createHash("sha256").update(key.export({ type: "spki", format: "der" })).digest("hex");
 }
 
-/**
- * Key selection is based on a separately trusted, explicit revision window.
- * No embedded key ID, remote discovery, fallback or automatic trust promotion.
- * A valid signature with the previous key is refused after its epoch expires.
- */
+function validateEpoch(epoch: PinnedSigningKeyEpoch): void {
+  if (!revision(epoch.fromSourceRevision) || !revision(epoch.fromHostApprovalRevision)) {
+    throw new Error("Pinned signing key epoch invalid");
+  }
+  if (epoch.untilSourceRevision !== undefined) {
+    if (!revision(epoch.untilSourceRevision)) {
+      throw new Error("Pinned signing key epoch invalid");
+    }
+    if (epoch.untilSourceRevision < epoch.fromSourceRevision) {
+      throw new Error("Pinned signing key epoch invalid");
+    }
+  }
+  if (epoch.untilHostApprovalRevision !== undefined) {
+    if (!revision(epoch.untilHostApprovalRevision)) {
+      throw new Error("Pinned signing key epoch invalid");
+    }
+    if (epoch.untilHostApprovalRevision < epoch.fromHostApprovalRevision) {
+      throw new Error("Pinned signing key epoch invalid");
+    }
+  }
+}
+
+function eligible(epoch: PinnedSigningKeyEpoch, source: number, host: number): boolean {
+  if (source < epoch.fromSourceRevision || host < epoch.fromHostApprovalRevision) {
+    return false;
+  }
+  if (epoch.untilSourceRevision !== undefined && source > epoch.untilSourceRevision) {
+    return false;
+  }
+  if (epoch.untilHostApprovalRevision !== undefined && host > epoch.untilHostApprovalRevision) {
+    return false;
+  }
+  return true;
+}
+
+/** Exactly one out-of-band trusted key must authorize the signed revisions. */
 export function verifyRotatingSourceExport(
   envelope: unknown,
   policy: ApprovedFetchPolicy,
@@ -46,65 +76,46 @@ export function verifyRotatingSourceExport(
   sources: readonly RegisteredResearchSource[];
   keyId: string;
 } {
-  if (
-    !revision(minimum.sourceRevision) ||
-    !revision(minimum.hostApprovalRevision) ||
-    !Array.isArray(rotation.epochs) ||
-    rotation.epochs.length < 1 ||
-    rotation.epochs.length > 8 ||
-    !envelope ||
-    typeof envelope !== "object" ||
-    !("export" in envelope) ||
-    !envelope.export ||
-    typeof envelope.export !== "object" ||
-    !("sourceRevision" in envelope.export) ||
-    !("hostApprovalRevision" in envelope.export)
-  ) {
+  if (!revision(minimum.sourceRevision) || !revision(minimum.hostApprovalRevision)) {
     throw new Error("Pinned signing key rotation configuration invalid");
   }
-  const proposed = envelope.export;
-  const source = proposed.sourceRevision;
-  const host = proposed.hostApprovalRevision;
-  if (
-    typeof source !== "number" ||
-    !revision(source) ||
-    typeof host !== "number" ||
-    !revision(host)
-  ) {
+  if (!Array.isArray(rotation.epochs) || rotation.epochs.length < 1) {
+    throw new Error("Pinned signing key rotation configuration invalid");
+  }
+  if (rotation.epochs.length > 8 || !envelope || typeof envelope !== "object") {
+    throw new Error("Pinned signing key rotation configuration invalid");
+  }
+  if (!("export" in envelope) || !envelope.export || typeof envelope.export !== "object") {
+    throw new Error("Pinned signing key rotation configuration invalid");
+  }
+  if (!("sourceRevision" in envelope.export) || !("hostApprovalRevision" in envelope.export)) {
+    throw new Error("Pinned signing key rotation configuration invalid");
+  }
+  const source = envelope.export.sourceRevision;
+  const host = envelope.export.hostApprovalRevision;
+  if (typeof source !== "number" || typeof host !== "number") {
+    throw new Error("Signed export revision invalid");
+  }
+  if (!revision(source) || !revision(host)) {
     throw new Error("Signed export revision invalid");
   }
   const ids = new Set<string>();
-  const eligible: PinnedSigningKeyEpoch[] = [];
+  const selected: PinnedSigningKeyEpoch[] = [];
   for (const epoch of rotation.epochs) {
     const id = signingPublicKeyId(epoch.publicKey);
-    if (
-      !SHA.test(id) ||
-      ids.has(id) ||
-      !revision(epoch.fromSourceRevision) ||
-      !revision(epoch.fromHostApprovalRevision) ||
-      (epoch.untilSourceRevision !== undefined &&
-        (!revision(epoch.untilSourceRevision) ||
-          epoch.untilSourceRevision < epoch.fromSourceRevision)) ||
-      (epoch.untilHostApprovalRevision !== undefined &&
-        (!revision(epoch.untilHostApprovalRevision) ||
-          epoch.untilHostApprovalRevision < epoch.fromHostApprovalRevision))
-    ) {
-      throw new Error("Pinned signing key epoch invalid");
+    validateEpoch(epoch);
+    if (ids.has(id)) {
+      throw new Error("Duplicate pinned signing key");
     }
     ids.add(id);
-    if (
-      source >= epoch.fromSourceRevision &&
-      host >= epoch.fromHostApprovalRevision &&
-      (epoch.untilSourceRevision === undefined || source <= epoch.untilSourceRevision) &&
-      (epoch.untilHostApprovalRevision === undefined || host <= epoch.untilHostApprovalRevision)
-    ) {
-      eligible.push(epoch);
+    if (eligible(epoch, source, host)) {
+      selected.push(epoch);
     }
   }
-  if (eligible.length !== 1) {
+  if (selected.length !== 1) {
     throw new Error("No unique authorized signing key for revision");
   }
-  const key = eligible[0]!.publicKey;
+  const key = selected[0]!.publicKey;
   const result = verifyDormantSourceSignature(envelope, policy, key, minimum);
   return { ...result, keyId: signingPublicKeyId(key) };
 }
