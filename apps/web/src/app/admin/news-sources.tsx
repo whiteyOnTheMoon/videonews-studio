@@ -105,11 +105,7 @@ function validSave(value: unknown, command: SourceEditorCommand): boolean {
     return false;
   const id = "source" in command ? command.source.id : command.sourceId;
   const status =
-    command.action === "approve"
-      ? "approved"
-      : command.action === "block"
-        ? "blocked"
-        : "pending";
+    command.action === "approve" ? "approved" : command.action === "block" ? "blocked" : "pending";
   return (
     value.saved === true &&
     value.feedActive === false &&
@@ -167,10 +163,7 @@ export default function NewsSources({ enabled }: { enabled: boolean }) {
           cache: "no-store",
           redirect: "error",
         });
-        if (
-          response.status !== 200 ||
-          !validSave((await response.json()) as unknown, command)
-        ) {
+        if (response.status !== 200 || !validSave((await response.json()) as unknown, command)) {
           throw new Error("Source change rejected");
         }
         const next = await loadSnapshot();
