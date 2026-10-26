@@ -31,8 +31,10 @@ SET ROLE vns_feed_project_executor;
 DO $test$
 DECLARE n integer; rejected boolean := false;
 BEGIN
- SELECT vns.project_feed_candidates('ci_projection_feed',100) INTO n;
- IF n <> 3 THEN RAISE EXCEPTION 'Expected three projected links, got %',n; END IF;
+ SELECT vns.project_feed_candidates('ci_projection_feed',2) INTO n;
+ IF n <> 2 THEN RAISE EXCEPTION 'Expected two projected links, got %',n; END IF;
+ SELECT vns.project_feed_candidates('ci_projection_feed',2) INTO n;
+ IF n <> 1 THEN RAISE EXCEPTION 'Remaining candidate was starved'; END IF;
  SELECT vns.project_feed_candidates('ci_projection_feed',100) INTO n;
  IF n <> 0 THEN RAISE EXCEPTION 'Projection replay created duplicates'; END IF;
  BEGIN
