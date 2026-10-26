@@ -70,9 +70,9 @@ jobs:
             psql -X -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
           done
           psql -X -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE ROLE vns_p2_ci_feed LOGIN INHERIT PASSWORD 'ci_only_feed_for_disposable_runner';
-          GRANT vns_feed_poll_writer TO vns_p2_ci_feed;
-          GRANT USAGE ON SCHEMA vns TO vns_p2_ci_feed;
+          CREATE ROLE vns_feed_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_feed_for_disposable_runner';
+          GRANT vns_feed_poll_writer TO vns_feed_login_ciunit;
+          GRANT USAGE ON SCHEMA vns TO vns_feed_login_ciunit;
           SQL
       - name: Verify Redis queue, PostgreSQL persistence and never-publish review
         run: node --test scripts/ci_p2_integrated_ports.mjs
