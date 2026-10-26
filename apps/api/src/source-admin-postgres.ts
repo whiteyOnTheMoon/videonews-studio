@@ -16,6 +16,7 @@ export class PostgresSourceAdminStore implements SourceAdminStore {
     );
     if (result.rows.length !== 1) throw new Error("Source registry unavailable");
     const row = result.rows[0];
+    if (!row) throw new Error("Source registry unavailable");
     const revision = typeof row.revision === "string" ? Number(row.revision) : row.revision;
     return validateSourceSnapshot({ revision, sources: row.sources });
   }
@@ -53,9 +54,10 @@ export class PostgresSourceAdminStore implements SourceAdminStore {
         event.recordedAt,
       ],
     );
-    if (result.rows.length !== 1 || typeof result.rows[0].saved !== "boolean") {
+    const response = result.rows[0];
+    if (result.rows.length !== 1 || !response || typeof response.saved !== "boolean") {
       throw new Error("Source registry unavailable");
     }
-    return result.rows[0].saved ? "saved" : "conflict";
+    return response.saved ? "saved" : "conflict";
   }
 }
