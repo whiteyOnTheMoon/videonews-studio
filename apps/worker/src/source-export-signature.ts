@@ -1,13 +1,5 @@
-import {
-  createPublicKey,
-  sign,
-  verify,
-  type KeyObject,
-} from "node:crypto";
-import {
-  parseDormantSourceExport,
-  type DormantSourceExport,
-} from "./source-registry-export.js";
+import { createPublicKey, sign, verify, type KeyObject } from "node:crypto";
+import { parseDormantSourceExport, type DormantSourceExport } from "./source-registry-export.js";
 import type { RegisteredResearchSource } from "./source-registry.js";
 import type { ApprovedFetchPolicy } from "./source-fetch.js";
 
@@ -85,11 +77,7 @@ export function verifyDormantSourceSignature(
   }
   // Hash is integrity-only. This validation also enforces independently
   // trusted hosts, blocked child scopes and minimum source/host revisions.
-  const sources = parseDormantSourceExport(
-    value.export,
-    independentlyTrustedPolicy,
-    minimum,
-  );
+  const sources = parseDormantSourceExport(value.export, independentlyTrustedPolicy, minimum);
   return { sealed: value as unknown as SignedDormantSourceExport, sources };
 }
 

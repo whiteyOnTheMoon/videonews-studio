@@ -15,11 +15,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { acceptDormantSourceFile, publishDormantSourceFile } from "./source-export-files.js";
 import {
-  acceptDormantSourceFile,
-  publishDormantSourceFile,
-} from "./source-export-files.js";
-import { sealDormantSourceExport, verifyDormantSourceSignature } from "./source-export-signature.js";
+  sealDormantSourceExport,
+  verifyDormantSourceSignature,
+} from "./source-export-signature.js";
 import { prepareDormantSourceExport } from "./source-registry-export.js";
 
 const policy = { enabled: true as const, hosts: ["news.example.org"] };
@@ -69,10 +69,16 @@ test("a distinct public key verifies the export; altered envelope is refused", (
   assert.equal(accepted.sources.length, 2);
   const wrongKeys = pair();
   assert.throws(() => verifyDormantSourceSignature(sealed, policy, wrongKeys.publicKey));
-  assert.throws(() => verifyDormantSourceSignature(sealed, {
-    enabled: true,
-    hosts: ["other.example.org"],
-  }, keys.publicKey));
+  assert.throws(() =>
+    verifyDormantSourceSignature(
+      sealed,
+      {
+        enabled: true,
+        hosts: ["other.example.org"],
+      },
+      keys.publicKey,
+    ),
+  );
   for (const tampered of [
     { ...sealed, signature: "A".repeat(86) },
     { ...sealed, signature: sealed.signature + "=" },
@@ -142,9 +148,7 @@ test("persisted high-water checkpoint rejects a replayed signed older revision",
       /rollback/,
     );
     await writeFile(join(publisher, "source-export.signed.json"), old);
-    await assert.rejects(
-      acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey),
-    );
+    await assert.rejects(acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey));
   } finally {
     await cleanup(root);
   }

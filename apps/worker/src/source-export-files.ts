@@ -51,7 +51,10 @@ async function checkDirectory(directory: string): Promise<void> {
 }
 
 async function syncDirectory(directory: string): Promise<void> {
-  const handle = await open(directory, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+  const handle = await open(
+    directory,
+    constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+  );
   try {
     await handle.sync();
   } finally {
@@ -59,12 +62,7 @@ async function syncDirectory(directory: string): Promise<void> {
   }
 }
 function missing(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "ENOENT"
-  );
+  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 async function readPrivateJson(directory: string, name: string): Promise<unknown | null> {
   let file;
