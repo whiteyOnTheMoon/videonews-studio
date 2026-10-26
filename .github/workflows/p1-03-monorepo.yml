@@ -58,8 +58,8 @@ jobs:
         run: npm run lint
       - name: Temporary targeted Prettier diagnosis
         run: |
-          npx prettier --write apps/worker/src/offline-editorial-pipeline.ts apps/worker/src/offline-editorial-pipeline.test.ts
-          git diff -- apps/worker/src/offline-editorial-pipeline.ts apps/worker/src/offline-editorial-pipeline.test.ts
+          npx prettier --write docs/P2-01_ATOMIC_TWO_PERSON_HOST_GRANTS.md
+          git diff -- docs/P2-01_ATOMIC_TWO_PERSON_HOST_GRANTS.md
       - name: Formatting
         run: npm run format:check
       - name: Verify P1-01 importer on integrated branch
