@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  parseDormantSourceExport,
-  prepareDormantSourceExport,
-} from "./source-registry-export.js";
+import { parseDormantSourceExport, prepareDormantSourceExport } from "./source-registry-export.js";
 import { approvedSourceForUrl } from "./source-registry.js";
 
 function source(id: string, baseUrl: string, status: "approved" | "pending" | "blocked") {
@@ -42,33 +39,44 @@ test("deterministic export keeps blocked child rules and omits unrelated pending
     hostApprovalRevision: 3,
   });
   assert.equal(parsed.length, 3);
-  assert.equal(parsed.some((entry) => entry.id === irrelevant.id), false);
-  assert.equal(approvedSourceForUrl("https://news.example.org/news/article/", parsed)?.id, parent.id);
-  assert.equal(approvedSourceForUrl("https://news.example.org/news/private/article/", parsed), null);
+  assert.equal(
+    parsed.some((entry) => entry.id === irrelevant.id),
+    false,
+  );
+  assert.equal(
+    approvedSourceForUrl("https://news.example.org/news/article/", parsed)?.id,
+    parent.id,
+  );
+  assert.equal(
+    approvedSourceForUrl("https://news.example.org/news/private/article/", parsed),
+    null,
+  );
   assert.equal(approvedSourceForUrl("https://news.example.org/news/drafts/article/", parsed), null);
 });
 
 test("an admin source approval cannot add its own network host permission", () => {
   const otherApproved = source("other_approved", "https://other.example.org/feed/", "approved");
   assert.throws(
-    () => prepareDormantSourceExport(
-      { revision: 10, sources: [parent, otherApproved] },
-      grant,
-    ),
+    () => prepareDormantSourceExport({ revision: 10, sources: [parent, otherApproved] }, grant),
     /grant/,
   );
   assert.throws(
-    () => prepareDormantSourceExport(snapshot, {
-      revision: 4,
-      approvedHosts: ["news.example.org", "extra.example.org"],
-    }),
+    () =>
+      prepareDormantSourceExport(snapshot, {
+        revision: 4,
+        approvedHosts: ["news.example.org", "extra.example.org"],
+      }),
     /grant/,
   );
   assert.throws(
-    () => prepareDormantSourceExport(
-      { revision: 10, sources: [source("still_pending", "https://news.example.org/", "pending")] },
-      grant,
-    ),
+    () =>
+      prepareDormantSourceExport(
+        {
+          revision: 10,
+          sources: [source("still_pending", "https://news.example.org/", "pending")],
+        },
+        grant,
+      ),
     /grant/,
   );
 });
@@ -95,32 +103,40 @@ test("untrusted host approval shape or invalid source entry fails closed", () =>
     { ...parent, licenseNotes: "" },
     { ...parent, reviewedAt: "2026-02-30" },
   ]) {
-    assert.throws(() => prepareDormantSourceExport(
-      { revision: 10, sources: [invalid] },
-      grant,
-    ));
+    assert.throws(() => prepareDormantSourceExport({ revision: 10, sources: [invalid] }, grant));
   }
-  assert.throws(() => prepareDormantSourceExport(
-    { revision: 10, sources: [parent, parent] },
-    grant,
-  ));
+  assert.throws(() =>
+    prepareDormantSourceExport({ revision: 10, sources: [parent, parent] }, grant),
+  );
 });
 
 test("export is not trusted without matching independent policy and monotonic revisions", () => {
   const bundle = prepareDormantSourceExport(snapshot, grant);
   const checkpoint = { sourceRevision: 9, hostApprovalRevision: 3 };
-  assert.throws(() => parseDormantSourceExport(bundle, {
-    enabled: true,
-    hosts: ["other.example.org"],
-  }, checkpoint), /independently/);
-  assert.throws(() => parseDormantSourceExport(bundle, policy, {
-    sourceRevision: 10,
-    hostApprovalRevision: 3,
-  }));
-  assert.throws(() => parseDormantSourceExport(bundle, policy, {
-    sourceRevision: 9,
-    hostApprovalRevision: 4,
-  }));
+  assert.throws(
+    () =>
+      parseDormantSourceExport(
+        bundle,
+        {
+          enabled: true,
+          hosts: ["other.example.org"],
+        },
+        checkpoint,
+      ),
+    /independently/,
+  );
+  assert.throws(() =>
+    parseDormantSourceExport(bundle, policy, {
+      sourceRevision: 10,
+      hostApprovalRevision: 3,
+    }),
+  );
+  assert.throws(() =>
+    parseDormantSourceExport(bundle, policy, {
+      sourceRevision: 9,
+      hostApprovalRevision: 4,
+    }),
+  );
   for (const tampered of [
     { ...bundle, sourceRevision: 10 },
     { ...bundle, allowedHosts: ["other.example.org"] },

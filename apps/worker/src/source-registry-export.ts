@@ -1,12 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import {
-  parseReviewedSourceRegistry,
-  type RegisteredResearchSource,
-} from "./source-registry.js";
-import {
-  readApprovedFetchPolicy,
-  type ApprovedFetchPolicy,
-} from "./source-fetch.js";
+import { parseReviewedSourceRegistry, type RegisteredResearchSource } from "./source-registry.js";
+import { readApprovedFetchPolicy, type ApprovedFetchPolicy } from "./source-fetch.js";
 
 /**
  * CI-only transition between DB-admin source snapshots and the existing
@@ -133,10 +127,10 @@ function checkedRegistry(input: unknown): {
     }
     // Validate EVERY database entry, even those omitted from the final
     // host-restricted worker registry.
-    const parsed = parseReviewedSourceRegistry(
-      JSON.stringify({ version: 1, sources: [entry] }),
-      { enabled: true, hosts: [host] },
-    );
+    const parsed = parseReviewedSourceRegistry(JSON.stringify({ version: 1, sources: [entry] }), {
+      enabled: true,
+      hosts: [host],
+    });
     const item = parsed[0];
     if (!item || ids.has(item.id) || scopes.has(item.baseUrl)) {
       throw new Error("Admin source export duplicate");
@@ -168,7 +162,7 @@ export function prepareDormantSourceExport(
   }
   const selected = validated.all
     .filter((item) => approval.approvedHosts.includes(new URL(item.baseUrl).hostname))
-    .sort((a, b) => a.id.localeCompare(b.id, "en"));
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   if (selected.length === 0) throw new Error("No independently approved sources");
   const registryJson = JSON.stringify({ version: 1, sources: selected });
   const policy: ApprovedFetchPolicy = { enabled: true, hosts: approvedHosts };
@@ -235,11 +229,13 @@ export function parseDormantSourceExport(
     throw new Error("Source registry export checksum invalid");
   }
   const parsed = parseReviewedSourceRegistry(input.registryJson, independentlyTrustedPolicy);
-  const acceptedHosts = sortedHosts(
-    [...new Set(parsed.filter((item) => item.status === "approved").map(
-      (item) => new URL(item.baseUrl).hostname,
-    ))],
-  );
+  const acceptedHosts = sortedHosts([
+    ...new Set(
+      parsed
+        .filter((item) => item.status === "approved")
+        .map((item) => new URL(item.baseUrl).hostname),
+    ),
+  ]);
   if (!identical(acceptedHosts, hosts)) {
     throw new Error("Source registry approval set invalid");
   }
