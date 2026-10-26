@@ -278,12 +278,17 @@ export function groupConservativeEventCandidates(
     ids.add(article.id);
   }
   const tokens = (text: string): Set<string> =>
-    new Set(text.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]{2,}/gu) ?? []);
+    new Set(
+      text
+        .normalize("NFKC")
+        .toLocaleLowerCase("en")
+        .match(/[\p{L}\p{N}]{2,}/gu) ?? [],
+    );
   const similar = (a: NormalizedArticle, b: NormalizedArticle): boolean => {
-    if (a.titleFingerprint === b.titleFingerprint) return true;
     if (Math.abs(Date.parse(a.publishedAt) - Date.parse(b.publishedAt)) > 48 * 3600000) {
       return false;
     }
+    if (a.titleFingerprint === b.titleFingerprint) return true;
     const left = tokens(a.headline);
     const right = tokens(b.headline);
     if (left.size < 6 || right.size < 6) return false;
@@ -299,7 +304,10 @@ export function groupConservativeEventCandidates(
   }
   return groups
     .map((records) => {
-      const signature = records.map((record) => record.id).sort().join(":");
+      const signature = records
+        .map((record) => record.id)
+        .sort()
+        .join(":");
       return {
         id: hash("candidate-event-v1:" + signature),
         headline: records[0]!.headline,
