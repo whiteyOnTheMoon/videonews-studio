@@ -20,7 +20,6 @@ DECLARE
   action_name text;
   id uuid := 'ca210001-1111-4111-8111-111111111111';
   observed_revision bigint:=0;
-  audit_count integer;
 BEGIN
   -- A new source can only appear with status pending, even with valid admin.
   refused:=false;
@@ -107,11 +106,19 @@ BEGIN
   observed_revision:=5;
 
   SELECT revision INTO observed_revision FROM vns.admin_source_registry WHERE singleton=true;
-  SELECT count(*) INTO audit_count FROM vns.admin_source_audit;
-  IF observed_revision<>5 OR audit_count<>5 THEN
-    RAISE EXCEPTION 'Revision/audit mismatch, got % / %',observed_revision,audit_count;
+  IF observed_revision<>5 THEN
+    RAISE EXCEPTION 'Source revision mismatch, got %',observed_revision;
   END IF;
 END;
 $checks$;
 RESET ROLE;
+DO $audit$
+BEGIN
+  IF (SELECT count(*) FROM vns.admin_source_audit)<>5
+     OR (SELECT revision FROM vns.admin_source_registry WHERE singleton=true)<>5
+     OR EXISTS(SELECT 1 FROM vns.admin_source_audit
+               WHERE editor_username<>'ci_transition_admin' OR editor_auth_version<>0)
+  THEN RAISE EXCEPTION 'Revision/audit attribution mismatch'; END IF;
+END;
+$audit$;
 ROLLBACK;
