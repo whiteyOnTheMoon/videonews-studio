@@ -15,7 +15,12 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { acceptDormantSourceFile, publishDormantSourceFile, type IndependentSourceRevisionAnchor, type SourceRevisionAnchorState } from "./source-export-files.js";
+import {
+  acceptDormantSourceFile,
+  publishDormantSourceFile,
+  type IndependentSourceRevisionAnchor,
+  type SourceRevisionAnchorState,
+} from "./source-export-files.js";
 import {
   sealDormantSourceExport,
   verifyDormantSourceSignature,
@@ -234,13 +239,16 @@ test("independent anchor refuses joint signed-export and checkpoint rollback", a
     let highWater: SourceRevisionAnchorState | undefined;
     const anchor: IndependentSourceRevisionAnchor = {
       async advance(candidate) {
-        if (highWater && (
-          candidate.sourceRevision < highWater.sourceRevision ||
-          candidate.hostApprovalRevision < highWater.hostApprovalRevision ||
-          (candidate.sourceRevision === highWater.sourceRevision &&
-            candidate.hostApprovalRevision === highWater.hostApprovalRevision &&
-            candidate.envelopeSha256 !== highWater.envelopeSha256)
-        )) throw new Error("Independent anchor rejects rollback or equivocation");
+        if (
+          highWater &&
+          (candidate.sourceRevision < highWater.sourceRevision ||
+            candidate.hostApprovalRevision < highWater.hostApprovalRevision ||
+            (candidate.sourceRevision === highWater.sourceRevision &&
+              candidate.hostApprovalRevision === highWater.hostApprovalRevision &&
+              candidate.envelopeSha256 !== highWater.envelopeSha256))
+        ) {
+          throw new Error("Independent anchor rejects rollback or equivocation");
+        }
         highWater = { ...candidate };
       },
     };
@@ -272,7 +280,9 @@ test("anchor error prevents checkpoint creation and source release", async () =>
     await publishDormantSourceFile(publisher, defaultBundle, policy, keys.privateKey);
     await assert.rejects(
       acceptDormantSourceFile(publisher, consumer, policy, keys.publicKey, true, {
-        async advance() { throw new Error("independent store unavailable"); },
+        async advance() {
+          throw new Error("independent store unavailable");
+        },
       }),
       /independent store unavailable/,
     );
