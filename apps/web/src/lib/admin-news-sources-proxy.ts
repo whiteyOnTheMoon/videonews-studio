@@ -142,7 +142,7 @@ function parseSnapshot(value: unknown): { revision: number; sources: ManagedSour
       seen.has(source.id) ||
       urls.has(source.baseUrl)
     )
-    return null;
+      return null;
     seen.add(source.id);
     urls.add(source.baseUrl);
     sources.push({
