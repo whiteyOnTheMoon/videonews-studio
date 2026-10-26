@@ -212,7 +212,7 @@ for iteration in 1 2; do
     for label in a b; do
       docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
         -U postgres -d vns_schema_test -c \
-        "SET ROLE vns_host_approval_writer; SELECT vns.admin_change_source_host_approval(0,2,'grant','race.example.org','Synthetic independently reviewed limited metadata rights.','ca220003-3333-4333-8333-333333333333'::uuid,0);" \
+        "SET ROLE vns_host_approval_writer; SELECT vns.admin_change_source_host_approval(0,3,'grant','race.example.org','Synthetic independently reviewed limited metadata rights.','ca220003-3333-4333-8333-333333333333'::uuid,0);" \
         > "$host_work/$label" 2>&1 &
       if [[ "$label" = a ]]; then host_pid_a=$!; else host_pid_b=$!; fi
     done
