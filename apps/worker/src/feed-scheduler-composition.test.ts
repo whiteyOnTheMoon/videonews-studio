@@ -50,13 +50,16 @@ const responses: Record<string, { type: string; body: string }> = {
     type: "application/rss+xml",
     body:
       "<rss><channel><item><title>Regional transport strategy published</title>" +
-      "<link>" + ROOT + "rss/article-1</link></item></channel></rss>",
+      "<link>" +
+      ROOT +
+      "rss/article-1</link></item></channel></rss>",
   },
   "/atom/": {
     type: "application/atom+xml",
     body:
       '<feed><entry><title>City transport policy reviewed today</title><link href="' +
-      ROOT + 'atom/article-2" /></entry></feed>',
+      ROOT +
+      'atom/article-2" /></entry></feed>',
   },
   "/api/": {
     type: "application/json",
@@ -94,11 +97,13 @@ function fixture() {
         };
         db.set(id, next);
         return {
-          rows: [{
-            token: next.token,
-            etag: next.etag,
-            last_modified: next.modified,
-          }],
+          rows: [
+            {
+              token: next.token,
+              etag: next.etag,
+              last_modified: next.modified,
+            },
+          ],
         };
       }
       if (sql.includes("vns.commit_feed_poll")) {
@@ -180,7 +185,10 @@ test("full offline register to pinned HTTPS to SQL composition is idempotent", a
   ]);
   assert.equal(f.readCount, 1);
   assert.equal(f.saved.size, 3);
-  assert.deepEqual(f.requests.map((x) => x.path), ["/rss/", "/atom/", "/api/"]);
+  assert.deepEqual(
+    f.requests.map((x) => x.path),
+    ["/rss/", "/atom/", "/api/"],
+  );
   assert.ok(f.requests.every((x) => x.ip === "1.1.1.1"));
   assert.deepEqual(await scheduler.tick(new Date(START + 59000)), []);
   assert.equal(f.requests.length, 3);
@@ -209,9 +217,7 @@ test("missing offline gates and host approval are rejected before registry or SQ
   ];
   for (const [key, value] of deniedSettings) {
     const f = fixture();
-    assert.throws(
-      () => createDormantFeedScheduler({ ...env, [key]: value }, f.ports),
-    );
+    assert.throws(() => createDormantFeedScheduler({ ...env, [key]: value }, f.ports));
     assert.equal(f.readCount, 0);
     assert.equal(f.queries.length, 0);
     assert.equal(f.requests.length, 0);
@@ -241,8 +247,7 @@ test("explicit ports and three approved sources are mandatory", () => {
     () =>
       createDormantFeedScheduler(env, {
         ...f.ports,
-        readRegistry: () =>
-          JSON.stringify({ version: 1, sources: SOURCES.slice(0, 2) }),
+        readRegistry: () => JSON.stringify({ version: 1, sources: SOURCES.slice(0, 2) }),
       }),
     /three to five reviewed sources/,
   );
