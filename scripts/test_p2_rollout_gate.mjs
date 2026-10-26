@@ -6,12 +6,15 @@ const sample = () => ({
   schemaVersion: 1,
   mainSha: "a".repeat(40),
   evidence: Object.fromEntries(
-    REQUIREMENTS.map((key) => [key, {
-      status: "passed",
-      approver: "reviewer_01",
-      reference: "https://github.com/example/repo/issues/1",
-      approvedAt: "2026-10-26T12:00:00Z",
-    }]),
+    REQUIREMENTS.map((key) => [
+      key,
+      {
+        status: "passed",
+        approver: "reviewer_01",
+        reference: "https://github.com/example/repo/issues/1",
+        approvedAt: "2026-10-26T12:00:00Z",
+      },
+    ]),
   ),
 });
 
@@ -42,9 +45,13 @@ test("unknown fields, malformed approvals and forged states fail closed", () => 
 
 test("SHA binding rejects stale or untrusted releases", () => {
   assert.deepEqual(evaluateRolloutEvidence(sample(), { expectedSha: "a".repeat(40) }), {
-    readyForOperatorReview: true, missingOrInvalid: [],
+    readyForOperatorReview: true,
+    missingOrInvalid: [],
   });
-  assert.throws(() => evaluateRolloutEvidence(sample(), { expectedSha: "b".repeat(40) }), /SHA mismatch/);
+  assert.throws(
+    () => evaluateRolloutEvidence(sample(), { expectedSha: "b".repeat(40) }),
+    /SHA mismatch/,
+  );
   assert.throws(() => evaluateRolloutEvidence(sample(), { expectedSha: "main" }), /SHA mismatch/);
 });
 

@@ -36,7 +36,10 @@ export function evaluateRolloutEvidence(input, { expectedSha, now = new Date() }
   ) {
     throw new Error("Invalid P2 evidence manifest");
   }
-  if (expectedSha !== undefined && (!/^[0-9a-f]{40}$/.test(expectedSha) || input.mainSha !== expectedSha)) {
+  if (
+    expectedSha !== undefined &&
+    (!/^[0-9a-f]{40}$/.test(expectedSha) || input.mainSha !== expectedSha)
+  ) {
     throw new Error("Release SHA mismatch");
   }
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
@@ -50,11 +53,16 @@ export function evaluateRolloutEvidence(input, { expectedSha, now = new Date() }
     if (typeof value !== "string" || value.length > 1000) return false;
     try {
       const url = new URL(value);
-      return url.protocol === "https:" && !!url.hostname &&
-        !url.username && !url.password && !url.hash &&
+      return (
+        url.protocol === "https:" &&
+        !!url.hostname &&
+        !url.username &&
+        !url.password &&
+        !url.hash &&
         !["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase()) &&
         !url.hostname.toLowerCase().endsWith(".local") &&
-        !url.hostname.toLowerCase().endsWith(".internal");
+        !url.hostname.toLowerCase().endsWith(".internal")
+      );
     } catch {
       return false;
     }
@@ -84,7 +92,9 @@ export function evaluateRolloutEvidence(input, { expectedSha, now = new Date() }
 
 if (process.argv[1]?.endsWith("/p2_rollout_gate.mjs")) {
   try {
-    if (process.argv.length !== 3 && process.argv.length !== 4) throw new Error("Expected evidence JSON path and optional expected SHA");
+    if (process.argv.length !== 3 && process.argv.length !== 4) {
+      throw new Error("Expected evidence JSON path and optional expected SHA");
+    }
     const data = readFileSync(process.argv[2], "utf8");
     if (Buffer.byteLength(data, "utf8") > 65536) throw new Error("Oversized manifest");
     const result = evaluateRolloutEvidence(JSON.parse(data), { expectedSha: process.argv[3] });
