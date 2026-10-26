@@ -32,10 +32,7 @@ test("no BullMQ object or Redis interaction unless each gate is independently en
       name,
     );
   }
-  assert.throws(
-    () => createGatedFeedBullmqBridge({}, scheduler, ports),
-    /disabled/,
-  );
+  assert.throws(() => createGatedFeedBullmqBridge({}, scheduler, ports), /disabled/);
 });
 
 test("invalid ports, duplicate source IDs, shared connection and wrong queue are refused", () => {
@@ -44,18 +41,25 @@ test("invalid ports, duplicate source IDs, shared connection and wrong queue are
     /ports refused/,
   );
   assert.throws(
-    () => createGatedFeedBullmqBridge(gates, scheduler, {
-      ...ports,
-      now: undefined as unknown as () => Date,
-    }),
+    () =>
+      createGatedFeedBullmqBridge(gates, scheduler, {
+        ...ports,
+        now: undefined as unknown as () => Date,
+      }),
     /ports refused/,
   );
   assert.throws(
-    () => createGatedFeedBullmqBridge(gates, { ...scheduler, sourceIds: ["rss_feed", "rss_feed", "json_feed"] }, ports),
+    () =>
+      createGatedFeedBullmqBridge(
+        gates,
+        { ...scheduler, sourceIds: ["rss_feed", "rss_feed", "json_feed"] },
+        ports,
+      ),
     /ports refused/,
   );
   assert.throws(
-    () => createGatedFeedBullmqBridge({ ...gates, VNS_FEED_QUEUE_NAME: "vns-jobs" }, scheduler, ports),
+    () =>
+      createGatedFeedBullmqBridge({ ...gates, VNS_FEED_QUEUE_NAME: "vns-jobs" }, scheduler, ports),
     /disabled/,
   );
 });

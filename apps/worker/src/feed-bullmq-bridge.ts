@@ -1,9 +1,6 @@
 import { Queue, Worker } from "bullmq";
 import type { Redis } from "ioredis";
-import {
-  createDormantFeedQueueContract,
-  ISOLATED_FEED_QUEUE,
-} from "./feed-queue-contract.js";
+import { createDormantFeedQueueContract, ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
 import type { OfflineFeedScheduler } from "./feed-scheduler-composition.js";
 
 /** Deliberately outside the existing probe/research prefixes. */
@@ -55,7 +52,9 @@ export function createGatedFeedBullmqBridge(
     scheduler.sourceIds.length < 3 ||
     scheduler.sourceIds.length > 5 ||
     new Set(scheduler.sourceIds).size !== scheduler.sourceIds.length ||
-    scheduler.sourceIds.some((id) => typeof id !== "string" || !/^[a-z][a-z0-9_-]{2,40}$/.test(id)) ||
+    scheduler.sourceIds.some(
+      (id) => typeof id !== "string" || !/^[a-z][a-z0-9_-]{2,40}$/.test(id),
+    ) ||
     !ports ||
     !ports.producer ||
     !ports.consumer ||

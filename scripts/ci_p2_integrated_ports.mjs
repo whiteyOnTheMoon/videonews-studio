@@ -5,7 +5,10 @@ import { Redis } from "ioredis";
 import { Pool } from "pg";
 import { createDormantFeedScheduler } from "../apps/worker/dist/feed-scheduler-composition.js";
 import { ISOLATED_FEED_QUEUE } from "../apps/worker/dist/feed-queue-contract.js";
-import { createGatedFeedBullmqBridge, ISOLATED_FEED_REDIS_PREFIX } from "../apps/worker/dist/feed-bullmq-bridge.js";
+import {
+  createGatedFeedBullmqBridge,
+  ISOLATED_FEED_REDIS_PREFIX,
+} from "../apps/worker/dist/feed-bullmq-bridge.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "../apps/worker/dist/research-service-config.js";
 import {
   normalizeFeedArticles,
@@ -74,7 +77,10 @@ test(
       connectionTimeoutMillis: 5000,
     });
     const connection = { host: "127.0.0.1", port: 6379 };
-    const events = new QueueEvents(ISOLATED_FEED_QUEUE, { connection, prefix: ISOLATED_FEED_REDIS_PREFIX });
+    const events = new QueueEvents(ISOLATED_FEED_QUEUE, {
+      connection,
+      prefix: ISOLATED_FEED_REDIS_PREFIX,
+    });
     const producerConnection = new Redis({ ...connection, maxRetriesPerRequest: null });
     const workerConnection = new Redis({ ...connection, maxRetriesPerRequest: null });
     let bridge;
