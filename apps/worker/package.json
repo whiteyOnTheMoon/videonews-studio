@@ -11,7 +11,8 @@
     "test": "npm run build && node --test dist/*.test.js",
     "dispatch": "node dist/dispatch.js",
     "status-sync": "node dist/status-sync.js",
-    "research-service": "node dist/research-service.js"
+    "research-service": "node dist/research-service.js",
+    "feed-observe-once": "node dist/feed-observe-once.js --once"
   },
   "dependencies": {
     "@vns/shared": "*",
