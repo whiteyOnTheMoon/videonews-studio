@@ -1,6 +1,7 @@
 \set ON_ERROR_STOP on
 CREATE ROLE vns_trust_ci_owner NOLOGIN;
 CREATE ROLE vns_trust_ci_worker NOLOGIN;
+GRANT USAGE ON SCHEMA vns_source_anchor TO vns_trust_ci_owner;
 ALTER TABLE vns_source_anchor.trust_policy_high_water OWNER TO vns_trust_ci_owner;
 ALTER FUNCTION vns_source_anchor.advance_trust_policy(bigint,text) OWNER TO vns_trust_ci_owner;
 GRANT USAGE ON SCHEMA vns_source_anchor TO vns_trust_ci_worker;
