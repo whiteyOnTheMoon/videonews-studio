@@ -1,0 +1,28 @@
+name: P2 rollout evidence gate offline tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_rollout_gate.mjs"
+      - "scripts/test_p2_rollout_gate.mjs"
+      - ".github/workflows/p2-rollout-gate.yml"
+permissions:
+  contents: read
+jobs:
+  gate-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run fail-closed manifest tests
+        run: node --test scripts/test_p2_rollout_gate.mjs
+      - name: Assert missing evidence blocks review
+        run: |
+          printf '%s\n' '{"schemaVersion":1,"mainSha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","evidence":{}}' > "$RUNNER_TEMP/empty.json"
+          if node scripts/p2_rollout_gate.mjs "$RUNNER_TEMP/empty.json"; then
+            echo "FAIL: missing evidence accepted"
+            exit 1
+          fi
