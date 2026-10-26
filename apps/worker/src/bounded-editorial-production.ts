@@ -331,7 +331,27 @@ export function independentlyReviewMockScript(
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
     reasons.push("invalid_review_clock");
   }
-  if (provenance.some((source) => !source.rightsApproved)) reasons.push("source_rights_missing");
+  const provenanceBySource = new Map(
+    provenance.map((source) => [source.sourceId, source] as const),
+  );
+  const sourceIds = new Set(event.articles.map((article) => article.sourceId));
+  if (
+    provenanceBySource.size !== provenance.length ||
+    [...sourceIds].some((id) => !provenanceBySource.has(id))
+  ) {
+    reasons.push("source_provenance_missing");
+  }
+  if ([...sourceIds].some((id) => provenanceBySource.get(id)?.rightsApproved !== true)) {
+    reasons.push("source_rights_missing");
+  }
+  if (
+    !Number.isSafeInteger(policy.minimumPublisherGroups) ||
+    policy.minimumPublisherGroups < 2 ||
+    new Set([...sourceIds].map((id) => provenanceBySource.get(id)?.publisherGroup)).size <
+      policy.minimumPublisherGroups
+  ) {
+    reasons.push("publisher_groups_insufficient");
+  }
   if (!Number.isSafeInteger(policy.maxAgeHours) || policy.maxAgeHours < 1) {
     reasons.push("invalid_freshness_policy");
   } else if (
