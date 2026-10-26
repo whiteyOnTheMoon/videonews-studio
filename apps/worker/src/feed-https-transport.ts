@@ -268,3 +268,11 @@ export function createPinnedFeedHttpsTransport(
     },
   };
 }
+
+/**
+ * The real DNS-pinned HTTPS port is deliberately explicit. Only the separately
+ * gated observation executable may inject it; no worker auto-starts a source.
+ */
+export function productionFeedHttpsDependencies(): FeedHttpsDependencies {
+  return { resolveIPv4: resolvePublic, requestPinned };
+}
