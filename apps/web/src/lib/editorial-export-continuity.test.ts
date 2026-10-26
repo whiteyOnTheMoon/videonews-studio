@@ -49,25 +49,45 @@ test("checkpoint export requires contiguous revisions, matching linked digest an
 
 test("timeline export rejects reordered, repeated and mismatched cursors", () => {
   const first = {
-    event_id: EVENT_A, actor_id: ACTOR, event_kind: "decision",
+    event_id: EVENT_A,
+    actor_id: ACTOR,
+    event_kind: "decision",
     recorded_at: "2026-10-26T12:00:00.000Z",
   };
   const second = {
-    event_id: EVENT_B, actor_id: ACTOR, event_kind: "script_revision",
+    event_id: EVENT_B,
+    actor_id: ACTOR,
+    event_kind: "script_revision",
     recorded_at: "2026-10-26T12:00:00.000Z",
   };
   const last = { afterTime: second.recorded_at, afterId: second.event_id };
   assert.deepEqual(verifyTimelinePage([first, second], null, last), last);
-  assert.equal(verifyTimelinePage([first, second], null, {
-    ...last, afterId: EVENT_A,
-  }), null);
-  assert.equal(verifyTimelinePage([first], last, {
-    afterTime: first.recorded_at, afterId: first.event_id,
-  }), null);
-  assert.equal(verifyTimelinePage([second, first], null, {
-    afterTime: first.recorded_at, afterId: first.event_id,
-  }), null);
-  assert.equal(verifyTimelinePage([{ ...first, event_kind: "publish" }], null, {
-    afterTime: first.recorded_at, afterId: first.event_id,
-  }), null);
+  assert.equal(
+    verifyTimelinePage([first, second], null, {
+      ...last,
+      afterId: EVENT_A,
+    }),
+    null,
+  );
+  assert.equal(
+    verifyTimelinePage([first], last, {
+      afterTime: first.recorded_at,
+      afterId: first.event_id,
+    }),
+    null,
+  );
+  assert.equal(
+    verifyTimelinePage([second, first], null, {
+      afterTime: first.recorded_at,
+      afterId: first.event_id,
+    }),
+    null,
+  );
+  assert.equal(
+    verifyTimelinePage([{ ...first, event_kind: "publish" }], null, {
+      afterTime: first.recorded_at,
+      afterId: first.event_id,
+    }),
+    null,
+  );
 });
