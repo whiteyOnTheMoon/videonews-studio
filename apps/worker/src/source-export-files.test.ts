@@ -239,15 +239,19 @@ test("independent anchor refuses joint signed-export and checkpoint rollback", a
     let highWater: SourceRevisionAnchorState | undefined;
     const anchor: IndependentSourceRevisionAnchor = {
       async advance(candidate) {
+        if (highWater && candidate.sourceRevision < highWater.sourceRevision) {
+          throw new Error("Independent anchor rejects rollback");
+        }
+        if (highWater && candidate.hostApprovalRevision < highWater.hostApprovalRevision) {
+          throw new Error("Independent anchor rejects rollback");
+        }
         if (
           highWater &&
-          (candidate.sourceRevision < highWater.sourceRevision ||
-            candidate.hostApprovalRevision < highWater.hostApprovalRevision ||
-            (candidate.sourceRevision === highWater.sourceRevision &&
-              candidate.hostApprovalRevision === highWater.hostApprovalRevision &&
-              candidate.envelopeSha256 !== highWater.envelopeSha256))
+          candidate.sourceRevision === highWater.sourceRevision &&
+          candidate.hostApprovalRevision === highWater.hostApprovalRevision &&
+          candidate.envelopeSha256 !== highWater.envelopeSha256
         ) {
-          throw new Error("Independent anchor rejects rollback or equivocation");
+          throw new Error("Independent anchor rejects equivocation");
         }
         highWater = { ...candidate };
       },
@@ -286,10 +290,9 @@ test("anchor error prevents checkpoint creation and source release", async () =>
       }),
       /independent store unavailable/,
     );
-    await assert.rejects(
-      lstat(join(consumer, "source-export.checkpoint.json")),
-      { code: "ENOENT" },
-    );
+    await assert.rejects(lstat(join(consumer, "source-export.checkpoint.json")), {
+      code: "ENOENT",
+    });
   } finally {
     await cleanup(root);
   }
