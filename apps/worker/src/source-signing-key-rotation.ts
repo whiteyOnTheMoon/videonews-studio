@@ -27,7 +27,9 @@ export function signingPublicKeyId(key: KeyObject): string {
   if (key.type !== "public" || key.asymmetricKeyType !== "ed25519") {
     throw new Error("Invalid pinned signing public key");
   }
-  return createHash("sha256").update(key.export({ type: "spki", format: "der" })).digest("hex");
+  return createHash("sha256")
+    .update(key.export({ type: "spki", format: "der" }))
+    .digest("hex");
 }
 
 function validateEpoch(epoch: PinnedSigningKeyEpoch): void {
