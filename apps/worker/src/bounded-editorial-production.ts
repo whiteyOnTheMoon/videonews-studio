@@ -188,7 +188,7 @@ export function generateBoundedMockScript(
   const text = scaffold[profile.format];
   if (
     typeof text !== "string" || text.trim() !== text || text.length < 20 ||
-    text.length > 2000 || /[\u0000-\u001f]/.test(text)
+    text.length > 2000 || Array.from(text).some((letter) => letter.charCodeAt(0) < 32)
   ) {
     throw new Error("Script scaffold invalid");
   }
