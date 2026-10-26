@@ -200,13 +200,14 @@ test("full offline register to pinned HTTPS to SQL composition is idempotent", a
 });
 
 test("missing offline gates and host approval are rejected before registry or SQL", () => {
-  for (const [key, value] of [
+  const deniedSettings: Array<[string, string]> = [
     ["VNS_FEED_OFFLINE_COMPOSITION_ENABLED", "false"],
     ["VNS_FEED_OFFLINE_OPERATOR_ACK", "false"],
     ["VNS_FEED_REGISTRY_FILE", "/tmp/unapproved.json"],
     ["VNS_SOURCE_FETCH_ENABLED", "false"],
     ["VNS_ALLOWED_SOURCE_HOSTS", "localhost"],
-  ]) {
+  ];
+  for (const [key, value] of deniedSettings) {
     const f = fixture();
     assert.throws(
       () => createDormantFeedScheduler({ ...env, [key]: value }, f.ports),
