@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Queue, QueueEvents, Worker } from "bullmq";
+import { QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
 import { Pool } from "pg";
 import { createDormantFeedScheduler } from "../apps/worker/dist/feed-scheduler-composition.js";
+import { ISOLATED_FEED_QUEUE } from "../apps/worker/dist/feed-queue-contract.js";
 import {
-  createDormantFeedQueueContract,
-  ISOLATED_FEED_QUEUE,
-} from "../apps/worker/dist/feed-queue-contract.js";
+  createGatedFeedBullmqBridge,
+  ISOLATED_FEED_REDIS_PREFIX,
+} from "../apps/worker/dist/feed-bullmq-bridge.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "../apps/worker/dist/research-service-config.js";
 import {
   normalizeFeedArticles,
@@ -76,10 +77,13 @@ test(
       connectionTimeoutMillis: 5000,
     });
     const connection = { host: "127.0.0.1", port: 6379 };
-    const queue = new Queue(ISOLATED_FEED_QUEUE, { connection, prefix: "ci:vns:p2" });
-    const events = new QueueEvents(ISOLATED_FEED_QUEUE, { connection, prefix: "ci:vns:p2" });
+    const events = new QueueEvents(ISOLATED_FEED_QUEUE, {
+      connection,
+      prefix: ISOLATED_FEED_REDIS_PREFIX,
+    });
+    const producerConnection = new Redis({ ...connection, maxRetriesPerRequest: null });
     const workerConnection = new Redis({ ...connection, maxRetriesPerRequest: null });
-    let worker;
+    let bridge;
     let attemptedExternalRequests = 0;
     const fixtures = {
       "/rss/": {
@@ -136,27 +140,21 @@ test(
           },
         },
       });
-      const contract = createDormantFeedQueueContract(env, scheduler, queue);
-      await events.waitUntilReady();
-      worker = new Worker(
-        ISOLATED_FEED_QUEUE,
-        async (job) =>
-          contract.process(
-            {
-              id: job.id,
-              name: job.name,
-              queueName: ISOLATED_FEED_QUEUE,
-              data: job.data,
-            },
-            new Date(),
-          ),
-        { connection: workerConnection, prefix: "ci:vns:p2", concurrency: 1 },
+      bridge = createGatedFeedBullmqBridge(
+        {
+          ...env,
+          VNS_FEED_BULLMQ_BRIDGE_ENABLED: "true",
+          VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK: "true",
+        },
+        scheduler,
+        { producer: producerConnection, consumer: workerConnection, now: () => new Date() },
       );
-      await worker.waitUntilReady();
+      await events.waitUntilReady();
+      await bridge.worker.waitUntilReady();
       const time = new Date();
-      const id = await contract.enqueue(time);
-      assert.equal(await contract.enqueue(time), id);
-      const job = await queue.getJob(id);
+      const id = await bridge.enqueue(time);
+      assert.equal(await bridge.enqueue(time), id);
+      const job = await bridge.queue.getJob(id);
       assert.ok(job);
       const result = await job.waitUntilFinished(events, 30000);
       assert.deepEqual(result, {
@@ -248,9 +246,9 @@ test(
       );
       assert.equal(stillCandidate.rows[0].count, 3);
     } finally {
-      await worker?.close().catch(() => undefined);
+      await bridge?.close().catch(() => undefined);
       await events.close().catch(() => undefined);
-      await queue.close().catch(() => undefined);
+      await producerConnection.quit().catch(() => undefined);
       await workerConnection.quit().catch(() => undefined);
       await sql.end().catch(() => undefined);
       await dba.end().catch(() => undefined);
