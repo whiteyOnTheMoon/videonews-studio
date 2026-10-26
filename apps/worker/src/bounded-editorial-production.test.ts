@@ -185,3 +185,15 @@ test("QA catches missing references, changed evidence and verbatim headline text
   assert.equal(blocked.acceptedForHumanReview, false);
   assert.ok(blocked.reasons.includes("claim_disputed_or_rejected"));
 });
+
+test("independent QA denies unknown or syndicated provenance rather than inferring confirmation", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const missing = independentlyReviewMockScript(event, script, claims, policy, [], now);
+  assert.equal(missing.acceptedForHumanReview, false);
+  assert.ok(missing.reasons.includes("source_provenance_missing"));
+  assert.ok(missing.reasons.includes("source_rights_missing"));
+  const syndicated = provenance.map((source) => ({ ...source, publisherGroup: "single_group" }));
+  const result = independentlyReviewMockScript(event, script, claims, policy, syndicated, now);
+  assert.equal(result.acceptedForHumanReview, false);
+  assert.ok(result.reasons.includes("publisher_groups_insufficient"));
+});
