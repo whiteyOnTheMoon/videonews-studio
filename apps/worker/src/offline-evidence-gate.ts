@@ -46,9 +46,11 @@ export function gateOfflineClaimEvidence(
       reasons.push("reviewer_identity_invalid");
     }
     const reviewedAt = Date.parse(review.reviewedAt);
-    if (!Number.isFinite(reviewedAt) ||
-        reviewedAt > now.getTime() ||
-        reviewedAt < now.getTime() - maxAgeHours * 3600000) {
+    if (
+      !Number.isFinite(reviewedAt) ||
+      reviewedAt > now.getTime() ||
+      reviewedAt < now.getTime() - maxAgeHours * 3600000
+    ) {
       reasons.push("review_expired");
     }
     if (!claim.articleIds.length || !review.evidence.length) {
@@ -62,9 +64,11 @@ export function gateOfflineClaimEvidence(
         continue;
       }
       const checkedAt = Date.parse(support.checkedAt);
-      if (!Number.isFinite(checkedAt) ||
-          checkedAt > now.getTime() ||
-          checkedAt < now.getTime() - maxAgeHours * 3600000) {
+      if (
+        !Number.isFinite(checkedAt) ||
+        checkedAt > now.getTime() ||
+        checkedAt < now.getTime() - maxAgeHours * 3600000
+      ) {
         reasons.push("evidence_expired");
       }
     }
