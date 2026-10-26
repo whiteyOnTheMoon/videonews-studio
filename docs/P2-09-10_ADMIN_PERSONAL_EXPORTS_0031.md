@@ -17,3 +17,19 @@ Next.js includes opt-in BFF routes and two new Admin panels: a structured editor
 - Repository governance (#2), real independent signers (#16), full Postgres/Redis/worker runtime (#17), external backup restore (#228), alert delivery (#229), real AI keys (#227) and cost accounting (#230) continue to block production acceptance.
 
 Until the operational controls and role-enrollment process are reviewed, no P2 issue is closed solely by this package. A code-only rollout with feeds disabled still requires a concrete independently approved deployment/rollback plan.
+
+## P2-10: zusätzliche Prüfung exportierter Seiten
+
+Der Browserexport verweigert nun einen Download, wenn in einer
+Checkpoint-Seite Revisionsnummern fehlen, sich wiederholen, der
+`previous_sha256`-Wert nicht an die vorherige Seite anschließt oder
+der serverseitige `nextRevision`-Cursor nicht dem letzten Datensatz
+entspricht. Bei Timeline-Exporten muss der Cursor auf dem letzten
+Ereignis der Seite liegen und die Folge streng aufsteigend sein.
+
+Das dient dazu, fehlerhafte oder verkürzte Paginierung **nicht**
+stillschweigend als vollständigen Export auszugeben. Die Kontrolle
+beweist **keine kryptografische Echtheit** der Daten: Die Hashkette
+wird im Browser nicht gegen einen extern verankerten oder signierten
+Root-Digest verifiziert. Eine vom Datenbankserver selbst manipulierte
+oder inkonsistente Quittung bleibt ein separates Abnahmerisiko.

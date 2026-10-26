@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { verifyCheckpointPage, verifyTimelinePage } from "../../lib/editorial-export-continuity";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 type Ledger = "checkpoints" | "timeline";
@@ -36,6 +37,7 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
     try {
       const collected: Record<string, unknown>[] = [];
       let nextRevision = 0;
+      let lastChain: string | null = null;
       let cursor: { afterTime: string; afterId: string } | null = null;
       let completed = false;
       for (let page = 0; page < 101; page++) {
@@ -67,23 +69,18 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
         }
         if (collected.length > 10000) throw new Error("Audit export safety limit exceeded");
         if (kind === "checkpoints") {
-          if (
-            !Number.isSafeInteger(raw.nextRevision) ||
-            (raw.nextRevision as number) <= nextRevision
-          )
-            throw new Error("Checkpoint cursor failed to advance");
-          nextRevision = raw.nextRevision as number;
+          const result = verifyCheckpointPage(
+            rows,
+            { revision: nextRevision, chain: lastChain },
+            raw.nextRevision,
+          );
+          if (!result) throw new Error("Checkpoint page continuity invalid");
+          nextRevision = result.revision;
+          lastChain = result.chain;
         } else {
-          if (
-            !raw.cursor ||
-            !UUID.test(raw.cursor.afterId) ||
-            !Number.isFinite(Date.parse(raw.cursor.afterTime)) ||
-            (cursor &&
-              raw.cursor.afterTime === cursor.afterTime &&
-              raw.cursor.afterId === cursor.afterId)
-          )
-            throw new Error("Timeline cursor failed to advance");
-          cursor = raw.cursor;
+          const result = verifyTimelinePage(rows, cursor, raw.cursor);
+          if (!result) throw new Error("Timeline page continuity invalid");
+          cursor = result;
         }
       }
       if (!completed) throw new Error("Incomplete ledger export");
