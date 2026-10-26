@@ -1,0 +1,9 @@
+# P2-01 – Dormant independently reviewed host-approval BFF and UI
+
+The web Admin section and `/api/admin/source-hosts` route are separately gated by `VNS_WEB_HOST_APPROVAL_ENABLED=true` in addition to all existing personal editor login / Admin / news-source feature flags. Both flags default to OFF. The production API entrypoint does not inject the host-approval handler. A flag alone cannot grant an actual host or cause a worker request.
+
+The BFF checks the exact origin for writes, requires a personal editor cookie, resolves the `admin` role through the backend on every request, strictly parses a bounded JSON command containing only `grant|revoke`, the expected source+host revisions, the hostname and a 20–300 character reason. The API independently rechecks this session, validates and rate-limits, and the 0022 SQL function enforces the source approval and audit atomically. The BFF only forwards the personal cookie and normalized command. Unexpected backend fields, redirects or `feedActive:true` responses are rejected without reflecting backend content.
+
+A future enabled Admin controller derives candidate hosts **only** from independently loaded, approved source records and displays existing host grants for revocation. The operator must type a reason. It never automatically retries an ambiguous mutation; it requires fresh readback and discards stale forms on conflicts. For now, no feed activation or runtime host allowlist linkage exists.
+
+Remaining gates: trusted source-approval and independent human host-approval policy (the same editor could currently do both); operational PostgreSQL LOGIN with secrets and a live personal-session acceptance test; separate independently approved worker policy, atomic signed/verified export and a durable revision checkpoint; verified publisher ToS, backups, and P2-02 scheduler acceptance. No VPS action or paid call in this change.
