@@ -5,6 +5,10 @@ services:
   feed-observer:
     profiles: [feed-observation]
     image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
     entrypoint: ["node", "apps/worker/dist/feed-observe-once.js", "--once"]
     restart: "no"
     init: true
