@@ -20,7 +20,10 @@ const profile: EditorialProfile = {
   format: "briefing",
 };
 const item = (sourceId: string, url: string, headline = "Science update worldwide") => ({
-  sourceId, url, headline, publishedAt: "2026-10-26T12:00:00.000Z",
+  sourceId,
+  url,
+  headline,
+  publishedAt: "2026-10-26T12:00:00.000Z",
   reviewStatus: "candidate" as const,
 });
 
@@ -48,23 +51,41 @@ test("blocked topics, insufficient sources and future articles never rank", () =
   const articles = normalizeFeedArticles([item("news_one", "https://one.example.org/news/a")]);
   const event = groupExactHeadlineEvents(articles);
   assert.equal(rankOfflineEvents(event, profile, new Date("2026-10-26T13:00:00.000Z")).length, 0);
-  assert.equal(rankOfflineEvents(event, { ...profile, minIndependentSources: 1 },
-    new Date("2026-10-25T13:00:00.000Z")).length, 0);
-  const sponsored = groupExactHeadlineEvents(
-    normalizeFeedArticles([item("news_one", "https://one.example.org/news/b", "Sponsored science bulletin")]),
+  assert.equal(
+    rankOfflineEvents(
+      event,
+      { ...profile, minIndependentSources: 1 },
+      new Date("2026-10-25T13:00:00.000Z"),
+    ).length,
+    0,
   );
-  assert.equal(rankOfflineEvents(sponsored, { ...profile, minIndependentSources: 1 },
-    new Date("2026-10-26T13:00:00.000Z")).length, 0);
+  const sponsored = groupExactHeadlineEvents(
+    normalizeFeedArticles([
+      item("news_one", "https://one.example.org/news/b", "Sponsored science bulletin"),
+    ]),
+  );
+  assert.equal(
+    rankOfflineEvents(
+      sponsored,
+      { ...profile, minIndependentSources: 1 },
+      new Date("2026-10-26T13:00:00.000Z"),
+    ).length,
+    0,
+  );
 });
 
 test("noncanonical URLs and forged evidence IDs are rejected", () => {
-  assert.throws(() => normalizeFeedArticles([
-    item("news_one", "https://one.example.org/news/a?tracking=1"),
-  ]));
+  assert.throws(() =>
+    normalizeFeedArticles([item("news_one", "https://one.example.org/news/a?tracking=1")]),
+  );
   const article = normalizeFeedArticles([item("news_one", "https://one.example.org/news/a")]);
   const event = { ...groupExactHeadlineEvents(article)[0]!, score: 1 };
   const draft = buildOfflineDraft(event, { ...profile, minIndependentSources: 1 });
-  assert.equal(independentlyCheckDraft(event, {
-    ...draft, claims: [{ statement: "Invented statistic 42%", articleIds: ["forged"], status: "verified" }],
-  }).accepted, false);
+  assert.equal(
+    independentlyCheckDraft(event, {
+      ...draft,
+      claims: [{ statement: "Invented statistic 42%", articleIds: ["forged"], status: "verified" }],
+    }).accepted,
+    false,
+  );
 });
