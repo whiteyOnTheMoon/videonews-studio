@@ -16,7 +16,7 @@
     "typecheck": "npm run build --workspace @vns/shared && npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/worker/src/feed-queue-contract.ts apps/worker/src/feed-queue-contract.test.ts && git diff --no-color -- apps/worker/src/feed-queue-contract.ts apps/worker/src/feed-queue-contract.test.ts && git diff --exit-code -- apps/worker/src/feed-queue-contract.ts apps/worker/src/feed-queue-contract.test.ts && prettier --check .",
     "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker && npm run test --workspace @vns/web"
   },
   "devDependencies": {
