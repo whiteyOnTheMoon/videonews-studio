@@ -41,3 +41,11 @@
 `node scripts/p2_rollout_gate.mjs path/to/operator-evidence.json` runs read-only, without network. Schema: `{"schemaVersion":1,"mainSha":"40-character-sha","evidence":{"requirement":{"status":"passed","approver":"named-reviewer","reference":"https://...","approvedAt":"ISO-Z"}}}`. Every requirement enumerated in `REQUIREMENTS` must have a documented operator-reviewed reference. This checks manifest completeness and shape **only**, not authenticity of references, and never deploys or replaces explicit rollout permission.
 
 **Current result:** Many requirements remain open. Do not fabricate checkmarks or close P2 issues on CI evidence alone.
+
+## SHA-bound offline evidence validation (26 October 2026)
+
+Run `node scripts/p2_rollout_gate.mjs evidence.json EXPECTED_40_CHAR_RELEASE_SHA` with the **immutable intended release commit**. The evidence document's `mainSha` must match; moving `main` or replaying an old manifest must not silently satisfy the checklist. Omitting the second argument is maintained for legacy offline checks, **not suitable as the SHA-bound final release check**.
+
+Approval timestamps must be valid UTC calendar instants, not future-dated. Review URLs must be HTTPS without embedded credentials, fragments or loopback/internal hostnames. The gate checks only format and local consistency: it **cannot independently confirm approvals, identity, restored data, licenses, repository protection or signatures**. A successful exit code does not authorize deployment. On any discrepancy, stop before touching the VPS.
+
+**Remaining blockers:** #2, #16–#25, #227–#230; also no deploy authorization, no source rights, no key custody/independent anchor, no demonstrated live restore or Beszel alert delivery. Do not mark any of these complete solely through this gate.

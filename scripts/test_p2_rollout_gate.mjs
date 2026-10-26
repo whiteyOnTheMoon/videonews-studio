@@ -39,3 +39,33 @@ test("unknown fields, malformed approvals and forged states fail closed", () => 
   bad.mainSha = "main";
   assert.throws(() => evaluateRolloutEvidence(bad), /Invalid/);
 });
+
+test("SHA binding rejects stale or untrusted releases", () => {
+  assert.deepEqual(evaluateRolloutEvidence(sample(), { expectedSha: "a".repeat(40) }), {
+    readyForOperatorReview: true, missingOrInvalid: [],
+  });
+  assert.throws(() => evaluateRolloutEvidence(sample(), { expectedSha: "b".repeat(40) }), /SHA mismatch/);
+  assert.throws(() => evaluateRolloutEvidence(sample(), { expectedSha: "main" }), /SHA mismatch/);
+});
+
+test("future approval, invalid calendar date and URLs with credentials fail closed", () => {
+  const cases = [
+    { approvedAt: "2099-10-26T12:00:00Z" },
+    { approvedAt: "2026-02-30T12:00:00Z" },
+    { reference: "https://user:password@example.com/proof" },
+    { reference: "https://localhost/proof" },
+    { reference: "https://example.com/proof#altered" },
+    { reference: "https://example.internal/proof" },
+    { reference: "http://example.com/proof" },
+  ];
+  for (const replacement of cases) {
+    const manifest = sample();
+    Object.assign(manifest.evidence.source_rights, replacement);
+    const result = evaluateRolloutEvidence(manifest, { now: new Date("2026-10-27T00:00:00Z") });
+    assert.ok(result.missingOrInvalid.includes("source_rights"), JSON.stringify(replacement));
+  }
+});
+
+test("invalid evaluation clock cannot silently bypass timestamp checks", () => {
+  assert.throws(() => evaluateRolloutEvidence(sample(), { now: new Date("invalid") }), /clock/);
+});
