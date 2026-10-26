@@ -57,7 +57,12 @@ jobs:
       - name: ESLint
         run: npm run lint
       - name: Formatting
-        run: npm run format:check
+        run: |
+          npm run format:check || {
+            npx prettier --write apps/web/src/lib/admin-source-hosts-proxy.ts apps/web/src/lib/admin-source-hosts-proxy.test.ts apps/web/src/app/admin/source-host-approvals.tsx apps/web/src/app/admin/source-host-approvals.test.tsx
+            git --no-pager diff -- apps/web/src/lib/admin-source-hosts-proxy.ts apps/web/src/lib/admin-source-hosts-proxy.test.ts apps/web/src/app/admin/source-host-approvals.tsx apps/web/src/app/admin/source-host-approvals.test.tsx
+            exit 1
+          }
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
