@@ -153,7 +153,7 @@ export async function dormantEditorialAdminProxy(
     }
     if (upstream.status !== 200) return reply(503, { error: "temporarily_unavailable" });
     const raw = await upstream.text();
-    if (raw.length > 65536) return reply(503, { error: "temporarily_unavailable" });
+    if (raw.length > 1048576) return reply(503, { error: "temporarily_unavailable" });
     const value: unknown = JSON.parse(raw);
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
     if (endpoint === "profiles" && request.method === "GET") {
