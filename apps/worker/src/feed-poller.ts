@@ -15,6 +15,7 @@ export interface FeedValidators {
 }
 
 export interface FeedPollLease {
+  token: string;
   validators: FeedValidators;
 }
 
@@ -25,7 +26,12 @@ export interface FeedPollStore {
    */
   claim(sourceId: string, now: Date, intervalMinutes: number): Promise<FeedPollLease | null>;
   /** Must atomically deduplicate by (sourceId, canonical URL), then commit validators. */
-  commit(sourceId: string, items: readonly FeedItem[], validators: FeedValidators): Promise<number>;
+  commit(
+    sourceId: string,
+    token: string,
+    items: readonly FeedItem[],
+    validators: FeedValidators,
+  ): Promise<number>;
 }
 
 export interface FeedResponse {
@@ -268,6 +274,12 @@ export function createDormantFeedPoller(
         }
         if (!lease) continue;
         try {
+          if (
+            typeof lease.token !== "string" ||
+            !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(lease.token)
+          ) {
+            throw new Error("Feed lease token invalid");
+          }
           const validators = {
             etag: safeValidator(lease.validators.etag),
             lastModified: safeValidator(lease.validators.lastModified),
@@ -279,7 +291,7 @@ export function createDormantFeedPoller(
             continue;
           }
           const items = decodeApprovedFeed(source, registry, result);
-          const written = await store.commit(source.id, items, {
+          const written = await store.commit(source.id, lease.token, items, {
             etag: safeValidator(result.etag),
             lastModified: safeValidator(result.lastModified),
           });

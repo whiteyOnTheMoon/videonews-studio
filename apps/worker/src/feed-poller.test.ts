@@ -106,9 +106,13 @@ function fixture() {
         until: now.getTime() + minutes * 60000,
         validators: existing?.validators ?? { etag: null, lastModified: null },
       });
-      return { validators: claims.get(id)!.validators };
+      return {
+        token: "11111111-2222-4333-8444-555555555555",
+        validators: claims.get(id)!.validators,
+      };
     },
-    async commit(id, additions, validators) {
+    async commit(id, token, additions, validators) {
+      assert.equal(token, "11111111-2222-4333-8444-555555555555");
       let created = 0;
       for (const item of additions) {
         assert.equal(item.reviewStatus, "candidate");
