@@ -111,8 +111,13 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
     }
     if (seen.has(item.url)) throw new Error("Duplicate canonical article URL");
     seen.add(item.url);
-    const titleFingerprint = hash(item.headline.toLocaleLowerCase("en").normalize("NFKC")
-      .replace(/[^\p{L}\p{N}]+/gu, " ").trim());
+    const titleFingerprint = hash(
+      item.headline
+        .toLocaleLowerCase("en")
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim(),
+    );
     return {
       id: hash(item.sourceId + "\n" + item.url),
       sourceId: item.sourceId,
@@ -125,20 +130,24 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
 }
 
 /** Exact normalized headline fingerprint only: no claim of semantic deduplication. */
-export function groupExactHeadlineEvents(articles: readonly NormalizedArticle[]): readonly NewsEvent[] {
+export function groupExactHeadlineEvents(
+  articles: readonly NormalizedArticle[],
+): readonly NewsEvent[] {
   const groups = new Map<string, NormalizedArticle[]>();
   for (const article of articles) {
     const group = groups.get(article.titleFingerprint) ?? [];
     group.push(article);
     groups.set(article.titleFingerprint, group);
   }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([fingerprint, records]) => ({
-    id: hash("event-v1:" + fingerprint),
-    headline: records[0]!.headline,
-    articles: records,
-    score: 0,
-    reasons: [],
-  }));
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([fingerprint, records]) => ({
+      id: hash("event-v1:" + fingerprint),
+      headline: records[0]!.headline,
+      articles: records,
+      score: 0,
+      reasons: [],
+    }));
 }
 
 export function rankOfflineEvents(
@@ -150,20 +159,32 @@ export function rankOfflineEvents(
   if (Number.isNaN(now.getTime())) throw new Error("Ranking clock invalid");
   const blocked = profile.blockedTerms.map((term) => term.toLowerCase());
   const keywords = profile.keywords.map((term) => term.toLowerCase());
-  return events.flatMap((event) => {
-    const title = event.headline.toLowerCase();
-    if (blocked.some((term) => title.includes(term))) return [];
-    const publishers = new Set(event.articles.map((article) => article.sourceId));
-    if (publishers.size < profile.minIndependentSources) return [];
-    const newest = Math.max(...event.articles.map((article) => Date.parse(article.publishedAt)));
-    const ageHours = (now.getTime() - newest) / 3600000;
-    if (ageHours < 0 || ageHours > profile.maximumArticleAgeHours) return [];
-    const matches = keywords.filter((term) => title.includes(term)).length;
-    return [{ ...event, score: matches * 10 + publishers.size * 3 +
-      Math.max(0, Math.floor(profile.maximumArticleAgeHours - ageHours)),
-      reasons: [`keyword_matches:${matches}`, `independent_sources:${publishers.size}`,
-        `age_hours:${Math.floor(ageHours)}`] }];
-  }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  return events
+    .flatMap((event) => {
+      const title = event.headline.toLowerCase();
+      if (blocked.some((term) => title.includes(term))) return [];
+      const publishers = new Set(event.articles.map((article) => article.sourceId));
+      if (publishers.size < profile.minIndependentSources) return [];
+      const newest = Math.max(...event.articles.map((article) => Date.parse(article.publishedAt)));
+      const ageHours = (now.getTime() - newest) / 3600000;
+      if (ageHours < 0 || ageHours > profile.maximumArticleAgeHours) return [];
+      const matches = keywords.filter((term) => title.includes(term)).length;
+      return [
+        {
+          ...event,
+          score:
+            matches * 10 +
+            publishers.size * 3 +
+            Math.max(0, Math.floor(profile.maximumArticleAgeHours - ageHours)),
+          reasons: [
+            `keyword_matches:${matches}`,
+            `independent_sources:${publishers.size}`,
+            `age_hours:${Math.floor(ageHours)}`,
+          ],
+        },
+      ];
+    })
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 
 /**
@@ -173,18 +194,25 @@ export function rankOfflineEvents(
 export function buildOfflineDraft(event: NewsEvent, profile: EditorialProfile): EditorialDraft {
   validateEditorialProfile(profile);
   if (!event.articles.length || event.score <= 0) throw new Error("Unranked event refused");
-  const claims: ClaimEvidence[] = [{
-    statement: event.headline,
-    articleIds: event.articles.map((article) => article.id),
-    status: "uncertain",
-  }];
+  const claims: ClaimEvidence[] = [
+    {
+      statement: event.headline,
+      articleIds: event.articles.map((article) => article.id),
+      status: "uncertain",
+    },
+  ];
   const introductions = {
     briefing: "Headline summary requiring editorial verification.",
     analysis: "Context and consequences require additional verified evidence.",
     explainer: "Background and definitions require separately verified evidence.",
   };
-  return { format: profile.format, language: profile.language, headline: event.headline,
-    paragraphs: [introductions[profile.format]], claims };
+  return {
+    format: profile.format,
+    language: profile.language,
+    headline: event.headline,
+    paragraphs: [introductions[profile.format]],
+    claims,
+  };
 }
 
 export function independentlyCheckDraft(
@@ -195,8 +223,12 @@ export function independentlyCheckDraft(
   const reasons: string[] = [];
   if (!draft.claims.length) reasons.push("missing_claims");
   for (const claim of draft.claims) {
-    if (!claim.statement.trim() || !claim.articleIds.length ||
-        claim.articleIds.some((id) => !ids.has(id))) reasons.push("unattributed_claim");
+    if (
+      !claim.statement.trim() ||
+      !claim.articleIds.length ||
+      claim.articleIds.some((id) => !ids.has(id))
+    )
+      reasons.push("unattributed_claim");
     if (claim.status !== "verified") reasons.push("unverified_claim");
   }
   if (!draft.paragraphs.length || draft.paragraphs.some((text) => !text.trim())) {
