@@ -1,0 +1,5 @@
+# P2-09 — Offline versioned editorial profile registry
+
+Migration 0027 introduces an inactive JSON profile snapshot with optimistic revision control and an atomically written audit entry containing the acting editor UUID, previous SHA-256 and new SHA-256. The write function validates active admin/auth version, locks the snapshot and rejects stale revisions. Both the direct table permissions and function EXECUTE remain unavailable to the API runtime. Disposable PostgreSQL tests cover stale writes, audit and revocation.
+
+The SQL function only checks broad structural bounds; **the full nested profile schema must be validated at the authenticated API boundary and revalidated before consumer use**. A caller-supplied editor UUID is not an independently authenticated SQL identity. Named DB login-to-editor binding, complete admin CRUD, a signed/distributed profile export, a source allowlist, risk classes and a production worker integration remain open. Do not grant production EXECUTE or enable a scheduler based on this migration.
