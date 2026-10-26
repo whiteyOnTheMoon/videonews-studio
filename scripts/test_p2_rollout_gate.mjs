@@ -69,10 +69,7 @@ test("future approval, invalid calendar date and URLs with credentials fail clos
     const manifest = sample();
     Object.assign(manifest.evidence.source_rights, replacement);
     const result = evaluateRolloutEvidence(manifest, { now: new Date("2026-10-27T00:00:00Z") });
-    assert.ok(
-      result.missingOrInvalid.includes("source_rights"),
-      JSON.stringify(replacement),
-    );
+    assert.ok(result.missingOrInvalid.includes("source_rights"), JSON.stringify(replacement));
   }
 });
 
