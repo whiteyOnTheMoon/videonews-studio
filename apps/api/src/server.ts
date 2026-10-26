@@ -37,7 +37,10 @@ export function createApiServer(
     throw new Error("Host approval requires named-admin contract");
   if (options.hostApprovals && (!options.auth || !options.editor))
     throw new Error("Host approval requires personal admin authentication");
-  if (options.personalEditorial && !(options.personalEditorial instanceof DormantPersonalEditorialAdmin))
+  if (
+    options.personalEditorial &&
+    !(options.personalEditorial instanceof DormantPersonalEditorialAdmin)
+  )
     throw new Error("Personal editorial handler contract required");
   if (options.personalEditorial && (!options.auth || !options.editor))
     throw new Error("Personal editorial handler requires named editor login");
@@ -91,10 +94,7 @@ export function createApiServer(
 
     // Fully dormant unless an explicitly identity-bound personal PostgreSQL
     // connection factory is injected. index.ts never injects this handler.
-    if (
-      options.personalEditorial &&
-      request.url?.startsWith("/admin/editorial-")
-    ) {
+    if (options.personalEditorial && request.url?.startsWith("/admin/editorial-")) {
       void options.personalEditorial
         .handle(request, response)
         .then((handled) => {
