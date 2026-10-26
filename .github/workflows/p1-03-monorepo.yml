@@ -57,12 +57,7 @@ jobs:
       - name: ESLint
         run: npm run lint
       - name: Formatting
-        run: |
-          npm run format:check || {
-            npx prettier --write docs/P2-01_SIGNED_ATOMIC_SOURCE_EXPORT.md
-            git --no-pager diff -- docs/P2-01_SIGNED_ATOMIC_SOURCE_EXPORT.md
-            exit 1
-          }
+        run: npm run format:check
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
