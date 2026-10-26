@@ -1,4 +1,8 @@
-import type { SourceAdminStore, SourceAuditEvent, SourceSnapshot } from "./admin-source-registry.js";
+import type {
+  SourceAdminStore,
+  SourceAuditEvent,
+  SourceSnapshot,
+} from "./admin-source-registry.js";
 import { validateSourceSnapshot } from "./admin-source-registry.js";
 
 /** Inject an already configured least-privilege pool; never creates connections on import. */
