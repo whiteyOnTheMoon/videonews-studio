@@ -15,8 +15,10 @@ CREATE TABLE vns.editor_db_principals (
   CHECK(login_role::text !~ '^(postgres|vns_|pg_)')
 );
 REVOKE ALL ON vns.editor_db_principals FROM PUBLIC;
-GRANT SELECT ON vns.editor_db_principals,vns.editor_accounts,
+GRANT SELECT ON vns.editor_db_principals,
   vns.editorial_profile_registry TO vns_p2_named_executor;
+GRANT SELECT(id,active,role,auth_version) ON vns.editor_accounts
+  TO vns_p2_named_executor;
 GRANT EXECUTE ON FUNCTION vns.commit_editorial_profiles(bigint,jsonb,uuid,integer),
   vns.append_editorial_timeline(uuid,text,uuid,integer,text,text,jsonb),
   vns.read_editorial_timeline(uuid,uuid,integer,integer)
