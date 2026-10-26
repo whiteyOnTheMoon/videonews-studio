@@ -13,16 +13,15 @@ test("anchor calls a single conditional PostgreSQL update without bootstrap", as
   const db: AnchorQuery = {
     async query(sql, params) {
       calls.push({ sql, params });
-      return { rowCount: 1 };
+      return { rowCount: 1, rows: [{ accepted: true }] };
     },
   };
   await postgresSourceRevisionAnchor(db).advance(newer);
   assert.equal(calls.length, 1);
-  assert.match(calls[0]!.sql, /UPDATE vns_source_anchor\.high_water/);
-  assert.match(calls[0]!.sql, /source_revision <= \$1/);
-  assert.match(calls[0]!.sql, /host_approval_revision <= \$2/);
-  assert.match(calls[0]!.sql, /envelope_sha256 = \$3/);
-  assert.match(calls[0]!.sql, /RETURNING anchor_id/);
+  assert.equal(
+    calls[0]!.sql,
+    "SELECT vns_source_anchor.advance($1::bigint, $2::bigint, $3::text) AS accepted",
+  );
   assert.deepEqual(calls[0]!.params, [9, 4, digest]);
 });
 
@@ -30,7 +29,7 @@ test("missing bootstrap, rollback and inconsistent query result fail closed", as
   for (const rowCount of [0, null, 2]) {
     const anchor = postgresSourceRevisionAnchor({
       async query() {
-        return { rowCount };
+        return { rowCount, rows: [{ accepted: true }] };
       },
     });
     await assert.rejects(anchor.advance(newer), /admission refused/);
@@ -64,4 +63,22 @@ test("database outage is sanitized and does not return success", async () => {
     anchor.advance(newer),
     /^Error: Independent source revision admission refused$/,
   );
+});
+
+test("server rejection and ambiguous result never advance", async () => {
+  for (const response of [
+    { rowCount: 1, rows: [{ accepted: false }] },
+    { rowCount: 1, rows: [{ accepted: "true" }] },
+    { rowCount: 1, rows: [] },
+    { rowCount: 1, rows: [{ accepted: true }, { accepted: true }] },
+  ]) {
+    await assert.rejects(
+      postgresSourceRevisionAnchor({
+        async query() {
+          return response;
+        },
+      }).advance(newer),
+      /admission refused/,
+    );
+  }
 });
