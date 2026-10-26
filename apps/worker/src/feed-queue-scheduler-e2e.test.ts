@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Pool } from "pg";
+import type { FeedItem } from "./feed-poller.js";
+import {
+  normalizeFeedArticles,
+  groupConservativeEventCandidates,
+  rankOfflineEvents,
+  buildOfflineDraft,
+  independentlyCheckDraft,
+  exportOfflineEditorialReport,
+  type EditorialProfile,
+} from "./offline-editorial-pipeline.js";
+import { gateOfflineClaimEvidence } from "./offline-evidence-gate.js";
 import { createDormantFeedScheduler } from "./feed-scheduler-composition.js";
 import {
   createDormantFeedQueueContract,
@@ -37,6 +48,7 @@ const env = {
 
 test("synthetic configured sources pass through queued tick, pinned transport and SQL dedupe", async () => {
   const saved = new Set<string>();
+  const recorded: FeedItem[] = [];
   const leases = new Map<string, { until: number; etag: string | null }>();
   const jobs = new Map<string, FeedTickDelivery>();
   const requests: string[] = [];
@@ -52,12 +64,23 @@ test("synthetic configured sources pass through queued tick, pinned transport an
       }
       if (sql.includes("vns.commit_feed_poll")) {
         assert.equal(args[1], TOKEN);
-        const items = JSON.parse(String(args[2])) as Array<{ url: string }>;
+        const items = JSON.parse(String(args[2])) as Array<{
+          url: string;
+          headline: string;
+          publishedAt: string | null;
+        }>;
         let created = 0;
         for (const item of items) {
           const key = id + "|" + item.url;
           if (!saved.has(key)) {
             saved.add(key);
+            recorded.push({
+              sourceId: id,
+              url: item.url,
+              headline: item.headline,
+              publishedAt: item.publishedAt,
+              reviewStatus: "candidate",
+            });
             created++;
           }
         }
@@ -73,19 +96,25 @@ test("synthetic configured sources pass through queued tick, pinned transport an
       body:
         "<rss><channel><item><title>Public science research update</title><link>" +
         BASE +
-        "rss/story</link></item></channel></rss>",
+        "rss/story</link><pubDate>2026-10-26T11:00:00.000Z</pubDate></item></channel></rss>",
     },
     "/atom/": {
       type: "application/atom+xml",
       body:
         '<feed><entry><title>Public science research update</title><link href="' +
         BASE +
-        'atom/story" /></entry></feed>',
+        'atom/story" /><updated>2026-10-26T11:00:00.000Z</updated></entry></feed>',
     },
     "/json/": {
       type: "application/json",
       body: JSON.stringify({
-        items: [{ headline: "Public science research update", url: BASE + "json/story" }],
+        items: [
+          {
+            headline: "Public science research update",
+            url: BASE + "json/story",
+            publishedAt: "2026-10-26T11:00:00.000Z",
+          },
+        ],
       }),
     },
   };
@@ -128,6 +157,29 @@ test("synthetic configured sources pass through queued tick, pinned transport an
     notModified: 0,
   });
   assert.equal(saved.size, 3);
+  assert.equal(recorded.length, 3);
+  const normalized = normalizeFeedArticles(recorded);
+  const events = groupConservativeEventCandidates(normalized);
+  assert.equal(events.length, 1);
+  const profile: EditorialProfile = {
+    id: "science_news",
+    language: "en-US",
+    keywords: ["science"],
+    blockedTerms: [],
+    minIndependentSources: 2,
+    maximumArticleAgeHours: 24,
+    format: "briefing",
+  };
+  const ranked = rankOfflineEvents(events, profile, START);
+  assert.equal(ranked.length, 1);
+  const draft = buildOfflineDraft(ranked[0]!, profile);
+  assert.equal(independentlyCheckDraft(ranked[0]!, draft).accepted, false);
+  const evidence = gateOfflineClaimEvidence(ranked[0]!, draft, [], START, 24);
+  assert.equal(evidence.ready, false);
+  assert.ok(evidence.reasons.includes("claim_not_independently_supported"));
+  const report = exportOfflineEditorialReport(ranked[0]!, profile, draft);
+  assert.equal(report.approvedForPublication, false);
+  assert.equal(report.sourceUrls.length, 3);
   assert.deepEqual(requests, ["/rss/", "/atom/", "/json/"]);
   assert.equal((await contract.process(jobs.get(firstId)!, START)).candidatesAdded, 0);
   now += 60 * 60000;
