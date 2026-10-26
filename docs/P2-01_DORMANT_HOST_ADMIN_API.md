@@ -1,0 +1,7 @@
+# P2-01 – Personally authenticated, default-off host approval API
+
+This PR implements the explicitly injectable `DormantNamedHostApproval` handler for `/admin/source-hosts` and detached `PostgresHostApprovalStore` adapter for migration 0022. No runtime entrypoint, environment variable, production database pool, UI page or feed scheduler mounts these pieces.
+
+The handler resolves the editor identity server-side on each call using `EditorAuth.authenticatedAdminIdentity`; the shared admin cookie is not sufficient. Only a personally active admin can read host permissions or request an independently audited grant/revoke. POST additionally requires the exact approved origin, mandatory rate admission, bounded JSON, strict host syntax, source/host expected revisions, and a documented review reason. Requester identity cannot be included in the command. Adapter binds the actual authenticated admin ID/auth version as positional SQL parameters, with PostgreSQL rechecking the active editor account and atomic revision+audit mutation. Unknown fields and malformed database shapes fail closed; responses always declare `feedActive:false` and do not reveal audit or infrastructure details.
+
+**Not yet usable in production:** The application entrypoint does not mount this handler, no scoped LOGIN is provisioned, the Next.js BFF and human review controls do not yet exist, and no host permission is passed to the worker. Real publisher terms, offsite recovery, and scheduler approval remain prerequisites. This is an offline integration increment only.
