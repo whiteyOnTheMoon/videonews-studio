@@ -16,7 +16,10 @@ test("separate reviewer is checked through bounded named audit lookup", async ()
       return { rows: [{ approved: true }] };
     },
   });
-  assert.equal(await preflight.hasIndependentApproval("ci_host_source", "news.example.org", actor), true);
+  assert.equal(
+    await preflight.hasIndependentApproval("ci_host_source", "news.example.org", actor),
+    true,
+  );
   assert.equal(called, 1);
 });
 
@@ -36,7 +39,10 @@ test("self-approval and ambiguous results fail closed", async () => {
       return { rows: [{ approved: false }] };
     },
   });
-  assert.equal(await denied.hasIndependentApproval("ci_host_source", "news.example.org", actor), false);
+  assert.equal(
+    await denied.hasIndependentApproval("ci_host_source", "news.example.org", actor),
+    false,
+  );
 });
 
 test("invalid actor and source input never reaches SQL", async () => {
@@ -45,7 +51,10 @@ test("invalid actor and source input never reaches SQL", async () => {
       throw new Error("SQL was called");
     },
   });
-  await assert.rejects(preflight.hasIndependentApproval("../source", "news.example.org", actor), /input invalid/);
+  await assert.rejects(
+    preflight.hasIndependentApproval("../source", "news.example.org", actor),
+    /input invalid/,
+  );
   await assert.rejects(
     preflight.hasIndependentApproval("ci_host_source", "news.example.org", {
       ...actor,
