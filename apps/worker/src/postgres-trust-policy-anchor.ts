@@ -1,5 +1,5 @@
-import type { IndependentTrustPolicyAnchor } from "./source-trust-policy-anchor.js";
 import type { AnchorQuery } from "./postgres-source-revision-anchor.js";
+import type { IndependentTrustPolicyAnchor } from "./source-trust-policy-anchor.js";
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const SQL =
@@ -14,11 +14,7 @@ export function postgresTrustPolicyAnchor(db: AnchorQuery): IndependentTrustPoli
       }
       try {
         const result = await db.query(SQL, [revision, sha256]);
-        if (
-          result.rowCount !== 1 ||
-          result.rows.length !== 1 ||
-          result.rows[0]?.accepted !== true
-        ) {
+        if (result.rowCount !== 1 || result.rows.length !== 1 || result.rows[0]?.accepted !== true) {
           throw new Error("Trust policy admission refused");
         }
       } catch {
