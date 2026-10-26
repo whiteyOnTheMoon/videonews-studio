@@ -22,10 +22,12 @@ const two = {
 };
 
 test("niche, language and format switch solely through configuration", () => {
-  const profiles = parseOfflineEditorialProfiles(JSON.stringify({
-    version: 1,
-    profiles: [one, two],
-  }));
+  const profiles = parseOfflineEditorialProfiles(
+    JSON.stringify({
+      version: 1,
+      profiles: [one, two],
+    }),
+  );
   assert.equal(selectOfflineEditorialProfile(profiles, "science").language, "de-DE");
   assert.equal(selectOfflineEditorialProfile(profiles, "world_news").format, "explainer");
   assert.equal(Object.isFrozen(profiles), true);
@@ -34,10 +36,14 @@ test("niche, language and format switch solely through configuration", () => {
 
 test("duplicate profiles, unknown fields and oversized payloads fail closed", () => {
   for (const profiles of [[one, one], [{ ...one, extra: "untrusted" }], []]) {
-    assert.throws(() => parseOfflineEditorialProfiles(JSON.stringify({
-      version: 1,
-      profiles,
-    })));
+    assert.throws(() =>
+      parseOfflineEditorialProfiles(
+        JSON.stringify({
+          version: 1,
+          profiles,
+        }),
+      ),
+    );
   }
   assert.throws(() => parseOfflineEditorialProfiles("x".repeat(32769)));
   assert.throws(() => parseOfflineEditorialProfiles('{"version":1,"profiles":[]}'));
