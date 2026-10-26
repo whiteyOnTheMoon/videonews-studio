@@ -83,6 +83,7 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0021_source_transition_guard.test.sql"
   sql < "$root/db/migrations/0022_independent_host_approval.up.sql"
   sql < "$root/db/tests/0022_independent_host_approval.test.sql"
+  sql < "$root/db/tests/0023_source_host_role_separation.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for one feed lease.
     feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
