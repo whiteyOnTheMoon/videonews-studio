@@ -47,7 +47,10 @@ test("writer passes positional parameters to atomic function and returns CAS con
       return { rows: [{ saved: false }] };
     },
   };
-  assert.equal(await new PostgresSourceAdminStore(pool).saveWithAudit(0, snapshot, event), "conflict");
+  assert.equal(
+    await new PostgresSourceAdminStore(pool).saveWithAudit(0, snapshot, event),
+    "conflict",
+  );
   assert.equal(calls, 1);
 });
 test("invalid revision and malformed snapshots never reach SQL", async () => {
@@ -59,7 +62,11 @@ test("invalid revision and malformed snapshots never reach SQL", async () => {
   const store = new PostgresSourceAdminStore(pool);
   await assert.rejects(store.saveWithAudit(3, snapshot, event), /invalid/);
   await assert.rejects(
-    store.saveWithAudit(0, { revision: 1, sources: [{ ...source, status: "unsafe" }] } as unknown as SourceSnapshot, event),
+    store.saveWithAudit(
+      0,
+      { revision: 1, sources: [{ ...source, status: "unsafe" }] } as unknown as SourceSnapshot,
+      event,
+    ),
     /unavailable/,
   );
 });
