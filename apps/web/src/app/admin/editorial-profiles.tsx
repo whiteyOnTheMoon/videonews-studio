@@ -63,14 +63,23 @@ async function fetchSnapshot(signal?: AbortSignal): Promise<EditorialProfileSnap
   if (!result) throw new Error("Profile revision invalid");
   return result;
 }
-const EMPTY = {
+interface EditorialProfileDraft {
+  id: string;
+  language: string;
+  keywords: string;
+  blockedTerms: string;
+  minIndependentSources: number;
+  maximumArticleAgeHours: number;
+  format: EditableEditorialProfile["format"];
+}
+const EMPTY: EditorialProfileDraft = {
   id: "",
   language: "",
   keywords: "",
   blockedTerms: "",
   minIndependentSources: 2,
   maximumArticleAgeHours: 24,
-  format: "briefing" as const,
+  format: "briefing",
 };
 function terms(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
