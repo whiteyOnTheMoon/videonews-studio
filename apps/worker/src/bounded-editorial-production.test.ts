@@ -145,18 +145,9 @@ test("all three configured formats stay offline with explicit revision and limit
     assert.deepEqual(script.sections[0]!.claimIds, ["claim_one"]);
     assert.ok(script.estimatedMicroUsd <= limits.maxMicroUsd);
   }
+  assert.throws(() => generateBoundedMockScript(event, profile, claims, scaffold, limits, 3));
   assert.throws(() =>
-    generateBoundedMockScript(event, profile, claims, scaffold, limits, 3),
-  );
-  assert.throws(() =>
-    generateBoundedMockScript(
-      event,
-      profile,
-      claims,
-      scaffold,
-      { ...limits, maxMockTokens: 2 },
-      1,
-    ),
+    generateBoundedMockScript(event, profile, claims, scaffold, { ...limits, maxMockTokens: 2 }, 1),
   );
 });
 
