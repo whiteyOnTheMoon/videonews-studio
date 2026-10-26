@@ -253,3 +253,59 @@ export function exportOfflineEditorialReport(
     approvedForPublication: false,
   };
 }
+
+/**
+ * Candidate-only near-duplicate clustering. This is lexical matching, not
+ * semantic verification. Never equate source count with independent evidence.
+ *
+ * The all-pairs invariant prevents chaining A≈B≈C when A and C disagree.
+ * Ambiguous matches remain separate instead of merging unrelated stories.
+ */
+export function groupConservativeEventCandidates(
+  articles: readonly NormalizedArticle[],
+): readonly NewsEvent[] {
+  if (articles.length > 100) throw new Error("Event candidate batch exceeded");
+  const ids = new Set<string>();
+  for (const article of articles) {
+    if (
+      !/^[0-9a-f]{64}$/.test(article.id) ||
+      !/^[0-9a-f]{64}$/.test(article.titleFingerprint) ||
+      !Number.isFinite(Date.parse(article.publishedAt)) ||
+      ids.has(article.id)
+    ) throw new Error("Event candidate invalid or duplicated");
+    ids.add(article.id);
+  }
+  const tokens = (text: string): Set<string> =>
+    new Set(
+      text.normalize("NFKC").toLocaleLowerCase("en")
+        .match(/[\p{L}\p{N}]{2,}/gu) ?? [],
+    );
+  const similar = (a: NormalizedArticle, b: NormalizedArticle): boolean => {
+    if (a.titleFingerprint === b.titleFingerprint) return true;
+    if (Math.abs(Date.parse(a.publishedAt) - Date.parse(b.publishedAt)) > 48 * 3600000) {
+      return false;
+    }
+    const left = tokens(a.headline);
+    const right = tokens(b.headline);
+    if (left.size < 6 || right.size < 6) return false;
+    const shared = [...left].filter((word) => right.has(word)).length;
+    return shared >= 6 && shared / new Set([...left, ...right]).size >= 0.8;
+  };
+  const ordered = [...articles].sort((a, b) => a.id.localeCompare(b.id));
+  const groups: NormalizedArticle[][] = [];
+  for (const article of ordered) {
+    const matches = groups.filter((group) => group.every((member) => similar(article, member)));
+    if (matches.length === 1) matches[0]!.push(article);
+    else groups.push([article]);
+  }
+  return groups.map((records) => {
+    const signature = records.map((record) => record.id).sort().join(":");
+    return {
+      id: hash("candidate-event-v1:" + signature),
+      headline: records[0]!.headline,
+      articles: records,
+      score: 0,
+      reasons: ["lexical_candidate_only", "independent_verification_required"],
+    };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+}
