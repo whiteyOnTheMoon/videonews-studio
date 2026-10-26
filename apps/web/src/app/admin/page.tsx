@@ -10,6 +10,8 @@ import AiProviders from "./ai-providers";
 import { aiProviderReadOnlyProxyConfig } from "../../lib/admin-ai-providers-proxy";
 import { sourceAdminProxyConfig } from "../../lib/admin-news-sources-proxy";
 import NewsSources from "./news-sources";
+import SourceHostApprovals from "./source-host-approvals";
+import { hostApprovalProxyConfig } from "../../lib/admin-source-hosts-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,7 @@ export default async function AdminPage() {
       <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
       <AiProviders readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null} />
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
+      <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );
