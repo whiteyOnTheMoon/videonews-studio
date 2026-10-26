@@ -41,7 +41,11 @@ export function postgresSourceRevisionAnchor(db: AnchorQuery): IndependentSource
           candidate.hostApprovalRevision,
           candidate.envelopeSha256,
         ]);
-        if (result.rowCount !== 1 || result.rows.length !== 1 || result.rows[0]?.accepted !== true) {
+        if (
+          result.rowCount !== 1 ||
+          result.rows.length !== 1 ||
+          result.rows[0]?.accepted !== true
+        ) {
           throw new Error("Independent source revision admission refused");
         }
       } catch {
