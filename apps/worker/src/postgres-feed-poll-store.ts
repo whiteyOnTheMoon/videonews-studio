@@ -79,6 +79,7 @@ export class PostgresFeedPollStore implements FeedPollStore {
     const created = result.rows[0]?.created;
     if (
       result.rows.length !== 1 ||
+      typeof created !== "number" ||
       !Number.isSafeInteger(created) ||
       created < 0 ||
       created > items.length
