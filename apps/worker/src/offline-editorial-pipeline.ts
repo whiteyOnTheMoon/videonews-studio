@@ -272,13 +272,14 @@ export function groupConservativeEventCandidates(
       !/^[0-9a-f]{64}$/.test(article.titleFingerprint) ||
       !Number.isFinite(Date.parse(article.publishedAt)) ||
       ids.has(article.id)
-    ) throw new Error("Event candidate invalid or duplicated");
+    ) {
+      throw new Error("Event candidate invalid or duplicated");
+    }
     ids.add(article.id);
   }
   const tokens = (text: string): Set<string> =>
     new Set(
-      text.normalize("NFKC").toLocaleLowerCase("en")
-        .match(/[\p{L}\p{N}]{2,}/gu) ?? [],
+      text.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]{2,}/gu) ?? [],
     );
   const similar = (a: NormalizedArticle, b: NormalizedArticle): boolean => {
     if (a.titleFingerprint === b.titleFingerprint) return true;
@@ -298,14 +299,16 @@ export function groupConservativeEventCandidates(
     if (matches.length === 1) matches[0]!.push(article);
     else groups.push([article]);
   }
-  return groups.map((records) => {
-    const signature = records.map((record) => record.id).sort().join(":");
-    return {
-      id: hash("candidate-event-v1:" + signature),
-      headline: records[0]!.headline,
-      articles: records,
-      score: 0,
-      reasons: ["lexical_candidate_only", "independent_verification_required"],
-    };
-  }).sort((a, b) => a.id.localeCompare(b.id));
+  return groups
+    .map((records) => {
+      const signature = records.map((record) => record.id).sort().join(":");
+      return {
+        id: hash("candidate-event-v1:" + signature),
+        headline: records[0]!.headline,
+        articles: records,
+        score: 0,
+        reasons: ["lexical_candidate_only", "independent_verification_required"],
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
