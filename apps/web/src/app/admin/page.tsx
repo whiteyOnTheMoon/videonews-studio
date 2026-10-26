@@ -12,6 +12,9 @@ import { sourceAdminProxyConfig } from "../../lib/admin-news-sources-proxy";
 import NewsSources from "./news-sources";
 import SourceHostApprovals from "./source-host-approvals";
 import { hostApprovalProxyConfig } from "../../lib/admin-source-hosts-proxy";
+import { editorialAdminProxyConfig } from "../../lib/admin-editorial-proxy";
+import EditorialProfiles from "./editorial-profiles";
+import EditorialAuditExport from "./editorial-audit-export";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +43,8 @@ export default async function AdminPage() {
       <AiProviders readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null} />
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
+      <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );

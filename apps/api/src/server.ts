@@ -6,6 +6,7 @@ import type { EditorAuth } from "./editor-auth.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
 import { DormantNamedSourceAdmin } from "./admin-source-registry.js";
 import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
+import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
 
 export function createApiServer(
   options: {
@@ -15,6 +16,7 @@ export function createApiServer(
     providerConfig?: NamedAdminProviderConfiguration;
     sourceRegistry?: DormantNamedSourceAdmin;
     hostApprovals?: DormantNamedHostApproval;
+    personalEditorial?: DormantPersonalEditorialAdmin;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -35,6 +37,13 @@ export function createApiServer(
     throw new Error("Host approval requires named-admin contract");
   if (options.hostApprovals && (!options.auth || !options.editor))
     throw new Error("Host approval requires personal admin authentication");
+  if (
+    options.personalEditorial &&
+    !(options.personalEditorial instanceof DormantPersonalEditorialAdmin)
+  )
+    throw new Error("Personal editorial handler contract required");
+  if (options.personalEditorial && (!options.auth || !options.editor))
+    throw new Error("Personal editorial handler requires named editor login");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -80,6 +89,26 @@ export function createApiServer(
           response.end(JSON.stringify({ error: "temporarily_unavailable" }));
         }
       });
+      return;
+    }
+
+    // Fully dormant unless an explicitly identity-bound personal PostgreSQL
+    // connection factory is injected. index.ts never injects this handler.
+    if (options.personalEditorial && request.url?.startsWith("/admin/editorial-")) {
+      void options.personalEditorial
+        .handle(request, response)
+        .then((handled) => {
+          if (!handled && !response.writableEnded) {
+            response.writeHead(404);
+            response.end(JSON.stringify({ error: "not_found" }));
+          }
+        })
+        .catch(() => {
+          if (!response.headersSent) response.writeHead(503);
+          if (!response.writableEnded) {
+            response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+          }
+        });
       return;
     }
 
