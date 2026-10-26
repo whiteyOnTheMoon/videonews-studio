@@ -40,3 +40,7 @@ Die tatsächlich beobachteten **VPS-Werte** nach dem kontrollierten Worker-Neust
 - Verbleibende Originalkriterien werden **nicht gelöscht oder als erfüllt umgedeutet**; jeder abgelöste P0-Punkt hat oben einen konkreten Folge-Issue-Verweis.
 - Bei `completed` gilt nur das jeweils dokumentierte, eingeschränkte Ergebnis. Bei `not_planned` wurde ein historischer Vorphasen-Nachweis **nicht** nachträglich erstellt; die fachliche Anforderung bleibt bei ihrem Folgeticket.
 - Der Phase-1-GitHub-Review-Verzicht ersetzt weder technische CI noch VPS-Sicherheitstests und lässt keine fehlenden Backup-/Restore-Nachweise entstehen.
+
+## Ergänzung 26.10.2026 — P2 und Branch-Audit
+
+Die technische P2-01/P2-02-Offlineschicht ist bis PR #247 gemergt und synthetisch getestet, aber **nicht produktiv abgenommen**. #16 und #17 bleiben offen; ebenso #151 und #227–#230. Siehe [datierten Nachweisabgleich](PHASE2_RECONCILIATION_2026-10-26.md) einschließlich Branch-Inventar und offenen Freigabegrenzen.

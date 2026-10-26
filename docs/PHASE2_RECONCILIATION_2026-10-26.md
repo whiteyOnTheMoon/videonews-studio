@@ -1,0 +1,29 @@
+# Phase 0–2 reconciliation and branch audit — 26 October 2026
+
+## Verified GitHub baseline
+
+Repository: `whiteyOnTheMoon/videonews-studio`, main `d7164bdce854ddadfa9ee44b0e1b0ac45f42cc71` (PR #247). There were **zero open PRs**, 46 branch refs (main plus 45) and 59 open issues before maintenance. All PRs #231–#247 are merged. The latest PR #247 passed **5/5 final-head GitHub Actions workflows**: full monorepo/unit tests, metadata policy, Docker smoke, probe canary and disposable Redis/BullMQ/worker image. PR #244 passed 4/4 CI, including genuine isolated PostgreSQL host grant races and migration up/down tests through 0022. These are **CI/offline evidence only**, not a live VPS acceptance.
+
+## Roadmap status
+
+| Scope                    | Implemented/tested                                                                                                                                                                                                 | Outstanding                                                                                                                                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0                       | Organizational closeout and operator handover records                                                                                                                                                              | #151: original historical risk matrix, niche scorecard, storyboards and primary supporting records remain unavailable; never invent evidence                                                                                                        |
+| P1                       | Next.js/API, PostgreSQL migration/roles, Redis/BullMQ probe, personal editor sessions, synthetic audit/provider tests                                                                                              | #227 live provider key custody/LOGIN, #228 offsite backup and real restore (deferred by operator for cost), #229 real Beszel alert delivery, #230 provider-side actual usage/costs                                                                  |
+| P2-01 / #16              | #231, #237–#247: typed source registry, PostgreSQL 0020–0022, authenticated default-off Admin/BFF contracts, independent audited host approvals, Ed25519 offline export with atomic file swap and local checkpoint | No production writer LOGIN or personal E2E test, no enabled API/worker mount, no real source ToS grants, no independent human separation-of-duties guarantee; signer key custody/rotation and externally anchored monotonic revision/restore absent |
+| P2-02 / #17              | #232–#236: RSS/Atom/JSON synthetic parser and scheduler tick, pinned HTTPS/ETag, PostgreSQL idempotent feed claims, separate gated queue                                                                           | No productive scheduler, no 3–5 actually approved live feeds, no live HTTPS/ETag/DNS, logs/alerts or publisher-ToS acceptance                                                                                                                       |
+| P2-03 to P2-10 / #18–#25 | Future work                                                                                                                                                                                                        | Not marked complete                                                                                                                                                                                                                                 |
+
+**Result:** The current development milestone has passing GitHub CI and all submitted PRs merged. The actual P2-01/P2-02 _production_ acceptance and P0 historical evidence completion have **not** passed, so #16, #17 and #151 remain open. GitHub CI does not establish the VPS currently deploys this SHA, nor can it replace operator-authorized real-source tests. Never activate services, paid API calls, secret provisioning or offsite backup costs without separate authorization.
+
+The signed export's local high-water checkpoint protects against simple replay while intact. A joint rollback of export and checkpoint still requires an **independently protected** monotonic anchor. The running worker remains a probe-only service without active sources.
+
+## Stale branch inventory
+
+The SHA-pinned list in `docs/maintenance/branch-prune-2026-10-26.json` contains **45** audited refs:
+
+- **42** heads exactly match PRs already merged via squash.
+- **1** test ref (`test/p1-07-scoped-network-verification`) is an ancestor of main (`ahead_by=0`).
+- **2** closed but unmerged superseded drafts: PR #81's incomplete `001_initial` schema, replaced by the current migration suite 0001–0022, and PR #83's outdated Admin activation checklist, replaced by current Admin/Compose runbooks. They must **not** be described as merged.
+
+The one-time cleanup executes a read-only PR CI preflight. On an exact named squash merge to main it revalidates every branch SHA and supporting PR state before deleting each, then removes its own maintenance PR branch. No wildcard deletion or targeting of unknown refs. If GitHub Actions denies branch deletion, report cleanup as incomplete. The retained guarded workflow/manifest are an auditable one-time maintenance record.

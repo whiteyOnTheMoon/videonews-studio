@@ -1,0 +1,276 @@
+{
+  "recordedAt": "2026-10-26",
+  "repository": "whiteyOnTheMoon/videonews-studio",
+  "baseMain": "d7164bdce854ddadfa9ee44b0e1b0ac45f42cc71",
+  "candidates": [
+    {
+      "branch": "docs/p1-06-admin-activation-checklist",
+      "sha": "c5cb8e3c8a30409ea4692b72079ee5ab7e490e61",
+      "kind": "superseded",
+      "pr": 83
+    },
+    {
+      "branch": "feat/p1-05-database-migrations",
+      "sha": "cdcd2ab7edd851a6133d712dd8d8d745eb2e52bc",
+      "kind": "superseded",
+      "pr": 81
+    },
+    {
+      "branch": "feat/p1-07-credential-rollout-runbook",
+      "sha": "f041792a277a207906408230dbe525ff4701ae56",
+      "kind": "merged",
+      "pr": 184
+    },
+    {
+      "branch": "feat/p1-07-dormant-ops-compose-overlay",
+      "sha": "2b338b45c57e57f185286725392771ee6dc8898b",
+      "kind": "merged",
+      "pr": 185
+    },
+    {
+      "branch": "feat/p1-07-dormant-research-service",
+      "sha": "068558e07b0b0c456e258aec16f55284232d52f2",
+      "kind": "merged",
+      "pr": 196
+    },
+    {
+      "branch": "feat/p1-07-failed-job-readout",
+      "sha": "1f2f80ee64b9c42d4fdde84d6cd9d09fcc5bc8c2",
+      "kind": "merged",
+      "pr": 195
+    },
+    {
+      "branch": "feat/p1-07-isolated-research-routing",
+      "sha": "faa809b2d93b4d50dedcff7ad185ceeaac2b2615",
+      "kind": "merged",
+      "pr": 197
+    },
+    {
+      "branch": "feat/p1-07-offline-pg-secret-staging",
+      "sha": "38e95714cf7c4e422aab12224f0b85aaa223e020",
+      "kind": "merged",
+      "pr": 189
+    },
+    {
+      "branch": "feat/p1-07-readonly-credential-preflight",
+      "sha": "828da63b876b192fb98d774a296f8a528c5f8941",
+      "kind": "merged",
+      "pr": 188
+    },
+    {
+      "branch": "feat/p1-07-scoped-login-provisioning",
+      "sha": "9c2e5afd4ea27e1b266c6af489ea779bb57ca494",
+      "kind": "merged",
+      "pr": 190
+    },
+    {
+      "branch": "feat/p1-09-align-named-provider-bff-and-negative-tests",
+      "sha": "583eed9f32ace7dc339ce4000601fed0bf41b2b4",
+      "kind": "merged",
+      "pr": 226
+    },
+    {
+      "branch": "feat/p1-09-named-editor-bff-contract",
+      "sha": "547a2ac1b1ae29033de6586793c8bbca74eef4f3",
+      "kind": "merged",
+      "pr": 225
+    },
+    {
+      "branch": "feat/p1-09-named-provider-audit-offline",
+      "sha": "665585733bebc8bb82e3da5b2e7caf56e26c1cdb",
+      "kind": "merged",
+      "pr": 222
+    },
+    {
+      "branch": "feat/p1-09-named-provider-session-http-gate",
+      "sha": "913d3c2ff407ed712012e1c711985e9fd89b7a72",
+      "kind": "merged",
+      "pr": 223
+    },
+    {
+      "branch": "feat/p1-09-optional-provider-api-dispatch",
+      "sha": "f66be83a34390860a4df989d6e66e33a465baab1",
+      "kind": "merged",
+      "pr": 218
+    },
+    {
+      "branch": "feat/p1-09-postgres-shared-provider-admission",
+      "sha": "14af65a6baff467e4a506670415943bfa7799a48",
+      "kind": "merged",
+      "pr": 221
+    },
+    {
+      "branch": "feat/p1-09-provider-request-failclosed",
+      "sha": "1ae20365ead3ee744dc18143c27505962f627936",
+      "kind": "merged",
+      "pr": 219
+    },
+    {
+      "branch": "feat/p1-09-provider-write-rate-gate",
+      "sha": "16655796340d71269e2e35b772567964aead9c6a",
+      "kind": "merged",
+      "pr": 220
+    },
+    {
+      "branch": "feat/p2-01-0021-source-transition-guard",
+      "sha": "e85019bab5db61a4ba22de884ab74689c811e743",
+      "kind": "merged",
+      "pr": 241
+    },
+    {
+      "branch": "feat/p2-01-dormant-host-approval-api",
+      "sha": "9d18f71342448035d3f639e59b6a4d6115d38717",
+      "kind": "merged",
+      "pr": 245
+    },
+    {
+      "branch": "feat/p2-01-dormant-host-approval-bff-ui",
+      "sha": "d88a73fa8c10dec5f7815da7bcf07a10e5bb8c3a",
+      "kind": "merged",
+      "pr": 246
+    },
+    {
+      "branch": "feat/p2-01-dormant-named-source-admin",
+      "sha": "0d89ce1765f0bc37d4c4d23e3597be4232f9d123",
+      "kind": "merged",
+      "pr": 237
+    },
+    {
+      "branch": "feat/p2-01-dormant-reviewed-export",
+      "sha": "b575a96bf9a2f8d5cb6ac66d923475138cb216da",
+      "kind": "merged",
+      "pr": 243
+    },
+    {
+      "branch": "feat/p2-01-dormant-source-admin-bff",
+      "sha": "7bb20d09dd2f500948090d4e304e29aeabc52eb2",
+      "kind": "merged",
+      "pr": 240
+    },
+    {
+      "branch": "feat/p2-01-dormant-source-admin-ui",
+      "sha": "524b0ddb7236125b7fde6d8d2d43476cc6b5c52d",
+      "kind": "merged",
+      "pr": 242
+    },
+    {
+      "branch": "feat/p2-01-host-approval-postgres-0022",
+      "sha": "82bcc176094cb68194e6f90b50ef4f229c4f468b",
+      "kind": "merged",
+      "pr": 244
+    },
+    {
+      "branch": "feat/p2-01-reviewed-source-registry",
+      "sha": "6c9850a298b29aa35c334d027c60aa0e492eb1f7",
+      "kind": "merged",
+      "pr": 231
+    },
+    {
+      "branch": "feat/p2-01-signed-atomic-source-export",
+      "sha": "ff40f54238f444d60dd7f23507695007a6ef8795",
+      "kind": "merged",
+      "pr": 247
+    },
+    {
+      "branch": "feat/p2-01-source-admin-postgres-store",
+      "sha": "198eb925a57cf85092caf9d6a397e48bf0a2eee5",
+      "kind": "merged",
+      "pr": 238
+    },
+    {
+      "branch": "feat/p2-02-dormant-pinned-https-feed-transport",
+      "sha": "d8e906feb5711c0bdac833d67d252ce7603c8d57",
+      "kind": "merged",
+      "pr": 234
+    },
+    {
+      "branch": "feat/p2-02-dormant-postgres-feed-poll-store",
+      "sha": "3ba27b0ee4da8c04b4cd466bd155a3165e43ef62",
+      "kind": "merged",
+      "pr": 233
+    },
+    {
+      "branch": "feat/p2-02-dormant-scheduler-composition",
+      "sha": "18ed3539cdcb4df2d1b624826ed3c11495e54529",
+      "kind": "merged",
+      "pr": 235
+    },
+    {
+      "branch": "feat/p2-02-feed-queue-contract",
+      "sha": "c3126254151613c9fc65dd18bec14b4559d84c21",
+      "kind": "merged",
+      "pr": 236
+    },
+    {
+      "branch": "feat/p2-02-offline-feed-scheduler-contract",
+      "sha": "8dd2cf2f40537f8a3286207d8f329e882717c8ba",
+      "kind": "merged",
+      "pr": 232
+    },
+    {
+      "branch": "fix/p1-07-live-tcp-diagnostic",
+      "sha": "d5c0abf9dfd1f3342ee46f37876997debc885e5f",
+      "kind": "merged",
+      "pr": 192
+    },
+    {
+      "branch": "fix/p1-09-reject-legacy-provider-server-dispatch",
+      "sha": "01802ff0bde1fd8a793cba5ccc07e745494e17ef",
+      "kind": "merged",
+      "pr": 224
+    },
+    {
+      "branch": "maintenance/ledger-audit",
+      "sha": "aa9a3059026248029d34485f47b86bf23c860458",
+      "kind": "merged",
+      "pr": 193
+    },
+    {
+      "branch": "test/p1-07-distinct-pg-logins-ci",
+      "sha": "8a90789397903d2a6ef242e0251747f8a4a02915",
+      "kind": "merged",
+      "pr": 183
+    },
+    {
+      "branch": "test/p1-07-isolated-postgres-tcp-acceptance",
+      "sha": "5af37ed755145a6a1455adbba23816b3580c179e",
+      "kind": "merged",
+      "pr": 191
+    },
+    {
+      "branch": "test/p1-07-rendered-ops-overlay-gate",
+      "sha": "5d82dd8dc4a143f3775550a428aada706bb6e77c",
+      "kind": "merged",
+      "pr": 186
+    },
+    {
+      "branch": "test/p1-07-research-failure-status-chain",
+      "sha": "aef08e7dedf086f8177a6067f7cffd5ddbd237b8",
+      "kind": "merged",
+      "pr": 194
+    },
+    {
+      "branch": "test/p1-07-scoped-full-research-chain",
+      "sha": "1e2ae70c815d023a7bd611108b6663a7f71b55cd",
+      "kind": "merged",
+      "pr": 187
+    },
+    {
+      "branch": "test/p1-07-scoped-network-verification",
+      "sha": "638793b9c1c9e258c47410f9c09ebf8e44d15c24",
+      "kind": "ancestor"
+    },
+    {
+      "branch": "test/p1-09-dormant-provider-contract-integration",
+      "sha": "8f26e72ccfee1a2f1c39d7b04cc1014762946690",
+      "kind": "merged",
+      "pr": 217
+    },
+    {
+      "branch": "test/p2-01-source-admin-postgres-acceptance",
+      "sha": "6a0f2b0beb77ee6369600ea3fffd3bbbc20adf26",
+      "kind": "merged",
+      "pr": 239
+    }
+  ]
+}
