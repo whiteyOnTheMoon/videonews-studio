@@ -27,7 +27,12 @@ test("invalid trust revisions never reach SQL", async () => {
       throw new Error("query must not run");
     },
   });
-  for (const [revision, sha] of [[0, digest], [-1, digest], [1.5, digest], [1, "invalid"]] as const) {
+  for (const [revision, sha] of [
+    [0, digest],
+    [-1, digest],
+    [1.5, digest],
+    [1, "invalid"],
+  ] as const) {
     await assert.rejects(anchor.advancePolicy(revision, sha), /Invalid trust policy/);
   }
 });
