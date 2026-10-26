@@ -1,0 +1,43 @@
+# Phase 2 — Offline acceptance and rollout preparation
+
+**Status: NOT RELEASED / BLOCKED.** This runbook is an operator checklist and is not permission to touch the VPS or activate feeds, Docker services or AI calls.
+
+## Evidence levels
+
+- **CI passing:** Compiles and passes synthetic/unit/disposable integration checks; does not establish productive correctness.
+- **Offline integration passing:** Real disposable PostgreSQL/Redis endpoints and simulated feed responses; no live sources, rights or production data.
+- **Operational acceptance:** Independently authorized real source license/ToS and minimum polling intervals, personally bound database writers, independent trust anchors and signer custody, protected governance, restore and real alert delivery.
+- **Rollout authorized:** Operator has explicitly approved a specific commit, deployment plan, source set, configuration, database migration and rollback strategy. This approval is separate from GitHub merges.
+
+## Mandatory checks before any VPS change
+
+1. Confirm SHA and intended release images by immutable digest; validate no secrets in repository or GitHub logs and no unreviewed host or sources.
+2. Resolve GitHub visibility/protection decision (#2) without unilateral changes or paid upgrades.
+3. Verify source-admin and host-admin separate named database login credentials, independent human reviewers, immutable audit, revocation and concurrent mutation denial (#16).
+4. Provision and independently test server-enforced source and signing-trust high-water authority, Ed25519 public-key epoch policy, private key custody/rotation and recovery. Do not treat a same-host database as independent.
+5. Establish an operator-approved offsite backup/restore alternative and validate actual restore (#228), or explicitly accept documented data-loss risk for a **nonproductive** test deployment only.
+6. Verify Redis queue isolation, idempotent claims, DB migration rehearsals, rollback preconditions and no queue auto-start.
+7. Verify actual licensed 3–5 sources, feed schemas, cache/rate limits and audit of ETag/304/failed polls. Do not query real providers before rights review.
+8. Verify dynamic niche/language/risk/source approval configuration in authenticated Admin UI, and immutable version/audit history.
+9. Verify event de-duplication using publisher syndication examples; ranking explanation; evidence freshness and independent review; script formats, bounded revision attempts and independent quality gate. No automatic publication on uncertain evidence.
+10. Verify production timeline export (sources, source licenses, approvals, all claim decisions, rejected statements, script revisions, editor identities and timestamped transformations).
+11. Prove Beszel and application alarms actually deliver to operator (#229); record drill results.
+12. Obtain explicit separate operator authorization for **every production VPS/Docker change**, any real feed access and paid provider call. Confirm rollback decision owners.
+
+## Safe staged sequence (only after authorization)
+
+- **Stage A:** Read-only preflight and immutable release inventory. Fail closed if any evidence unknown.
+- **Stage B:** Separate credential and backup preparation by authorized operator, offsite recovery drill. No service activation.
+- **Stage C:** Migrations on a disposable mirror; compare schema and rights, rehearse rollback and full restore.
+- **Stage D:** Controlled deploy to separate inactive containers with zero scheduler/worker production gates. Check health and admin sessions.
+- **Stage E:** After a distinct source/rights approval, manually run a single limited feed observation, verify DNS, ETag, DB, queue and audit evidence. Keep auto-scheduling disabled.
+- **Stage F:** Explicit activation authorization for bounded scheduler; verify limits, error states, alarms and automatic stop conditions.
+- **Stage G:** Editorial review and publication remain disabled until independent verification, costs and license approvals are proven.
+
+**Rollback:** Immediately disable scheduler/worker gates; do not drop existing data or reset monotonic anchors. Revert container images only to audited digests compatible with schema and independently anchored revision floor. If uncertain, keep services stopped and restore from independently verified backups using a separate approved recovery procedure.
+
+## Machine-readable gate
+
+`node scripts/p2_rollout_gate.mjs path/to/operator-evidence.json` runs read-only, without network. Schema: `{"schemaVersion":1,"mainSha":"40-character-sha","evidence":{"requirement":{"status":"passed","approver":"named-reviewer","reference":"https://...","approvedAt":"ISO-Z"}}}`. Every requirement enumerated in `REQUIREMENTS` must have a documented operator-reviewed reference. This checks manifest completeness and shape **only**, not authenticity of references, and never deploys or replaces explicit rollout permission.
+
+**Current result:** Many requirements remain open. Do not fabricate checkmarks or close P2 issues on CI evidence alone.
