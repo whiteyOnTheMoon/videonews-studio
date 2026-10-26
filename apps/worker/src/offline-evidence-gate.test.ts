@@ -142,9 +142,7 @@ test("review, observation and article timestamps must be canonical and chronolog
   const futureObservation = [
     {
       ...reviewed[0]!,
-      evidence: [
-        { ...reviewed[0]!.evidence[0]!, checkedAt: "2026-10-26T12:01:00.000Z" },
-      ],
+      evidence: [{ ...reviewed[0]!.evidence[0]!, checkedAt: "2026-10-26T12:01:00.000Z" }],
     },
   ];
   assert.ok(
@@ -159,9 +157,7 @@ test("review, observation and article timestamps must be canonical and chronolog
   const beforePublication = [
     {
       ...reviewed[0]!,
-      evidence: [
-        { ...reviewed[0]!.evidence[0]!, checkedAt: "2026-10-26T11:00:00.000Z" },
-      ],
+      evidence: [{ ...reviewed[0]!.evidence[0]!, checkedAt: "2026-10-26T11:00:00.000Z" }],
     },
   ];
   assert.ok(
