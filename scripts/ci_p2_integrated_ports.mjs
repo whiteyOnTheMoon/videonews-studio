@@ -19,6 +19,7 @@ import {
 } from "../apps/worker/dist/offline-editorial-pipeline.js";
 import { gateOfflineClaimEvidence } from "../apps/worker/dist/offline-evidence-gate.js";
 import { assessEditorialCandidate } from "../apps/worker/dist/bounded-editorial-production.js";
+import { attestFeedDatabaseIdentity } from "../apps/worker/dist/feed-runtime-admission.js";
 
 if (
   process.env.GITHUB_ACTIONS !== "true" ||
@@ -62,7 +63,7 @@ test(
       host: "127.0.0.1",
       port: 5432,
       database: "vns_p2_ci",
-      user: "vns_p2_ci_feed",
+      user: "vns_feed_login_ciunit",
       password: process.env.VNS_P2_CI_FEED_PASSWORD,
       max: 2,
       connectionTimeoutMillis: 5000,
@@ -118,6 +119,11 @@ test(
       },
     };
     try {
+      await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
+      await assert.rejects(
+        attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"),
+        /admission denied/,
+      );
       const scheduler = createDormantFeedScheduler(env, {
         pool: sql,
         readRegistry: () => JSON.stringify({ version: 1, sources }),
@@ -169,7 +175,7 @@ test(
       );
       assert.equal(count.rows[0].count, 3);
       const acl = await dba.query(
-        "SELECT has_function_privilege('vns_p2_ci_feed','vns.project_feed_candidates(text,integer)','EXECUTE') AS allowed",
+        "SELECT has_function_privilege('vns_feed_login_ciunit','vns.project_feed_candidates(text,integer)','EXECUTE') AS allowed",
       );
       assert.equal(acl.rows[0].allowed, false);
       await assert.rejects(
