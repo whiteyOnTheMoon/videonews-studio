@@ -112,7 +112,10 @@ test("rewritten syndicated headline is a single candidate, never verified", () =
   assert.equal(ranked.length, 1);
   const draft = buildOfflineDraft(ranked[0]!, profile);
   assert.equal(independentlyCheckDraft(ranked[0]!, draft).accepted, false);
-  assert.equal(exportOfflineEditorialReport(ranked[0]!, profile, draft).approvedForPublication, false);
+  assert.equal(
+    exportOfflineEditorialReport(ranked[0]!, profile, draft).approvedForPublication,
+    false,
+  );
 });
 
 test("distinct and time-separated stories remain separate, independent of input order", () => {
