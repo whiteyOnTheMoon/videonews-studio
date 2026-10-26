@@ -94,6 +94,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0026_editorial_research_persistence.test.sql"
   sql < "$root/db/migrations/0027_editorial_profiles.up.sql"
   sql < "$root/db/tests/0027_editorial_profiles.test.sql"
+  sql < "$root/db/migrations/0028_feed_candidate_projection.up.sql"
+  sql < "$root/db/tests/0028_feed_candidate_projection.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for one feed lease.
     feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
@@ -237,6 +239,7 @@ for iteration in 1 2; do
     rm -rf -- "$host_work"
     echo "PASS: two independent host-approval sessions persist one grant and audit"
   fi
+  sql < "$root/db/migrations/0028_feed_candidate_projection.down.sql"
   sql < "$root/db/migrations/0027_editorial_profiles.down.sql"
   sql < "$root/db/migrations/0026_editorial_research_persistence.down.sql"
   sql < "$root/db/migrations/0025_editorial_timeline_contract.down.sql"
