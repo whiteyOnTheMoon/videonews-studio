@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 import { Redis } from "ioredis";
 import { QueueEvents } from "bullmq";
-import {
-  readFeedRuntimeAdmission,
-  attestFeedDatabaseIdentity,
-} from "./feed-runtime-admission.js";
+import { readFeedRuntimeAdmission, attestFeedDatabaseIdentity } from "./feed-runtime-admission.js";
 import { createDormantFeedScheduler } from "./feed-scheduler-composition.js";
 import { createGatedFeedBullmqBridge, ISOLATED_FEED_REDIS_PREFIX } from "./feed-bullmq-bridge.js";
 import { ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
@@ -15,11 +12,7 @@ import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
 function secret(path: string): string {
   try {
     const password = readFileSync(path, "utf8").trimEnd();
-    if (
-      password.length < 40 ||
-      password.length > 256 ||
-      !/^[A-Za-z0-9_-]+$/.test(password)
-    ) {
+    if (password.length < 40 || password.length > 256 || !/^[A-Za-z0-9_-]+$/.test(password)) {
       throw new Error("invalid password");
     }
     return password;
@@ -40,7 +33,9 @@ export interface FeedObservationSummary {
  * migrations, source discovery or publication. Does not reuse probe/research
  * workers, database roles or queues. Real sources require prior rights review.
  */
-export async function observeFeedOnce(env: NodeJS.ProcessEnv = process.env): Promise<FeedObservationSummary> {
+export async function observeFeedOnce(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<FeedObservationSummary> {
   // Zero side effects before fully validating every non-secret gate.
   const admission = readFeedRuntimeAdmission(env);
   const pgPassword = secret(admission.dbSecretPath);

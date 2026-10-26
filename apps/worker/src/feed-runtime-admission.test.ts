@@ -115,11 +115,7 @@ test("requires the actual PostgreSQL session identity and narrow function privil
       ...allowed,
       [field]: ["feed_writer", "can_claim", "can_commit"].includes(field) ? false : true,
     };
-    await assert.rejects(
-      attestFeedDatabaseIdentity(db(corrupt), login),
-      /admission denied/,
-      field,
-    );
+    await assert.rejects(attestFeedDatabaseIdentity(db(corrupt), login), /admission denied/, field);
   }
   await assert.rejects(
     attestFeedDatabaseIdentity(db({ ...allowed, session_user: "vns_feed_login_other" }), login),
