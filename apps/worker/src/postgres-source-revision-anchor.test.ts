@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { postgresSourceRevisionAnchor, type AnchorQuery } from "./postgres-source-revision-anchor.js";
+import {
+  postgresSourceRevisionAnchor,
+  type AnchorQuery,
+} from "./postgres-source-revision-anchor.js";
 
 const digest = "a".repeat(64);
 const newer = { sourceRevision: 9, hostApprovalRevision: 4, envelopeSha256: digest };
@@ -57,5 +60,8 @@ test("database outage is sanitized and does not return success", async () => {
       throw new Error("internal connection credential should not be disclosed");
     },
   });
-  await assert.rejects(anchor.advance(newer), /^Error: Independent source revision admission refused$/);
+  await assert.rejects(
+    anchor.advance(newer),
+    /^Error: Independent source revision admission refused$/,
+  );
 });
