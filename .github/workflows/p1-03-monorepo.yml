@@ -57,7 +57,12 @@ jobs:
       - name: ESLint
         run: npm run lint
       - name: Formatting
-        run: npm run format:check
+        run: |
+          npm run format:check || {
+            npx prettier --write docs/PHASE2_RECONCILIATION_2026-10-26.md scripts/one_time_prune_branches.mjs
+            git --no-pager diff -- docs/PHASE2_RECONCILIATION_2026-10-26.md scripts/one_time_prune_branches.mjs
+            exit 1
+          }
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
