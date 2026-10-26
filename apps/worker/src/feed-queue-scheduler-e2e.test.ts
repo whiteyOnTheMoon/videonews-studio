@@ -68,42 +68,64 @@ test("synthetic configured sources pass through queued tick, pinned transport an
     },
   } as unknown as Pool;
   const payload: Record<string, { type: string; body: string }> = {
-    "/rss/": { type: "application/rss+xml",
-      body: "<rss><channel><item><title>Public science research update</title><link>" +
-        BASE + "rss/story</link></item></channel></rss>" },
-    "/atom/": { type: "application/atom+xml",
-      body: '<feed><entry><title>Public science research update</title><link href="' +
-        BASE + 'atom/story" /></entry></feed>' },
-    "/json/": { type: "application/json",
-      body: JSON.stringify({ items: [{ headline: "Public science research update",
-        url: BASE + "json/story" }] }) },
+    "/rss/": {
+      type: "application/rss+xml",
+      body:
+        "<rss><channel><item><title>Public science research update</title><link>" +
+        BASE +
+        "rss/story</link></item></channel></rss>",
+    },
+    "/atom/": {
+      type: "application/atom+xml",
+      body:
+        '<feed><entry><title>Public science research update</title><link href="' +
+        BASE +
+        'atom/story" /></entry></feed>',
+    },
+    "/json/": {
+      type: "application/json",
+      body: JSON.stringify({
+        items: [{ headline: "Public science research update", url: BASE + "json/story" }],
+      }),
+    },
   };
   const scheduler = createDormantFeedScheduler(env, {
     pool,
     readRegistry: () => JSON.stringify({ version: 1, sources }),
     https: {
-      async resolveIPv4() { return ["1.1.1.1"]; },
+      async resolveIPv4() {
+        return ["1.1.1.1"];
+      },
       async requestPinned(url, ip, headers) {
         assert.equal(ip, "1.1.1.1");
         requests.push(url.pathname);
         if (headers["If-None-Match"]) return { status: 304, headers: {}, body: Buffer.alloc(0) };
         const fixture = payload[url.pathname]!;
-        return { status: 200, headers: { "content-type": fixture.type, etag: '"synthetic"' },
-          body: Buffer.from(fixture.body) };
+        return {
+          status: 200,
+          headers: { "content-type": fixture.type, etag: '"synthetic"' },
+          body: Buffer.from(fixture.body),
+        };
       },
     },
   });
   const queue = {
     name: ISOLATED_FEED_QUEUE,
-    async add(name: typeof FEED_TICK_JOB_NAME, data: { kind: typeof FEED_TICK_JOB_NAME; slot: number },
-      options: { jobId: string }) {
+    async add(
+      name: typeof FEED_TICK_JOB_NAME,
+      data: { kind: typeof FEED_TICK_JOB_NAME; slot: number },
+      options: { jobId: string },
+    ) {
       jobs.set(options.jobId, { id: options.jobId, name, queueName: ISOLATED_FEED_QUEUE, data });
     },
   };
   const contract = createDormantFeedQueueContract(env, scheduler, queue);
   const firstId = await contract.enqueue(START);
   assert.deepEqual(await contract.process(jobs.get(firstId)!, START), {
-    ok: true, sourcesExamined: 3, candidatesAdded: 3, notModified: 0,
+    ok: true,
+    sourcesExamined: 3,
+    candidatesAdded: 3,
+    notModified: 0,
   });
   assert.equal(saved.size, 3);
   assert.deepEqual(requests, ["/rss/", "/atom/", "/json/"]);
@@ -112,21 +134,44 @@ test("synthetic configured sources pass through queued tick, pinned transport an
   const secondTime = new Date(now);
   const secondId = await contract.enqueue(secondTime);
   assert.deepEqual(await contract.process(jobs.get(secondId)!, secondTime), {
-    ok: true, sourcesExamined: 3, candidatesAdded: 0, notModified: 3,
+    ok: true,
+    sourcesExamined: 3,
+    candidatesAdded: 0,
+    notModified: 3,
   });
   assert.equal(saved.size, 3);
 });
 
 test("no opt-in means no registry read, SQL or queued work", () => {
   let touched = false;
-  assert.throws(() => createDormantFeedScheduler({ ...env,
-    VNS_FEED_OFFLINE_COMPOSITION_ENABLED: "false" }, {
-    pool: { query: async () => { touched = true; return { rows: [] }; } } as unknown as Pool,
-    readRegistry: () => { touched = true; return "{}"; },
-    https: {
-      resolveIPv4: async () => { touched = true; return ["1.1.1.1"]; },
-      requestPinned: async () => { touched = true; throw Error("should not run"); },
-    },
-  }), /disabled/);
+  assert.throws(
+    () =>
+      createDormantFeedScheduler(
+        { ...env, VNS_FEED_OFFLINE_COMPOSITION_ENABLED: "false" },
+        {
+          pool: {
+            query: async () => {
+              touched = true;
+              return { rows: [] };
+            },
+          } as unknown as Pool,
+          readRegistry: () => {
+            touched = true;
+            return "{}";
+          },
+          https: {
+            resolveIPv4: async () => {
+              touched = true;
+              return ["1.1.1.1"];
+            },
+            requestPinned: async () => {
+              touched = true;
+              throw Error("should not run");
+            },
+          },
+        },
+      ),
+    /disabled/,
+  );
   assert.equal(touched, false);
 });
