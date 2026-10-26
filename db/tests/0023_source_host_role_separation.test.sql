@@ -11,8 +11,8 @@ BEGIN
      OR has_table_privilege('vns_host_approval_writer','vns.admin_source_registry','SELECT')
      OR has_table_privilege('vns_api_runtime','vns.admin_source_host_approvals','SELECT')
      OR has_table_privilege('vns_api_runtime','vns.admin_source_registry','SELECT')
-     OR has_role('vns_source_admin_writer','vns_host_approval_writer','MEMBER')
-     OR has_role('vns_host_approval_writer','vns_source_admin_writer','MEMBER')
+     OR pg_has_role('vns_source_admin_writer','vns_host_approval_writer','MEMBER')
+     OR pg_has_role('vns_host_approval_writer','vns_source_admin_writer','MEMBER')
   THEN RAISE EXCEPTION 'source-host privilege boundary violated'; END IF;
 END;
 $acl$;
