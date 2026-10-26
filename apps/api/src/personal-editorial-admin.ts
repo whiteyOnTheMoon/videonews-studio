@@ -45,7 +45,9 @@ function revision(value: unknown): number | null {
   const n = Number(value);
   return Number.isSafeInteger(n) ? n : null;
 }
-export function validateNamedEditorialProfiles(value: unknown): readonly EditorialProfileInput[] | null {
+export function validateNamedEditorialProfiles(
+  value: unknown,
+): readonly EditorialProfileInput[] | null {
   if (!Array.isArray(value) || value.length > 20) return null;
   const ids = new Set<string>();
   const result: EditorialProfileInput[] = [];
@@ -76,8 +78,10 @@ export function validateNamedEditorialProfiles(value: unknown): readonly Editori
     const terms = [...raw.keywords, ...raw.blockedTerms] as unknown[];
     if (
       terms.some(
-        (term) => typeof term !== "string" ||
-          term.length < 2 || term.length > 50 ||
+        (term) =>
+          typeof term !== "string" ||
+          term.length < 2 ||
+          term.length > 50 ||
           !/^[\p{L}\p{N} -]+$/u.test(term),
       )
     ) {
@@ -91,8 +95,7 @@ export function validateNamedEditorialProfiles(value: unknown): readonly Editori
 
 async function boundedJson(request: IncomingMessage): Promise<unknown> {
   if (
-    request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !==
-      "application/json" ||
+    request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
     request.headers["content-encoding"]
   ) {
     return null;
@@ -106,7 +109,9 @@ async function boundedJson(request: IncomingMessage): Promise<unknown> {
       if (bytes > BODY_LIMIT) return null;
       chunks.push(part);
     }
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks))) as unknown;
+    return JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)),
+    ) as unknown;
   } catch {
     return null;
   } finally {
@@ -144,11 +149,14 @@ export class DormantPersonalEditorialAdmin {
   async handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const uri = new URL(req.url ?? "/", "http://internal.invalid");
     const path = uri.pathname;
-    if (![
-      "/admin/editorial-profiles",
-      "/admin/editorial-timeline",
-      "/admin/editorial-checkpoints",
-    ].includes(path)) return false;
+    if (
+      ![
+        "/admin/editorial-profiles",
+        "/admin/editorial-timeline",
+        "/admin/editorial-checkpoints",
+      ].includes(path)
+    )
+      return false;
     if (!this.enabled) {
       respond(res, 404, { error: "not_found" });
       return true;
@@ -176,12 +184,15 @@ export class DormantPersonalEditorialAdmin {
       return true;
     }
     const command = req.method === "POST" ? await boundedJson(req) : undefined;
-    if (req.method === "POST" &&
-      (!object(command) || Object.keys(command).length !== 2 ||
+    if (
+      req.method === "POST" &&
+      (!object(command) ||
+        Object.keys(command).length !== 2 ||
         !Object.hasOwn(command, "expectedRevision") ||
         !Object.hasOwn(command, "profiles") ||
         revision(command.expectedRevision) === null ||
-        !validateNamedEditorialProfiles(command.profiles))) {
+        !validateNamedEditorialProfiles(command.profiles))
+    ) {
       respond(res, 400, { error: "invalid_request" });
       return true;
     }
@@ -194,7 +205,8 @@ export class DormantPersonalEditorialAdmin {
         editor_role: string;
       }>("SELECT * FROM vns.named_current_editor()");
       if (
-        db.rows.length !== 1 || db.rows[0]?.editor_id !== actor.id ||
+        db.rows.length !== 1 ||
+        db.rows[0]?.editor_id !== actor.id ||
         db.rows[0]?.auth_version !== actor.authVersion ||
         db.rows[0]?.editor_role !== "admin"
       ) {
@@ -225,20 +237,23 @@ export class DormantPersonalEditorialAdmin {
             throw new Error("Profile commit result invalid");
           }
           if (!result.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
-          else respond(res, 200, {
-            saved: true,
-            revision: expectedRevision + 1,
-            productionActive: false,
-          });
+          else
+            respond(res, 200, {
+              saved: true,
+              revision: expectedRevision + 1,
+              productionActive: false,
+            });
         }
       } else if (path === "/admin/editorial-checkpoints") {
         const eventId = uri.searchParams.get("eventId");
         const after = boundedInt(uri.searchParams.get("after"), 0, 10000);
         const limit = boundedInt(uri.searchParams.get("limit"), 1, 100);
         if (
-          !eventId || !UUID.test(eventId) || after === null || limit === null ||
-          [...uri.searchParams.keys()].some((key) =>
-            !["eventId", "after", "limit"].includes(key))
+          !eventId ||
+          !UUID.test(eventId) ||
+          after === null ||
+          limit === null ||
+          [...uri.searchParams.keys()].some((key) => !["eventId", "after", "limit"].includes(key))
         ) {
           respond(res, 400, { error: "invalid_request" });
           return true;
@@ -256,12 +271,15 @@ export class DormantPersonalEditorialAdmin {
         const limit = boundedInt(uri.searchParams.get("limit"), 1, 100);
         const afterTime = cursorTime(afterTimeInput);
         if (
-          !storyId || !UUID.test(storyId) || limit === null ||
+          !storyId ||
+          !UUID.test(storyId) ||
+          limit === null ||
           (afterTimeInput !== null && afterTime === null) ||
           (afterId === null) !== (afterTimeInput === null) ||
           (afterId !== null && !UUID.test(afterId)) ||
-          [...uri.searchParams.keys()].some((key) =>
-            !["storyId", "afterTime", "afterId", "limit"].includes(key))
+          [...uri.searchParams.keys()].some(
+            (key) => !["storyId", "afterTime", "afterId", "limit"].includes(key),
+          )
         ) {
           respond(res, 400, { error: "invalid_request" });
           return true;
@@ -270,24 +288,32 @@ export class DormantPersonalEditorialAdmin {
           event_id: string;
           recorded_at: Date;
           [key: string]: unknown;
-        }>(
-          "SELECT * FROM vns.named_timeline_page($1::uuid,$2::timestamptz,$3::uuid,$4::integer)",
-          [storyId, afterTime, afterId, limit],
-        );
-        if (rows.rows.length > limit || rows.rows.some((row) =>
-          !UUID.test(row.event_id) ||
-          !(row.recorded_at instanceof Date) ||
-          !Number.isFinite(row.recorded_at.getTime())
-        )) {
+        }>("SELECT * FROM vns.named_timeline_page($1::uuid,$2::timestamptz,$3::uuid,$4::integer)", [
+          storyId,
+          afterTime,
+          afterId,
+          limit,
+        ]);
+        if (
+          rows.rows.length > limit ||
+          rows.rows.some(
+            (row) =>
+              !UUID.test(row.event_id) ||
+              !(row.recorded_at instanceof Date) ||
+              !Number.isFinite(row.recorded_at.getTime()),
+          )
+        ) {
           throw new Error("Timeline page invalid");
         }
         const last = rows.rows.at(-1);
         respond(res, 200, {
           events: rows.rows,
-          cursor: last ? {
-            afterTime: last.recorded_at.toISOString(),
-            afterId: last.event_id,
-          } : null,
+          cursor: last
+            ? {
+                afterTime: last.recorded_at.toISOString(),
+                afterId: last.event_id,
+              }
+            : null,
         });
       }
     } catch {

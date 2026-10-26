@@ -22,18 +22,27 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 export function parseEditorialProfileSnapshot(value: unknown): EditorialProfileSnapshot | null {
   if (
-    !object(value) || Object.keys(value).length !== 2 ||
-    !Number.isSafeInteger(value.revision) || (value.revision as number) < 0 ||
-    !Array.isArray(value.profiles) || value.profiles.length > 20
-  ) return null;
+    !object(value) ||
+    Object.keys(value).length !== 2 ||
+    !Number.isSafeInteger(value.revision) ||
+    (value.revision as number) < 0 ||
+    !Array.isArray(value.profiles) ||
+    value.profiles.length > 20
+  )
+    return null;
   const seen = new Set<string>();
   const profiles: EditableEditorialProfile[] = [];
   for (const raw of value.profiles as unknown[]) {
     if (
-      !object(raw) || Object.keys(raw).length !== 7 ||
-      typeof raw.id !== "string" || !ID.test(raw.id) || seen.has(raw.id) ||
-      typeof raw.language !== "string" || !LOCALE.test(raw.language) ||
-      !Array.isArray(raw.keywords) || !Array.isArray(raw.blockedTerms) ||
+      !object(raw) ||
+      Object.keys(raw).length !== 7 ||
+      typeof raw.id !== "string" ||
+      !ID.test(raw.id) ||
+      seen.has(raw.id) ||
+      typeof raw.language !== "string" ||
+      !LOCALE.test(raw.language) ||
+      !Array.isArray(raw.keywords) ||
+      !Array.isArray(raw.blockedTerms) ||
       ![...raw.keywords, ...raw.blockedTerms].every(
         (term) => typeof term === "string" && term.length >= 2 && term.length <= 50,
       ) ||
@@ -44,7 +53,8 @@ export function parseEditorialProfileSnapshot(value: unknown): EditorialProfileS
       (raw.maximumArticleAgeHours as number) < 1 ||
       (raw.maximumArticleAgeHours as number) > 720 ||
       !["briefing", "analysis", "explainer"].includes(raw.format as string)
-    ) return null;
+    )
+      return null;
     seen.add(raw.id);
     profiles.push(raw as unknown as EditableEditorialProfile);
   }
@@ -82,7 +92,10 @@ const EMPTY: EditorialProfileDraft = {
   format: "briefing",
 };
 function terms(value: string): string[] {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 /** All identifiers, languages and keywords are operator input; no productive defaults. */
@@ -126,10 +139,13 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
       if (response.status !== 200) throw new Error("Profile write not confirmed");
       const value: unknown = await response.json();
       if (
-        !object(value) || Object.keys(value).length !== 3 ||
-        value.saved !== true || value.productionActive !== false ||
+        !object(value) ||
+        Object.keys(value).length !== 3 ||
+        value.saved !== true ||
+        value.productionActive !== false ||
         value.revision !== snapshot.revision + 1
-      ) throw new Error("Profile revision not confirmed");
+      )
+        throw new Error("Profile revision not confirmed");
       const fresh = await fetchSnapshot();
       if (fresh.revision !== snapshot.revision + 1) {
         throw new Error("Unexpected profile revision");
@@ -150,10 +166,9 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
     const keywords = terms(draft.keywords);
     const blockedTerms = terms(draft.blockedTerms);
     if (
-      keywords.length > 30 || blockedTerms.length > 30 ||
-      [...keywords, ...blockedTerms].some(
-        (term) => term.length < 2 || term.length > 50,
-      )
+      keywords.length > 30 ||
+      blockedTerms.length > 30 ||
+      [...keywords, ...blockedTerms].some((term) => term.length < 2 || term.length > 50)
     ) {
       setError("Schlüsselwörter und Sperrbegriffe bitte prüfen.");
       return;
@@ -178,7 +193,10 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
   return (
     <section className="jobs-section" aria-labelledby="editorial-profiles-heading">
       <h2 id="editorial-profiles-heading">Nischen- und Sprachprofile</h2>
-      <p>Persönlich auditierte Konfiguration. Profile starten keine Nachrichtenabrufe oder KI-Aufrufe.</p>
+      <p>
+        Persönlich auditierte Konfiguration. Profile starten keine Nachrichtenabrufe oder
+        KI-Aufrufe.
+      </p>
       {!enabled ? <p role="status">Profilverwaltung nicht freigeschaltet.</p> : null}
       {loading && enabled ? <p role="status">Lade Profile …</p> : null}
       {error ? <p role="alert">{error}</p> : null}
@@ -192,17 +210,21 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
                 <strong>{profile.id}</strong> – {profile.language} ({profile.format})
                 <button
                   type="button"
-                  onClick={() => setDraft({
-                    ...profile,
-                    keywords: profile.keywords.join(", "),
-                    blockedTerms: profile.blockedTerms.join(", "),
-                  })}
+                  onClick={() =>
+                    setDraft({
+                      ...profile,
+                      keywords: profile.keywords.join(", "),
+                      blockedTerms: profile.blockedTerms.join(", "),
+                    })
+                  }
                 >
                   Bearbeiten
                 </button>
                 <button
                   type="button"
-                  onClick={() => void persist(snapshot.profiles.filter((item) => item.id !== profile.id))}
+                  onClick={() =>
+                    void persist(snapshot.profiles.filter((item) => item.id !== profile.id))
+                  }
                 >
                   Entfernen
                 </button>
@@ -211,34 +233,72 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
           </ul>
           <form onSubmit={save}>
             <label htmlFor="editorial-profile-id">Nischenkennung</label>
-            <input id="editorial-profile-id" value={draft.id} required
-              onChange={(event) => setDraft({ ...draft, id: event.target.value })} />
+            <input
+              id="editorial-profile-id"
+              value={draft.id}
+              required
+              onChange={(event) => setDraft({ ...draft, id: event.target.value })}
+            />
             <label htmlFor="editorial-profile-language">Sprache (z. B. de-DE)</label>
-            <input id="editorial-profile-language" value={draft.language} required
-              onChange={(event) => setDraft({ ...draft, language: event.target.value })} />
+            <input
+              id="editorial-profile-language"
+              value={draft.language}
+              required
+              onChange={(event) => setDraft({ ...draft, language: event.target.value })}
+            />
             <label htmlFor="editorial-profile-keywords">Schlüsselwörter (kommagetrennt)</label>
-            <input id="editorial-profile-keywords" value={draft.keywords}
-              onChange={(event) => setDraft({ ...draft, keywords: event.target.value })} />
+            <input
+              id="editorial-profile-keywords"
+              value={draft.keywords}
+              onChange={(event) => setDraft({ ...draft, keywords: event.target.value })}
+            />
             <label htmlFor="editorial-profile-blocks">Sperrbegriffe (kommagetrennt)</label>
-            <input id="editorial-profile-blocks" value={draft.blockedTerms}
-              onChange={(event) => setDraft({ ...draft, blockedTerms: event.target.value })} />
+            <input
+              id="editorial-profile-blocks"
+              value={draft.blockedTerms}
+              onChange={(event) => setDraft({ ...draft, blockedTerms: event.target.value })}
+            />
             <label htmlFor="editorial-profile-sources">Mindestzahl unterschiedlicher Quellen</label>
-            <input id="editorial-profile-sources" type="number" min={1} max={5} required
+            <input
+              id="editorial-profile-sources"
+              type="number"
+              min={1}
+              max={5}
+              required
               value={draft.minIndependentSources}
-              onChange={(event) => setDraft({
-                ...draft, minIndependentSources: Number(event.target.value),
-              })} />
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  minIndependentSources: Number(event.target.value),
+                })
+              }
+            />
             <label htmlFor="editorial-profile-age">Maximales Nachrichtenalter in Stunden</label>
-            <input id="editorial-profile-age" type="number" min={1} max={720} required
+            <input
+              id="editorial-profile-age"
+              type="number"
+              min={1}
+              max={720}
+              required
               value={draft.maximumArticleAgeHours}
-              onChange={(event) => setDraft({
-                ...draft, maximumArticleAgeHours: Number(event.target.value),
-              })} />
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  maximumArticleAgeHours: Number(event.target.value),
+                })
+              }
+            />
             <label htmlFor="editorial-profile-format">Skriptformat</label>
-            <select id="editorial-profile-format" value={draft.format}
-              onChange={(event) => setDraft({
-                ...draft, format: event.target.value as EditableEditorialProfile["format"],
-              })}>
+            <select
+              id="editorial-profile-format"
+              value={draft.format}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  format: event.target.value as EditableEditorialProfile["format"],
+                })
+              }
+            >
               <option value="briefing">Briefing</option>
               <option value="analysis">Einordnung</option>
               <option value="explainer">Erklärvideo</option>

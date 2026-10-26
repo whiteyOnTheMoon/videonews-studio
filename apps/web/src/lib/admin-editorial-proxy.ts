@@ -59,8 +59,7 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
     (afterTime === null) === (afterId === null) &&
     (afterId === null || UUID.test(afterId)) &&
     (afterTime === null ||
-      (Number.isFinite(Date.parse(afterTime)) &&
-        new Date(afterTime).toISOString() === afterTime))
+      (Number.isFinite(Date.parse(afterTime)) && new Date(afterTime).toISOString() === afterTime))
   );
 }
 async function readBody(request: Request): Promise<string | null> {
@@ -68,7 +67,8 @@ async function readBody(request: Request): Promise<string | null> {
     request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
       "application/json" ||
     request.headers.has("content-encoding")
-  ) return null;
+  )
+    return null;
   const reader = request.body?.getReader();
   if (!reader) return null;
   let size = 0;
@@ -91,13 +91,16 @@ async function readBody(request: Request): Promise<string | null> {
     output.fill(0);
     const input: unknown = JSON.parse(raw);
     if (
-      !object(input) || Object.keys(input).length !== 2 ||
+      !object(input) ||
+      Object.keys(input).length !== 2 ||
       !Object.hasOwn(input, "expectedRevision") ||
       !Object.hasOwn(input, "profiles") ||
       !Number.isSafeInteger(input.expectedRevision) ||
       (input.expectedRevision as number) < 0 ||
-      !Array.isArray(input.profiles) || input.profiles.length > 20
-    ) return null;
+      !Array.isArray(input.profiles) ||
+      input.profiles.length > 20
+    )
+      return null;
     return JSON.stringify(input);
   } catch {
     return null;
@@ -158,14 +161,19 @@ export async function dormantEditorialAdminProxy(
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
     if (endpoint === "profiles" && request.method === "GET") {
       if (
-        !Number.isSafeInteger(value.revision) || !Array.isArray(value.profiles) ||
+        !Number.isSafeInteger(value.revision) ||
+        !Array.isArray(value.profiles) ||
         value.profiles.length > 20
-      ) return reply(503, { error: "temporarily_unavailable" });
+      )
+        return reply(503, { error: "temporarily_unavailable" });
       return reply(200, { revision: value.revision, profiles: value.profiles });
     }
     if (endpoint === "profiles") {
-      if (value.saved !== true || value.productionActive !== false ||
-        !Number.isSafeInteger(value.revision)) {
+      if (
+        value.saved !== true ||
+        value.productionActive !== false ||
+        !Number.isSafeInteger(value.revision)
+      ) {
         return reply(503, { error: "temporarily_unavailable" });
       }
       return reply(200, {

@@ -15,9 +15,7 @@ export function validEditorialExportBatch(value: unknown): value is Batch {
   return (
     Array.isArray(body.events) &&
     body.events.length <= 100 &&
-    body.events.every(
-      (row) => !!row && typeof row === "object" && !Array.isArray(row),
-    )
+    body.events.every((row) => !!row && typeof row === "object" && !Array.isArray(row))
   );
 }
 
@@ -72,28 +70,35 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
           if (
             !Number.isSafeInteger(raw.nextRevision) ||
             (raw.nextRevision as number) <= nextRevision
-          ) throw new Error("Checkpoint cursor failed to advance");
+          )
+            throw new Error("Checkpoint cursor failed to advance");
           nextRevision = raw.nextRevision as number;
         } else {
           if (
             !raw.cursor ||
             !UUID.test(raw.cursor.afterId) ||
             !Number.isFinite(Date.parse(raw.cursor.afterTime)) ||
-            (cursor && raw.cursor.afterTime === cursor.afterTime &&
+            (cursor &&
+              raw.cursor.afterTime === cursor.afterTime &&
               raw.cursor.afterId === cursor.afterId)
-          ) throw new Error("Timeline cursor failed to advance");
+          )
+            throw new Error("Timeline cursor failed to advance");
           cursor = raw.cursor;
         }
       }
       if (!completed) throw new Error("Incomplete ledger export");
-      const data = JSON.stringify({
-        version: 1,
-        kind,
-        scopeId: id,
-        evidenceOnly: true,
-        exportCompleteness: "all_pages_read",
-        events: collected,
-      }, null, 2);
+      const data = JSON.stringify(
+        {
+          version: 1,
+          kind,
+          scopeId: id,
+          evidenceOnly: true,
+          exportCompleteness: "all_pages_read",
+          events: collected,
+        },
+        null,
+        2,
+      );
       const blob = new Blob([data], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       try {
@@ -117,23 +122,35 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
     <section className="jobs-section" aria-labelledby="editorial-audit-heading">
       <h2 id="editorial-audit-heading">Redaktionelles Produktionsprotokoll</h2>
       <p>Geschützter JSON-Export der verfügbaren Prüfhistorie. Nur persönliche Admin-Sitzungen.</p>
-      {!enabled ? <p role="status">Produktionsprotokoll-Export noch nicht freigeschaltet.</p> : null}
+      {!enabled ? (
+        <p role="status">Produktionsprotokoll-Export noch nicht freigeschaltet.</p>
+      ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
       {enabled ? (
         <form onSubmit={(event) => void exportLedger(event)}>
           <label htmlFor="editorial-audit-kind">Protokolltyp</label>
-          <select id="editorial-audit-kind" value={kind} disabled={busy}
-            onChange={(event) => setKind(event.target.value as Ledger)}>
+          <select
+            id="editorial-audit-kind"
+            value={kind}
+            disabled={busy}
+            onChange={(event) => setKind(event.target.value as Ledger)}
+          >
             <option value="checkpoints">Ranking, Claims, Skript und Qualität</option>
             <option value="timeline">Redaktionelle Ereignishistorie</option>
           </select>
           <label htmlFor="editorial-audit-id">
             {kind === "checkpoints" ? "Ereignis-UUID" : "Story-UUID"}
           </label>
-          <input id="editorial-audit-id" value={id} required disabled={busy}
-            pattern="[0-9a-f-]{36}" maxLength={36}
-            onChange={(event) => setId(event.target.value)} />
+          <input
+            id="editorial-audit-id"
+            value={id}
+            required
+            disabled={busy}
+            pattern="[0-9a-f-]{36}"
+            maxLength={36}
+            onChange={(event) => setId(event.target.value)}
+          />
           <button type="submit" disabled={busy || !UUID.test(id)}>
             {busy ? "Protokoll wird geprüft …" : "Vollständigen JSON-Export erstellen"}
           </button>

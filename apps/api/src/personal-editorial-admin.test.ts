@@ -56,11 +56,13 @@ function setup(mismatch = false, enabled = true) {
       sql.push(sqlText);
       if (sqlText.includes("named_current_editor")) {
         return {
-          rows: [{
-            editor_id: mismatch ? "ca310099-9999-4999-8999-999999999999" : ACTOR,
-            auth_version: 0,
-            editor_role: "admin",
-          }],
+          rows: [
+            {
+              editor_id: mismatch ? "ca310099-9999-4999-8999-999999999999" : ACTOR,
+              auth_version: 0,
+              editor_role: "admin",
+            },
+          ],
         };
       }
       if (sqlText.includes("named_profile_read")) {
@@ -146,12 +148,10 @@ test("Admin read/write requires personal DB attestation and audit revision", asy
   assert.equal(read.status, 200);
   assert.deepEqual(read.json, { revision: 0, profiles: [] });
   assert.equal(read.headers["cache-control"], "no-store");
-  const saved = await serve(
-    state.handler,
-    "/admin/editorial-profiles",
-    "POST",
-    { expectedRevision: 0, profiles: [profile] },
-  );
+  const saved = await serve(state.handler, "/admin/editorial-profiles", "POST", {
+    expectedRevision: 0,
+    profiles: [profile],
+  });
   assert.deepEqual(saved.json, {
     saved: true,
     revision: 1,
@@ -169,13 +169,24 @@ test("mismatched DB principal, invalid payload and forged origin are blocked", a
   assert.equal(mismatch.sql.length, 1);
   const state = setup();
   assert.equal(
-    (await serve(state.handler, "/admin/editorial-profiles", "POST",
-      { expectedRevision: 0, profiles: [{ ...profile, apiKey: "x" }] })).status,
+    (
+      await serve(state.handler, "/admin/editorial-profiles", "POST", {
+        expectedRevision: 0,
+        profiles: [{ ...profile, apiKey: "x" }],
+      })
+    ).status,
     400,
   );
   assert.equal(
-    (await serve(state.handler, "/admin/editorial-profiles", "POST",
-      { expectedRevision: 0, profiles: [profile] }, "https://invalid.example")).status,
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-profiles",
+        "POST",
+        { expectedRevision: 0, profiles: [profile] },
+        "https://invalid.example",
+      )
+    ).status,
     403,
   );
   assert.equal(state.opened, 0);
@@ -185,18 +196,21 @@ test("bounded timeline and checkpoint cursor exports require exact IDs", async (
   const state = setup();
   const story = "ca310002-2222-4222-8222-222222222222";
   assert.equal(
-    (await serve(state.handler,
-      "/admin/editorial-timeline?storyId=" + story + "&limit=10")).status,
+    (await serve(state.handler, "/admin/editorial-timeline?storyId=" + story + "&limit=10")).status,
     200,
   );
   assert.equal(
-    (await serve(state.handler,
-      "/admin/editorial-checkpoints?eventId=" + story + "&after=0&limit=10")).status,
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-checkpoints?eventId=" + story + "&after=0&limit=10",
+      )
+    ).status,
     200,
   );
   assert.equal(
-    (await serve(state.handler,
-      "/admin/editorial-checkpoints?eventId=bad&after=0&limit=10")).status,
+    (await serve(state.handler, "/admin/editorial-checkpoints?eventId=bad&after=0&limit=10"))
+      .status,
     400,
   );
   assert.equal(state.opened, 3);

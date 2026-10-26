@@ -48,6 +48,9 @@ test("audit export is disabled by default and never renders a file control", () 
 
 test("audit export envelope never accepts oversized or malformed rows", () => {
   assert.equal(validEditorialExportBatch({ events: [], nextRevision: 0 }), true);
-  assert.equal(validEditorialExportBatch({ events: Array.from({ length: 101 }, () => ({})) }), false);
+  assert.equal(
+    validEditorialExportBatch({ events: Array.from({ length: 101 }, () => ({})) }),
+    false,
+  );
   assert.equal(validEditorialExportBatch({ events: ["forged string"] }), false);
 });
