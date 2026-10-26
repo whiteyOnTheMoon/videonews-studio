@@ -1,0 +1,9 @@
+# P2-01 / Migration 0021: database-enforced source transitions
+
+This CI-only, reversible migration closes a gap in migration 0020: previously a minimally privileged source writer could submit an arbitrarily different JSONB snapshot while claiming an allowed action. Migration 0021 preserves the existing SQL signature but validates every incoming record and compares the snapshot to the locked previous revision.
+
+Guards now include an exact nine-field typed source shape, unique source IDs and base URLs, HTTPS-only URL and hostname sanity checks, review dates, polling interval bounds, usage/license/status restrictions, and one-target-at-a-time transitions. An initial source must be pending. Metadata replacement reverts the target to pending. Explicit approval requires pending; block and reopen require appropriate prior states. Review actions may only alter status and review date. Unrelated sources must not change.
+
+The named active admin/auth-version row remains locked and an audit entry is inserted atomically with the revision CAS. **Limit:** PostgreSQL can verify the supplied administrator exists and is active, but it cannot independently prove that a shared writer LOGIN's supplied UUID belongs to the request's personal session. Personal backend authentication, a non-shared scoped DB credential, rate admission, and runtime wiring remain prerequisites. The API performs additional URL canonicalization; SQL does not authorize network access or source ToS.
+
+Disposable CI exercises corrupted snapshots, extra fields, unexpected status/URL/interval/license/date, duplicate sources, forged review metadata, double approval, valid create/approve/block/reopen/replace and stale CAS. Full migration up/test/down runs twice. No VPS migration, real provider, feed traffic, secret or Scheduler activation.

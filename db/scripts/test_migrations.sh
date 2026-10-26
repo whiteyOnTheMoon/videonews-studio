@@ -79,6 +79,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0019_feed_poll_contract.test.sql"
   sql < "$root/db/migrations/0020_source_admin_registry.up.sql"
   sql < "$root/db/tests/0020_source_admin_registry.test.sql"
+  sql < "$root/db/migrations/0021_source_transition_guard.up.sql"
+  sql < "$root/db/tests/0021_source_transition_guard.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for one feed lease.
     feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
@@ -201,6 +203,7 @@ for iteration in 1 2; do
     rm -rf -- "$source_work"
     echo "PASS: two independent source-admin sessions commit exactly one revision and audit"
   fi
+  sql < "$root/db/migrations/0021_source_transition_guard.down.sql"
   sql < "$root/db/migrations/0020_source_admin_registry.down.sql"
   sql < "$root/db/migrations/0019_feed_poll_contract.down.sql"
   sql < "$root/db/migrations/0018_ai_provider_named_audit.down.sql"
@@ -226,4 +229,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0020 migrations, source CAS/audit, feed leases and budgets twice"
+echo "PASS: reversible 0001–0021 migrations, source CAS/audit, feed leases and budgets twice"
