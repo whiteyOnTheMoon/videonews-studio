@@ -77,6 +77,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0018_ai_provider_named_audit.test.sql"
   sql < "$root/db/migrations/0019_feed_poll_contract.up.sql"
   sql < "$root/db/tests/0019_feed_poll_contract.test.sql"
+  sql < "$root/db/migrations/0020_source_admin_registry.up.sql"
+  sql < "$root/db/tests/0020_source_admin_registry.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for one feed lease.
     feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
@@ -177,6 +179,29 @@ for iteration in 1 2; do
     rm -rf -- "$work"
     echo "PASS: parallel day cap and idempotent retry"
   fi
+  if [[ "$iteration" -eq 1 ]]; then
+    # A real cross-session source-admin revision race (not just a mocked adapter).
+    sql < "$root/db/tests/0020_source_admin_concurrency.setup.sql"
+    source_work="$(mktemp -d /tmp/vns-source-ci-XXXXXXXX)"
+    source_payload='[{"id":"ci_parallel_source","baseUrl":"https://example.org/parallel/","access":"rss","intervalMinutes":60,"termsUrl":"https://example.org/terms/","usage":"metadata_only","licenseNotes":"Synthetic race fixture only.","status":"pending","reviewedAt":"2026-10-26"}]'
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_source_admin_writer; SELECT vns.admin_commit_source_registry(0,1,\$\$\${source_payload}\$\$::jsonb,'ci_parallel_source','create_pending','ca110003-3333-4333-8333-333333333333'::uuid,0,'2026-10-26T12:00:00Z');" \
+        > "$source_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then source_pid_a=$!; else source_pid_b=$!; fi
+    done
+    wait "$source_pid_a" && wait "$source_pid_b"
+    test "$(grep -cx 't' "$source_work/a" "$source_work/b" | awk -F: '{s+=$2} END {print s+0}')" = 1
+    test "$(grep -cx 'f' "$source_work/a" "$source_work/b" | awk -F: '{s+=$2} END {print s+0}')" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c "SELECT revision FROM vns.admin_source_registry WHERE singleton")" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c "SELECT count(*) FROM vns.admin_source_audit WHERE revision=1 AND editor_username='ci_source_racer'")" = 1
+    rm -rf -- "$source_work"
+    echo "PASS: two independent source-admin sessions commit exactly one revision and audit"
+  fi
+  sql < "$root/db/migrations/0020_source_admin_registry.down.sql"
   sql < "$root/db/migrations/0019_feed_poll_contract.down.sql"
   sql < "$root/db/migrations/0018_ai_provider_named_audit.down.sql"
   sql < "$root/db/migrations/0017_ai_provider_mutation_admission.down.sql"
@@ -201,4 +226,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0019 migrations, feed leases, budgets and provider audit twice"
+echo "PASS: reversible 0001–0020 migrations, source CAS/audit, feed leases and budgets twice"
