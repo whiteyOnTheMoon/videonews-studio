@@ -4,7 +4,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const manifest = JSON.parse(
-  await readFile(new URL("../docs/maintenance/branch-prune-2026-10-26.json", import.meta.url), "utf8"),
+  await readFile(
+    new URL("../docs/maintenance/branch-prune-2026-10-26.json", import.meta.url),
+    "utf8",
+  ),
 );
 const deleting = process.argv.includes("--delete");
 const repository = process.env.GITHUB_REPOSITORY;
