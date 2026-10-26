@@ -56,10 +56,6 @@ jobs:
         run: npm run typecheck
       - name: ESLint
         run: npm run lint
-      - name: Temporary evidence formatting diagnosis
-        run: |
-          npx prettier --write apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts
-          git diff -- apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts
       - name: Formatting
         run: npm run format:check
       - name: Verify P1-01 importer on integrated branch
