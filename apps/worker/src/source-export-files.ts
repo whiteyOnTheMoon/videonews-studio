@@ -17,6 +17,22 @@ const CHECKPOINT_FILE = "source-export.checkpoint.json";
 const MAX_FILE_BYTES = 49152;
 const SHA256 = /^[a-f0-9]{64}$/;
 
+export interface SourceRevisionAnchorState {
+  sourceRevision: number;
+  hostApprovalRevision: number;
+  envelopeSha256: string;
+}
+
+/**
+ * Must be implemented by an independently protected, durable, linearizable store.
+ * advance MUST atomically reject either decreasing revision or an alternative
+ * envelope at an identical revision pair. A local file in the checkpoint trust
+ * domain is NOT a valid implementation. Reject on any read/write uncertainty.
+ */
+export interface IndependentSourceRevisionAnchor {
+  advance(candidate: Readonly<SourceRevisionAnchorState>): Promise<void>;
+}
+
 interface DurableCheckpoint {
   version: 1;
   sourceRevision: number;
@@ -216,6 +232,7 @@ export async function acceptDormantSourceFile(
   trustedPolicy: ApprovedFetchPolicy,
   pinnedPublisherKey: KeyObject,
   operatorInitialBootstrap = false,
+  independentAnchor?: IndependentSourceRevisionAnchor,
 ): Promise<readonly RegisteredResearchSource[]> {
   await checkDirectory(publisherDirectory);
   return exclusive(checkpointDirectory, "consumer", async () => {
@@ -239,6 +256,17 @@ export async function acceptDormantSourceFile(
       checkpoint.envelopeSha256 !== digest
     ) {
       throw new Error("Worker checkpoint equivocation detected");
+    }
+    // A separately protected, durable, atomic high-water anchor must advance
+    // BEFORE the local checkpoint and BEFORE any sources are returned. If the
+    // anchor fails, acceptance fails closed. This optional offline interface
+    // does not enable a worker; productive integration MUST supply an anchor.
+    if (independentAnchor) {
+      await independentAnchor.advance({
+        sourceRevision: sealed.export.sourceRevision,
+        hostApprovalRevision: sealed.export.hostApprovalRevision,
+        envelopeSha256: digest,
+      });
     }
     await atomicWrite(checkpointDirectory, CHECKPOINT_FILE, {
       version: 1,
