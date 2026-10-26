@@ -8,6 +8,8 @@ import { editorProxyConfig } from "../../lib/editor-proxy";
 import ResearchJobs from "./research-jobs";
 import AiProviders from "./ai-providers";
 import { aiProviderReadOnlyProxyConfig } from "../../lib/admin-ai-providers-proxy";
+import { sourceAdminProxyConfig } from "../../lib/admin-news-sources-proxy";
+import NewsSources from "./news-sources";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,7 @@ export default async function AdminPage() {
       <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
       <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
       <AiProviders readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null} />
+      <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );

@@ -52,7 +52,9 @@ test("ready form derives providers from operator-supplied source rows only", () 
   assert.doesNotMatch(html, /<form[^>]+action=/);
 });
 
-test("no production admin page or API route imports dormant editor", async () => {
+test("Admin mounts sources only through separately gated controller", async () => {
   const page = await readFile(new URL("./page.tsx", import.meta.url), "utf8");
   assert.ok(!page.includes("news-source-editor"));
+  assert.ok(page.includes("sourceAdminProxyConfig(process.env)"));
+  assert.ok(page.includes("<NewsSources enabled="));
 });
