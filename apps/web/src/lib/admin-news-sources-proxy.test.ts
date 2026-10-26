@@ -78,11 +78,23 @@ test("disabled, foreign Origin and shared admin cookies fail before fetch", asyn
   assert.equal((await dormantSourceAdminProxy(req("POST"), null, fetcher)).status, 404);
   assert.equal((await dormantSourceAdminProxy(req("PUT"), CFG, fetcher)).status, 405);
   assert.equal(
-    (await dormantSourceAdminProxy(req("POST", command, COOKIE, "https://other.invalid"), CFG, fetcher)).status,
+    (
+      await dormantSourceAdminProxy(
+        req("POST", command, COOKIE, "https://other.invalid"),
+        CFG,
+        fetcher,
+      )
+    ).status,
     403,
   );
   assert.equal(
-    (await dormantSourceAdminProxy(req("POST", command, "__Host-vns_session=" + "b".repeat(64)), CFG, fetcher)).status,
+    (
+      await dormantSourceAdminProxy(
+        req("POST", command, "__Host-vns_session=" + "b".repeat(64)),
+        CFG,
+        fetcher,
+      )
+    ).status,
     401,
   );
   assert.equal(calls, 0);
@@ -147,9 +159,28 @@ test("authorized GET and POST use only forwarded editor cookie and canonical fie
 });
 test("malformed JSON, unexpected key material, redirects or activation fail closed", async () => {
   const responses = [
-    Response.json({ saved: true, revision: 1, sourceId: source.id, status: "pending", feedActive: true }),
-    Response.json({ saved: true, revision: 1, sourceId: source.id, status: "pending", feedActive: false, secret: "sensitive" }),
-    Response.json({ saved: true, revision: 22, sourceId: source.id, status: "pending", feedActive: false }),
+    Response.json({
+      saved: true,
+      revision: 1,
+      sourceId: source.id,
+      status: "pending",
+      feedActive: true,
+    }),
+    Response.json({
+      saved: true,
+      revision: 1,
+      sourceId: source.id,
+      status: "pending",
+      feedActive: false,
+      secret: "sensitive",
+    }),
+    Response.json({
+      saved: true,
+      revision: 22,
+      sourceId: source.id,
+      status: "pending",
+      feedActive: false,
+    }),
     new Response("redirect", { status: 302, headers: { location: "https://evil.invalid" } }),
     new Response("apiKey=secret", { status: 500 }),
   ];
@@ -165,6 +196,9 @@ test("malformed JSON, unexpected key material, redirects or activation fail clos
   const fetcher = (async (input: RequestInfo | URL) =>
     String(input).endsWith("/editor/me")
       ? Response.json({ username: "ci_admin", role: "admin" })
-      : Response.json({ revision: 1, sources: [{ ...source, status: "pending", reviewedAt: "2026-10-26", apiKey: "secret" }] })) as typeof fetch;
+      : Response.json({
+          revision: 1,
+          sources: [{ ...source, status: "pending", reviewedAt: "2026-10-26", apiKey: "secret" }],
+        })) as typeof fetch;
   assert.equal((await dormantSourceAdminProxy(req("GET"), CFG, fetcher)).status, 503);
 });

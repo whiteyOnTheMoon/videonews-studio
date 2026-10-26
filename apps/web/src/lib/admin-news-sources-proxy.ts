@@ -129,7 +129,9 @@ function parseSnapshot(value: unknown): { revision: number; sources: ManagedSour
   const sources: ManagedSource[] = [];
   for (const raw of value.sources as unknown[]) {
     if (!object(raw) || !exact(raw, SNAPSHOT_FIELDS)) return null;
-    const source = sourceDraft(Object.fromEntries(SOURCE_FIELDS.map((field) => [field, raw[field]])));
+    const source = sourceDraft(
+      Object.fromEntries(SOURCE_FIELDS.map((field) => [field, raw[field]])),
+    );
     if (
       !source ||
       !["pending", "approved", "blocked"].includes(raw.status as string) ||
@@ -265,7 +267,11 @@ export async function dormantSourceAdminProxy(
     ])) return reply(503, { error: "temporarily_unavailable" });
     const sourceId = "source" in command ? command.source.id : command.sourceId;
     const expectedStatus =
-      command.action === "approve" ? "approved" : command.action === "block" ? "blocked" : "pending";
+      command.action === "approve"
+        ? "approved"
+        : command.action === "block"
+          ? "blocked"
+          : "pending";
     if (
       value.saved !== true ||
       value.feedActive !== false ||

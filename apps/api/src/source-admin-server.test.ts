@@ -14,10 +14,29 @@ test("server source registry is absent by default and requires named-admin depen
     /named-admin contract/,
   );
   const sourceRegistry = new DormantNamedSourceAdmin(
-    { async authenticatedAdminIdentity() { return null; } },
-    { originAllowed() { return true; } },
-    { async read() { return { revision: 0, sources: [] }; }, async saveWithAudit() { return "saved"; } },
-    { async allow() { return true; } },
+    {
+      async authenticatedAdminIdentity() {
+        return null;
+      },
+    },
+    {
+      originAllowed() {
+        return true;
+      },
+    },
+    {
+      async read() {
+        return { revision: 0, sources: [] };
+      },
+      async saveWithAudit() {
+        return "saved";
+      },
+    },
+    {
+      async allow() {
+        return true;
+      },
+    },
     false,
   );
   assert.throws(() => createApiServer({ sourceRegistry }), /personal admin authentication/);
@@ -36,14 +55,22 @@ test("explicitly injected source API remains isolated from production runtime", 
     },
     { originAllowed() { return true; } },
     {
-      async read() { return { revision: 0, sources: [] }; },
-      async saveWithAudit() { return "saved"; },
+      async read() {
+        return { revision: 0, sources: [] };
+      },
+      async saveWithAudit() {
+        return "saved";
+      },
     },
-    { async allow() { return true; } },
+    {
+      async allow() {
+        return true;
+      },
+    },
     true,
   );
   const server = createApiServer({
-    auth: { originAllowed() { return true; } } as AdminAuth,
+    auth: { originAllowed() { return true; } } as unknown as AdminAuth,
     jobs: {} as AdminJobs,
     editor: {} as EditorAuth,
     sourceRegistry: registry,
