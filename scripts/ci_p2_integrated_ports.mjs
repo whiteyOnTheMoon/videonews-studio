@@ -68,7 +68,6 @@ test(
       max: 2,
       connectionTimeoutMillis: 5000,
     });
-    await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
     const dba = new Pool({
       host: "127.0.0.1",
       port: 5432,
@@ -120,6 +119,8 @@ test(
       },
     };
     try {
+      await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
+      await assert.rejects(attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"), /admission denied/);
       const scheduler = createDormantFeedScheduler(env, {
         pool: sql,
         readRegistry: () => JSON.stringify({ version: 1, sources }),
