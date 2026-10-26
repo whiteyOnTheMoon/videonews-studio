@@ -40,7 +40,7 @@ function response() {
   const state = {
     code: 0,
     body: "",
-    setHeader(_key: string, _value: string) {},
+    setHeader: () => undefined,
     writeHead(code: number) {
       this.code = code;
     },
@@ -51,7 +51,7 @@ function response() {
   return state as unknown as ServerResponse & typeof state;
 }
 function fixture() {
-  let current = { revision: 0, approvedHosts: [] as string[] };
+  const current = { revision: 0, approvedHosts: [] as string[] };
   const events: Array<{ actor: string; host: string; action: string }> = [];
   let operations = 0;
   let rateAllowed = true;
