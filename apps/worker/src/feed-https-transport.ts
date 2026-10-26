@@ -5,10 +5,7 @@ import {
   isPublicIPv4,
   type ApprovedFetchPolicy,
 } from "./source-fetch.js";
-import {
-  approvedSourceForUrl,
-  type RegisteredResearchSource,
-} from "./source-registry.js";
+import { approvedSourceForUrl, type RegisteredResearchSource } from "./source-registry.js";
 import type { FeedResponse, FeedTransport, FeedValidators } from "./feed-poller.js";
 
 const MAX_BYTES = 131072;
@@ -22,7 +19,11 @@ interface WireReply {
 
 export interface FeedHttpsDependencies {
   resolveIPv4(hostname: string): Promise<string[]>;
-  requestPinned(url: URL, address: string, requestHeaders: Record<string, string>): Promise<WireReply>;
+  requestPinned(
+    url: URL,
+    address: string,
+    requestHeaders: Record<string, string>,
+  ): Promise<WireReply>;
 }
 
 const TYPES: Readonly<Record<string, readonly string[]>> = {
@@ -36,10 +37,12 @@ function header(value: unknown): string | null {
   if (typeof value !== "string" || value.length < 1 || value.length > 200) {
     throw new Error("Feed response header refused");
   }
-  if (Array.from(value).some((character) => {
-    const code = character.charCodeAt(0);
-    return code < 32 || code === 127;
-  })) {
+  if (
+    Array.from(value).some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  ) {
     throw new Error("Feed response header refused");
   }
   return value;
@@ -82,7 +85,8 @@ function requestPinned(
         ...pinned,
         headers: {
           ...pinned.headers,
-          Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, application/json",
+          Accept:
+            "application/rss+xml, application/atom+xml, application/xml, text/xml, application/json",
           ...conditionalHeaders,
         },
       },
@@ -143,15 +147,24 @@ export function createPinnedFeedHttpsTransport(
   const resolve = dependencies.resolveIPv4 ?? resolvePublic;
   const request = dependencies.requestPinned ?? requestPinned;
   return {
-    async request(source: RegisteredResearchSource, validators: FeedValidators): Promise<FeedResponse> {
+    async request(
+      source: RegisteredResearchSource,
+      validators: FeedValidators,
+    ): Promise<FeedResponse> {
       // Require exact registry identity and approved most-specific URL scope.
       const approved = registry.find((item) => item.id === source.id);
       if (
         !approved ||
         approved.status !== "approved" ||
+        source.status !== "approved" ||
         !["rss", "atom", "official_api"].includes(approved.access) ||
         approved.baseUrl !== source.baseUrl ||
         approved.access !== source.access ||
+        approved.intervalMinutes !== source.intervalMinutes ||
+        approved.termsUrl !== source.termsUrl ||
+        approved.usage !== source.usage ||
+        approved.licenseNotes !== source.licenseNotes ||
+        approved.reviewedAt !== source.reviewedAt ||
         approvedSourceForUrl(source.baseUrl, registry)?.id !== source.id
       ) {
         throw new Error("Feed source not approved");

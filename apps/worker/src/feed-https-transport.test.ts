@@ -19,7 +19,8 @@ const SOURCE = {
   reviewedAt: "2026-10-26",
 };
 const POLICY = { enabled: true as const, hosts: ["www.example.org"] };
-const feed = "<rss><channel><item><title>Transport funding announcement</title>" +
+const feed =
+  "<rss><channel><item><title>Transport funding announcement</title>" +
   "<link>https://www.example.org/rss/transport-1</link></item></channel></rss>";
 const good = {
   status: 200,
@@ -50,7 +51,10 @@ test("approved pinned transport supports conditional 200/304 without external DN
   const source = registry()[0]!;
   const transport = createPinnedFeedHttpsTransport(registry(), POLICY, state.values);
   assert.deepEqual(
-    await transport.request(source, { etag: '"old"', lastModified: "Sun, 25 Oct 2026 10:00:00 GMT" }),
+    await transport.request(source, {
+      etag: '"old"',
+      lastModified: "Sun, 25 Oct 2026 10:00:00 GMT",
+    }),
     {
       status: 200,
       mediaType: "application/rss+xml",
