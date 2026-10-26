@@ -95,10 +95,14 @@ async function loadSnapshot(signal?: AbortSignal): Promise<SourceViewSnapshot> {
 }
 
 function validSave(value: unknown, command: SourceEditorCommand): boolean {
-  if (!object(value) || Object.keys(value).length !== 5 ||
-      !["saved", "revision", "sourceId", "status", "feedActive"].every(
-        (field) => Object.hasOwn(value, field),
-      )) return false;
+  if (
+    !object(value) ||
+    Object.keys(value).length !== 5 ||
+    !["saved", "revision", "sourceId", "status", "feedActive"].every((field) =>
+      Object.hasOwn(value, field),
+    )
+  )
+    return false;
   const id = "source" in command ? command.source.id : command.sourceId;
   const status =
     command.action === "approve"
@@ -106,9 +110,13 @@ function validSave(value: unknown, command: SourceEditorCommand): boolean {
       : command.action === "block"
         ? "blocked"
         : "pending";
-  return value.saved === true && value.feedActive === false &&
+  return (
+    value.saved === true &&
+    value.feedActive === false &&
     value.revision === command.expectedRevision + 1 &&
-    value.sourceId === id && value.status === status;
+    value.sourceId === id &&
+    value.status === status
+  );
 }
 
 /**
@@ -146,8 +154,8 @@ export default function NewsSources({ enabled }: { enabled: boolean }) {
 
   const onCommand = useCallback(
     async (command: SourceEditorCommand): Promise<boolean> => {
-      if (!enabled || !snapshot || busy.current ||
-          command.expectedRevision !== snapshot.revision) return false;
+      if (!enabled || !snapshot || busy.current || command.expectedRevision !== snapshot.revision)
+        return false;
       busy.current = true;
       setError("");
       try {
@@ -159,8 +167,10 @@ export default function NewsSources({ enabled }: { enabled: boolean }) {
           cache: "no-store",
           redirect: "error",
         });
-        if (response.status !== 200 ||
-            !validSave((await response.json()) as unknown, command)) {
+        if (
+          response.status !== 200 ||
+          !validSave((await response.json()) as unknown, command)
+        ) {
           throw new Error("Source change rejected");
         }
         const next = await loadSnapshot();
