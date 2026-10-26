@@ -12,29 +12,15 @@ export interface AnchorQuery {
   query(
     sql: string,
     parameters: readonly (string | number)[],
-  ): Promise<{ rowCount: number | null }>;
+  ): Promise<{ rowCount: number | null; rows: Array<{ accepted: unknown }> }>;
 }
 
 const SHA256 = /^[a-f0-9]{64}$/;
-const ADVANCE_SQL = `
-UPDATE vns_source_anchor.high_water
-SET source_revision = $1,
-    host_approval_revision = $2,
-    envelope_sha256 = $3
-WHERE anchor_id = 'source-export'
-  AND source_revision <= $1
-  AND host_approval_revision <= $2
-  AND (
-    source_revision <> $1
-    OR host_approval_revision <> $2
-    OR envelope_sha256 = $3
-  )
-RETURNING anchor_id
-`;
+const ADVANCE_SQL = "SELECT vns_source_anchor.advance($1::bigint, $2::bigint, $3::text) AS accepted";
 
 /**
  * Atomic, compare-and-advance against an already initialized authority row.
- * Zero updated rows means missing bootstrap, rollback or equivocation.
+ * The separately owned SECURITY DEFINER function enforces monotonic updates.
  * Only one DB statement runs, so PostgreSQL row locking serializes races.
  */
 export function postgresSourceRevisionAnchor(db: AnchorQuery): IndependentSourceRevisionAnchor {
@@ -55,7 +41,7 @@ export function postgresSourceRevisionAnchor(db: AnchorQuery): IndependentSource
           candidate.hostApprovalRevision,
           candidate.envelopeSha256,
         ]);
-        if (result.rowCount !== 1) {
+        if (result.rowCount !== 1 || result.rows.length !== 1 || result.rows[0]?.accepted !== true) {
           throw new Error("Independent source revision admission refused");
         }
       } catch {
