@@ -95,12 +95,20 @@ export function createApiServer(
       options.personalEditorial &&
       request.url?.startsWith("/admin/editorial-")
     ) {
-      void options.personalEditorial.handle(request, response).catch(() => {
-        if (!response.headersSent) response.writeHead(503);
-        if (!response.writableEnded) {
-          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
-        }
-      });
+      void options.personalEditorial
+        .handle(request, response)
+        .then((handled) => {
+          if (!handled && !response.writableEnded) {
+            response.writeHead(404);
+            response.end(JSON.stringify({ error: "not_found" }));
+          }
+        })
+        .catch(() => {
+          if (!response.headersSent) response.writeHead(503);
+          if (!response.writableEnded) {
+            response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+          }
+        });
       return;
     }
 
