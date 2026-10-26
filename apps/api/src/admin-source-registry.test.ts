@@ -19,10 +19,10 @@ const TODAY = new Date("2026-10-25T10:30:00.000Z");
 const sample = {
   id: "city_news",
   baseUrl: "https://city.example.org/news/",
-  access: "rss",
+  access: "rss" as const,
   intervalMinutes: 60,
   termsUrl: "https://city.example.org/terms/",
-  usage: "metadata_only",
+  usage: "metadata_only" as const,
   licenseNotes: "This synthetic source permits metadata citations only.",
 };
 
@@ -249,13 +249,16 @@ test("disabled endpoint, wrong editor cookie, forbidden origin and rate gate blo
 test("bad framing, unknown fields and malicious encoding cannot reach storage", async () => {
   const f = setup();
   const command = { action: "create_pending", expectedRevision: 0, source: sample };
-  for (const headers of [
+  const invalidHeaders: Array<Record<string, string>> = [
     { "content-type": "text/plain" },
     { "content-encoding": "gzip" },
     { "content-length": "1" },
     { "content-length": "0001" },
     { "content-length": "4097" },
-  ]) assert.equal((await serve(f.handler, "POST", command, headers)).code, 400);
+  ];
+  for (const headers of invalidHeaders) {
+    assert.equal((await serve(f.handler, "POST", command, headers)).code, 400);
+  }
   assert.equal((await serve(f.handler, "POST", { ...command, editorId: EDITOR_ID })).code, 400);
   assert.equal(f.audits.length, 0);
   assert.equal(f.reads, 0);

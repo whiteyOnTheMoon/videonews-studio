@@ -201,6 +201,7 @@ export function applySourceAdminCommand(
     sources[index] = { ...command.source, status: "pending", reviewedAt: reviewDate };
     status = "pending";
   } else {
+    if (!("sourceId" in command)) return null;
     id = command.sourceId;
     const source = sources.find((source) => source.id === id);
     if (!source) return null;
