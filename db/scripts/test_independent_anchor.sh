@@ -24,6 +24,8 @@ test "$ready" -eq 1 || { echo "PostgreSQL not ready" >&2; exit 1; }
 sql < "$root/db/independent-anchor/001_high_water.sql"
 sql < "$root/db/independent-anchor/002_server_admission.sql"
 sql < "$root/db/independent-anchor/test_admission.sql"
+sql < "$root/db/independent-anchor/003_trust_policy_admission.sql"
+sql < "$root/db/independent-anchor/test_trust_policy.sql"
 # Direct DML by worker must fail; not merely return zero rows.
 if docker exec "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d anchor_ci \
   -c "SET ROLE vns_anchor_ci_worker; UPDATE vns_source_anchor.high_water SET source_revision=0" >/dev/null 2>&1; then
@@ -49,3 +51,17 @@ wait
 test "$(cat "$work/a" "$work/b" | grep -cx t)" -eq 1
 test "$(cat "$work/a" "$work/b" | grep -cx f)" -eq 1
 echo "PASS: independent authority deny, replay and concurrent admission"
+
+# Concurrent trust-policy attempts with distinct same-revision digests.
+work_trust="$(mktemp -d /tmp/vns-trust-race-XXXXXXXX)"
+for pair in "a d" "b e"; do
+  read -r label digit <<< "$pair"
+  docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 -U postgres -d anchor_ci \
+    -c "SET ROLE vns_trust_ci_worker; SELECT vns_source_anchor.advance_trust_policy(3,repeat('$digit',64))" \
+    > "$work_trust/$label" 2>&1 &
+done
+wait
+test "$(cat "$work_trust/a" "$work_trust/b" | grep -cx t)" -eq 1
+test "$(cat "$work_trust/a" "$work_trust/b" | grep -cx f)" -eq 1
+rm -rf "$work_trust"
+echo "PASS: trust policy authority concurrent admission"
