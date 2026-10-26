@@ -40,7 +40,10 @@ test("strict parameterized projection returns only bounded count", async () => {
   assert.equal(await projector.project("ci_projection_feed", 2), 2);
   assert.equal(await projector.project("ci_projection_feed", 2), 0);
   assert.equal(calls.length, 2);
-  assert.equal(calls[0]!.sql, "SELECT vns.project_feed_candidates($1::text,$2::integer) AS projected");
+  assert.equal(
+    calls[0]!.sql,
+    "SELECT vns.project_feed_candidates($1::text,$2::integer) AS projected",
+  );
   assert.deepEqual(calls[0]!.params, ["ci_projection_feed", 2]);
   assert.ok(calls.every(({ sql }) => !sql.includes("ci_projection_feed")));
 });
@@ -72,7 +75,11 @@ test("SQL failures and forged responses are redacted and fail closed", async () 
     { rows: [{ projected: "1" }] },
     { rows: [{ projected: 1 }, { projected: 1 }] },
   ]) {
-    const pool = { async query() { return response; } } as unknown as Pool;
+    const pool = {
+      async query() {
+        return response;
+      },
+    } as unknown as Pool;
     const projector = new DormantFeedCandidateProjector(pool, flags);
     await assert.rejects(projector.project("ci_projection_feed", 2), /unavailable/);
   }
