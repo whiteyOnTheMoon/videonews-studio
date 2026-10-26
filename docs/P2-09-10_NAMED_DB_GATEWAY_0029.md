@@ -1,0 +1,13 @@
+# P2-09/P2-10 — Identity-bound PostgreSQL editor gateway (migration 0029)
+
+This migration adds an **empty-by-default** DBA-owned `vns.editor_db_principals` enrollment registry. It binds a verified personal PostgreSQL `LOGIN` role (`session_user`) to one active editor account and an exact `auth_version`. The database functions never accept a caller-supplied editor ID or reviewer name. `SET ROLE` cannot alter the authenticated `session_user`.
+
+The narrow `vns_p2_named_client` NOLOGIN role receives only EXECUTE on `named_profile_read`, `named_profile_commit`, `named_timeline_append` and `named_timeline_read`. Internally the SECURITY DEFINER executor checks active personal enrollment, active editor account, matching auth version and appropriate role. Profile edits use the existing atomic revision+audit operation. Timeline writes use the existing append-only event ledger; reads are reviewer/admin only. No direct table mutations are granted to this role, the standard API runtime or the feed worker.
+
+**No users, passwords, grants to real logins, environment variables, secrets, queues, feeds or VPS changes are provisioned.** Production enrollment would require a separately approved DBA process and truly separate PostgreSQL credential per editor, kept outside GitHub and chat. Using a shared API PostgreSQL login, passing a user ID from a browser, or issuing `SET ROLE` from a pooled shared account **does not provide personal database authentication** and must never be considered sufficient.
+
+The disposable PostgreSQL migration CI creates transient LOGIN roles, tests authentication identity via `session_user`, role isolation, reviewer restrictions, stale revision conflicts, revocation and attribution to profile and timeline audits, then rolls back all data and test principals. Because the test switches session authorization as a privileged fixture rather than authenticating with real passwords, **physical password/MFA enrollment and multi-connection integration remain separate acceptance tasks**.
+
+Migration 0029 is reversible in disposable CI, but any production database change and real credential/provisioner setup require an approved backup/restore, separate operator authorization and hardening review.
+
+**Outstanding:** Admin UI/backend personal session wiring, signed export, immutable independent audit anchors, timeline pagination and restoration acceptance (#24–25); source/host human rights (#16), true scheduler pipeline (#17); provider custody (#227), offsite restore (#228), monitoring (#229), and repo governance (#2). No P2 issue can be closed on this migration alone.
