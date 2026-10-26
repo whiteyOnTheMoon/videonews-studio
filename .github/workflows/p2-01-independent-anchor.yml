@@ -1,0 +1,20 @@
+name: P2-01 independent anchor offline PostgreSQL
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/independent-anchor/**"
+      - "db/scripts/test_independent_anchor.sh"
+      - ".github/workflows/p2-01-independent-anchor.yml"
+permissions:
+  contents: read
+jobs:
+  authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test independent server-side authority in disposable PostgreSQL
+        env:
+          CI: "true"
+        run: bash db/scripts/test_independent_anchor.sh
