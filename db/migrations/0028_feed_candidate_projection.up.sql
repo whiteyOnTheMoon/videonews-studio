@@ -28,7 +28,7 @@ BEGIN
   -- Never promote undated, noncanonical, or future feed metadata.
   -- No verification or publishing authority is inferred from an article.
   FOR candidate IN
-    SELECT source_id,article_url,headline,published_at
+    SELECT feed.source_id,feed.article_url,feed.headline,feed.published_at
     FROM vns.feed_poll_candidates AS feed
     LEFT JOIN vns.research_articles AS prior
       ON prior.canonical_url=feed.article_url
