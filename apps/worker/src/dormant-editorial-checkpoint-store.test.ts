@@ -20,10 +20,11 @@ test("explicit opt-in required before any SQL is touched", () => {
   } as unknown as Pool;
   assert.throws(() => new DormantEditorialCheckpointStore(pool, {}), /disabled/);
   assert.throws(
-    () => new DormantEditorialCheckpointStore(
-      pool,
-      { ...enabled, VNS_EDITORIAL_CHECKPOINT_OPERATOR_ACK: "false" },
-    ),
+    () =>
+      new DormantEditorialCheckpointStore(pool, {
+        ...enabled,
+        VNS_EDITORIAL_CHECKPOINT_OPERATOR_ACK: "false",
+      }),
     /disabled/,
   );
   assert.equal(queries, 0);
@@ -47,7 +48,13 @@ test("parameters are bound and DB owns the personal session identity", async () 
     "conflict",
   );
   assert.deepEqual(calls[0]?.args, [
-    event, 0, "ranking", "candidate", "a".repeat(64), '["offline_candidate"]', 42,
+    event,
+    0,
+    "ranking",
+    "candidate",
+    "a".repeat(64),
+    '["offline_candidate"]',
+    42,
   ]);
   assert.ok(calls.every((call) => !call.sql.includes(event)));
   assert.ok(calls.every((call) => !call.sql.includes("editorId")));
