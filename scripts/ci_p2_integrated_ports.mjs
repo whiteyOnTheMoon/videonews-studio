@@ -120,7 +120,10 @@ test(
     };
     try {
       await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
-      await assert.rejects(attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"), /admission denied/);
+      await assert.rejects(
+        attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"),
+        /admission denied/,
+      );
       const scheduler = createDormantFeedScheduler(env, {
         pool: sql,
         readRegistry: () => JSON.stringify({ version: 1, sources }),
