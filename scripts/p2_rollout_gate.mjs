@@ -73,7 +73,7 @@ export function evaluateRolloutEvidence(input, { expectedSha, now = new Date() }
       typeof item.approvedAt !== "string" ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(item.approvedAt) ||
       !Number.isFinite(Date.parse(item.approvedAt)) ||
-      new Date(item.approvedAt).toISOString() !== item.approvedAt.replace(/\.0+Z$/, "Z") ||
+      new Date(item.approvedAt).toISOString().replace(/\.000Z$/, "Z") !== item.approvedAt ||
       Date.parse(item.approvedAt) > now.getTime()
     ) {
       failures.push(key);
