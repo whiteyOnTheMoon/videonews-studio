@@ -81,6 +81,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0020_source_admin_registry.test.sql"
   sql < "$root/db/migrations/0021_source_transition_guard.up.sql"
   sql < "$root/db/tests/0021_source_transition_guard.test.sql"
+  sql < "$root/db/migrations/0022_independent_host_approval.up.sql"
+  sql < "$root/db/tests/0022_independent_host_approval.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for one feed lease.
     feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
@@ -203,6 +205,28 @@ for iteration in 1 2; do
     rm -rf -- "$source_work"
     echo "PASS: two independent source-admin sessions commit exactly one revision and audit"
   fi
+  if [[ "$iteration" -eq 1 ]]; then
+    # Two independent PostgreSQL sessions must never grant a host twice.
+    sql < "$root/db/tests/0022_independent_host_concurrency.setup.sql"
+    host_work="$(mktemp -d /tmp/vns-host-ci-XXXXXXXX)"
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_host_approval_writer; SELECT vns.admin_change_source_host_approval(0,3,'grant','race.example.org','Synthetic independently reviewed limited metadata rights.','ca220003-3333-4333-8333-333333333333'::uuid,0);" \
+        > "$host_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then host_pid_a=$!; else host_pid_b=$!; fi
+    done
+    wait "$host_pid_a" && wait "$host_pid_b"
+    test "$(cat "$host_work/a" "$host_work/b" | grep -cx 't')" = 1
+    test "$(cat "$host_work/a" "$host_work/b" | grep -cx 'f')" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c "SELECT revision FROM vns.admin_source_host_approvals WHERE singleton")" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c "SELECT count(*) FROM vns.admin_source_host_audit WHERE revision=1 AND editor_username='ci_host_racer'")" = 1
+    rm -rf -- "$host_work"
+    echo "PASS: two independent host-approval sessions persist one grant and audit"
+  fi
+  sql < "$root/db/migrations/0022_independent_host_approval.down.sql"
   sql < "$root/db/migrations/0021_source_transition_guard.down.sql"
   sql < "$root/db/migrations/0020_source_admin_registry.down.sql"
   sql < "$root/db/migrations/0019_feed_poll_contract.down.sql"
@@ -229,4 +253,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001–0021 migrations, source CAS/audit, feed leases and budgets twice"
+echo "PASS: reversible 0001–0022 migrations, source CAS/audit, feed leases and budgets twice"
