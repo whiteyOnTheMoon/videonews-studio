@@ -2,7 +2,6 @@ import { Queue, Worker } from "bullmq";
 import type { Redis } from "ioredis";
 import {
   createDormantFeedQueueContract,
-  FEED_TICK_JOB_NAME,
   ISOLATED_FEED_QUEUE,
 } from "./feed-queue-contract.js";
 import type { OfflineFeedScheduler } from "./feed-scheduler-composition.js";
