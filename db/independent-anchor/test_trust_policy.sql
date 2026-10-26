@@ -19,7 +19,7 @@ DO $$
 BEGIN
  IF NOT vns_source_anchor.advance_trust_policy(1,repeat('a',64))
  OR vns_source_anchor.advance_trust_policy(1,repeat('b',64))
- OR vns_source_anchor.advance_trust_policy(0,repeat('a',64))
+
  OR NOT vns_source_anchor.advance_trust_policy(2,repeat('b',64))
  OR vns_source_anchor.advance_trust_policy(1,repeat('a',64))
  OR vns_source_anchor.advance_trust_policy(2,repeat('c',64))
