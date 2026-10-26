@@ -1,0 +1,5 @@
+# P2-05/P2-06 — Strict offline evidence/freshness gate
+
+This unmounted reviewer-input validator binds each claim to an independent review record and article ID, an exact source URL, reviewer identity and review/evidence timestamps. Unsupported, contradictory, missing, mismatched, future or expired review evidence receives an explicit rejection reason. Duplicate reviews are flagged. The return value **never grants publication**, even if no warning is present, because this component cannot attest that an independent person actually reviewed the claim.
+
+Still pending: authenticate reviewers, persist immutable signatures/audit and review versions, establish claim-to-excerpt/content verification within usage rights, detect contradictory and superseding source updates, multi-source provenance, named review authority, independent AI quality agent with revision ceiling, and a final operator publish gate. No feed calls, real providers, worker activation or VPS changes. Issues #20 and #21 stay open.
