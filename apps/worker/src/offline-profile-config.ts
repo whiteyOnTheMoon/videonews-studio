@@ -25,26 +25,37 @@ export function parseOfflineEditorialProfiles(json: string): readonly EditorialP
     throw new Error("Editorial profile count invalid");
   }
   const ids = new Set<string>();
-  return Object.freeze(obj.profiles.map((raw: unknown) => {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-      throw new Error("Editorial profile invalid");
-    }
-    const entry = raw as Record<string, unknown>;
-    const keys = ["id", "language", "keywords", "blockedTerms",
-      "minIndependentSources", "maximumArticleAgeHours", "format"];
-    if (Object.keys(entry).length !== keys.length ||
-        keys.some((key) => !Object.hasOwn(entry, key))) {
-      throw new Error("Editorial profile fields invalid");
-    }
-    const profile = validateEditorialProfile(entry as unknown as EditorialProfile);
-    if (ids.has(profile.id)) throw new Error("Duplicate editorial profile identity");
-    ids.add(profile.id);
-    return Object.freeze({
-      ...profile,
-      keywords: Object.freeze([...profile.keywords]),
-      blockedTerms: Object.freeze([...profile.blockedTerms]),
-    });
-  }));
+  return Object.freeze(
+    obj.profiles.map((raw: unknown) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error("Editorial profile invalid");
+      }
+      const entry = raw as Record<string, unknown>;
+      const keys = [
+        "id",
+        "language",
+        "keywords",
+        "blockedTerms",
+        "minIndependentSources",
+        "maximumArticleAgeHours",
+        "format",
+      ];
+      if (
+        Object.keys(entry).length !== keys.length ||
+        keys.some((key) => !Object.hasOwn(entry, key))
+      ) {
+        throw new Error("Editorial profile fields invalid");
+      }
+      const profile = validateEditorialProfile(entry as unknown as EditorialProfile);
+      if (ids.has(profile.id)) throw new Error("Duplicate editorial profile identity");
+      ids.add(profile.id);
+      return Object.freeze({
+        ...profile,
+        keywords: Object.freeze([...profile.keywords]),
+        blockedTerms: Object.freeze([...profile.blockedTerms]),
+      });
+    }),
+  );
 }
 
 export function selectOfflineEditorialProfile(
