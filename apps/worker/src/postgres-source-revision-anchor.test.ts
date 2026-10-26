@@ -73,7 +73,11 @@ test("server rejection and ambiguous result never advance", async () => {
     { rowCount: 1, rows: [{ accepted: true }, { accepted: true }] },
   ]) {
     await assert.rejects(
-      postgresSourceRevisionAnchor({ async query() { return response; } }).advance(newer),
+      postgresSourceRevisionAnchor({
+        async query() {
+          return response;
+        },
+      }).advance(newer),
       /admission refused/,
     );
   }
