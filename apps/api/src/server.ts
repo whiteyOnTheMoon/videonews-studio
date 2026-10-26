@@ -5,6 +5,7 @@ import type { AdminJobs } from "./admin-jobs.js";
 import type { EditorAuth } from "./editor-auth.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
 import { DormantNamedSourceAdmin } from "./admin-source-registry.js";
+import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
 
 export function createApiServer(
   options: {
@@ -13,6 +14,7 @@ export function createApiServer(
     editor?: EditorAuth;
     providerConfig?: NamedAdminProviderConfiguration;
     sourceRegistry?: DormantNamedSourceAdmin;
+    hostApprovals?: DormantNamedHostApproval;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -29,6 +31,10 @@ export function createApiServer(
     throw new Error("Source administration must use named-admin contract");
   if (options.sourceRegistry && (!options.auth || !options.editor))
     throw new Error("Source administration requires personal admin authentication");
+  if (options.hostApprovals && !(options.hostApprovals instanceof DormantNamedHostApproval))
+    throw new Error("Host approval requires named-admin contract");
+  if (options.hostApprovals && (!options.auth || !options.editor))
+    throw new Error("Host approval requires personal admin authentication");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -58,6 +64,17 @@ export function createApiServer(
     // Explicit injection only: index.ts never mounts the dormant source registry.
     if (request.url === "/admin/news-sources" && options.sourceRegistry) {
       void options.sourceRegistry.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded) {
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        }
+      });
+      return;
+    }
+
+    // Dormant by construction: index.ts never injects a host approval handler.
+    if (request.url === "/admin/source-hosts" && options.hostApprovals) {
+      void options.hostApprovals.handle(request, response).catch(() => {
         if (!response.headersSent) response.writeHead(503);
         if (!response.writableEnded) {
           response.end(JSON.stringify({ error: "temporarily_unavailable" }));
