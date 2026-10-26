@@ -8,7 +8,7 @@ The implementation intentionally uses a conservative SQL normalized-title SHA-25
 
 **Privileged boundary:** `vns_feed_project_executor` is NOLOGIN/NOINHERIT, receives only metadata SELECT and article/event/link SELECT+INSERT, owns the SECURITY DEFINER function and is _not_ granted to a runtime login. Function EXECUTE is revoked from PUBLIC, including the feed writer and API runtime. There is no scheduler, Docker container, timer, new database login, secret or deployment. The optional `DormantFeedCandidateProjector` has separately required opt-in flags, an injected pool, bounded parameterized SQL and redacted errors, but is not imported by any running worker.
 
-The isolated CI migration harness executes migration 0028 up + its SQL tests, then down, twice, together with existing prior migrations. Rollback deletes the disposable function and role, *_not_* any research articles. Production database rollback or migration **must never** be performed using this CI-only sequence without an approved backup and migration-specific operational plan.
+The isolated CI migration harness executes migration 0028 up + its SQL tests, then down, twice, together with existing prior migrations. Rollback deletes the disposable function and role but leaves research articles untouched. Production database rollback or migration **must never** be performed using this CI-only sequence without an approved backup and migration-specific operational plan.
 
 ## Remaining acceptance blockers
 
