@@ -17,18 +17,18 @@ Der neue Overlay `deploy/compose.feed-projection.yaml` wird **nicht automatisch*
 
 Einstellungen sind **nicht im Code als reale Nachrichtenquellen hardcodiert**:
 
-| Variable | Voraussetzung |
-| --- | --- |
-| `VNS_P2_FEED_PROJECTION_ENABLED` | `true`, nach separater Freigabe |
-| `VNS_P2_FEED_PROJECTION_OPERATOR_ACK` | `true`, nach separater Freigabe |
-| `VNS_P2_FEED_PROJECTION_MODE` | `single_pass` |
-| `VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP` | `false` |
-| `VNS_P2_FEED_PROJECTION_DB_HOST` | Nur `postgres` im Compose-Netz bzw. `127.0.0.1` in CI |
-| `VNS_P2_FEED_PROJECTION_DB_USER` | Separates, eingeschränktes benanntes LOGIN `vns_feed_project_login_...` |
-| `VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE` | Genau `/run/secrets/vns_feed_project_db_password` |
-| `VNS_P2_PROJECTOR_DB_PASSWORD_FILE` | Vom Betreiber vorprovisionierte Host-Datei, bind mount, nie GitHub |
-| `VNS_P2_FEED_PROJECTION_SOURCE_ID` | Existierende, **aktuell im Admin-Register freigegebene** Source-ID |
-| `VNS_P2_FEED_PROJECTION_LIMIT` | 1–100 pro ausdrücklich freigegebenem Lauf |
+| Variable                                  | Voraussetzung                                                           |
+| ----------------------------------------- | ----------------------------------------------------------------------- |
+| `VNS_P2_FEED_PROJECTION_ENABLED`          | `true`, nach separater Freigabe                                         |
+| `VNS_P2_FEED_PROJECTION_OPERATOR_ACK`     | `true`, nach separater Freigabe                                         |
+| `VNS_P2_FEED_PROJECTION_MODE`             | `single_pass`                                                           |
+| `VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP` | `false`                                                                 |
+| `VNS_P2_FEED_PROJECTION_DB_HOST`          | Nur `postgres` im Compose-Netz bzw. `127.0.0.1` in CI                   |
+| `VNS_P2_FEED_PROJECTION_DB_USER`          | Separates, eingeschränktes benanntes LOGIN `vns_feed_project_login_...` |
+| `VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE` | Genau `/run/secrets/vns_feed_project_db_password`                       |
+| `VNS_P2_PROJECTOR_DB_PASSWORD_FILE`       | Vom Betreiber vorprovisionierte Host-Datei, bind mount, nie GitHub      |
+| `VNS_P2_FEED_PROJECTION_SOURCE_ID`        | Existierende, **aktuell im Admin-Register freigegebene** Source-ID      |
+| `VNS_P2_FEED_PROJECTION_LIMIT`            | 1–100 pro ausdrücklich freigegebenem Lauf                               |
 
 Der Admin-Quellenkatalog und seine separate Hostfreigabe sind die Datenbankautorität. Das CLI nimmt nur die konkrete, erlaubte Quelle für den einzelnen Übergang entgegen. Keine Live-Quelle, API-Key oder private Belege werden als GitHub-Default definiert.
 
