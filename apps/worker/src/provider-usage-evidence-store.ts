@@ -4,7 +4,7 @@ import { admitReportedUsage } from "./provider-usage-admission.js";
 // Not imported by an active worker. The PostgreSQL function is deliberately
 // granted only to a NOLOGIN role; no production writer identity exists yet.
 // Only a separately trusted adapter may supply canonical provider metadata.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export interface ProviderEvidenceReceipt {
   receiptId: string;
