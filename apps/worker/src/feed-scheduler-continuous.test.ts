@@ -150,7 +150,7 @@ test("continuous scheduler dispatches exactly one slot, skips missed slots and s
     controller.signal,
   );
   assert.equal(slots.length, 2);
-  assert.equal(slots[1] - slots[0], 1);
+  assert.equal(slots[1]! - slots[0]!, 1);
   assert.deepEqual(events, ["slot_enqueued", "slot_enqueued"]);
 });
 
