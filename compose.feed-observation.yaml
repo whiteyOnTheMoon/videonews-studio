@@ -201,7 +201,7 @@ services:
   # An independent queue producer, with NO PostgreSQL/anchor credentials,
   # signed source inbox, key, checkpoint or outbound feed HTTP network.
   # The consumer rechecks approval and signed sources before any fetch.
-  feed-producer:
+  feed-producer: &vns-feed-producer
     <<: *feed-locked
     profiles: [feed-producer]
     image: vns-worker:local
@@ -210,7 +210,7 @@ services:
       dockerfile: Dockerfile
       target: worker
     entrypoint: ["node", "apps/worker/dist/feed-producer-bounded.js", "--bounded-producer"]
-    environment:
+    environment: &vns-feed-producer-environment
       <<: *vns-feed-environment
       VNS_FEED_RUNTIME_MODE: bounded_producer
       VNS_FEED_SOURCE_BOOTSTRAP: "false"
@@ -232,6 +232,30 @@ services:
       redis: { condition: service_healthy }
     networks: [backend]
 
+  # Explicitly authorized always-on 15-minute queue-only producer.
+  # Any failed job, paused queue, excessive/old pending work or Redis failure
+  # stops this service; Docker health goes unhealthy until operator response.
+  feed-producer-continuous:
+    <<: *vns-feed-producer
+    profiles: [feed-producer-continuous]
+    entrypoint: ["node", "apps/worker/dist/feed-producer-continuous.js", "--continuous"]
+    healthcheck:
+      test: ["CMD", "node", "apps/worker/dist/feed-producer-healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    environment:
+      <<: *vns-feed-producer-environment
+      VNS_FEED_RUNTIME_MODE: continuous_producer
+      VNS_FEED_SCHEDULER_MODE: continuous
+      VNS_FEED_CONTINUOUS_ENABLED: "${VNS_FEED_CONTINUOUS_ENABLED:-false}"
+      VNS_FEED_CONTINUOUS_OPERATOR_ACK: "${VNS_FEED_CONTINUOUS_OPERATOR_ACK:-false}"
+      VNS_FEED_CONTINUOUS_MAX_BACKLOG: "${VNS_FEED_CONTINUOUS_MAX_BACKLOG:-0}"
+      VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS: "${VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS:-0}"
+      VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES: "${VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES:-0}"
+      VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT: "${VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT:-0}"
+
   # A long-lived, single-concurrency worker. Unlike the observer it NEVER
   # creates queue jobs; DB/anchor/signed-source checks occur per delivery.
   feed-consumer:
@@ -251,6 +275,7 @@ services:
       VNS_FEED_REDIS_USER: "${VNS_FEED_CONSUMER_REDIS_USER:-}"
       VNS_FEED_SEPARATE_WORKER_ENABLED: "${VNS_FEED_SEPARATE_WORKER_ENABLED:-false}"
       VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "${VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK:-false}"
+      VNS_FEED_CONSUMER_MAX_JOB_SECONDS: "${VNS_FEED_CONSUMER_MAX_JOB_SECONDS:-0}"
 
 # Only the observer, bounded scheduler and separate consumer have explicit feed egress.
 networks:
