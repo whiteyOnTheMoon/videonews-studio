@@ -4,6 +4,7 @@ import type { Pool } from "pg";
  * A separate TLS-authenticated PostgreSQL cluster must hold the monotonic
  * source revision anchor, beyond the worker/publisher rollback domain.
  * This attests the actual anchor LOGIN, never an application-provided label.
+ * No success is returned for an ambiguous or privileged database session.
  */
 export interface FeedAnchorIdentity {
   session_user: string;
