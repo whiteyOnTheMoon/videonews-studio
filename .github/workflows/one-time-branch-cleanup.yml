@@ -22,7 +22,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/one_time_prune_branches.mjs --audit
   prune:
-    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, '[P1-02] One-time verified branch cleanup (#248)')
+    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, '[P1-02] Verified cleanup of 49 merged branches')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
