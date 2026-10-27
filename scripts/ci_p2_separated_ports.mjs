@@ -8,6 +8,12 @@ import {
 } from "../apps/worker/dist/feed-bullmq-separated.js";
 import { ISOLATED_FEED_QUEUE } from "../apps/worker/dist/feed-queue-contract.js";
 import { ISOLATED_FEED_REDIS_PREFIX } from "../apps/worker/dist/feed-bullmq-bridge.js";
+import { inspectFeedQueue } from "../apps/worker/dist/feed-queue-inspection.js";
+import {
+  readContinuousFeedPolicy,
+  runContinuousFeedSchedule,
+  validateFeedQueueSnapshot,
+} from "../apps/worker/dist/feed-scheduler-continuous.js";
 
 if (
   process.env.GITHUB_ACTIONS !== "true" ||
@@ -186,6 +192,98 @@ test(
         assert.equal((await nextJob.waitUntilFinished(events, 20000)).ok, true);
         assert.equal(admittedJobs, 2);
         assert.equal(closedContexts, 2);
+        const continuousEnv = {
+          ...producerEnv,
+          VNS_FEED_RUNTIME_MODE: "continuous_producer",
+          VNS_FEED_SCHEDULER_MODE: "continuous",
+          VNS_FEED_CONTINUOUS_ENABLED: "true",
+          VNS_FEED_CONTINUOUS_OPERATOR_ACK: "true",
+          VNS_FEED_CONTINUOUS_MAX_BACKLOG: "3",
+          VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES: "20",
+          VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT: "2",
+        };
+        const continuous = createSeparatedFeedProducer(
+          continuousEnv,
+          producerRedis,
+          "continuous_producer",
+        );
+        try {
+          const policy = readContinuousFeedPolicy(continuousEnv);
+          assert.equal(
+            validateFeedQueueSnapshot(
+              await inspectFeedQueue(continuous.queue),
+              policy,
+              Date.now(),
+            ),
+            0,
+          );
+          syntheticNow = new Date(syntheticNow.getTime() + 900000);
+          const controller = new AbortController();
+          let dispatched = 0;
+          await runContinuousFeedSchedule(
+            continuousEnv,
+            {
+              now: () => syntheticNow,
+              inspect: () => inspectFeedQueue(continuous.queue),
+              async enqueue(at) {
+                dispatched++;
+                return continuous.enqueue(at);
+              },
+              async delay() {
+                controller.abort();
+              },
+              record() {},
+            },
+            controller.signal,
+          );
+          assert.equal(dispatched, 1);
+          const thirdId = "vns-feed-tick-" + Math.floor(syntheticNow.getTime() / 900000);
+          const third = await continuous.queue.getJob(thirdId);
+          assert.ok(third);
+          assert.equal((await third.waitUntilFinished(events, 20000)).ok, true);
+          assert.equal(admittedJobs, 3);
+          assert.equal(closedContexts, 3);
+
+          // A forged/failed delivery remains in BullMQ, never silently retried.
+          const forged = await continuous.queue.add(
+            "feed-tick",
+            { kind: "feed-tick", slot: -1 },
+            {
+              jobId: "vns-feed-invalid-ci",
+              attempts: 1,
+              removeOnComplete: false,
+              removeOnFail: false,
+            },
+          );
+          await assert.rejects(forged.waitUntilFinished(events, 20000));
+          const snapshot = await inspectFeedQueue(continuous.queue);
+          assert.ok(snapshot.failed >= 1);
+          assert.throws(() =>
+            validateFeedQueueSnapshot(snapshot, policy, syntheticNow.getTime()),
+          );
+          let extraEnqueue = false;
+          await assert.rejects(
+            runContinuousFeedSchedule(
+              continuousEnv,
+              {
+                now: () => syntheticNow,
+                inspect: () => inspectFeedQueue(continuous.queue),
+                enqueue: async () => {
+                  extraEnqueue = true;
+                  return "forbidden";
+                },
+                delay: async () => undefined,
+                record() {},
+              },
+              new AbortController().signal,
+            ),
+            /queue health check failed/,
+          );
+          assert.equal(extraEnqueue, false);
+          assert.equal(admittedJobs, 3);
+        } finally {
+          await continuous.close().catch(() => undefined);
+        }
       } finally {
         await consumer?.close().catch(() => undefined);
         consumer = undefined;
