@@ -14,6 +14,7 @@ jobs:
     timeout-minutes: 14
     env:
       CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
       VNS_P109_BOOTSTRAP_CI_PROJECT: vns-p109-bootstrap-ci
     steps:
       - uses: actions/checkout@v4
