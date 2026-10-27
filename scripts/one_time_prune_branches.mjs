@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 
 const manifest = JSON.parse(
   await readFile(
-    new URL("../docs/maintenance/branch-prune-2026-10-26.json", import.meta.url),
+    new URL("../docs/maintenance/branch-prune-2026-10-27.json", import.meta.url),
     "utf8",
   ),
 );
@@ -48,7 +48,7 @@ async function api(path, method = "GET") {
   if (!response.ok) throw new Error("GitHub refused " + method + ": HTTP " + response.status);
   return response.json();
 }
-if (!Array.isArray(manifest.candidates) || manifest.candidates.length !== 45) {
+if (!Array.isArray(manifest.candidates) || manifest.candidates.length !== 49) {
   throw new Error("Unexpected pre-audited manifest size");
 }
 const seen = new Set();
@@ -111,14 +111,12 @@ for (const item of candidates) {
   await api("/git/refs/heads/" + encoded, "DELETE");
   console.log("Deleted:", item.branch);
 }
-const ownName = "maintenance/p1-02-repository-audit-cleanup";
-const ownPr = await api("/pulls/248");
-if (
-  !ownPr?.merged_at ||
-  ownPr.merge_commit_sha !== runSha ||
-  ownPr.head?.ref !== ownName ||
-  ownPr.head?.repo?.full_name !== repository
-) {
+const ownName = "maintenance/p1-02-verified-49-branch-prune";
+const recent = await api("/pulls?state=closed&per_page=10");
+const ownPr = recent?.find(
+  (pr) => pr.merge_commit_sha === runSha && pr.head?.ref === ownName && pr.merged_at,
+);
+if (!ownPr) {
   throw new Error("Cleanup PR is not the exact merged push");
 }
 const own = await api("/branches/" + branchPath(ownName));
