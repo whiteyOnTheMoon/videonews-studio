@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import pg, { type Pool } from "pg";
+import pg, { type Pool, type PoolConfig } from "pg";
 import type { AdminAuth } from "./auth.js";
 import type { EditorAuth } from "./editor-auth.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
@@ -52,7 +52,7 @@ export async function namedProviderRuntimeFromEnv(
   auth: AdminAuth | undefined,
   env: NodeJS.ProcessEnv = process.env,
   readPassword: (path: string) => string = (path) => readFileSync(path, "utf8"),
-  poolFactory: (options: pg.PoolConfig) => Pool = (options) => new pg.Pool(options),
+  poolFactory: (options: PoolConfig) => Pool = (options) => new pg.Pool(options),
   withKey: typeof withProviderMasterKey = withProviderMasterKey,
 ): Promise<NamedProviderRequestRuntime | undefined> {
   if (env.VNS_PROVIDER_ADMIN_WRITE_ENABLED === undefined || env.VNS_PROVIDER_ADMIN_WRITE_ENABLED === "false") {
