@@ -29,14 +29,29 @@ const record: FeedConsumerHealthRecord = {
 
 test("private, atomic heartbeat reports real process readiness and failure counters", () => {
   fixture((path) => {
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
     publishFeedConsumerHealth(record, path);
-    assert.equal(checkFeedConsumerHealth(path, record.at, (pid) => pid === process.pid), true);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => false), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, (pid) => pid === process.pid),
+      true,
+    );
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => false),
+      false,
+    );
     publishFeedConsumerHealth({ ...record, consecutiveFailures: 2 }, path);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), true);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      true,
+    );
     publishFeedConsumerHealth({ ...record, state: "stopped" }, path);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
   });
 });
 
@@ -51,8 +66,14 @@ test("stale/future health never reports healthy", () => {
       checkFeedConsumerHealth(path, record.at + FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS + 1, () => true),
       false,
     );
-    assert.equal(checkFeedConsumerHealth(path, record.at - 1, () => true), false);
-    assert.equal(checkFeedConsumerHealth(path, -1, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at - 1, () => true),
+      false,
+    );
+    assert.equal(
+      checkFeedConsumerHealth(path, -1, () => true),
+      false,
+    );
   });
 });
 
@@ -61,16 +82,28 @@ test("refuses symlinks, insecure permissions, hardlinks and malformed files", ()
     const alias = path + ".alias";
     publishFeedConsumerHealth(record, path);
     symlinkSync(path, alias);
-    assert.equal(checkFeedConsumerHealth(alias, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(alias, record.at, () => true),
+      false,
+    );
     rmSync(alias);
     linkSync(path, alias);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
     rmSync(alias);
     chmodSync(path, 0o666);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
     writeFileSync(path, '{"version":1,"state":"ready"}', { mode: 0o600 });
     chmodSync(path, 0o600);
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
   });
 });
 
@@ -83,15 +116,16 @@ test("invalid writer records and path traversal are rejected before any file mut
       { ...record, at: NaN },
       { ...record, unsupported: "yes" },
     ]) {
-      assert.throws(() =>
-        publishFeedConsumerHealth(candidate as FeedConsumerHealthRecord, path),
-      );
+      assert.throws(() => publishFeedConsumerHealth(candidate as FeedConsumerHealthRecord, path));
     }
     assert.throws(() => publishFeedConsumerHealth(record, "/tmp/../run/secrets/pwn"));
     assert.equal(
       checkFeedConsumerHealth("/tmp/../run/secrets/pwn", record.at, () => true),
       false,
     );
-    assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at, () => true),
+      false,
+    );
   });
 });
