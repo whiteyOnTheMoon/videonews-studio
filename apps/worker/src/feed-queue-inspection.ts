@@ -10,18 +10,19 @@ export async function inspectFeedQueue(queue: InspectionPort): Promise<FeedQueue
     throw new Error("Feed queue inspection port invalid");
   }
   try {
-    const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed", "completed", "paused");
+    const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed", "completed");
     const waiting = counts.waiting ?? 0;
     const active = counts.active ?? 0;
     const delayed = counts.delayed ?? 0;
     const failed = counts.failed ?? 0;
     const completed = counts.completed ?? 0;
-    const paused = counts.paused ?? 0;
+    // BullMQ v6 exposes pause as a queue-level state, not a JobType.
+    const paused = 0;
     const pending = waiting + active + delayed + paused;
     const queuePaused = await queue.isPaused();
     let oldestPendingAt: number | null = null;
     if (pending > 0 && pending <= 20) {
-      const jobs = await queue.getJobs(["waiting", "active", "delayed", "paused"], 0, 20);
+      const jobs = await queue.getJobs(["waiting", "active", "delayed"], 0, 20);
       if (!Array.isArray(jobs) || jobs.length === 0) {
         throw new Error("Inconsistent feed queue snapshot");
       }
