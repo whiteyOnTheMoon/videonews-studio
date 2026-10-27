@@ -53,3 +53,10 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           node --test scripts/test_p2_personal_editorial_compose.mjs
+      - name: Prepare reviewable P2 personal editor formatting patch
+        run: |
+          npx prettier --write apps/api/src/personal-editorial-admin.test.ts apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-runtime.test.ts apps/api/src/personal-editorial-runtime.ts apps/web/src/app/admin/editorial-checkpoint-entry.tsx apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/lib/admin-editorial-proxy.ts docs/P2-04_10_NAMED_EDITORIAL_CHECKPOINT_RUNTIME.md scripts/test_p2_personal_editorial_compose.mjs
+          echo '===VNS_EDITOR_FORMAT_START==='
+          git diff --no-color -- apps/api/src/personal-editorial-admin.test.ts apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-runtime.test.ts apps/api/src/personal-editorial-runtime.ts apps/web/src/app/admin/editorial-checkpoint-entry.tsx apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/lib/admin-editorial-proxy.ts docs/P2-04_10_NAMED_EDITORIAL_CHECKPOINT_RUNTIME.md scripts/test_p2_personal_editorial_compose.mjs
+          echo '===VNS_EDITOR_FORMAT_END==='
+          git diff --exit-code -- apps/api/src/personal-editorial-admin.test.ts apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-runtime.test.ts apps/api/src/personal-editorial-runtime.ts apps/web/src/app/admin/editorial-checkpoint-entry.tsx apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/lib/admin-editorial-proxy.ts docs/P2-04_10_NAMED_EDITORIAL_CHECKPOINT_RUNTIME.md scripts/test_p2_personal_editorial_compose.mjs
