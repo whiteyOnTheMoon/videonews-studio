@@ -25,12 +25,13 @@ test("projection overlay never runs by default and has no feed transport, queue 
   assert.equal(service.network_mode, undefined);
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_MODE, "single_pass");
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP, "false");
-  for (const flag of ["VNS_P2_FEED_PROJECTION_ENABLED","VNS_P2_FEED_PROJECTION_OPERATOR_ACK"]) {
+  for (const flag of ["VNS_P2_FEED_PROJECTION_ENABLED", "VNS_P2_FEED_PROJECTION_OPERATOR_ACK"]) {
     assert.equal(service.environment[flag], "${" + flag + ":-false}");
   }
-  assert.deepEqual(service.volumes.map(x => x.target), [
-    "/run/secrets/vns_feed_project_db_password",
-  ]);
+  assert.deepEqual(
+    service.volumes.map((x) => x.target),
+    ["/run/secrets/vns_feed_project_db_password"],
+  );
   assert.equal(service.volumes[0].read_only, true);
   assert.equal(service.volumes[0].bind.create_host_path, false);
   assert.deepEqual(Object.keys(service.volumes[0].bind), ["create_host_path"]);
