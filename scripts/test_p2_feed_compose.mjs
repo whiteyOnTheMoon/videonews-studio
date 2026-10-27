@@ -106,10 +106,7 @@ export function verifySignedFeedOverlay(data) {
     "apps/worker/dist/feed-producer-healthcheck.js",
   ]);
   assert.equal(continuous.healthcheck.retries, 3);
-  for (const key of [
-    "VNS_FEED_CONTINUOUS_ENABLED",
-    "VNS_FEED_CONTINUOUS_OPERATOR_ACK",
-  ]) {
+  for (const key of ["VNS_FEED_CONTINUOUS_ENABLED", "VNS_FEED_CONTINUOUS_OPERATOR_ACK"]) {
     assert.equal(continuous.environment[key], "${" + key + ":-false}");
   }
   for (const key of [
@@ -134,7 +131,10 @@ export function verifySignedFeedOverlay(data) {
   must(!mountTargets("feed-observer").includes(signer), "observer has signer key");
   must(!mountTargets("feed-scheduler").includes(signer), "scheduler has signer key");
   must(!mountTargets("feed-producer").includes(signer), "producer has signer key");
-  must(!mountTargets("feed-producer-continuous").includes(signer), "continuous producer has signer key");
+  must(
+    !mountTargets("feed-producer-continuous").includes(signer),
+    "continuous producer has signer key",
+  );
   must(!mountTargets("feed-consumer").includes(signer), "consumer has signer key");
   must(
     !mountTargets("feed-producer").some((x) => x.includes("db_password") || x.includes("anchor")),
@@ -215,7 +215,11 @@ export function verifySignedFeedOverlay(data) {
     assert.equal(service.environment.VNS_FEED_SOURCE_BOOTSTRAP, "false");
   }
   must(
-    !observer.secrets && !scheduler.secrets && !consumer.secrets && !producer.secrets && !continuous.secrets,
+    !observer.secrets &&
+      !scheduler.secrets &&
+      !consumer.secrets &&
+      !producer.secrets &&
+      !continuous.secrets,
     "unexpected runtime secrets",
   );
   return true;
