@@ -15,6 +15,7 @@ import { hostApprovalProxyConfig } from "../../lib/admin-source-hosts-proxy";
 import { editorialAdminProxyConfig } from "../../lib/admin-editorial-proxy";
 import EditorialProfiles from "./editorial-profiles";
 import EditorialAuditExport from "./editorial-audit-export";
+import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,8 @@ export default async function AdminPage() {
       <span className="eyebrow">P1 · Internal admin preview</span>
       <h1>Admin-Bereich</h1>
       <p>
-        Anmeldung bestätigt. Diese geschützte Vorschauseite enthält noch keine produktiven
-        Redaktionsfunktionen und veröffentlicht keine Inhalte.
+        Anmeldung bestätigt. Redaktionelle Prüf- und Konfigurationsfunktionen werden einzeln
+        freigeschaltet und veröffentlichen keine Inhalte.
       </p>
       <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
       <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
@@ -45,6 +46,7 @@ export default async function AdminPage() {
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );

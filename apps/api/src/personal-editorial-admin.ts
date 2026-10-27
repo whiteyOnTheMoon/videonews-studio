@@ -93,6 +93,54 @@ export function validateNamedEditorialProfiles(
   return result;
 }
 
+const CHECKPOINT_STAGES = [
+  "ranking",
+  "claim_review",
+  "freshness",
+  "script_revision",
+  "quality",
+] as const;
+const CHECKPOINT_OUTCOMES = ["candidate", "blocked", "needs_review"] as const;
+const SHA256 = /^[0-9a-f]{64}$/;
+const REASON_CODE = /^[a-z][a-z0-9_]{1,39}$/;
+export interface NamedCheckpointWrite {
+  eventId: string;
+  expectedRevision: number;
+  stage: (typeof CHECKPOINT_STAGES)[number];
+  outcome: (typeof CHECKPOINT_OUTCOMES)[number];
+  artifactSha256: string;
+  reasonCodes: readonly string[];
+  score: number | null;
+}
+
+/** Exactly the database contract. Never accept a browser-supplied actor. */
+export function validateNamedCheckpointWrite(raw: unknown): NamedCheckpointWrite | null {
+  if (
+    !object(raw) ||
+    Object.keys(raw).sort().join(",") !==
+      "artifactSha256,eventId,expectedRevision,outcome,reasonCodes,score,stage" ||
+    typeof raw.eventId !== "string" ||
+    !UUID.test(raw.eventId) ||
+    !Number.isSafeInteger(raw.expectedRevision) ||
+    (raw.expectedRevision as number) < 0 ||
+    (raw.expectedRevision as number) > 9999 ||
+    !CHECKPOINT_STAGES.includes(raw.stage as (typeof CHECKPOINT_STAGES)[number]) ||
+    !CHECKPOINT_OUTCOMES.includes(raw.outcome as (typeof CHECKPOINT_OUTCOMES)[number]) ||
+    typeof raw.artifactSha256 !== "string" ||
+    !SHA256.test(raw.artifactSha256) ||
+    !Array.isArray(raw.reasonCodes) ||
+    raw.reasonCodes.length < 1 ||
+    raw.reasonCodes.length > 20 ||
+    raw.reasonCodes.some((code: unknown) => typeof code !== "string" || !REASON_CODE.test(code)) ||
+    (raw.score !== null &&
+      (!Number.isSafeInteger(raw.score) ||
+        (raw.score as number) < 0 ||
+        (raw.score as number) > 1000))
+  )
+    return null;
+  return raw as unknown as NamedCheckpointWrite;
+}
+
 async function boundedJson(request: IncomingMessage): Promise<unknown> {
   if (
     request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
@@ -162,8 +210,8 @@ export class DormantPersonalEditorialAdmin {
       return true;
     }
     if (
-      (path !== "/admin/editorial-profiles" || !["GET", "POST"].includes(req.method ?? "")) &&
-      req.method !== "GET"
+      !["GET", "POST"].includes(req.method ?? "") ||
+      (req.method === "POST" && path === "/admin/editorial-timeline")
     ) {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
@@ -186,12 +234,14 @@ export class DormantPersonalEditorialAdmin {
     const command = req.method === "POST" ? await boundedJson(req) : undefined;
     if (
       req.method === "POST" &&
-      (!object(command) ||
-        Object.keys(command).length !== 2 ||
-        !Object.hasOwn(command, "expectedRevision") ||
-        !Object.hasOwn(command, "profiles") ||
-        revision(command.expectedRevision) === null ||
-        !validateNamedEditorialProfiles(command.profiles))
+      (path === "/admin/editorial-profiles"
+        ? !object(command) ||
+          Object.keys(command).length !== 2 ||
+          !Object.hasOwn(command, "expectedRevision") ||
+          !Object.hasOwn(command, "profiles") ||
+          revision(command.expectedRevision) === null ||
+          !validateNamedEditorialProfiles(command.profiles)
+        : uri.search !== "" || !validateNamedCheckpointWrite(command))
     ) {
       respond(res, 400, { error: "invalid_request" });
       return true;
@@ -245,6 +295,33 @@ export class DormantPersonalEditorialAdmin {
             });
         }
       } else if (path === "/admin/editorial-checkpoints") {
+        if (req.method === "POST") {
+          const input = validateNamedCheckpointWrite(command);
+          if (!input) throw new Error("Checkpoint authorization missing");
+          const result = await session.query<{ saved: boolean }>(
+            "SELECT vns.named_append_editorial_checkpoint($1::uuid,$2::integer,$3::text,$4::text,$5::text,$6::jsonb,$7::integer) AS saved",
+            [
+              input.eventId,
+              input.expectedRevision,
+              input.stage,
+              input.outcome,
+              input.artifactSha256,
+              JSON.stringify(input.reasonCodes),
+              input.score,
+            ],
+          );
+          if (result.rows.length !== 1 || typeof result.rows[0]?.saved !== "boolean") {
+            throw new Error("Checkpoint write result invalid");
+          }
+          if (!result.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
+          else
+            respond(res, 200, {
+              saved: true,
+              revision: input.expectedRevision + 1,
+              approvedForPublication: false,
+            });
+          return true;
+        }
         const eventId = uri.searchParams.get("eventId");
         const after = boundedInt(uri.searchParams.get("after"), 0, 10000);
         const limit = boundedInt(uri.searchParams.get("limit"), 1, 100);

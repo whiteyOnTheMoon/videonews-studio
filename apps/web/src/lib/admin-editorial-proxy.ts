@@ -62,7 +62,7 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
       (Number.isFinite(Date.parse(afterTime)) && new Date(afterTime).toISOString() === afterTime))
   );
 }
-async function readBody(request: Request): Promise<string | null> {
+async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<string | null> {
   if (
     request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
       "application/json" ||
@@ -90,8 +90,35 @@ async function readBody(request: Request): Promise<string | null> {
     const raw = new TextDecoder("utf-8", { fatal: true }).decode(output);
     output.fill(0);
     const input: unknown = JSON.parse(raw);
-    if (
-      !object(input) ||
+    if (!object(input)) return null;
+    if (endpoint === "checkpoints") {
+      if (
+        Object.keys(input).sort().join(",") !==
+          "artifactSha256,eventId,expectedRevision,outcome,reasonCodes,score,stage" ||
+        typeof input.eventId !== "string" ||
+        !UUID.test(input.eventId) ||
+        !Number.isSafeInteger(input.expectedRevision) ||
+        (input.expectedRevision as number) < 0 ||
+        (input.expectedRevision as number) > 9999 ||
+        !["ranking", "claim_review", "freshness", "script_revision", "quality"].includes(
+          input.stage as string,
+        ) ||
+        !["candidate", "blocked", "needs_review"].includes(input.outcome as string) ||
+        typeof input.artifactSha256 !== "string" ||
+        !/^[0-9a-f]{64}$/.test(input.artifactSha256) ||
+        !Array.isArray(input.reasonCodes) ||
+        input.reasonCodes.length < 1 ||
+        input.reasonCodes.length > 20 ||
+        input.reasonCodes.some(
+          (code: unknown) => typeof code !== "string" || !/^[a-z][a-z0-9_]{1,39}$/.test(code),
+        ) ||
+        (input.score !== null &&
+          (!Number.isSafeInteger(input.score) ||
+            (input.score as number) < 0 ||
+            (input.score as number) > 1000))
+      )
+        return null;
+    } else if (
       Object.keys(input).length !== 2 ||
       !Object.hasOwn(input, "expectedRevision") ||
       !Object.hasOwn(input, "profiles") ||
@@ -122,14 +149,22 @@ export async function dormantEditorialAdminProxy(
 ): Promise<Response> {
   if (!config) return reply(404, { error: "not_found" });
   if (!(endpoint in ENDPOINTS)) return reply(404, { error: "not_found" });
-  if (request.method !== "GET" && !(endpoint === "profiles" && request.method === "POST")) {
+  if (
+    request.method !== "GET" &&
+    !(["profiles", "checkpoints"].includes(endpoint) && request.method === "POST")
+  ) {
     return reply(405, { error: "method_not_allowed" });
   }
   if (request.method === "POST" && request.headers.get("origin") !== config.origin) {
     return reply(403, { error: "forbidden" });
   }
   const url = new URL(request.url);
-  if (!validQuery(endpoint, url)) return reply(400, { error: "invalid_request" });
+  if (
+    request.method === "POST" && endpoint === "checkpoints"
+      ? url.search !== ""
+      : !validQuery(endpoint, url)
+  )
+    return reply(400, { error: "invalid_request" });
   const cookie = clientEditorCookie(request.headers.get("cookie"));
   if (!cookie) return reply(401, { error: "unauthorized" });
   const profile = await editorProfile(request, config, fetcher);
@@ -137,7 +172,7 @@ export async function dormantEditorialAdminProxy(
   if (profile.status !== 200) return reply(503, { error: "temporarily_unavailable" });
   const actor: unknown = await profile.json();
   if (!object(actor) || actor.role !== "admin") return reply(403, { error: "forbidden" });
-  const body = request.method === "POST" ? await readBody(request) : undefined;
+  const body = request.method === "POST" ? await readBody(request, endpoint) : undefined;
   if (request.method === "POST" && !body) return reply(400, { error: "invalid_request" });
   try {
     const upstream = await fetcher(config.api + ENDPOINTS[endpoint] + url.search, {
@@ -180,6 +215,20 @@ export async function dormantEditorialAdminProxy(
         saved: true,
         revision: value.revision,
         productionActive: false,
+      });
+    }
+    if (endpoint === "checkpoints" && request.method === "POST") {
+      if (
+        value.saved !== true ||
+        value.approvedForPublication !== false ||
+        !Number.isSafeInteger(value.revision)
+      ) {
+        return reply(503, { error: "temporarily_unavailable" });
+      }
+      return reply(200, {
+        saved: true,
+        revision: value.revision,
+        approvedForPublication: false,
       });
     }
     if (!Array.isArray(value.events) || value.events.length > 100) {

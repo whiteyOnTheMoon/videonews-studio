@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "deploy/compose.admin.yaml"
+      - "deploy/compose.personal-editorial-admin.yaml"
+      - "scripts/test_p2_personal_editorial_compose.mjs"
       - ".github/workflows/p1-06-admin-compose.yml"
   workflow_dispatch:
 
@@ -16,9 +18,13 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Validate isolated opt-in overlay without starting containers
         env:
           VNS_ADMIN_ORIGIN: https://studio.example.invalid
+          VNS_P2_EDITORIAL_PERSONAL_CREDENTIALS_DIR: /tmp/vns-ci-personal-editorial
         run: |
           set -euo pipefail
           mkdir -p secrets
@@ -39,4 +45,11 @@ jobs:
           assert not web.get('ports') and not api.get('ports')
           print('PASS: admin overlay is opt-in, file-backed and has no published ports')
           PY
+          docker compose -f compose.yaml -f deploy/compose.admin.yaml \
+            -f deploy/compose.personal-editorial-admin.yaml \
+            --profile preview config --quiet
           rm -f /tmp/vns-admin-config.json
+      - name: Assert personal editorial secret and runtime isolation
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --test scripts/test_p2_personal_editorial_compose.mjs

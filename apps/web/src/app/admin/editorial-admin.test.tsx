@@ -3,6 +3,7 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import EditorialProfiles, { parseEditorialProfileSnapshot } from "./editorial-profiles";
 import EditorialAuditExport, { validEditorialExportBatch } from "./editorial-audit-export";
+import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 
 const profile = {
   id: "science_news",
@@ -53,4 +54,15 @@ test("audit export envelope never accepts oversized or malformed rows", () => {
     false,
   );
   assert.equal(validEditorialExportBatch({ events: ["forged string"] }), false);
+});
+
+test("checkpoint entry is hidden until feature opt-in and never publishes", () => {
+  const hidden = renderToStaticMarkup(<EditorialCheckpointEntry enabled={false} />);
+  assert.match(hidden, /Prüfprotokoll nicht freigeschaltet/);
+  assert.doesNotMatch(hidden, /<form|<input|<select/);
+  const active = renderToStaticMarkup(<EditorialCheckpointEntry enabled />);
+  assert.match(active, /Ereignis-UUID/);
+  assert.match(active, /Qualität/);
+  assert.match(active, /Prüfentscheidung speichern/);
+  assert.doesNotMatch(active, /veröffentlichen|Upload starten|Freigabe erteilen/i);
 });

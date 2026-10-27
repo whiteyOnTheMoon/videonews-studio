@@ -2,6 +2,11 @@ import { adminAuthFromEnv } from "./auth.js";
 import { adminJobsFromEnv } from "./admin-jobs.js";
 import { createApiServer } from "./server.js";
 import { editorAuthFromEnv } from "./editor-auth.js";
+import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
+import {
+  createPersonalEditorialSessions,
+  readPersonalEditorialAdmission,
+} from "./personal-editorial-runtime.js";
 
 const host = process.env.API_HOST ?? "127.0.0.1";
 const port = Number(process.env.API_PORT ?? "4000");
@@ -14,7 +19,20 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const auth = adminAuthFromEnv(process.env);
 const jobs = adminJobsFromEnv(auth, process.env);
 const editor = editorAuthFromEnv(auth, jobs, process.env);
-const server = createApiServer({ auth, jobs, editor });
+const personalAdmission = readPersonalEditorialAdmission(process.env);
+if (personalAdmission && (!auth || !editor)) {
+  throw new Error("Personal editorial runtime requires authenticated API and editor");
+}
+const personalEditorial =
+  personalAdmission && auth && editor
+    ? new DormantPersonalEditorialAdmin(
+        editor,
+        auth,
+        createPersonalEditorialSessions(personalAdmission),
+        true,
+      )
+    : undefined;
+const server = createApiServer({ auth, jobs, editor, personalEditorial });
 server.listen(port, host, () => {
   console.log(`VideoNews Studio API ready at http://${host}:${port}`);
 });

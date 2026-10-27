@@ -1,0 +1,15 @@
+# Opt-in overlay for personal editorial Admin backend, not included by default.
+# The existing API remains feature-disabled without separate operator ACKs.
+services:
+  api:
+    environment:
+      VNS_EDITORIAL_PERSONAL_DB_ENABLED: "${VNS_EDITORIAL_PERSONAL_DB_ENABLED:-false}"
+      VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK: "${VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK:-false}"
+      VNS_EDITORIAL_PERSONAL_DB_HOST: postgres
+      VNS_EDITORIAL_PERSONAL_DB_SECRETS_DIR: /run/secrets/vns_editor_credentials
+    volumes:
+      - type: bind
+        source: ${VNS_P2_EDITORIAL_PERSONAL_CREDENTIALS_DIR:?Personal credentials directory not provisioned}
+        target: /run/secrets/vns_editor_credentials
+        read_only: true
+        bind: { create_host_path: false }
