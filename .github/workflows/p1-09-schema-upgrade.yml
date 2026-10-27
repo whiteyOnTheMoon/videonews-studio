@@ -58,6 +58,18 @@ jobs:
           bash scripts/p1_09_provider_schema_upgrade.sh preflight
           bash scripts/p1_09_provider_schema_upgrade.sh apply
           bash scripts/p1_09_provider_schema_upgrade.sh status
+          # Disposable CI ONLY: the real operator registry stays untouched.
+          # Migration 0010 intentionally seeds no human; the named audit
+          # test must register this synthetic CI login before creating fixtures.
+          count="$(docker exec vns-p109-upgrade-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c 'SELECT count(*) FROM vns.editor_operator_registry')"
+          [[ "$count" == 0 ]] || exit 1
+          sql <<'SQL'
+          INSERT INTO vns.editor_operator_registry(login_role,operator_id,operator_label,active)
+          VALUES (session_user, 'aaaaaaaa-1234-4123-8123-aaaaaaaaaaaa',
+                  'Synthetic CI Migration Owner', true);
+          SQL
           # The historical 0016 test expects the legacy shared writer grant,
           # deliberately revoked in 0018. Check the FINAL named-admin role
           # with 0018 instead of reinstalling that obsolete permission.
