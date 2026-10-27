@@ -117,3 +117,74 @@ test("reviewer role, forged origin and oversized page query fail without an upst
   );
   assert.ok(b.urls.every((url) => url.endsWith("/editor/me")));
 });
+
+test("checkpoint write accepts only an authenticated same-origin revision-bound command", async () => {
+  const attempts: { url: string; method?: string; body?: string }[] = [];
+  const fetcher = (async (resource: string | URL | Request, init?: RequestInit) => {
+    const url = String(resource);
+    attempts.push({ url, method: init?.method, body: init?.body as string | undefined });
+    if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/admin/editorial-checkpoints")) {
+      return Response.json({ saved: true, revision: 2, approvedForPublication: false });
+    }
+    return Response.json({ error: "unexpected" }, { status: 404 });
+  }) as typeof fetch;
+  const command = {
+    eventId,
+    expectedRevision: 1,
+    stage: "claim_review",
+    outcome: "needs_review",
+    artifactSha256: "a".repeat(64),
+    reasonCodes: ["insufficient_independence"],
+    score: null,
+  };
+  const saved = await dormantEditorialAdminProxy(
+    request("/api/admin/editorial-checkpoints", "POST", command),
+    "checkpoints",
+    config,
+    fetcher,
+  );
+  assert.equal(saved.status, 200);
+  assert.deepEqual(await saved.json(), {
+    saved: true,
+    revision: 2,
+    approvedForPublication: false,
+  });
+  const upstream = attempts.find((entry) =>
+    entry.url === config.api + "/admin/editorial-checkpoints" &&
+    entry.method === "POST",
+  );
+  assert.ok(upstream);
+  assert.deepEqual(JSON.parse(upstream.body!), command);
+
+  const before = attempts.length;
+  for (const data of [
+    { ...command, actorId: "forged" },
+    { ...command, reasonCodes: ["not Allowed"] },
+    { ...command, expectedRevision: -1 },
+    { ...command, approvedForPublication: true },
+  ]) {
+    assert.equal(
+      (await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-checkpoints", "POST", data),
+        "checkpoints", config, fetcher,
+      )).status,
+      400,
+    );
+  }
+  assert.ok(attempts.length >= before);
+  assert.equal(
+    (await dormantEditorialAdminProxy(
+      request("/api/admin/editorial-checkpoints", "POST", command, "https://evil.invalid"),
+      "checkpoints", config, fetcher,
+    )).status,
+    403,
+  );
+  assert.equal(
+    (await dormantEditorialAdminProxy(
+      request("/api/admin/editorial-checkpoints?eventId=" + eventId, "POST", command),
+      "checkpoints", config, fetcher,
+    )).status,
+    400,
+  );
+});
