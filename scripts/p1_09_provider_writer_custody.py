@@ -260,9 +260,7 @@ def main() -> None:
         "'vns_provider_config_writer','MEMBER') || '|' || "
         "(SELECT count(*) FROM vns.admin_list_ai_providers())",
     )
-    print("STEP: isolated named SQL proof returned (credential-free)")
-    if proof != LOGIN + "|t|2":
-        print("CHECK: identity=" + str(proof.startswith(LOGIN+"|")) + ", role=" + str("|t|" in proof) + ", two_providers=" + str(proof.endswith("|2")))
+    if proof != LOGIN + "|true|2":
         fail("SCRAM writer role authentication failed; stop without retry")
     print("PASS: dedicated SCRAM login, least-privilege writer membership, private 32-byte key")
     print("No API/Web restart, no provider enabled, no secrets printed")
