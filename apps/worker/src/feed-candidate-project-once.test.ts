@@ -73,7 +73,7 @@ test("explicit one-shot mode, source id, separate login and bounds required befo
     ["VNS_P2_FEED_PROJECTION_LIMIT", "101"],
     ["VNS_P2_FEED_PROJECTION_LIMIT", "0"],
     ["VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE", "/tmp/secret"],
-  ]) assert.throws(() => readProjectionAdmission({ ...valid, [key]: value }));
+  ] as const) assert.throws(() => readProjectionAdmission({ ...valid, [key]: value }));
 });
 
 test("projector executes only current approved projection SQL with bound arguments", async () => {
