@@ -128,6 +128,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0033_guarded_feed_commit.test.sql"
   sql < "$root/db/migrations/0034_atomic_source_export_authority.up.sql"
   sql < "$root/db/tests/0034_atomic_source_export_authority.test.sql"
+  sql < "$root/db/migrations/0035_approved_feed_candidate_projection.up.sql"
+  sql < "$root/db/tests/0035_approved_feed_candidate_projection.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -253,6 +255,7 @@ for iteration in 1 2; do
     rm -rf -- "$host_work"
     echo "PASS: two independent host-approval sessions persist one grant and audit"
   fi
+  sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
   sql < "$root/db/migrations/0034_atomic_source_export_authority.down.sql"
   sql < "$root/db/migrations/0033_guarded_feed_commit.down.sql"
   sql < "$root/db/migrations/0032_feed_runtime_source_authorization.down.sql"
@@ -292,4 +295,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0034 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0035 migrations, source authority, leases and budgets twice"
