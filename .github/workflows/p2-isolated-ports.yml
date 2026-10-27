@@ -64,6 +64,23 @@ jobs:
           npm run lint
       - name: Verify disabled signed-source Compose architecture
         run: node --test scripts/test_p2_feed_compose.mjs
+      - name: Validate signed feed Docker profiles without starting containers
+        env:
+          VNS_P2_PUBLISHER_DIR: /tmp/vns-ci/signer
+          VNS_P2_SIGNER_DB_PASSWORD_FILE: /tmp/vns-ci/signing-db-pass
+          VNS_P2_PRIVATE_SIGNING_KEY_FILE: /tmp/vns-ci/ed25519-private
+          VNS_P2_HANDOFF_STAGING_DIR: /tmp/vns-ci/staging
+          VNS_P2_WORKER_INBOX_DIR: /tmp/vns-ci/inbox
+          VNS_P2_PINNED_PUBLIC_KEY_FILE: /tmp/vns-ci/ed25519-public
+          VNS_P2_WORKER_CHECKPOINT_DIR: /tmp/vns-ci/checkpoint
+          VNS_P2_ANCHOR_DB_PASSWORD_FILE: /tmp/vns-ci/anchor-password
+          VNS_P2_ANCHOR_CA_FILE: /tmp/vns-ci/anchor-ca
+          VNS_P2_FEED_DB_PASSWORD_FILE: /tmp/vns-ci/feed-db-pass
+          VNS_P2_FEED_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-redis-pass
+        run: |
+          docker compose -f compose.yaml -f compose.feed-observation.yaml \
+            --profile source-signing --profile source-handoff \
+            --profile feed-observation config --quiet
       - name: Compile shared and worker contracts
         run: |
           npm run build --workspace @vns/shared
