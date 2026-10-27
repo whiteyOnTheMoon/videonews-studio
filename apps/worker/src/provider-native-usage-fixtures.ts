@@ -29,4 +29,3 @@ export const geminiFixture = Object.freeze({
     candidatesTokensDetails: [{ modality: "TEXT", tokenCount: 10 }],
   },
 });
-
