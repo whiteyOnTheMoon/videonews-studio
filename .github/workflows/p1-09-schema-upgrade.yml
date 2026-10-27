@@ -58,7 +58,12 @@ jobs:
           bash scripts/p1_09_provider_schema_upgrade.sh preflight
           bash scripts/p1_09_provider_schema_upgrade.sh apply
           bash scripts/p1_09_provider_schema_upgrade.sh status
-          for file in db/tests/001{3,4,5,6,7,8}_*.test.sql; do
+          # The historical 0016 test expects the legacy shared writer grant,
+          # deliberately revoked in 0018. Check the FINAL named-admin role
+          # with 0018 instead of reinstalling that obsolete permission.
+          for number in 0013 0014 0015 0017 0018; do
+            file="$(find db/tests -maxdepth 1 -name "$number*.test.sql" -print -quit)"
+            [[ -n "$file" && -s "$file" ]] || exit 1
             echo "Verifying $(basename "$file")"
             sql < "$file"
           done
