@@ -250,8 +250,7 @@ export class DormantPersonalEditorialAdmin {
       return true;
     }
     if (
-      !["GET", "POST"].includes(req.method ?? "") ||
-      (req.method === "POST" && path === "/admin/editorial-timeline-unknown")
+      !["GET", "POST"].includes(req.method ?? "")
     ) {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
