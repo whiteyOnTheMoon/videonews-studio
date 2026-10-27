@@ -277,3 +277,102 @@ export async function acceptDormantSourceFile(
     return sources;
   });
 }
+
+/**
+ * Read a signed envelope from an operator-provisioned, read-only group handoff.
+ * Unlike the private consumer inbox, this directory may belong to another UID:
+ * the worker's dedicated group can only traverse/read, NEVER modify it.
+ * Mounted stage and its file must not be accessible to other users.
+ */
+async function readHandoffEnvelope(directory: string): Promise<unknown> {
+  if (!directory.startsWith("/") || resolve(directory) !== directory) {
+    throw new Error("Source handoff path refused");
+  }
+  const [stat, canonical] = await Promise.all([lstat(directory), realpath(directory)]);
+  if (
+    !stat.isDirectory() ||
+    stat.isSymbolicLink() ||
+    canonical !== directory ||
+    (stat.mode & 0o007) !== 0 ||
+    (stat.mode & 0o020) !== 0 ||
+    (stat.mode & 0o050) !== 0o050 ||
+    (typeof process.getgid === "function" && stat.gid !== process.getgid())
+  ) {
+    throw new Error("Source handoff directory permissions refused");
+  }
+  const file = await open(join(directory, EXPORT_FILE), constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const entry = await file.stat();
+    if (
+      !entry.isFile() ||
+      entry.nlink !== 1 ||
+      entry.size < 2 ||
+      entry.size > MAX_FILE_BYTES ||
+      (entry.mode & 0o027) !== 0 ||
+      (entry.mode & 0o040) === 0 ||
+      (typeof process.getgid === "function" && entry.gid !== process.getgid())
+    ) {
+      throw new Error("Source handoff file permissions refused");
+    }
+    return JSON.parse(await file.readFile({ encoding: "utf8" })) as unknown;
+  } finally {
+    await file.close();
+  }
+}
+
+/**
+ * Explicit handoff from a read-only, different-UID staging mount into the
+ * worker's private inbox. Signature and current externally approved hosts
+ * are checked BEFORE creating or replacing the private file.
+ *
+ * Does NOT advance the independent high-water anchor or release sources:
+ * acceptDormantSourceFile must still perform that operation before HTTPS.
+ */
+export async function importSignedSourceHandoff(
+  stagingDirectory: string,
+  privateInboxDirectory: string,
+  trustedPolicy: ApprovedFetchPolicy,
+  pinnedPublisherKey: KeyObject,
+): Promise<{ sourceRevision: number; hostApprovalRevision: number }> {
+  const raw = await readHandoffEnvelope(stagingDirectory);
+  const { sealed } = verifyDormantSourceSignature(raw, trustedPolicy, pinnedPublisherKey, {
+    sourceRevision: 1,
+    hostApprovalRevision: 1,
+  });
+  await exclusive(privateInboxDirectory, "consumer", async () => {
+    const previous = await readPrivateJson(privateInboxDirectory, EXPORT_FILE);
+    if (previous !== null) {
+      // Only for validating the PREVIOUS signature, not current host grants.
+      if (
+        !previous ||
+        typeof previous !== "object" ||
+        !("export" in previous) ||
+        !previous.export ||
+        typeof previous.export !== "object" ||
+        !("allowedHosts" in previous.export) ||
+        !Array.isArray(previous.export.allowedHosts)
+      ) {
+        throw new Error("Previous inbox export unavailable");
+      }
+      const prior = verifyDormantSourceSignature(
+        previous,
+        { enabled: true, hosts: previous.export.allowedHosts },
+        pinnedPublisherKey,
+      ).sealed;
+      if (
+        sealed.export.sourceRevision < prior.export.sourceRevision ||
+        sealed.export.hostApprovalRevision < prior.export.hostApprovalRevision ||
+        (sealed.export.sourceRevision === prior.export.sourceRevision &&
+          sealed.export.hostApprovalRevision === prior.export.hostApprovalRevision &&
+          hash(sealed) !== hash(prior))
+      ) {
+        throw new Error("Source handoff rollback or equivocation");
+      }
+    }
+    await atomicWrite(privateInboxDirectory, EXPORT_FILE, sealed);
+  });
+  return {
+    sourceRevision: sealed.export.sourceRevision,
+    hostApprovalRevision: sealed.export.hostApprovalRevision,
+  };
+}
