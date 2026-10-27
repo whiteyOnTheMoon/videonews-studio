@@ -236,7 +236,10 @@ test(
           },
         },
       );
-      assert.deepEqual(acceptedSources, sources);
+      assert.deepEqual(
+        acceptedSources,
+        [...sources].sort((a, b) => a.id.localeCompare(b.id)),
+      );
       await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
       await assert.rejects(
         attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"),
