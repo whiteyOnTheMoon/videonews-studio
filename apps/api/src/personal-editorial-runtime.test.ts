@@ -43,7 +43,7 @@ test("personally bound gateway refuses unauthenticated and non-admin identities 
   for (const bogus of [
     { ...validBase, role: "editor" },
     { ...validBase, username: "unsafe/../../path" },
-    { ...validBase, username: "vns_system" },
+    { ...validBase, username: "UPPERCASE" },
     { ...validBase, authVersion: -1 },
   ]) {
     await assert.rejects(
