@@ -60,6 +60,14 @@ const env = {
 async function seedReviewedSyntheticSources(dba) {
   const sourceActor = "ca340001-1111-4111-8111-111111111111";
   const hostActor = "ca340002-2222-4222-8222-222222222222";
+  // Disposable CI superuser bootstrap only. Real operator enrollment must
+  // use a separately authenticated provisioner and documented governance.
+  await dba.query(
+    `INSERT INTO vns.editor_operator_registry
+      (login_role,operator_id,operator_label,active)
+     VALUES (session_user,$1::uuid,'CI synthetic provisioner',true)`,
+    ["ca340003-3333-4333-8333-333333333333"],
+  );
   await dba.query(
     `INSERT INTO vns.editor_accounts(id,username,display_name,role,password_hash,active)
      VALUES ($1,'ci_port_source','Synthetic Source Reviewer','admin',
