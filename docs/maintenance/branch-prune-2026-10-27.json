@@ -1,0 +1,301 @@
+{
+  "recordedAt": "2026-10-27",
+  "repository": "whiteyOnTheMoon/videonews-studio",
+  "baseMain": "fe7590fe86bfc2a6041022aafb98fea9c4c192ec",
+  "candidates": [
+    {
+      "branch": "chore/p2-02-read-only-vps-stage-a-audit",
+      "sha": "5bf9e4b1250d1fc70551797fbb41907266ab9035",
+      "kind": "merged",
+      "pr": 292
+    },
+    {
+      "branch": "docs/p1-governance-beszel-operator-decision-20261027",
+      "sha": "774559106568e1b4bbde784241ac893d6b7dc2c6",
+      "kind": "merged",
+      "pr": 297
+    },
+    {
+      "branch": "feat/p2-01-02-runtime-source-revocation-gate",
+      "sha": "cfba4299dbd3b2aeadfce98cc1f3515d5af372dd",
+      "kind": "merged",
+      "pr": 280
+    },
+    {
+      "branch": "feat/p2-01-02-signed-feed-runtime-admission",
+      "sha": "3065dea0f1cfee62ed923d2fb73fc5d7a0be5cd2",
+      "kind": "merged",
+      "pr": 283
+    },
+    {
+      "branch": "feat/p2-01-anchor-server-enforced-admission",
+      "sha": "e3d2331a1d96108295da330ddf44eac669174b53",
+      "kind": "merged",
+      "pr": 251
+    },
+    {
+      "branch": "feat/p2-01-atomic-db-signed-export-bridge",
+      "sha": "afb95285f0da1be27d053c6d9557c42681365613",
+      "kind": "merged",
+      "pr": 282
+    },
+    {
+      "branch": "feat/p2-01-atomic-pg-revision-anchor",
+      "sha": "333d497f150ff146dbc67398ca7af6ccf94a87fc",
+      "kind": "merged",
+      "pr": 250
+    },
+    {
+      "branch": "feat/p2-01-atomic-two-person-host-grants",
+      "sha": "6113f2c03c6ced989ac4f1eaafb8a06da3bb3c26",
+      "kind": "merged",
+      "pr": 257
+    },
+    {
+      "branch": "feat/p2-01-ed25519-rotation-policy",
+      "sha": "28d209c829cec04bb5ff4073c9236e6a10260622",
+      "kind": "merged",
+      "pr": 252
+    },
+    {
+      "branch": "feat/p2-01-external-revision-anchor-contract",
+      "sha": "e717366aa21895b17f380396a289eab6e76bfcfc",
+      "kind": "merged",
+      "pr": 249
+    },
+    {
+      "branch": "feat/p2-01-human-separation-admission",
+      "sha": "b326c8e50a1191b5094d9db7a5b7b6efc4402bd9",
+      "kind": "merged",
+      "pr": 256
+    },
+    {
+      "branch": "feat/p2-01-pinned-trust-policy-anchor",
+      "sha": "47a7a190aafe721991e719ea9f34811e9ddd8f6d",
+      "kind": "merged",
+      "pr": 253
+    },
+    {
+      "branch": "feat/p2-01-signed-cross-uid-inbox-import",
+      "sha": "6275606fd6aef2ed1df15123a01138fcf3f10a15",
+      "kind": "merged",
+      "pr": 285
+    },
+    {
+      "branch": "feat/p2-01-source-publisher-runtime-entrypoint",
+      "sha": "928acccc996e89ab7bb73ee951e66bc14e216bcf",
+      "kind": "merged",
+      "pr": 284
+    },
+    {
+      "branch": "feat/p2-01-trust-policy-pg-admission",
+      "sha": "15d38390b016170b57eb9e7efa98a1f19a02cc3e",
+      "kind": "merged",
+      "pr": 254
+    },
+    {
+      "branch": "feat/p2-02-03-dormant-pg-projection",
+      "sha": "2c745e9cf255b222159d6f6b3488c1fa7fe4cd0f",
+      "kind": "merged",
+      "pr": 271
+    },
+    {
+      "branch": "feat/p2-02-atomic-feed-commit-admission",
+      "sha": "7df892759f4846029f6b731f5f14fb97fda82fbc",
+      "kind": "merged",
+      "pr": 281
+    },
+    {
+      "branch": "feat/p2-02-bounded-feed-scheduler",
+      "sha": "1f2df2c506ce2860ab97a139a65d59799d952db8",
+      "kind": "merged",
+      "pr": 287
+    },
+    {
+      "branch": "feat/p2-02-continuous-feed-operations",
+      "sha": "fabb3beed676056b071409505e22586da24f4e60",
+      "kind": "merged",
+      "pr": 291
+    },
+    {
+      "branch": "feat/p2-02-feed-consumer-healthcheck",
+      "sha": "f1fd1dc0f44a010a5c6e2fc12449579902e69f34",
+      "kind": "merged",
+      "pr": 290
+    },
+    {
+      "branch": "feat/p2-02-separated-feed-producer-consumer",
+      "sha": "25bbf81ba0fedd01cf89e0b7ab63d7134308ad8d",
+      "kind": "merged",
+      "pr": 289
+    },
+    {
+      "branch": "feat/p2-02-zero-cost-offsite-backup-readiness",
+      "sha": "626ce84930c4b99520d7a8af1e37470aed1b7b94",
+      "kind": "merged",
+      "pr": 293
+    },
+    {
+      "branch": "feat/p2-03-05-dormant-editorial-persistence",
+      "sha": "7e3b91c9ca35d584f86d3205b1b5d97fd7330797",
+      "kind": "merged",
+      "pr": 265
+    },
+    {
+      "branch": "feat/p2-03-10-offline-editorial-models",
+      "sha": "0b7e60cb5511b0ce52bde6a339f084af40771c12",
+      "kind": "merged",
+      "pr": 258
+    },
+    {
+      "branch": "feat/p2-03-approved-feed-candidate-runtime",
+      "sha": "42e6b67bddeab726a77a81488eacc09235847067",
+      "kind": "merged",
+      "pr": 294
+    },
+    {
+      "branch": "feat/p2-03-conservative-event-grouping",
+      "sha": "063398ac3735c5aac14d7c575cf9e7dca1c4bd61",
+      "kind": "merged",
+      "pr": 268
+    },
+    {
+      "branch": "feat/p2-04-08-bounded-editorial-review",
+      "sha": "cbd0c9020e9cb45f10658a5e347018386087f1ba",
+      "kind": "merged",
+      "pr": 273
+    },
+    {
+      "branch": "feat/p2-05-06-strict-evidence-freshness-gate",
+      "sha": "2fb959ada7780107acfc94fcc29683e2bf0a1f3c",
+      "kind": "merged",
+      "pr": 261
+    },
+    {
+      "branch": "feat/p2-05-06-strict-review-freshness",
+      "sha": "d2dbd6877aa6e4c6c61b2fd6726b14a279744162",
+      "kind": "merged",
+      "pr": 269
+    },
+    {
+      "branch": "feat/p2-09-10-personal-admin-exports",
+      "sha": "f2ffbf735fec007946c377204195b6429e5554bb",
+      "kind": "merged",
+      "pr": 274
+    },
+    {
+      "branch": "feat/p2-09-dormant-profile-registry",
+      "sha": "e8552fcc755fa3ca1038ac4cb87cd6b5e8601392",
+      "kind": "merged",
+      "pr": 266
+    },
+    {
+      "branch": "feat/p2-09-offline-profile-config-gate",
+      "sha": "59ccf2947832dbc170cd265298c3a11bd66f0d6d",
+      "kind": "merged",
+      "pr": 260
+    },
+    {
+      "branch": "feat/p2-10-dormant-personal-timeline-contract",
+      "sha": "73fac57b2db35742fd32870ef402909d9acb34b9",
+      "kind": "merged",
+      "pr": 264
+    },
+    {
+      "branch": "feat/p2-10-offline-editorial-timeline",
+      "sha": "269b21dc230b09d94de2a485029bc8b210f1392b",
+      "kind": "merged",
+      "pr": 263
+    },
+    {
+      "branch": "feat/p2-10-personal-story-timeline-writes",
+      "sha": "ac86c4062133ec0ac9814c05ed2853e2fdc529e7",
+      "kind": "merged",
+      "pr": 296
+    },
+    {
+      "branch": "feat/p2-audit-page-continuity",
+      "sha": "f72a770a3ac6144a94469e5184a12f95a2208d76",
+      "kind": "merged",
+      "pr": 277
+    },
+    {
+      "branch": "feat/p2-editorial-named-checkpoint-writes",
+      "sha": "69a793ecf7394e66945f4c4dec487190126a5efc",
+      "kind": "merged",
+      "pr": 295
+    },
+    {
+      "branch": "feat/p2-feed-compose-signed-pipeline",
+      "sha": "5665c71801a72fad24012b3338147efa47c68746",
+      "kind": "merged",
+      "pr": 286
+    },
+    {
+      "branch": "feat/p2-feed-events-dedicated-redis-connection",
+      "sha": "9383555e66027f02bcdad7a93949d6970602abfd",
+      "kind": "merged",
+      "pr": 279
+    },
+    {
+      "branch": "feat/p2-feed-runtime-readiness",
+      "sha": "d0f963629d1d195d4ce3429173b185fdb119b8fc",
+      "kind": "merged",
+      "pr": 278
+    },
+    {
+      "branch": "feat/p2-gated-feed-bullmq-bridge",
+      "sha": "f86659378aa72e23f609fe532c2a158063725b1d",
+      "kind": "merged",
+      "pr": 276
+    },
+    {
+      "branch": "feat/p2-named-db-editorial-gateway",
+      "sha": "3ca8a479b1ce382af4be078839bb5a926d1e5566",
+      "kind": "merged",
+      "pr": 272
+    },
+    {
+      "branch": "feat/p2-redis-postgres-isolated-handoff",
+      "sha": "12a815a865a0396ea029fd370323817488c02a25",
+      "kind": "merged",
+      "pr": 275
+    },
+    {
+      "branch": "feat/p2-rollout-evidence-hardening",
+      "sha": "a946a0d8024a04d1f2b88a97eb60463c0f3d2145",
+      "kind": "merged",
+      "pr": 267
+    },
+    {
+      "branch": "feat/p2-rollout-readiness-gate",
+      "sha": "ae127679c7af1ec0c7f66778de49cce5c974bacf",
+      "kind": "merged",
+      "pr": 262
+    },
+    {
+      "branch": "feat/p2-signed-feed-host-rollout-preflight",
+      "sha": "a20304158e80dc8c8e7378f47610d6a45967763d",
+      "kind": "merged",
+      "pr": 288
+    },
+    {
+      "branch": "test/p2-01-source-host-cross-role-denial",
+      "sha": "aa0e6df72b761e5c054d2d6fe59b2441f330e4bf",
+      "kind": "merged",
+      "pr": 255
+    },
+    {
+      "branch": "test/p2-02-10-editorial-handoff-integration",
+      "sha": "d923bab95e0059ef58c025d0c270ac7cc82d5d50",
+      "kind": "merged",
+      "pr": 270
+    },
+    {
+      "branch": "test/p2-02-offline-queue-scheduler-e2e",
+      "sha": "4d32c6b0a631911ba2a910fb9842e4b9f2e1846a",
+      "kind": "merged",
+      "pr": 259
+    }
+  ]
+}
