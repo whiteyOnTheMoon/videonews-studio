@@ -11,7 +11,7 @@ import {
 import { ISOLATED_FEED_REDIS_PREFIX } from "./feed-bullmq-bridge.js";
 import type { TrustedFeedContext } from "./feed-trusted-context.js";
 
-function requireSeparatedGate(
+export function requireSeparatedFeedGate(
   env: NodeJS.ProcessEnv,
   kind: "producer" | "consumer",
 ): void {
@@ -37,7 +37,7 @@ function requireSeparatedGate(
 
 /** Persistent BullMQ slot producer. It cannot perform HTTP or SQL operations. */
 export function createSeparatedFeedProducer(env: NodeJS.ProcessEnv, connection: Redis) {
-  requireSeparatedGate(env, "producer");
+  requireSeparatedFeedGate(env, "producer");
   if (!connection) throw new Error("Feed producer connection missing");
   const queue = new Queue(ISOLATED_FEED_QUEUE, {
     connection,
@@ -63,7 +63,7 @@ export function createSeparatedFeedConsumer(
   openContext: () => Promise<TrustedFeedContext>,
   now: () => Date = () => new Date(),
 ) {
-  requireSeparatedGate(env, "consumer");
+  requireSeparatedFeedGate(env, "consumer");
   if (!connection || typeof openContext !== "function" || typeof now !== "function") {
     throw new Error("Feed consumer ports unavailable");
   }
