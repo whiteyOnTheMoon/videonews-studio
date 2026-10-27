@@ -15,6 +15,7 @@ import { hostApprovalProxyConfig } from "../../lib/admin-source-hosts-proxy";
 import { editorialAdminProxyConfig } from "../../lib/admin-editorial-proxy";
 import EditorialProfiles from "./editorial-profiles";
 import EditorialAuditExport from "./editorial-audit-export";
+import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function AdminPage() {
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );
