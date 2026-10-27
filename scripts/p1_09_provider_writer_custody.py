@@ -248,9 +248,12 @@ def main() -> None:
     if sys.argv[1:] == ["--preflight"]:
         return
     password = make_files()
+    print("STEP: private files exclusively created")
     owner_sql(container, grant_sql(password))
+    print("STEP: dedicated PostgreSQL role transaction completed")
     if owner_sql(container, POSTCHECK) != "1|1|1|0|0":
         fail("unexpected writer role membership; do not retry")
+    print("STEP: restricted role membership verified")
     proof = writer_sql(
         container, password,
         "SELECT session_user || '|' || pg_has_role(session_user,"
