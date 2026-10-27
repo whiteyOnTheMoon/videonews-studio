@@ -110,6 +110,7 @@ export function verifySignedFeedOverlay(data) {
   }
   for (const key of [
     "VNS_FEED_CONTINUOUS_MAX_BACKLOG",
+    "VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS",
     "VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES",
     "VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT",
   ]) {
