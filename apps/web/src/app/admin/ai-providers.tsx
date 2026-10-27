@@ -75,7 +75,7 @@ export default function AiProviders({ readOnlyEnabled, writeEnabled = false }: {
         sichtbar, bleiben aber vollständig deaktiviert.
       </p>
       <div className="notice" role="status">
-        <strong>{writeEnabled ? "Sichere Konfiguration freigeschaltet." : "Schlüsselverwaltung nicht freigeschaltet."}</strong> Es werden keine KI-Anfragen ausgelöst.
+        <strong>{writeEnabled ? "Sichere Konfiguration freigeschaltet." : "Schlüsselverwaltung noch nicht freigeschaltet."}</strong> Es werden keine KI-Anfragen ausgelöst.
       </div>
       {loading ? <p role="status">Lade Anbieterstatus …</p> : null}
       {error ? <p role="alert">{error}</p> : null}
