@@ -20,10 +20,7 @@ test("source admission uses parameterized SQL and exact source snapshot", async 
   let approved = true;
   const db = {
     async query(sql: string, params: unknown[]) {
-      assert.equal(
-        sql,
-        "SELECT vns.feed_runtime_source_authorized($1::jsonb) AS authorized",
-      );
+      assert.equal(sql, "SELECT vns.feed_runtime_source_authorized($1::jsonb) AS authorized");
       assert.deepEqual(JSON.parse(String(params[0])), source);
       return { rows: [{ authorized: approved }] };
     },
