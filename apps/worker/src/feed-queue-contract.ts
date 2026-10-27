@@ -190,3 +190,44 @@ export function createDormantFeedQueueContract(
     },
   };
 }
+
+/**
+ * Producer-only path: a slot carries no source identity, URL, credentials or
+ * authorization. Only the independent consumer may fetch, after fresh source,
+ * DB and trust-anchor attestation. Unlike a queue processor, producers never
+ * require or construct a synthetic scheduler.
+ */
+export function createGatedFeedSlotEnqueuer(
+  env: NodeJS.ProcessEnv,
+  queue: FeedQueuePort,
+): (now: Date) => Promise<string> {
+  requireGate(env);
+  if (!queue || queue.name !== ISOLATED_FEED_QUEUE || typeof queue.add !== "function") {
+    throw new Error("Feed producer queue refused");
+  }
+  return async (now: Date): Promise<string> => {
+    const slot = slotAt(now);
+    const id = jobId(slot);
+    try {
+      await queue.add(
+        FEED_TICK_JOB_NAME,
+        { kind: FEED_TICK_JOB_NAME, slot },
+        { jobId: id, attempts: 1, removeOnComplete: false, removeOnFail: false },
+      );
+      return id;
+    } catch {
+      throw new Error("Feed queue enqueue unavailable");
+    }
+  };
+}
+
+/** Validate a Redis-delivered slot BEFORE opening database/anchor/source secrets. */
+export function assertGatedFeedDelivery(
+  env: NodeJS.ProcessEnv,
+  job: FeedTickDelivery,
+  now: Date,
+): void {
+  requireGate(env);
+  slotAt(now);
+  if (!validDelivery(job, now)) throw new Error("Feed queue delivery refused");
+}

@@ -26,6 +26,8 @@ const REQUIRED_FLAGS = [
   "VNS_FEED_SOURCE_ANCHOR_APPROVED",
 ] as const;
 
+export type FeedRuntimeMode = "single_pass" | "bounded_producer" | "persistent_worker";
+
 export interface FeedRuntimeAdmission {
   dbUser: string;
   dbHost: string;
@@ -48,10 +50,16 @@ export interface FeedRuntimeAdmission {
  * resolution, network connection, database session or BullMQ object creation.
  * The first rollout mode is a single manually triggered observation, never cron.
  */
-export function readFeedRuntimeAdmission(env: NodeJS.ProcessEnv): FeedRuntimeAdmission {
+export function readFeedRuntimeAdmission(
+  env: NodeJS.ProcessEnv,
+  expectedMode: FeedRuntimeMode = "single_pass",
+): FeedRuntimeAdmission {
+  if (!["single_pass", "bounded_producer", "persistent_worker"].includes(expectedMode)) {
+    throw new Error("Feed runtime mode refused");
+  }
   if (
     REQUIRED_FLAGS.some((flag) => env[flag] !== "true") ||
-    env.VNS_FEED_RUNTIME_MODE !== "single_pass" ||
+    env.VNS_FEED_RUNTIME_MODE !== expectedMode ||
     env.VNS_FEED_QUEUE_NAME !== ISOLATED_FEED_QUEUE ||
     env.VNS_FEED_REGISTRY_FILE !== REVIEWED_SOURCE_REGISTRY_PATH ||
     env.VNS_FEED_DB_PASSWORD_FILE !== FEED_DB_SECRET ||

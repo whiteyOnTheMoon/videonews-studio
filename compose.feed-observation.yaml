@@ -198,6 +198,54 @@ services:
       VNS_FEED_SCHEDULER_MAX_TICKS: "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}"
       VNS_FEED_SCHEDULER_FAILURE_LIMIT: "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}"
 
-# Only the observer and bounded scheduler have this explicit egress network.
+  # An independent queue producer, with NO PostgreSQL/anchor credentials,
+  # signed source inbox, key, checkpoint or outbound feed HTTP network.
+  # The consumer rechecks approval and signed sources before any fetch.
+  feed-producer:
+    <<: *feed-locked
+    profiles: [feed-producer]
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    entrypoint: ["node", "apps/worker/dist/feed-producer-bounded.js", "--bounded-producer"]
+    environment:
+      <<: *vns-feed-environment
+      VNS_FEED_RUNTIME_MODE: bounded_producer
+      VNS_FEED_SOURCE_BOOTSTRAP: "false"
+      VNS_FEED_REDIS_USER: "${VNS_FEED_PRODUCER_REDIS_USER:-}"
+      VNS_FEED_SCHEDULER_ENABLED: "${VNS_FEED_SCHEDULER_ENABLED:-false}"
+      VNS_FEED_SCHEDULER_OPERATOR_ACK: "${VNS_FEED_SCHEDULER_OPERATOR_ACK:-false}"
+      VNS_FEED_SCHEDULER_MODE: "${VNS_FEED_SCHEDULER_MODE:-disabled}"
+      VNS_FEED_SCHEDULER_MAX_TICKS: "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}"
+      VNS_FEED_SCHEDULER_FAILURE_LIMIT: "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}"
+      VNS_FEED_SEPARATE_PRODUCER_ENABLED: "${VNS_FEED_SEPARATE_PRODUCER_ENABLED:-false}"
+      VNS_FEED_SEPARATE_PRODUCER_OPERATOR_ACK: "${VNS_FEED_SEPARATE_PRODUCER_OPERATOR_ACK:-false}"
+    volumes:
+      - type: bind
+        source: ${VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE:?Separate producer Redis ACL secret not provisioned}
+        target: /run/secrets/vns_feed_redis_password
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      redis: { condition: service_healthy }
+    networks: [backend]
+
+  # A long-lived, single-concurrency worker. Unlike the observer it NEVER
+  # creates queue jobs; DB/anchor/signed-source checks occur per delivery.
+  feed-consumer:
+    <<: *vns-feed-observer
+    profiles: [feed-consumer]
+    entrypoint: ["node", "apps/worker/dist/feed-worker-persistent.js", "--persistent-worker"]
+    environment:
+      <<: *vns-feed-environment
+      VNS_FEED_RUNTIME_MODE: persistent_worker
+      VNS_FEED_SOURCE_BOOTSTRAP: "false"
+      VNS_FEED_REDIS_USER: "${VNS_FEED_CONSUMER_REDIS_USER:-}"
+      VNS_FEED_SEPARATE_WORKER_ENABLED: "${VNS_FEED_SEPARATE_WORKER_ENABLED:-false}"
+      VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "${VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK:-false}"
+
+# Only the observer, bounded scheduler and separate consumer have explicit feed egress.
 networks:
   feed_egress: {}

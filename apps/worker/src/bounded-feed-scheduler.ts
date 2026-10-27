@@ -1,4 +1,4 @@
-import { readFeedRuntimeAdmission } from "./feed-runtime-admission.js";
+import { readFeedRuntimeAdmission, type FeedRuntimeMode } from "./feed-runtime-admission.js";
 import type { FeedObservationSummary } from "./feed-observe-once.js";
 
 const SLOT_MS = 15 * 60 * 1000;
@@ -31,10 +31,13 @@ export interface BoundedFeedSchedulePorts {
  * anchored one-shot observer. Each call re-opens, re-authorizes and closes
  * all of its own services. Never invokes a publisher or any editorial release.
  */
-export function readBoundedFeedSchedule(env: NodeJS.ProcessEnv): BoundedFeedSchedule {
+export function readBoundedFeedSchedule(
+  env: NodeJS.ProcessEnv,
+  mode: FeedRuntimeMode = "single_pass",
+): BoundedFeedSchedule {
   // Re-use ALL runtime identity, host, rights, anchor and queue gates before
   // reading any secret, opening Redis or starting the timer.
-  readFeedRuntimeAdmission(env);
+  readFeedRuntimeAdmission(env, mode);
   if (
     env.VNS_FEED_SCHEDULER_ENABLED !== "true" ||
     env.VNS_FEED_SCHEDULER_OPERATOR_ACK !== "true" ||
@@ -70,8 +73,9 @@ export async function runBoundedFeedSchedule(
   env: NodeJS.ProcessEnv,
   ports: BoundedFeedSchedulePorts,
   signal: AbortSignal,
+  mode: FeedRuntimeMode = "single_pass",
 ): Promise<{ attempted: number; succeeded: number; failures: number }> {
-  const configuration = readBoundedFeedSchedule(env);
+  const configuration = readBoundedFeedSchedule(env, mode);
   if (
     !ports ||
     typeof ports.now !== "function" ||
