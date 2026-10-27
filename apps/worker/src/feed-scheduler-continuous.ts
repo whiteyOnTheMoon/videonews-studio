@@ -11,6 +11,7 @@ export interface FeedQueueSnapshot {
   delayed: number;
   failed: number;
   paused: number;
+  queuePaused: boolean;
   oldestPendingAt: number | null;
 }
 
@@ -52,7 +53,9 @@ export function readContinuousFeedPolicy(env: NodeJS.ProcessEnv): ContinuousFeed
   if (values.some((value) => typeof value !== "string" || !/^[1-9][0-9]?$/.test(value))) {
     throw new Error("Continuous feed limits invalid");
   }
-  const [maxBacklog, maxPendingAgeMinutes, maxConsecutiveEnqueueFailures] = values.map(Number);
+  const maxBacklog = Number(values[0]);
+  const maxPendingAgeMinutes = Number(values[1]);
+  const maxConsecutiveEnqueueFailures = Number(values[2]);
   if (maxBacklog > 20 || maxPendingAgeMinutes < 15 || maxPendingAgeMinutes > 29 ||
     maxConsecutiveEnqueueFailures > 3) {
     throw new Error("Continuous feed limits invalid");
@@ -73,7 +76,8 @@ export function validateFeedQueueSnapshot(
     throw new Error("Feed queue observation unavailable");
   }
   const pending = snapshot.waiting + snapshot.active + snapshot.delayed + snapshot.paused;
-  if (snapshot.failed > 0 || pending > policy.maxBacklog || snapshot.paused > 0) {
+  if (typeof snapshot.queuePaused !== "boolean" || snapshot.queuePaused ||
+    snapshot.failed > 0 || pending > policy.maxBacklog || snapshot.paused > 0) {
     throw new Error("Feed queue risk threshold exceeded");
   }
   const oldest = snapshot.oldestPendingAt;
