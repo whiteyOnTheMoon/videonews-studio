@@ -11,7 +11,8 @@ if (
   process.env.GITHUB_ACTIONS !== "true" ||
   process.env.CI !== "true" ||
   process.env.VNS_P2_ISOLATED_PORT_TEST !== "true"
-) throw new Error("P2 projection integration is disposable CI only");
+)
+  throw new Error("P2 projection integration is disposable CI only");
 
 test("isolated real PostgreSQL: enrolled projection login has only guarded rights", async () => {
   const env = {
