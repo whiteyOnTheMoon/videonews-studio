@@ -18,6 +18,7 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
   let consumer: ReturnType<typeof createSeparatedFeedConsumer> | undefined;
   try {
     let consecutiveFailures = 0;
+    let unexpectedConnectionFailure = false;
     consumer = createSeparatedFeedConsumer(
       env,
       redis,
@@ -35,8 +36,12 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     consumer.worker.on("stalled", () => {
       console.error(JSON.stringify({ event: "feed_consumer_job_stalled" }));
     });
-    consumer.worker.on("error", stop);
-    redis.on("error", stop);
+    const failClosed = () => {
+      unexpectedConnectionFailure = true;
+      controller.abort();
+    };
+    consumer.worker.on("error", failClosed);
+    redis.on("error", failClosed);
     await consumer.worker.waitUntilReady();
     console.info(JSON.stringify({ event: "feed_consumer_ready" }));
     if (!controller.signal.aborted) {
@@ -44,8 +49,8 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
         controller.signal.addEventListener("abort", () => resolve(), { once: true });
       });
     }
-    if (consecutiveFailures >= 3) {
-      throw new Error("Repeated feed consumer failures");
+    if (consecutiveFailures >= 3 || unexpectedConnectionFailure) {
+      throw new Error("Feed consumer stopped after failed health gate");
     }
   } finally {
     process.off("SIGINT", stop);
