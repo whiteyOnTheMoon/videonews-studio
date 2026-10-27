@@ -1,0 +1,77 @@
+name: P1-09 controlled 0012 to 0018 upgrade (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_provider_schema_upgrade.sh"
+      - ".github/workflows/p1-09-schema-upgrade.yml"
+      - "db/migrations/**"
+permissions:
+  contents: read
+jobs:
+  provider-schema-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      CI: "true"
+      VNS_P109_CI_PROJECT: vns-p109-upgrade-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate helper syntax
+        run: bash -n scripts/p1_09_provider_schema_upgrade.sh
+      - name: Prepare fake CI-only PostgreSQL secret
+        run: |
+          mkdir -p -m 700 secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password", os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(fd, "w", encoding="ascii") as f:
+              f.write("ci-isolated-only-not-for-vps\n")
+          PY
+      - name: Upgrade an existing disposable 0012 schema, never the VPS
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose -p vns-p109-upgrade-ci -f compose.yaml --profile data \
+              down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p109-upgrade-ci -f compose.yaml --profile data \
+            up -d --no-deps --no-build --pull missing postgres
+          status=missing
+          for i in $(seq 1 60); do
+            status="$(docker inspect --format '{{.State.Health.Status}}' \
+              vns-p109-upgrade-ci-postgres-1 2>/dev/null || true)"
+            [[ "$status" != unhealthy ]] || { echo 'unhealthy disposable PG'; exit 1; }
+            [[ "$status" != healthy ]] || break
+            sleep 2
+          done
+          [[ "$status" == healthy ]] || { echo 'PG not ready'; exit 1; }
+          sql() {
+            docker exec -i vns-p109-upgrade-ci-postgres-1 \
+              psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews
+          }
+          for file in $(find db/migrations -maxdepth 1 -name '00*.up.sql' | sort | head -12); do
+            echo "Seeding disposable baseline: $(basename "$file")"
+            sql < "$file"
+          done
+          bash scripts/p1_09_provider_schema_upgrade.sh preflight
+          bash scripts/p1_09_provider_schema_upgrade.sh apply
+          bash scripts/p1_09_provider_schema_upgrade.sh status
+          for file in db/tests/001{3,4,5,6,7,8}_*.test.sql; do
+            echo "Verifying $(basename "$file")"
+            sql < "$file"
+          done
+          if bash scripts/p1_09_provider_schema_upgrade.sh preflight; then
+            echo "FAIL: attempted repeat migration accepted"
+            exit 1
+          fi
+          if bash scripts/p1_09_provider_schema_upgrade.sh apply; then
+            echo "FAIL: attempted duplicate migration accepted"
+            exit 1
+          fi
+          count="$(docker exec vns-p109-upgrade-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c 'SELECT count(*) FROM vns.schema_migrations')"
+          [[ "$count" == 18 ]] || exit 1
+          echo 'PASS: 0012 -> 0018, offline SQL tests, repeat refused, no provider activation'
