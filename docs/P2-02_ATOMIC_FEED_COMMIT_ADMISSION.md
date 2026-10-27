@@ -6,6 +6,7 @@ not activate a scheduler, approve a real source or deploy any VPS migration.
 ## Database and worker integration
 
 Migration 0033 adds two SECURITY DEFINER functions:
+
 - `vns.claim_feed_poll_authorized(jsonb,integer)`
 - `vns.commit_feed_poll_authorized(jsonb,uuid,jsonb,text,text)`
 

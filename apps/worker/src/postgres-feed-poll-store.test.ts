@@ -128,12 +128,12 @@ test("live mode sends the complete source snapshot to guarded SQL", async () => 
   await assert.rejects(store.claim("unknown_feed", clock, 60), /authorization required/);
   assert.equal(calls.length, 0);
   assert.equal((await store.claim(source.id, clock, 60))?.token, TOKEN);
-  assert.equal(
-    await store.commit(source.id, TOKEN, [item], { etag: null, lastModified: null }),
-    1,
-  );
+  assert.equal(await store.commit(source.id, TOKEN, [item], { etag: null, lastModified: null }), 1);
   assert.equal(calls.length, 2);
   assert.ok(calls.every((call) => call.sql.includes("_authorized(")));
-  assert.deepEqual(calls.map((call) => JSON.parse(String(call.params[0]))), [source, source]);
+  assert.deepEqual(
+    calls.map((call) => JSON.parse(String(call.params[0]))),
+    [source, source],
+  );
   assert.equal(calls[1]?.params[1], TOKEN);
 });
