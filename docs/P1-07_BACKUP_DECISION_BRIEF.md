@@ -16,17 +16,17 @@ See [current IONOS/Beszel acceptance checklist](P2-02_IONOS_BESZEL_ACCEPTANCE_20
 
 ## Decision record — every field requires explicit operator input
 
-| Field                                       | Current value                             | Required proof before activation                                                                                       |
-| ------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Backup destination and owner                | IONOS reported; exact backup product and access unverified                                 | Independent off-VPS access, restore permissions and recovery-access check                                              |
-| Monthly/yearly budget ceiling               | Undecided                                 | Signed-off storage, transfer, key and verification costs, including possible zero-subscription costs                   |
-| RPO / lost-data tolerance                   | Undecided                                 | Maximum permissible loss for job ledger and audit events, matched by actual capture frequency                          |
-| RTO / restoration deadline                  | Undecided                                 | Timed end-to-end rehearsal on an isolated recovery target                                                              |
-| Backup schedule and retention               | Undecided                                 | Policy with deletion/privacy and immutability considerations                                                           |
-| Key custody and lost-key contingency        | Undecided                                 | Separately protected decryption keys, signing trust root, rotation and recovery procedure                              |
-| Data classification and volume sizes        | Unknown on real VPS                       | Operator-reviewed PostgreSQL, Redis AOF, media, audit, credential and external configuration inventory                 |
-| Full-stack restore and queue reconciliation | Not performed on real independent backups | Proven independent PostgreSQL roles/data, media, audits, Redis decision, no duplicate side effects and stopped workers |
-| Cutover and rollback authorization          | Not granted                               | Fresh specific operator approval after all evidence, with publication/ingress disabled until signed off                |
+| Field                                       | Current value                                              | Required proof before activation                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Backup destination and owner                | IONOS reported; exact backup product and access unverified | Independent off-VPS access, restore permissions and recovery-access check                                              |
+| Monthly/yearly budget ceiling               | Undecided                                                  | Signed-off storage, transfer, key and verification costs, including possible zero-subscription costs                   |
+| RPO / lost-data tolerance                   | Undecided                                                  | Maximum permissible loss for job ledger and audit events, matched by actual capture frequency                          |
+| RTO / restoration deadline                  | Undecided                                                  | Timed end-to-end rehearsal on an isolated recovery target                                                              |
+| Backup schedule and retention               | Undecided                                                  | Policy with deletion/privacy and immutability considerations                                                           |
+| Key custody and lost-key contingency        | Undecided                                                  | Separately protected decryption keys, signing trust root, rotation and recovery procedure                              |
+| Data classification and volume sizes        | Unknown on real VPS                                        | Operator-reviewed PostgreSQL, Redis AOF, media, audit, credential and external configuration inventory                 |
+| Full-stack restore and queue reconciliation | Not performed on real independent backups                  | Proven independent PostgreSQL roles/data, media, audits, Redis decision, no duplicate side effects and stopped workers |
+| Cutover and rollback authorization          | Not granted                                                | Fresh specific operator approval after all evidence, with publication/ingress disabled until signed off                |
 
 ## Proposed staged approval sequence
 
