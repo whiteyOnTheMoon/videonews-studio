@@ -27,10 +27,7 @@ const REQUIRED_FLAGS = [
 ] as const;
 
 export type FeedRuntimeMode =
-  | "single_pass"
-  | "bounded_producer"
-  | "continuous_producer"
-  | "persistent_worker";
+  "single_pass" | "bounded_producer" | "continuous_producer" | "persistent_worker";
 
 export interface FeedRuntimeAdmission {
   dbUser: string;
@@ -58,9 +55,11 @@ export function readFeedRuntimeAdmission(
   env: NodeJS.ProcessEnv,
   expectedMode: FeedRuntimeMode = "single_pass",
 ): FeedRuntimeAdmission {
-  if (!["single_pass", "bounded_producer", "continuous_producer", "persistent_worker"].includes(
-    expectedMode,
-  )) {
+  if (
+    !["single_pass", "bounded_producer", "continuous_producer", "persistent_worker"].includes(
+      expectedMode,
+    )
+  ) {
     throw new Error("Feed runtime mode refused");
   }
   if (
