@@ -224,11 +224,15 @@ test("P2-10 personal story timeline writes audited events but cannot publish", a
     },
   };
   const result = await dormantEditorialAdminProxy(
-    request("/api/admin/editorial-timeline", "POST", command), "timeline", config, mock,
+    request("/api/admin/editorial-timeline", "POST", command),
+    "timeline",
+    config,
+    mock,
   );
   assert.equal(result.status, 200);
   assert.deepEqual(await result.json(), {
-    eventId: created, approvedForPublication: false,
+    eventId: created,
+    approvedForPublication: false,
   });
   const count = calls.length;
   for (const bad of [
@@ -238,17 +242,39 @@ test("P2-10 personal story timeline writes audited events but cannot publish", a
     { ...command, eventKind: "publish" },
     { ...command, details: { ...command.details, apiToken: "private" } },
   ]) {
-    assert.equal((await dormantEditorialAdminProxy(
-      request("/api/admin/editorial-timeline", "POST", bad), "timeline", config, mock,
-    )).status, 400);
+    assert.equal(
+      (
+        await dormantEditorialAdminProxy(
+          request("/api/admin/editorial-timeline", "POST", bad),
+          "timeline",
+          config,
+          mock,
+        )
+      ).status,
+      400,
+    );
   }
   assert.equal(calls.length, count);
-  assert.equal((await dormantEditorialAdminProxy(
-    request("/api/admin/editorial-timeline", "POST", command, "https://evil.invalid"),
-    "timeline", config, mock,
-  )).status, 403);
-  assert.equal((await dormantEditorialAdminProxy(
-    request("/api/admin/editorial-timeline?storyId=" + storyId, "POST", command),
-    "timeline", config, mock,
-  )).status, 400);
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-timeline", "POST", command, "https://evil.invalid"),
+        "timeline",
+        config,
+        mock,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-timeline?storyId=" + storyId, "POST", command),
+        "timeline",
+        config,
+        mock,
+      )
+    ).status,
+    400,
+  );
 });
