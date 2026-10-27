@@ -4,6 +4,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TOKEN_ID = /^[A-Za-z0-9_-]{12,80}$/;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const COST = /^[0-9]{1,15}$/;
+
 export type ProviderUsageAdmission = Readonly<{
   jobId: string;
   requestId: string;
@@ -20,43 +21,80 @@ export type ProviderUsageAdmission = Readonly<{
   approvedForPayment: false;
   persistent: false;
 }>;
+
 function integer(v: unknown): v is number {
   return typeof v === "number" && Number.isSafeInteger(v) && v >= 0 && v <= 100_000_000;
 }
+
 function record(value: unknown, keys: readonly string[]): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Invalid provider usage");
-  const data = value as Record<string, unknown>;
-  if (Object.keys(data).length !== keys.length || !keys.every(k => Object.hasOwn(data, k)))
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw Error("Invalid provider usage");
+  }
+  const data = value as Record<string, unknown>;
+  if (Object.keys(data).length !== keys.length || !keys.every((k) => Object.hasOwn(data, k))) {
+    throw Error("Invalid provider usage");
+  }
   return data;
 }
-/** Explicit canonical wrapper produced by a future trusted, separately approved provider adapter.
- * Never call this function on untrusted free-form AI output or infer missing usage. */
+
+/**
+ * Canonical wrapper produced by a future trusted, separately approved provider adapter.
+ * Never call this on untrusted free-form AI output or infer missing usage.
+ */
 export function admitReportedUsage(value: unknown): ProviderUsageAdmission {
   const data = record(value, [
-    "jobId", "requestId", "responseId", "provider", "model", "priceVersion",
-    "currency", "inputTokens", "outputTokens", "cachedInputTokens", "costMicroUsd"
+    "jobId",
+    "requestId",
+    "responseId",
+    "provider",
+    "model",
+    "priceVersion",
+    "currency",
+    "inputTokens",
+    "outputTokens",
+    "cachedInputTokens",
+    "costMicroUsd",
   ]);
-  if (typeof data.jobId !== "string" || !UUID.test(data.jobId) ||
-      typeof data.requestId !== "string" || !TOKEN_ID.test(data.requestId) ||
-      typeof data.responseId !== "string" || !TOKEN_ID.test(data.responseId) ||
-      (data.provider !== "openai" && data.provider !== "google_gemini") ||
-      typeof data.model !== "string" || !MODEL.test(data.model) ||
-      typeof data.priceVersion !== "string" || !TOKEN_ID.test(data.priceVersion) ||
-      data.currency !== "USD" || !integer(data.inputTokens) ||
-      !integer(data.outputTokens) || !integer(data.cachedInputTokens) ||
-      data.cachedInputTokens > data.inputTokens ||
-      typeof data.costMicroUsd !== "string" || !COST.test(data.costMicroUsd)) {
+  if (
+    typeof data.jobId !== "string" ||
+    !UUID.test(data.jobId) ||
+    typeof data.requestId !== "string" ||
+    !TOKEN_ID.test(data.requestId) ||
+    typeof data.responseId !== "string" ||
+    !TOKEN_ID.test(data.responseId) ||
+    (data.provider !== "openai" && data.provider !== "google_gemini") ||
+    typeof data.model !== "string" ||
+    !MODEL.test(data.model) ||
+    typeof data.priceVersion !== "string" ||
+    !TOKEN_ID.test(data.priceVersion) ||
+    data.currency !== "USD" ||
+    !integer(data.inputTokens) ||
+    !integer(data.outputTokens) ||
+    !integer(data.cachedInputTokens) ||
+    data.cachedInputTokens > data.inputTokens ||
+    typeof data.costMicroUsd !== "string" ||
+    !COST.test(data.costMicroUsd)
+  ) {
     throw Error("Invalid provider usage");
   }
   return Object.freeze({
-    jobId: data.jobId, requestId: data.requestId, responseId: data.responseId,
-    provider: data.provider, model: data.model, priceVersion: data.priceVersion,
-    currency: "USD", inputTokens: data.inputTokens, outputTokens: data.outputTokens,
-    cachedInputTokens: data.cachedInputTokens, costMicroUsd: data.costMicroUsd,
-    source: "provider_response", approvedForPayment: false, persistent: false
+    jobId: data.jobId,
+    requestId: data.requestId,
+    responseId: data.responseId,
+    provider: data.provider,
+    model: data.model,
+    priceVersion: data.priceVersion,
+    currency: "USD",
+    inputTokens: data.inputTokens,
+    outputTokens: data.outputTokens,
+    cachedInputTokens: data.cachedInputTokens,
+    costMicroUsd: data.costMicroUsd,
+    source: "provider_response",
+    approvedForPayment: false,
+    persistent: false,
   }) as ProviderUsageAdmission;
 }
+
 export function reconcileReportedUsage(
   reservedMicroUsd: string,
   actual: ProviderUsageAdmission,
