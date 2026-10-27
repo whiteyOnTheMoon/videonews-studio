@@ -112,7 +112,8 @@ export function createPersonalEditorialSessions(
           if (typeof sql !== "string" || sql.length > 2000 || !Array.isArray(args)) {
             throw new Error("Personal editorial query invalid");
           }
-          return await pool.query<T>(sql, [...args]);
+          const result = await pool.query(sql, [...args]);
+          return { rows: result.rows as T[] };
         },
         async close() {
           await pool.end();
