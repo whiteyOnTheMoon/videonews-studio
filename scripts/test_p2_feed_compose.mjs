@@ -77,6 +77,16 @@ export function verifySignedFeedOverlay(data) {
   assert.equal(producer.volumes[0].target, "/run/secrets/vns_feed_redis_password");
   assert.equal(producer.environment.VNS_FEED_RUNTIME_MODE, "bounded_producer");
   assert.equal(consumer.environment.VNS_FEED_RUNTIME_MODE, "persistent_worker");
+  assert.deepEqual(consumer.healthcheck.test, [
+    "CMD",
+    "node",
+    "apps/worker/dist/feed-consumer-healthcheck.js",
+  ]);
+  assert.equal(consumer.healthcheck.interval, "30s");
+  assert.equal(consumer.healthcheck.timeout, "5s");
+  assert.equal(consumer.healthcheck.retries, 3);
+  assert.equal(consumer.healthcheck.start_period, "60s");
+  must(!producer.healthcheck, "queue-only producer must not pose as a persistent worker");
   assert.deepEqual(scheduler.volumes, observer.volumes);
   assert.deepEqual(scheduler.depends_on, observer.depends_on);
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
@@ -225,6 +235,12 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["feed-producer"].networks = ["backend", "feed_egress"];
+    },
+    (copy) => {
+      copy.services["feed-consumer"].healthcheck.test = ["CMD-SHELL", "exit 0"];
+    },
+    (copy) => {
+      delete copy.services["feed-consumer"].healthcheck;
     },
   ]) {
     const copy = structuredClone(overlay);
