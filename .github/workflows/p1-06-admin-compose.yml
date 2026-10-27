@@ -45,8 +45,8 @@ jobs:
           assert not web.get('ports') and not api.get('ports')
           print('PASS: admin overlay is opt-in, file-backed and has no published ports')
           PY
-          docker compose -f compose.yaml -f deploy/compose.admin.yaml \\
-            -f deploy/compose.personal-editorial-admin.yaml \\
+          docker compose -f compose.yaml -f deploy/compose.admin.yaml \
+            -f deploy/compose.personal-editorial-admin.yaml \
             --profile preview config --quiet
           rm -f /tmp/vns-admin-config.json
       - name: Assert personal editorial secret and runtime isolation
