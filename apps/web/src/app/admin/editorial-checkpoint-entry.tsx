@@ -35,8 +35,10 @@ export default function EditorialCheckpointEntry({ enabled }: { enabled: boolean
       !UUID.test(eventId) ||
       !DIGEST.test(artifactSha256) ||
       !Number.isSafeInteger(expectedRevision) ||
-      expectedRevision < 0 || expectedRevision > 9999 ||
-      reasonCodes.length < 1 || reasonCodes.length > 20 ||
+      expectedRevision < 0 ||
+      expectedRevision > 9999 ||
+      reasonCodes.length < 1 ||
+      reasonCodes.length > 20 ||
       reasonCodes.some((code) => !CODE.test(code)) ||
       (score !== null && (!Number.isSafeInteger(score) || score < 0 || score > 1000))
     ) {
@@ -68,11 +70,14 @@ export default function EditorialCheckpointEntry({ enabled }: { enabled: boolean
       if (response.status !== 200) throw new Error("Checkpoint nicht bestätigt.");
       const result: unknown = await response.json();
       if (
-        !result || typeof result !== "object" || Array.isArray(result) ||
+        !result ||
+        typeof result !== "object" ||
+        Array.isArray(result) ||
         (result as Record<string, unknown>).saved !== true ||
         (result as Record<string, unknown>).revision !== expectedRevision + 1 ||
         (result as Record<string, unknown>).approvedForPublication !== false
-      ) throw new Error("Checkpoint-Antwort nicht vertrauenswürdig.");
+      )
+        throw new Error("Checkpoint-Antwort nicht vertrauenswürdig.");
       setExpectedRevision(expectedRevision + 1);
       setNotice("Checkpoint revisionsgesichert. Keine Veröffentlichungsfreigabe.");
     } catch (cause) {
@@ -86,22 +91,38 @@ export default function EditorialCheckpointEntry({ enabled }: { enabled: boolean
   return (
     <section className="jobs-section" aria-labelledby="checkpoint-write-heading">
       <h2 id="checkpoint-write-heading">Redaktionelle Prüfentscheidung</h2>
-      <p>Ranking, Claims, Aktualität, Skriptrevision und Qualität persönlich und revisionssicher festhalten. Diese Eingabe veröffentlicht nichts.</p>
+      <p>
+        Ranking, Claims, Aktualität, Skriptrevision und Qualität persönlich und revisionssicher
+        festhalten. Diese Eingabe veröffentlicht nichts.
+      </p>
       {!enabled ? <p role="status">Prüfprotokoll nicht freigeschaltet.</p> : null}
       {error ? <p role="alert">{error}</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
       {enabled ? (
         <form onSubmit={submit}>
           <label htmlFor="checkpoint-event-id">Ereignis-UUID</label>
-          <input id="checkpoint-event-id" required value={eventId}
-            onChange={(event) => setEventId(event.target.value)} />
+          <input
+            id="checkpoint-event-id"
+            required
+            value={eventId}
+            onChange={(event) => setEventId(event.target.value)}
+          />
           <label htmlFor="checkpoint-revision">Erwartete letzte Revision (CAS)</label>
-          <input id="checkpoint-revision" type="number" min={0} max={9999} required
-            value={expectedRevision} onChange={(event) =>
-              setExpectedRevision(Number(event.target.value))} />
+          <input
+            id="checkpoint-revision"
+            type="number"
+            min={0}
+            max={9999}
+            required
+            value={expectedRevision}
+            onChange={(event) => setExpectedRevision(Number(event.target.value))}
+          />
           <label htmlFor="checkpoint-stage">Prüfschritt</label>
-          <select id="checkpoint-stage" value={stage} onChange={(event) =>
-            setStage(event.target.value as Stage)}>
+          <select
+            id="checkpoint-stage"
+            value={stage}
+            onChange={(event) => setStage(event.target.value as Stage)}
+          >
             <option value="ranking">Ranking</option>
             <option value="claim_review">Claim-Prüfung</option>
             <option value="freshness">Aktualität</option>
@@ -109,23 +130,43 @@ export default function EditorialCheckpointEntry({ enabled }: { enabled: boolean
             <option value="quality">Qualität / unabhängige Prüfung</option>
           </select>
           <label htmlFor="checkpoint-outcome">Ergebnis</label>
-          <select id="checkpoint-outcome" value={outcome} onChange={(event) =>
-            setOutcome(event.target.value as Outcome)}>
+          <select
+            id="checkpoint-outcome"
+            value={outcome}
+            onChange={(event) => setOutcome(event.target.value as Outcome)}
+          >
             <option value="candidate">Kandidat</option>
             <option value="needs_review">Nachprüfung</option>
             <option value="blocked">Gesperrt</option>
           </select>
           <label htmlFor="checkpoint-digest">SHA-256 des geprüften Artefakts</label>
-          <input id="checkpoint-digest" required minLength={64} maxLength={64}
-            value={artifactSha256} onChange={(event) =>
-              setArtifactSha256(event.target.value)} />
+          <input
+            id="checkpoint-digest"
+            required
+            minLength={64}
+            maxLength={64}
+            value={artifactSha256}
+            onChange={(event) => setArtifactSha256(event.target.value)}
+          />
           <label htmlFor="checkpoint-reasons">Grundcodes (kommagetrennt)</label>
-          <input id="checkpoint-reasons" required value={reasonCodesText}
-            onChange={(event) => setReasonCodesText(event.target.value)} />
+          <input
+            id="checkpoint-reasons"
+            required
+            value={reasonCodesText}
+            onChange={(event) => setReasonCodesText(event.target.value)}
+          />
           <label htmlFor="checkpoint-score">Score (0–1000, optional)</label>
-          <input id="checkpoint-score" type="number" min={0} max={1000}
-            value={scoreText} onChange={(event) => setScoreText(event.target.value)} />
-          <button type="submit" disabled={busy}>Prüfentscheidung speichern</button>
+          <input
+            id="checkpoint-score"
+            type="number"
+            min={0}
+            max={1000}
+            value={scoreText}
+            onChange={(event) => setScoreText(event.target.value)}
+          />
+          <button type="submit" disabled={busy}>
+            Prüfentscheidung speichern
+          </button>
         </form>
       ) : null}
     </section>
