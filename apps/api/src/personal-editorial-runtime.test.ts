@@ -14,7 +14,10 @@ const enabled = {
 
 test("personal editorial runtime is OFF by default and rejects partially enabled config", () => {
   assert.equal(readPersonalEditorialAdmission({}), null);
-  assert.equal(readPersonalEditorialAdmission({ VNS_EDITORIAL_PERSONAL_DB_ENABLED: "false" }), null);
+  assert.equal(
+    readPersonalEditorialAdmission({ VNS_EDITORIAL_PERSONAL_DB_ENABLED: "false" }),
+    null,
+  );
   assert.deepEqual(readPersonalEditorialAdmission(enabled), {
     pgHost: "postgres",
     secretDirectory: "/run/secrets/vns_editor_credentials",
@@ -24,10 +27,13 @@ test("personal editorial runtime is OFF by default and rejects partially enabled
     { ...enabled, VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK: "false" },
     { ...enabled, VNS_EDITORIAL_PERSONAL_DB_HOST: "remote.example.org" },
     { ...enabled, VNS_EDITORIAL_PERSONAL_DB_SECRETS_DIR: "/tmp/keys" },
-  ]) assert.throws(() => readPersonalEditorialAdmission(settings));
-  assert.throws(() => readPersonalEditorialAdmission({
-    VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK: "true",
-  }));
+  ])
+    assert.throws(() => readPersonalEditorialAdmission(settings));
+  assert.throws(() =>
+    readPersonalEditorialAdmission({
+      VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK: "true",
+    }),
+  );
 });
 
 test("personally bound gateway refuses unauthenticated and non-admin identities before secrets", async () => {
@@ -46,10 +52,7 @@ test("personally bound gateway refuses unauthenticated and non-admin identities 
     { ...validBase, username: "UPPERCASE" },
     { ...validBase, authVersion: -1 },
   ]) {
-    await assert.rejects(
-      sessions.open(bogus as never),
-      /account refused/,
-    );
+    await assert.rejects(sessions.open(bogus as never), /account refused/);
   }
   await assert.rejects(
     sessions.open(validBase),
