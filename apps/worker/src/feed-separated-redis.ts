@@ -4,7 +4,9 @@ import { readFeedSecret } from "./feed-trusted-context.js";
 
 /** Caller must first pass the dedicated side-effect-free role admission. */
 export function openSeparatedFeedRedis(env: NodeJS.ProcessEnv, mode: FeedRuntimeMode): Redis {
-  if (mode !== "bounded_producer" && mode !== "persistent_worker") {
+  if (mode !== "bounded_producer" &&
+    mode !== "continuous_producer" &&
+    mode !== "persistent_worker") {
     throw new Error("Separated Redis runtime mode refused");
   }
   const admission = readFeedRuntimeAdmission(env, mode);
