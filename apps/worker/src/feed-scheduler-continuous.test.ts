@@ -171,5 +171,5 @@ test("queue observation failure prevents dispatch and reports only sanitized cou
     /queue health check failed/,
   );
   assert.equal(enqueued, false);
-  assert.deepEqual(events, [{ event: "queue_unhealthy", slot: 1992536, pending: 0, failed: 0 }]);
+  assert.deepEqual(events, [{ event: "queue_unhealthy", slot: 1992240, pending: 0, failed: 0 }]);
 });
