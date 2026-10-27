@@ -150,9 +150,8 @@ test("checkpoint write accepts only an authenticated same-origin revision-bound 
     revision: 2,
     approvedForPublication: false,
   });
-  const upstream = attempts.find((entry) =>
-    entry.url === config.api + "/admin/editorial-checkpoints" &&
-    entry.method === "POST",
+  const upstream = attempts.find(
+    (entry) => entry.url === config.api + "/admin/editorial-checkpoints" && entry.method === "POST",
   );
   assert.ok(upstream);
   assert.deepEqual(JSON.parse(upstream.body!), command);
@@ -165,26 +164,38 @@ test("checkpoint write accepts only an authenticated same-origin revision-bound 
     { ...command, approvedForPublication: true },
   ]) {
     assert.equal(
-      (await dormantEditorialAdminProxy(
-        request("/api/admin/editorial-checkpoints", "POST", data),
-        "checkpoints", config, fetcher,
-      )).status,
+      (
+        await dormantEditorialAdminProxy(
+          request("/api/admin/editorial-checkpoints", "POST", data),
+          "checkpoints",
+          config,
+          fetcher,
+        )
+      ).status,
       400,
     );
   }
   assert.ok(attempts.length >= before);
   assert.equal(
-    (await dormantEditorialAdminProxy(
-      request("/api/admin/editorial-checkpoints", "POST", command, "https://evil.invalid"),
-      "checkpoints", config, fetcher,
-    )).status,
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-checkpoints", "POST", command, "https://evil.invalid"),
+        "checkpoints",
+        config,
+        fetcher,
+      )
+    ).status,
     403,
   );
   assert.equal(
-    (await dormantEditorialAdminProxy(
-      request("/api/admin/editorial-checkpoints?eventId=" + eventId, "POST", command),
-      "checkpoints", config, fetcher,
-    )).status,
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-checkpoints?eventId=" + eventId, "POST", command),
+        "checkpoints",
+        config,
+        fetcher,
+      )
+    ).status,
     400,
   );
 });
