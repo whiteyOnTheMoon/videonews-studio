@@ -28,3 +28,9 @@ Consumer alone: `VNS_FEED_RUNTIME_MODE=persistent_worker`, `VNS_FEED_SEPARATE_WO
 6. Decide how to retire bounded 16-tick producer in favor of an approved always-on scheduler with admin-configured per-source intervals. Do not silently enable permanent scheduling here.
 
 Do **not** close #17 or claim production-readiness based solely on this code or CI.
+
+## Container health and Beszel handoff (code-only)
+
+The existing `feed-consumer` Compose profile now has a read-only `CMD` healthcheck reading `/tmp/vns-feed-consumer-health.json`. The worker atomically writes an owner-only (`0600`) heartbeat to its pre-existing tmpfs after BullMQ readiness, refreshes it every 20 seconds and marks it stopped during shutdown. The probe fails on missing, stale (over 90 seconds), future-dated, forged, symlinked, multiply-linked, overly permissive or wrong-owner status files, or when the recorded PID is not alive. No source URLs, SQL, secret values or job payloads are written to the heartbeat. The signal only proves local process liveness, **not** validity of a news item, license, DB backup or independent editorial review.
+
+A future operator-authorized Docker rollout must verify `docker inspect` health transitions while idle, on forced worker stall, and after shutdown. Configure existing Beszel to notify on unhealthy/exited container state where supported and **prove real operator alert delivery**; this CI-only healthcheck does not establish alarm delivery or production readiness. Add separate queue backlog, failed-job and PostgreSQL/Redis availability signals before enabling unattended scheduling.

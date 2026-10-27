@@ -1,6 +1,7 @@
 import { createSeparatedFeedConsumer, requireSeparatedFeedGate } from "./feed-bullmq-separated.js";
 import { openSeparatedFeedRedis } from "./feed-separated-redis.js";
 import { openTrustedFeedContext } from "./feed-trusted-context.js";
+import { publishFeedConsumerHealth } from "./feed-consumer-health.js";
 
 /**
  * Long-lived consumer with no internal scheduling or producer connection.
@@ -16,9 +17,18 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
   process.once("SIGTERM", stop);
   const redis = openSeparatedFeedRedis(env, "persistent_worker");
   let consumer: ReturnType<typeof createSeparatedFeedConsumer> | undefined;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let consecutiveFailures = 0;
+  let unexpectedConnectionFailure = false;
+  const pulse = (state: "ready" | "stopped") =>
+    publishFeedConsumerHealth({
+      version: 1,
+      state,
+      at: Date.now(),
+      pid: process.pid,
+      consecutiveFailures,
+    });
   try {
-    let consecutiveFailures = 0;
-    let unexpectedConnectionFailure = false;
     consumer = createSeparatedFeedConsumer(env, redis, () =>
       openTrustedFeedContext(env, "persistent_worker"),
     );
@@ -41,6 +51,16 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     consumer.worker.on("error", failClosed);
     redis.on("error", failClosed);
     await consumer.worker.waitUntilReady();
+    pulse("ready");
+    heartbeat = setInterval(() => {
+      try {
+        pulse("ready");
+      } catch {
+        unexpectedConnectionFailure = true;
+        controller.abort();
+      }
+    }, 20_000);
+    heartbeat.unref();
     console.info(JSON.stringify({ event: "feed_consumer_ready" }));
     if (!controller.signal.aborted) {
       await new Promise<void>((resolve) => {
@@ -51,6 +71,12 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
       throw new Error("Feed consumer stopped after failed health gate");
     }
   } finally {
+    if (heartbeat) clearInterval(heartbeat);
+    try {
+      pulse("stopped");
+    } catch {
+      process.exitCode = 1;
+    }
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
     await consumer?.close().catch(() => undefined);

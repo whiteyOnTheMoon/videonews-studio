@@ -17,7 +17,8 @@
     "feed-source-publish-once": "node dist/feed-source-publish-once.js --once",
     "source-handoff-import-once": "node dist/source-handoff-import-once.js --once",
     "feed-producer-bounded": "node dist/feed-producer-bounded.js --bounded-producer",
-    "feed-worker-persistent": "node dist/feed-worker-persistent.js --persistent-worker"
+    "feed-worker-persistent": "node dist/feed-worker-persistent.js --persistent-worker",
+    "feed-consumer-healthcheck": "node dist/feed-consumer-healthcheck.js"
   },
   "dependencies": {
     "@vns/shared": "*",
