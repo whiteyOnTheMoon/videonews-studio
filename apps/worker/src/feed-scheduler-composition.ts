@@ -5,6 +5,7 @@ import {
   type FeedHttpsDependencies,
 } from "./feed-https-transport.js";
 import { PostgresFeedPollStore } from "./postgres-feed-poll-store.js";
+import { PostgresFeedSourceAuthority } from "./postgres-feed-source-authority.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
 import { approvedSourceForUrl, parseReviewedSourceRegistry } from "./source-registry.js";
@@ -61,7 +62,13 @@ export function createDormantFeedScheduler(
   const registry = parseReviewedSourceRegistry(contents, policy);
   const store = new PostgresFeedPollStore(ports.pool);
   const transport = createPinnedFeedHttpsTransport(registry, policy, ports.https);
-  const poller = createDormantFeedPoller(registry, true, store, transport);
+  // The explicitly authorized live one-shot mode consults the current
+  // PostgreSQL source/host grants; the offline fixture mode stays injectable.
+  const authority =
+    env.VNS_FEED_RUNTIME_ENABLED === "true"
+      ? new PostgresFeedSourceAuthority(ports.pool)
+      : undefined;
+  const poller = createDormantFeedPoller(registry, true, store, transport, authority);
   const sourceIds = Object.freeze(
     registry
       .filter(
