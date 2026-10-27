@@ -78,6 +78,8 @@ export interface FeedDatabaseIdentity {
   feed_writer: boolean;
   can_claim: boolean;
   can_commit: boolean;
+  can_guarded_claim: boolean;
+  can_guarded_commit: boolean;
   can_project: boolean;
   can_read_candidates: boolean;
   can_edit_accounts: boolean;
@@ -106,6 +108,8 @@ export async function attestFeedDatabaseIdentity(
          pg_has_role(session_user, 'vns_feed_poll_writer', 'member') AS feed_writer,
          has_function_privilege(session_user, 'vns.claim_feed_poll(text,integer)', 'EXECUTE') AS can_claim,
          has_function_privilege(session_user, 'vns.commit_feed_poll(text,uuid,jsonb,text,text)', 'EXECUTE') AS can_commit,
+         has_function_privilege(session_user, 'vns.claim_feed_poll_authorized(jsonb,integer)', 'EXECUTE') AS can_guarded_claim,
+         has_function_privilege(session_user, 'vns.commit_feed_poll_authorized(jsonb,uuid,jsonb,text,text)', 'EXECUTE') AS can_guarded_commit,
          has_function_privilege(session_user, 'vns.project_feed_candidates(text,integer)', 'EXECUTE') AS can_project,
          has_table_privilege(session_user, 'vns.feed_poll_candidates', 'SELECT') AS can_read_candidates,
          has_table_privilege(session_user, 'vns.editor_accounts', 'UPDATE') AS can_edit_accounts,
@@ -120,9 +124,11 @@ export async function attestFeedDatabaseIdentity(
       !account ||
       account.session_user !== expectedLogin ||
       account.feed_writer !== true ||
-      account.can_claim !== true ||
-      account.can_commit !== true ||
+      account.can_guarded_claim !== true ||
+      account.can_guarded_commit !== true ||
       [
+        account.can_claim,
+        account.can_commit,
         account.can_project,
         account.can_read_candidates,
         account.can_edit_accounts,
