@@ -2,10 +2,7 @@ import { createPublicKey } from "node:crypto";
 import { closeSync, constants, fstatSync, openSync, readFileSync } from "node:fs";
 import { importSignedSourceHandoff } from "./source-export-files.js";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
-import {
-  FEED_SIGNED_SOURCE_INBOX,
-  FEED_SOURCE_PUBLIC_KEY,
-} from "./feed-runtime-admission.js";
+import { FEED_SIGNED_SOURCE_INBOX, FEED_SOURCE_PUBLIC_KEY } from "./feed-runtime-admission.js";
 
 export const SOURCE_HANDOFF_STAGING = "/var/lib/vns/source-handoff" as const;
 
@@ -39,9 +36,7 @@ function readPinnedPublicKey(path: string) {
       stat.size < 16 ||
       stat.size > 8192 ||
       (stat.mode & 0o022) !== 0 ||
-      (typeof process.getuid === "function" &&
-        stat.uid !== 0 &&
-        stat.uid !== process.getuid())
+      (typeof process.getuid === "function" && stat.uid !== 0 && stat.uid !== process.getuid())
     ) {
       throw new Error("Pinned key permissions invalid");
     }

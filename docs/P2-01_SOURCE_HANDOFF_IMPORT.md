@@ -8,10 +8,11 @@ PostgreSQL credentials, Redis credentials, outbound networking or editorial
 publishing credentials. No scheduler or Docker service starts it by default.
 
 After an operator-approved transfer **into a read-only staging mount**, it:
+
 1. Refuses every operation unless the manual enable/ack and exact paths match.
 2. Reads the staged file through `O_NOFOLLOW` and requires a canonical
    directory, a file with exactly one hard link, no world access, group
-   *read-only* access and no group-write permission.
+   _read-only_ access and no group-write permission.
 3. Requires the staged directory to be traversable and readable to the
    importer's dedicated group but not group-writable or world-accessible.
 4. Verifies the envelope's Ed25519 signature with a separately provisioned,

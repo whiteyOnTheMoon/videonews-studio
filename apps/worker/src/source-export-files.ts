@@ -300,10 +300,7 @@ async function readHandoffEnvelope(directory: string): Promise<unknown> {
   ) {
     throw new Error("Source handoff directory permissions refused");
   }
-  const file = await open(
-    join(directory, EXPORT_FILE),
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  );
+  const file = await open(join(directory, EXPORT_FILE), constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const entry = await file.stat();
     if (

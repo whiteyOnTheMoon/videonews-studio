@@ -1,10 +1,24 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
-import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  copyFile,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { importSignedSourceHandoff, acceptDormantSourceFile, publishDormantSourceFile } from "./source-export-files.js";
+import {
+  importSignedSourceHandoff,
+  acceptDormantSourceFile,
+  publishDormantSourceFile,
+} from "./source-export-files.js";
 import { prepareDormantSourceExport } from "./source-registry-export.js";
 import { readSourceHandoffAdmission } from "./source-handoff-import-once.js";
 
@@ -53,12 +67,18 @@ test("read-only staged signed file becomes a private 0600 inbox and independentl
     assert.equal((await lstat(privateFile)).mode & 0o077, 0);
     let advances = 0;
     const sources = await acceptDormantSourceFile(
-      f.inbox, f.checkpoint, policy, f.keys.publicKey, true,
-      { async advance(candidate) {
-        advances++;
-        assert.equal(candidate.sourceRevision, 8);
-        assert.equal(candidate.hostApprovalRevision, 3);
-      } },
+      f.inbox,
+      f.checkpoint,
+      policy,
+      f.keys.publicKey,
+      true,
+      {
+        async advance(candidate) {
+          advances++;
+          assert.equal(candidate.sourceRevision, 8);
+          assert.equal(candidate.hostApprovalRevision, 3);
+        },
+      },
     );
     assert.deepEqual(sources, [source]);
     assert.equal(advances, 1);
