@@ -85,14 +85,17 @@ export function createSeparatedFeedConsumer(
       };
       const startedAt = now();
       assertGatedFeedDelivery(env, delivery, startedAt);
-      const context = await openContext();
+      let context: TrustedFeedContext | undefined;
       try {
+        context = await openContext();
         const contract = createDormantFeedQueueContract(env, context.scheduler, processingQueue);
         return await contract.process(delivery, startedAt);
       } catch {
         throw new Error("Separated feed job refused or failed");
       } finally {
-        await context.close();
+        await context?.close().catch(() => {
+          throw new Error("Separated feed context cleanup failed");
+        });
       }
     },
     {
