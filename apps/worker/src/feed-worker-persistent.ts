@@ -29,9 +29,7 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     });
     consumer.worker.on("failed", () => {
       consecutiveFailures++;
-      console.error(
-        JSON.stringify({ event: "feed_consumer_job_failed", consecutiveFailures }),
-      );
+      console.error(JSON.stringify({ event: "feed_consumer_job_failed", consecutiveFailures }));
       if (consecutiveFailures >= 3) controller.abort();
     });
     consumer.worker.on("stalled", () => {
