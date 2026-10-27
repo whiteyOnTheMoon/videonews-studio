@@ -92,7 +92,10 @@ export function verifySignedFeedOverlay(data) {
   must(!mountTargets("feed-scheduler").includes(signer), "scheduler has signer key");
   must(!mountTargets("feed-producer").includes(signer), "producer has signer key");
   must(!mountTargets("feed-consumer").includes(signer), "consumer has signer key");
-  must(!mountTargets("feed-producer").some((x) => x.includes("db_password") || x.includes("anchor")), "producer received DB or anchor secret");
+  must(
+    !mountTargets("feed-producer").some((x) => x.includes("db_password") || x.includes("anchor")),
+    "producer received DB or anchor secret",
+  );
   assert.deepEqual(mountTargets("source-handoff-import"), [
     "/var/lib/vns/source-handoff",
     "/var/lib/vns/feed-source-inbox",
@@ -155,13 +158,22 @@ export function verifySignedFeedOverlay(data) {
   for (const flag of ["VNS_FEED_RUNTIME_ENABLED", "VNS_FEED_SOURCE_ANCHOR_APPROVED"]) {
     assert.equal(scheduler.environment[flag], observer.environment[flag]);
   }
-  for (const [role, service] of [["producer", producer], ["consumer", consumer]]) {
+  for (const [role, service] of [
+    ["producer", producer],
+    ["consumer", consumer],
+  ]) {
     const prefix = role === "producer" ? "VNS_FEED_SEPARATE_PRODUCER" : "VNS_FEED_SEPARATE_WORKER";
     assert.equal(service.environment[prefix + "_ENABLED"], "${" + prefix + "_ENABLED:-false}");
-    assert.equal(service.environment[prefix + "_OPERATOR_ACK"], "${" + prefix + "_OPERATOR_ACK:-false}");
+    assert.equal(
+      service.environment[prefix + "_OPERATOR_ACK"],
+      "${" + prefix + "_OPERATOR_ACK:-false}",
+    );
     assert.equal(service.environment.VNS_FEED_SOURCE_BOOTSTRAP, "false");
   }
-  must(!observer.secrets && !scheduler.secrets && !consumer.secrets && !producer.secrets, "unexpected runtime secrets");
+  must(
+    !observer.secrets && !scheduler.secrets && !consumer.secrets && !producer.secrets,
+    "unexpected runtime secrets",
+  );
   return true;
 }
 
@@ -204,7 +216,9 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
       copy.services["feed-scheduler"].ports = ["443:443"];
     },
     (copy) => {
-      copy.services["feed-producer"].volumes.push(structuredClone(copy.services["feed-consumer"].volumes[2]));
+      copy.services["feed-producer"].volumes.push(
+        structuredClone(copy.services["feed-consumer"].volumes[2]),
+      );
     },
     (copy) => {
       copy.services["feed-consumer"].environment.VNS_FEED_SEPARATE_WORKER_ENABLED = "true";
