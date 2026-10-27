@@ -357,10 +357,20 @@ test("redacted story audit refuses unsafe references, unapproved fields and stal
     assert.equal(reply.status, 400);
   }
   assert.equal(state.opened, 0);
-  assert.equal((await serve(
-    state.handler, "/admin/editorial-timeline", "POST", base, "https://forged.example",
-  )).status, 403);
-  assert.equal((await serve(
-    setup(true).handler, "/admin/editorial-timeline", "POST", base,
-  )).status, 403);
+  assert.equal(
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-timeline",
+        "POST",
+        base,
+        "https://forged.example",
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-timeline", "POST", base)).status,
+    403,
+  );
 });
