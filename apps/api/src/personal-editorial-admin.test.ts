@@ -69,8 +69,10 @@ function setup(mismatch = false, enabled = true) {
       if (sqlText.includes("named_profile_read")) {
         return { rows: [{ revision: "0", profiles: [] }] };
       }
-      if (sqlText.includes("named_profile_commit") ||
-          sqlText.includes("named_append_editorial_checkpoint")) {
+      if (
+        sqlText.includes("named_profile_commit") ||
+        sqlText.includes("named_append_editorial_checkpoint")
+      ) {
         return { rows: [{ saved: true }] };
       }
       return { rows: [] };
@@ -267,17 +269,26 @@ test("checkpoint command rejects forged identity, non-revisioned data and origin
   ]) {
     assert.equal(validateNamedCheckpointWrite({ ...payload, ...delta }), null);
     assert.equal(
-      (await serve(state.handler, "/admin/editorial-checkpoints", "POST", {
-        ...payload,
-        ...delta,
-      })).status,
+      (
+        await serve(state.handler, "/admin/editorial-checkpoints", "POST", {
+          ...payload,
+          ...delta,
+        })
+      ).status,
       400,
     );
   }
   assert.equal(state.opened, 0);
   assert.equal(
-    (await serve(state.handler, "/admin/editorial-checkpoints", "POST", payload,
-      "https://attacker.example")).status,
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-checkpoints",
+        "POST",
+        payload,
+        "https://attacker.example",
+      )
+    ).status,
     403,
   );
   assert.equal(state.opened, 0);
