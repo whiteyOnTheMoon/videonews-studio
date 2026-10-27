@@ -142,7 +142,12 @@ export function validateNamedCheckpointWrite(raw: unknown): NamedCheckpointWrite
 }
 
 const TIMELINE_KINDS = [
-  "source", "claim", "claim_rejected", "review", "script_revision", "decision",
+  "source",
+  "claim",
+  "claim_rejected",
+  "review",
+  "script_revision",
+  "decision",
 ] as const;
 const HTTPS_REFERENCE = /^https:\/\/[a-z0-9.-]+(?::443)?\/[a-zA-Z0-9/._~-]*$/;
 export interface NamedTimelineWrite {
@@ -156,8 +161,7 @@ export interface NamedTimelineWrite {
 export function validateNamedTimelineWrite(raw: unknown): NamedTimelineWrite | null {
   if (
     !object(raw) ||
-    Object.keys(raw).sort().join(",") !==
-      "details,documentSha256,eventKind,referenceUri,storyId" ||
+    Object.keys(raw).sort().join(",") !== "details,documentSha256,eventKind,referenceUri,storyId" ||
     typeof raw.storyId !== "string" ||
     !UUID.test(raw.storyId) ||
     !TIMELINE_KINDS.includes(raw.eventKind as (typeof TIMELINE_KINDS)[number]) ||
@@ -177,7 +181,8 @@ export function validateNamedTimelineWrite(raw: unknown): NamedTimelineWrite | n
     raw.details.reasonCodes.length < 1 ||
     raw.details.reasonCodes.length > 20 ||
     raw.details.reasonCodes.some((x: unknown) => typeof x !== "string" || !REASON_CODE.test(x))
-  ) return null;
+  )
+    return null;
   return raw as unknown as NamedTimelineWrite;
 }
 
@@ -249,9 +254,7 @@ export class DormantPersonalEditorialAdmin {
       respond(res, 404, { error: "not_found" });
       return true;
     }
-    if (
-      !["GET", "POST"].includes(req.method ?? "")
-    ) {
+    if (!["GET", "POST"].includes(req.method ?? "")) {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
     }
