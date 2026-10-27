@@ -23,14 +23,6 @@ jobs:
           node-version: "22"
       - name: Verify read-only Stage-A inventory with synthetic host and Docker states
         run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
-      - name: Review exact Markdown formatting patch
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write docs/P1-07_BACKUP_DECISION_BRIEF.md docs/P1-07_RECOVERY_RUNBOOK.md docs/P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md docs/P2-02_STAGE_A_READ_ONLY_VPS_AUDIT.md
-          echo '===VNS_IONOS_FORMAT_START==='
-          git diff --no-color -- docs/P1-07_BACKUP_DECISION_BRIEF.md docs/P1-07_RECOVERY_RUNBOOK.md docs/P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md docs/P2-02_STAGE_A_READ_ONLY_VPS_AUDIT.md
-          echo '===VNS_IONOS_FORMAT_END==='
-          git diff --exit-code -- docs/P1-07_BACKUP_DECISION_BRIEF.md docs/P1-07_RECOVERY_RUNBOOK.md docs/P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md docs/P2-02_STAGE_A_READ_ONLY_VPS_AUDIT.md
       - name: Run fail-closed manifest tests
         run: node --test scripts/test_p2_rollout_gate.mjs
       - name: Assert missing evidence blocks review
