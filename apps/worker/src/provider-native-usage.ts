@@ -100,7 +100,9 @@ export function extractNativeTextUsage(
       row.model !== expectedModel ||
       row.error !== null ||
       row.incomplete_details !== null
-    ) invalid();
+    ) {
+      invalid();
+    }
     responseId = row.id as string;
     const usage = object(row.usage);
     input = tokens(usage.input_tokens);
@@ -125,7 +127,9 @@ export function extractNativeTextUsage(
       candidates.length < 1 ||
       candidates.length > 8 ||
       !candidates.every((candidate) => object(candidate).finishReason === "STOP")
-    ) invalid();
+    ) {
+      invalid();
+    }
     if (row.promptFeedback !== undefined) {
       const blocked = object(row.promptFeedback).blockReason;
       if (blocked !== undefined && blocked !== "BLOCK_REASON_UNSPECIFIED") invalid();

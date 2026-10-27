@@ -47,11 +47,14 @@ test("OpenAI Responses usage: cached and reasoning tokens stay within reported t
     persistent: false,
     approvedForPayment: false,
   });
-  assert.ok(Object.isFrozen(extractNativeTextUsage("openai", "operator-chosen-model", openaiFixture)));
+  assert.ok(
+    Object.isFrozen(extractNativeTextUsage("openai", "operator-chosen-model", openaiFixture)),
+  );
 });
 
 test("Gemini usage: thinking tokens add to candidate output and cached prompt is included", () => {
   assert.deepEqual(extractNativeTextUsage("google_gemini", "operator-chosen-gemini", geminiFixture), {
+
     provider: "google_gemini",
     model: "operator-chosen-gemini",
     responseId: "gemini_native_response_01",
@@ -145,8 +148,14 @@ test("Gemini blocks incomplete, non-text, tool, malformed usage and mismatched m
 
 test("invalid model, response IDs and unexpected provider cannot be admitted", () => {
   assert.throws(() => extractNativeTextUsage("openai", "../../bad", openaiFixture));
-  assert.throws(() => extractNativeTextUsage("unknown" as never, "operator-chosen-model", openaiFixture));
+  assert.throws(() =>
+    extractNativeTextUsage("unknown" as never, "operator-chosen-model", openaiFixture),
+  );
   assert.throws(
-    () => extractNativeTextUsage("openai", "operator-chosen-model", { ...openaiFixture, id: "resp\nfake" }),
+    () =>
+      extractNativeTextUsage("openai", "operator-chosen-model", {
+        ...openaiFixture,
+        id: "resp\nfake",
+      }),
   );
 });
