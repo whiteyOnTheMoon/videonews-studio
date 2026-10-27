@@ -1,3 +1,5 @@
+> **Betreiberentscheidungen vom 27.10.2026:** Kein kostenpflichtiger GitHub-Branchschutz (#2 ist als manuelle Governance-Ausnahme akzeptiert); das bestehende Beszel gilt als ausreichendes allgemeines P1-Monitoring (#229, kein separater P1-Alarmtest). Für neue P2-Feed-Dienste bleiben anwendungsbezogene Betriebsbeobachtung und technische Integrationsabnahme nötig. Frühere Passagen, die die Entscheidung zu kostenpflichtigem Schutz oder generelles Beszel erneut als P1-Sperre behandeln, sind insoweit überholt. Siehe [P1-Betreiberentscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).
+
 # Phase 2 — Offline acceptance and rollout preparation
 
 **Operator update 2026-10-27:** Recurring backups by IONOS and normal operation
