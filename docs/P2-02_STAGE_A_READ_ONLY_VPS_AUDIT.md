@@ -49,7 +49,7 @@ Das Skript ändert nichts. Ausgabe JSON mit `stage_a_readiness` (`reviewable` od
 ## Nach dem echten Stage-A-Bericht
 
 1. Vergleich des VPS-Commits und aller beobachteten Container mit dem beabsichtigten Release; prüfen, ob mehrere konkurrierende Feed-Producer laufen und ob Feed-Container Host-Ports veröffentlicht haben. Bei abweichendem SHA nicht einfach den produktiven Code aktualisieren.
-2. **Außerhalb dieses automatischen Berichts:** unabhängige Freigabe von 3–5 Quellen samt Lizenzen und erlaubten Intervallen; Signatur-/Anker-Vertrauen und persönliche DB-Identitäten. Bestehender `p2_feed_host_preflight.py` kontrolliert ausschließlich *Metadaten* mit separat bereitgestellter Konfiguration und dokumentierter Lesefreigabe.
+2. **Außerhalb dieses automatischen Berichts:** unabhängige Freigabe von 3–5 Quellen samt Lizenzen und erlaubten Intervallen; Signatur-/Anker-Vertrauen und persönliche DB-Identitäten. Bestehender `p2_feed_host_preflight.py` kontrolliert ausschließlich _Metadaten_ mit separat bereitgestellter Konfiguration und dokumentierter Lesefreigabe.
 3. Offsite-Backup und tatsächlich restaurierte PostgreSQL-/Redis-/Quellen-Daten unabhängig prüfen; Beleg und RPO/RTO dokumentieren.
 4. Beszel-Betrieb und Notification-Empfang über den vorhandenen Hub durch den Betreiber persönlich prüfen. Ein sichtbares `healthy` ist **keine** nachgewiesene Alarmzustellung.
 5. Erst nach expliziter, neuer Freigabe für **konkreten SHA, Host, Image-Digests und Quellen** eine inaktive Canary-Stufe und anschließend kontrollierte Einmalbeobachtung durchführen. Rollback muss vorher nachgewiesen sein.

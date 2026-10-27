@@ -1,5 +1,7 @@
 # P2-02 continuous feed operations — production acceptance runbook
 
+**2026-10-27 operator update:** Recurring IONOS backups and functioning Beszel monitoring are reported. Reuse these existing services, do not set up duplicate backup/alert infrastructure. Product type/backup coverage, isolated restore, and the specific future feed container alerts are not yet demonstrated. See [IONOS/Beszel acceptance](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+
 **Release status: NOT DEPLOYED / NOT OPERATIONALLY ACCEPTED.** This implementation provides an opt-in runtime and disposable-CI verification, not evidence of licensed real feed access, independent signing-key custody, live restore or Beszel alarm delivery. No VPS changes, scheduled restart, source access or paid provider use are authorized by this document.
 
 ## Components and boundaries

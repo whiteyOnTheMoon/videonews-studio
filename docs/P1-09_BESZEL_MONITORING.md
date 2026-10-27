@@ -1,5 +1,12 @@
 # P1-09 — Zentrales VPS-Monitoring mit Beszel
 
+**Aktualisierung 2026-10-27:** Der Betreiber bestätigt erneut, dass Beszel
+ordnungsgemäß funktioniert. Damit ist Beszel weiterhin die vorgesehene
+Überwachung; es wird kein zweiter Monitoring-/Alarmdienst eingeführt.
+Diese Betreiberbestätigung ersetzt allerdings noch keinen beobachteten
+P2-02-spezifischen Alarm für die aktuell deaktivierten Feed-Producer-/Consumer-
+Container. Siehe [P2-02 IONOS/Beszel-Abnahme](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+
 **Entscheidung 2026-10-25:** Der Betreiber hat bestätigt, dass Beszel bereits
 serverweit genutzt wird und Benachrichtigungen erhält. Für VideoNews Studio
 werden daher **keine zusätzlichen eigenen Festplatten-Timer, E-Mail- oder

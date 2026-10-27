@@ -1,5 +1,7 @@
 # P1-07 — Operator decision: no backups and read-only VPS preflight (2026-10-24)
 
+> **Historical decision, superseded on 2026-10-27:** The operator now reports regular IONOS backups and functioning Beszel monitoring. This old no-backup decision is retained for audit chronology, not as current backup policy. IONOS coverage and a completed isolated restore remain unverified. See [P2-02 IONOS/Beszel acceptance](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+
 **Decision status:** Operator chooses **no backups** and **zero backup budget**. The operator is willing to **consider a separate production authorization despite the lack of backups**, but has **not granted activation approval**. The operator authorized drafting commands for a **manually executed, read-only VPS inspection** only.
 
 This is **not** evidence that the recovery gates in [the machine-readable recovery plan](p1-07-recovery-plan.json) have passed. Leave all twelve gates false and all `data`, `worker`, and `ingress` production profiles disabled. The existing [recovery runbook](P1-07_RECOVERY_RUNBOOK.md) remains the baseline for any future fully recoverable production acceptance.
