@@ -76,3 +76,23 @@ test("future approval, invalid calendar date and URLs with credentials fail clos
 test("invalid evaluation clock cannot silently bypass timestamp checks", () => {
   assert.throws(() => evaluateRolloutEvidence(sample(), { now: new Date("invalid") }), /clock/);
 });
+
+test("operator-reported IONOS backups and Beszel functionality are not restore or feed alert proof", () => {
+  const manifest = sample();
+  for (const requirement of ["postgres_restore", "redis_recovery", "alert_delivery"]) {
+    manifest.evidence[requirement] = {
+      ...manifest.evidence[requirement],
+      status: "operator_reported",
+    };
+  }
+  const result = evaluateRolloutEvidence(manifest, {
+    expectedSha: "a".repeat(40),
+    now: new Date("2026-10-27T12:00:00Z"),
+  });
+  assert.equal(result.readyForOperatorReview, false);
+  assert.deepEqual(result.missingOrInvalid, [
+    "postgres_restore",
+    "redis_recovery",
+    "alert_delivery",
+  ]);
+});
