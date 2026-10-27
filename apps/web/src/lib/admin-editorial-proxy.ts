@@ -112,7 +112,7 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
         typeof input.details.summary !== "string" ||
         input.details.summary.length < 8 ||
         input.details.summary.length > 2000 ||
-        /[\u0000-\u001f]/.test(input.details.summary) ||
+        [...input.details.summary].some((char: string) => char.charCodeAt(0) < 32) ||
         !Array.isArray(input.details.reasonCodes) ||
         input.details.reasonCodes.length < 1 ||
         input.details.reasonCodes.length > 20 ||
