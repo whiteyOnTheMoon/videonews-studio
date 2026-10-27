@@ -4,6 +4,7 @@ import type { AdminAuth } from "./auth.js";
 import type { AdminJobs } from "./admin-jobs.js";
 import type { EditorAuth } from "./editor-auth.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
+import { NamedProviderRequestRuntime } from "./named-provider-runtime.js";
 import { DormantNamedSourceAdmin } from "./admin-source-registry.js";
 import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
 import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
@@ -13,7 +14,7 @@ export function createApiServer(
     auth?: AdminAuth;
     jobs?: AdminJobs;
     editor?: EditorAuth;
-    providerConfig?: NamedAdminProviderConfiguration;
+    providerConfig?: NamedAdminProviderConfiguration | NamedProviderRequestRuntime;
     sourceRegistry?: DormantNamedSourceAdmin;
     hostApprovals?: DormantNamedHostApproval;
     personalEditorial?: DormantPersonalEditorialAdmin;
@@ -24,7 +25,8 @@ export function createApiServer(
     throw new Error("Provider configuration requires authentication");
   if (
     options.providerConfig &&
-    !(options.providerConfig instanceof NamedAdminProviderConfiguration)
+    !(options.providerConfig instanceof NamedAdminProviderConfiguration) &&
+    !(options.providerConfig instanceof NamedProviderRequestRuntime)
   )
     throw new Error("Legacy provider configuration is forbidden");
   if (options.providerConfig && !options.editor)
