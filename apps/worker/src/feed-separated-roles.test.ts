@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Redis } from "ioredis";
-import { createGatedFeedSlotEnqueuer, ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
+import {
+  assertGatedFeedDelivery,
+  createGatedFeedSlotEnqueuer,
+  ISOLATED_FEED_QUEUE,
+} from "./feed-queue-contract.js";
 import {
   requireSeparatedFeedGate,
   createSeparatedFeedProducer,
@@ -133,4 +137,27 @@ test("queue-only producer preserves fixed slot deduplication and never needs sou
   }
   assert.throws(() => createGatedFeedSlotEnqueuer(gates, { ...queue, name: "vns-jobs" }));
   await assert.rejects(enqueue(new Date("invalid")), /clock invalid/);
+});
+
+test("consumer denies forged or stale Redis deliveries before protected context opens", () => {
+  const gates = {
+    VNS_FEED_QUEUE_CONTRACT_ENABLED: "true",
+    VNS_FEED_QUEUE_OPERATOR_ACK: "true",
+    VNS_FEED_OFFLINE_COMPOSITION_ENABLED: "true",
+    VNS_FEED_OFFLINE_OPERATOR_ACK: "true",
+    VNS_FEED_QUEUE_NAME: ISOLATED_FEED_QUEUE,
+  };
+  const now = new Date("2026-10-26T12:00:00Z");
+  const slot = Math.floor(now.getTime() / 900000);
+  const valid = {
+    id: "vns-feed-tick-" + slot,
+    name: "feed-tick",
+    queueName: ISOLATED_FEED_QUEUE,
+    data: { kind: "feed-tick", slot },
+  };
+  assert.doesNotThrow(() => assertGatedFeedDelivery(gates, valid, now));
+  assert.throws(() => assertGatedFeedDelivery(gates, { ...valid, id: "arbitrary" }, now));
+  assert.throws(() => assertGatedFeedDelivery(gates, { ...valid, data: { ...valid.data, url: "https://evil.invalid" } }, now));
+  assert.throws(() => assertGatedFeedDelivery(gates, valid, new Date(now.getTime() + 31 * 60000)));
+  assert.throws(() => assertGatedFeedDelivery({}, valid, now));
 });
