@@ -157,7 +157,13 @@ test("consumer denies forged or stale Redis deliveries before protected context 
   };
   assert.doesNotThrow(() => assertGatedFeedDelivery(gates, valid, now));
   assert.throws(() => assertGatedFeedDelivery(gates, { ...valid, id: "arbitrary" }, now));
-  assert.throws(() => assertGatedFeedDelivery(gates, { ...valid, data: { ...valid.data, url: "https://evil.invalid" } }, now));
+  assert.throws(() =>
+    assertGatedFeedDelivery(
+      gates,
+      { ...valid, data: { ...valid.data, url: "https://evil.invalid" } },
+      now,
+    ),
+  );
   assert.throws(() => assertGatedFeedDelivery(gates, valid, new Date(now.getTime() + 31 * 60000)));
   assert.throws(() => assertGatedFeedDelivery({}, valid, now));
 });
