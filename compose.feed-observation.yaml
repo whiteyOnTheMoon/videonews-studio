@@ -1,8 +1,104 @@
-# Optional overlay. Never included by the default docker compose command.
-# Operator MUST use both --profile data and --profile feed-observation.
-# A successful build DOES NOT authorize contacting real news sources.
+# Optional overlays only; never included by the default docker compose command.
+# Nothing starts without explicit profiles. All process admission flags default false.
+# Host bind paths MUST already exist with approved numeric UID/GID and ACLs.
+# No private signing key is ever mounted in importer/observer.
+x-feed-locked: &feed-locked
+  init: true
+  restart: "no"
+  read_only: true
+  user: "10002:10002"
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 64
+  mem_limit: 192m
+  memswap_limit: 192m
+  cpus: 0.25
+  tmpfs:
+    - /tmp:rw,nosuid,noexec,size=16m
+
 services:
+  # Source signing occurs under its own UID, on the internal DB network only.
+  source-publisher:
+    <<: *feed-locked
+    profiles: [source-signing]
+    user: "10001:10001"
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    entrypoint: ["node", "apps/worker/dist/feed-source-publish-once.js", "--once"]
+    environment:
+      NODE_ENV: production
+      VNS_SOURCE_PUBLISHER_ENABLED: "${VNS_SOURCE_PUBLISHER_ENABLED:-false}"
+      VNS_SOURCE_PUBLISHER_OPERATOR_ACK: "${VNS_SOURCE_PUBLISHER_OPERATOR_ACK:-false}"
+      VNS_SOURCE_PUBLISHER_RIGHTS_ATTESTED: "${VNS_SOURCE_PUBLISHER_RIGHTS_ATTESTED:-false}"
+      VNS_SOURCE_PUBLISHER_MODE: "${VNS_SOURCE_PUBLISHER_MODE:-disabled}"
+      VNS_SOURCE_EXPORT_DB_HOST: postgres
+      VNS_SOURCE_EXPORT_DB_USER: "${VNS_SOURCE_EXPORT_DB_USER:-}"
+      VNS_SOURCE_EXPORT_DB_PASSWORD_FILE: /run/secrets/vns_source_export_db_password
+      VNS_SOURCE_EXPORT_SIGNING_KEY_FILE: /run/secrets/vns_source_export_signing_key
+      VNS_SOURCE_EXPORT_DIRECTORY: /var/lib/vns/source-publisher
+      VNS_SOURCE_EXPORT_APPROVED_HOSTS: "${VNS_SOURCE_EXPORT_APPROVED_HOSTS:-}"
+    volumes:
+      - type: bind
+        source: ${VNS_P2_PUBLISHER_DIR:?Source publisher dir not provisioned}
+        target: /var/lib/vns/source-publisher
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_SIGNER_DB_PASSWORD_FILE:?Publisher DB password not provisioned}
+        target: /run/secrets/vns_source_export_db_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_PRIVATE_SIGNING_KEY_FILE:?Ed25519 signing key not provisioned}
+        target: /run/secrets/vns_source_export_signing_key
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+
+  # Does not connect to ANY network. Receives no PostgreSQL/Redis credentials.
+  source-handoff-import:
+    <<: *feed-locked
+    profiles: [source-handoff]
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    entrypoint: ["node", "apps/worker/dist/source-handoff-import-once.js", "--once"]
+    network_mode: "none"
+    environment:
+      NODE_ENV: production
+      VNS_SOURCE_HANDOFF_ENABLED: "${VNS_SOURCE_HANDOFF_ENABLED:-false}"
+      VNS_SOURCE_HANDOFF_OPERATOR_ACK: "${VNS_SOURCE_HANDOFF_OPERATOR_ACK:-false}"
+      VNS_SOURCE_HANDOFF_MODE: "${VNS_SOURCE_HANDOFF_MODE:-disabled}"
+      VNS_SOURCE_HANDOFF_STAGING: /var/lib/vns/source-handoff
+      VNS_FEED_SIGNED_SOURCE_INBOX: /var/lib/vns/feed-source-inbox
+      VNS_FEED_SOURCE_PUBLIC_KEY_FILE: /run/secrets/vns_feed_source_public_key
+      VNS_SOURCE_FETCH_ENABLED: "${VNS_SOURCE_FETCH_ENABLED:-false}"
+      VNS_ALLOWED_SOURCE_HOSTS: "${VNS_ALLOWED_SOURCE_HOSTS:-}"
+    volumes:
+      - type: bind
+        source: ${VNS_P2_HANDOFF_STAGING_DIR:?Signed handoff staging not provisioned}
+        target: /var/lib/vns/source-handoff
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_WORKER_INBOX_DIR:?Private worker inbox not provisioned}
+        target: /var/lib/vns/feed-source-inbox
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_PINNED_PUBLIC_KEY_FILE:?Pinned Ed25519 public key not provisioned}
+        target: /run/secrets/vns_feed_source_public_key
+        read_only: true
+        bind: { create_host_path: false }
+
+  # Existing one-shot feed bridge, now with signed inbox and remote anchor.
   feed-observer:
+    <<: *feed-locked
     profiles: [feed-observation]
     image: vns-worker:local
     build:
@@ -10,27 +106,10 @@ services:
       dockerfile: Dockerfile
       target: worker
     entrypoint: ["node", "apps/worker/dist/feed-observe-once.js", "--once"]
-    restart: "no"
-    init: true
-    read_only: true
-    user: node
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
-    pids_limit: 96
     mem_limit: 384m
     memswap_limit: 384m
     cpus: 0.50
-    tmpfs:
-      - /tmp:rw,nosuid,noexec,size=16m
-    secrets:
-      - vns_feed_db_password
-      - vns_feed_redis_password
-      - reviewed_research_sources
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    pids_limit: 96
     environment:
       NODE_ENV: production
       VNS_FEED_RUNTIME_ENABLED: "${VNS_FEED_RUNTIME_ENABLED:-false}"
@@ -44,29 +123,67 @@ services:
       VNS_FEED_QUEUE_OPERATOR_ACK: "${VNS_FEED_QUEUE_OPERATOR_ACK:-false}"
       VNS_FEED_BULLMQ_BRIDGE_ENABLED: "${VNS_FEED_BULLMQ_BRIDGE_ENABLED:-false}"
       VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK: "${VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK:-false}"
+      VNS_FEED_SIGNED_EXPORT_ENABLED: "${VNS_FEED_SIGNED_EXPORT_ENABLED:-false}"
+      VNS_FEED_SOURCE_ANCHOR_APPROVED: "${VNS_FEED_SOURCE_ANCHOR_APPROVED:-false}"
+      VNS_FEED_SOURCE_BOOTSTRAP: "${VNS_FEED_SOURCE_BOOTSTRAP:-false}"
+      VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK: "${VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK:-false}"
+      VNS_FEED_SOURCE_ANCHOR_HOST: "${VNS_FEED_SOURCE_ANCHOR_HOST:-}"
+      VNS_FEED_SOURCE_ANCHOR_USER: "${VNS_FEED_SOURCE_ANCHOR_USER:-}"
       VNS_SOURCE_FETCH_ENABLED: "${VNS_SOURCE_FETCH_ENABLED:-false}"
       VNS_ALLOWED_SOURCE_HOSTS: "${VNS_ALLOWED_SOURCE_HOSTS:-}"
       VNS_FEED_QUEUE_NAME: vns-feed-poll
       VNS_FEED_REGISTRY_FILE: /run/secrets/reviewed_research_sources.json
+      VNS_FEED_SIGNED_SOURCE_INBOX: /var/lib/vns/feed-source-inbox
+      VNS_FEED_SOURCE_CHECKPOINT_DIR: /var/lib/vns/feed-source-checkpoint
+      VNS_FEED_SOURCE_PUBLIC_KEY_FILE: /run/secrets/vns_feed_source_public_key
+      VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE: /run/secrets/vns_feed_source_anchor_password
+      VNS_FEED_SOURCE_ANCHOR_CA_FILE: /run/secrets/vns_feed_source_anchor_ca
       VNS_FEED_DB_PASSWORD_FILE: /run/secrets/vns_feed_db_password
       VNS_FEED_REDIS_PASSWORD_FILE: /run/secrets/vns_feed_redis_password
       VNS_FEED_DB_HOST: postgres
       VNS_FEED_REDIS_HOST: redis
       VNS_FEED_DB_USER: "${VNS_FEED_DB_USER:-}"
       VNS_FEED_REDIS_USER: "${VNS_FEED_REDIS_USER:-}"
-    networks:
-      - backend
-      - feed_egress
+    volumes:
+      - type: bind
+        source: ${VNS_P2_WORKER_INBOX_DIR:?Private worker inbox not provisioned}
+        target: /var/lib/vns/feed-source-inbox
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_WORKER_CHECKPOINT_DIR:?Worker checkpoint not provisioned}
+        target: /var/lib/vns/feed-source-checkpoint
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_PINNED_PUBLIC_KEY_FILE:?Pinned Ed25519 public key not provisioned}
+        target: /run/secrets/vns_feed_source_public_key
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_ANCHOR_DB_PASSWORD_FILE:?Anchor login password not provisioned}
+        target: /run/secrets/vns_feed_source_anchor_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_ANCHOR_CA_FILE:?Anchor TLS CA not provisioned}
+        target: /run/secrets/vns_feed_source_anchor_ca
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_FEED_DB_PASSWORD_FILE:?Feed DB password not provisioned}
+        target: /run/secrets/vns_feed_db_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_FEED_REDIS_PASSWORD_FILE:?Feed Redis password not provisioned}
+        target: /run/secrets/vns_feed_redis_password
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [backend, feed_egress]
 
-# Separate egress network is needed because the regular backend is internal.
-# Only the dedicated feed observer connects here; no ports are published.
+# Only the feed observer is connected to this explicit egress network.
 networks:
   feed_egress: {}
-
-secrets:
-  vns_feed_db_password:
-    file: ./secrets/vns_feed_db_password
-  vns_feed_redis_password:
-    file: ./secrets/vns_feed_redis_password
-  reviewed_research_sources:
-    file: ./secrets/reviewed_research_sources.json
