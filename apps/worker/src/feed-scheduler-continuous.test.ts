@@ -94,7 +94,8 @@ test("all continuous safety gates and explicit operator limits fail closed", () 
     { VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS: "10" },
     { VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES: "30" },
     { VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT: "4" },
-  ]) assert.throws(() => readContinuousFeedPolicy({ ...env, ...change }));
+  ])
+    assert.throws(() => readContinuousFeedPolicy({ ...env, ...change }));
 });
 
 test("monitor rejects failed jobs, paused queues, unbounded or stale backlog", () => {
@@ -191,13 +192,17 @@ test("consumer watchdog requires its own independently approved bounded timeout"
   };
   assert.equal(readFeedConsumerWatchdogSeconds(worker), 180);
   for (const value of ["0", "29", "601", "9999", "unbounded", ""]) {
-    assert.throws(() => readFeedConsumerWatchdogSeconds({
-      ...worker,
-      VNS_FEED_CONSUMER_MAX_JOB_SECONDS: value,
-    }));
+    assert.throws(() =>
+      readFeedConsumerWatchdogSeconds({
+        ...worker,
+        VNS_FEED_CONSUMER_MAX_JOB_SECONDS: value,
+      }),
+    );
   }
-  assert.throws(() => readFeedConsumerWatchdogSeconds({
-    ...worker,
-    VNS_FEED_SEPARATE_WORKER_ENABLED: "false",
-  }));
+  assert.throws(() =>
+    readFeedConsumerWatchdogSeconds({
+      ...worker,
+      VNS_FEED_SEPARATE_WORKER_ENABLED: "false",
+    }),
+  );
 });
