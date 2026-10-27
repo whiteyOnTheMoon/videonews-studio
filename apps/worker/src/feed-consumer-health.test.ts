@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  chmodSync,
-  linkSync,
-  mkdtempSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, linkSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -50,8 +43,14 @@ test("private, atomic heartbeat reports real process readiness and failure count
 test("stale/future health never reports healthy", () => {
   fixture((path) => {
     publishFeedConsumerHealth(record, path);
-    assert.equal(checkFeedConsumerHealth(path, record.at + FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS, () => true), true);
-    assert.equal(checkFeedConsumerHealth(path, record.at + FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS + 1, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at + FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS, () => true),
+      true,
+    );
+    assert.equal(
+      checkFeedConsumerHealth(path, record.at + FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS + 1, () => true),
+      false,
+    );
     assert.equal(checkFeedConsumerHealth(path, record.at - 1, () => true), false);
     assert.equal(checkFeedConsumerHealth(path, -1, () => true), false);
   });
@@ -84,10 +83,15 @@ test("invalid writer records and path traversal are rejected before any file mut
       { ...record, at: NaN },
       { ...record, unsupported: "yes" },
     ]) {
-      assert.throws(() => publishFeedConsumerHealth(candidate as FeedConsumerHealthRecord, path));
+      assert.throws(() =>
+        publishFeedConsumerHealth(candidate as FeedConsumerHealthRecord, path),
+      );
     }
     assert.throws(() => publishFeedConsumerHealth(record, "/tmp/../run/secrets/pwn"));
-    assert.equal(checkFeedConsumerHealth("/tmp/../run/secrets/pwn", record.at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth("/tmp/../run/secrets/pwn", record.at, () => true),
+      false,
+    );
     assert.equal(checkFeedConsumerHealth(path, record.at, () => true), false);
   });
 });
