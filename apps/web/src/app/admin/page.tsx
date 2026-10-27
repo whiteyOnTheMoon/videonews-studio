@@ -35,8 +35,8 @@ export default async function AdminPage() {
       <span className="eyebrow">P1 · Internal admin preview</span>
       <h1>Admin-Bereich</h1>
       <p>
-        Anmeldung bestätigt. Diese geschützte Vorschauseite enthält noch keine produktiven
-        Redaktionsfunktionen und veröffentlicht keine Inhalte.
+        Anmeldung bestätigt. Redaktionelle Prüf- und Konfigurationsfunktionen werden
+        einzeln freigeschaltet und veröffentlichen keine Inhalte.
       </p>
       <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
       <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
