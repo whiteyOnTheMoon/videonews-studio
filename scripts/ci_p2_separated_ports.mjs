@@ -118,7 +118,7 @@ test(
           "+@all",
           "-@admin",
           "-@dangerous",
-        "+info",
+          "+info",
         );
       }
       producerRedis = new Redis({
