@@ -77,8 +77,16 @@ async function seedReviewedSyntheticSources(dba) {
       `SELECT vns.admin_commit_source_registry(
         $1::bigint,$2::bigint,$3::jsonb,$4::text,$5::text,
         $6::uuid,$7::integer,$8::timestamptz) AS saved`,
-      [revision, revision + 1, JSON.stringify(snapshot), source.id,
-        "create_pending", sourceActor, 0, recordedAt],
+      [
+        revision,
+        revision + 1,
+        JSON.stringify(snapshot),
+        source.id,
+        "create_pending",
+        sourceActor,
+        0,
+        recordedAt,
+      ],
     );
     assert.equal(result.rows[0]?.saved, true);
     revision++;
@@ -87,8 +95,16 @@ async function seedReviewedSyntheticSources(dba) {
       `SELECT vns.admin_commit_source_registry(
         $1::bigint,$2::bigint,$3::jsonb,$4::text,$5::text,
         $6::uuid,$7::integer,$8::timestamptz) AS saved`,
-      [revision, revision + 1, JSON.stringify(snapshot), source.id,
-        "approve", sourceActor, 0, recordedAt],
+      [
+        revision,
+        revision + 1,
+        JSON.stringify(snapshot),
+        source.id,
+        "approve",
+        sourceActor,
+        0,
+        recordedAt,
+      ],
     );
     assert.equal(result.rows[0]?.saved, true);
     revision++;
