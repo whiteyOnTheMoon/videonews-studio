@@ -72,7 +72,8 @@ export default function EditorialTimelineEntry({ enabled }: { enabled: boolean }
       const raw: unknown = await response.json();
       if (
         !raw || typeof raw !== "object" || Array.isArray(raw) ||
-        !UUID.test((raw as Record<string, string>).eventId) ||
+        (typeof (raw as Record<string, unknown>).eventId !== "string" ||
+          !UUID.test((raw as Record<string, string>).eventId)) ||
         (raw as Record<string, unknown>).approvedForPublication !== false
       ) throw new Error("Redaktionsereignis nicht bestätigt.");
       setNotice("Redaktionsereignis revisionssicher angehängt. Keine Veröffentlichungsfreigabe.");
