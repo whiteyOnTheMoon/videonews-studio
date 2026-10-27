@@ -42,6 +42,7 @@ jobs:
       VNS_P2_ISOLATED_PORT_TEST: "true"
       VNS_P2_CI_PG_PASSWORD: ci_only_postgres_for_disposable_runner
       VNS_P2_CI_FEED_PASSWORD: ci_only_feed_for_disposable_runner
+      VNS_P2_CI_EXPORT_PASSWORD: ci_only_source_export_runner
       PGHOST: 127.0.0.1
       PGPORT: "5432"
       PGDATABASE: vns_p2_ci
@@ -73,6 +74,9 @@ jobs:
           CREATE ROLE vns_feed_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_feed_for_disposable_runner';
           GRANT vns_feed_poll_writer TO vns_feed_login_ciunit;
           GRANT USAGE ON SCHEMA vns TO vns_feed_login_ciunit;
+          CREATE ROLE vns_source_export_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_source_export_runner';
+          GRANT vns_source_export_reader TO vns_source_export_login_ciunit;
+          GRANT USAGE ON SCHEMA vns TO vns_source_export_login_ciunit;
           SQL
       - name: Verify Redis queue, PostgreSQL persistence and never-publish review
         run: node --test scripts/ci_p2_integrated_ports.mjs

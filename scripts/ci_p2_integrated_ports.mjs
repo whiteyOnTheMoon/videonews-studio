@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
@@ -20,6 +24,8 @@ import {
 import { gateOfflineClaimEvidence } from "../apps/worker/dist/offline-evidence-gate.js";
 import { assessEditorialCandidate } from "../apps/worker/dist/bounded-editorial-production.js";
 import { attestFeedDatabaseIdentity } from "../apps/worker/dist/feed-runtime-admission.js";
+import { publishApprovedAdminSourceFile } from "../apps/worker/dist/postgres-admin-source-publisher.js";
+import { acceptDormantSourceFile } from "../apps/worker/dist/source-export-files.js";
 
 if (
   process.env.GITHUB_ACTIONS !== "true" ||
@@ -148,6 +154,20 @@ test(
       max: 1,
       connectionTimeoutMillis: 5000,
     });
+    const exportSql = new Pool({
+      host: "127.0.0.1",
+      port: 5432,
+      database: "vns_p2_ci",
+      user: "vns_source_export_login_ciunit",
+      password: process.env.VNS_P2_CI_EXPORT_PASSWORD,
+      max: 1,
+      connectionTimeoutMillis: 5000,
+    });
+    const sourceStateRoot = await mkdtemp(join(tmpdir(), "vns-ci-signed-config-"));
+    const publisherDir = join(sourceStateRoot, "publisher");
+    const consumerDir = join(sourceStateRoot, "consumer");
+    await mkdir(publisherDir, { mode: 0o700 });
+    await mkdir(consumerDir, { mode: 0o700 });
     const connection = { host: "127.0.0.1", port: 6379 };
     const events = new QueueEvents(ISOLATED_FEED_QUEUE, {
       connection,
@@ -191,6 +211,35 @@ test(
     };
     try {
       await seedReviewedSyntheticSources(dba);
+      const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+      const sourcePolicy = { enabled: true, hosts: [host] };
+      const revisions = await publishApprovedAdminSourceFile(
+        exportSql,
+        publisherDir,
+        sourcePolicy,
+        privateKey,
+      );
+      assert.equal(revisions.sourceRevision, sources.length * 2);
+      assert.equal(revisions.hostApprovalRevision, 1);
+      const acceptedSources = await acceptDormantSourceFile(
+        publisherDir,
+        consumerDir,
+        sourcePolicy,
+        publicKey,
+        true,
+        {
+          async advance(candidate) {
+            // Only a simulated anchor in the disposable CI cluster.
+            // Independent production anchor admission is a separate gate.
+            assert.equal(candidate.sourceRevision, revisions.sourceRevision);
+            assert.equal(candidate.hostApprovalRevision, revisions.hostApprovalRevision);
+          },
+        },
+      );
+      assert.deepEqual(
+        acceptedSources,
+        [...sources].sort((a, b) => a.id.localeCompare(b.id)),
+      );
       await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
       await assert.rejects(
         attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"),
@@ -198,7 +247,7 @@ test(
       );
       const scheduler = createDormantFeedScheduler(env, {
         pool: sql,
-        readRegistry: () => JSON.stringify({ version: 1, sources }),
+        readRegistry: () => JSON.stringify({ version: 1, sources: acceptedSources }),
         https: {
           async resolveIPv4() {
             return ["1.1.1.1"];
@@ -329,7 +378,9 @@ test(
       await producerConnection.quit().catch(() => undefined);
       await workerConnection.quit().catch(() => undefined);
       await sql.end().catch(() => undefined);
+      await exportSql.end().catch(() => undefined);
       await dba.end().catch(() => undefined);
+      await rm(sourceStateRoot, { recursive: true, force: true });
     }
   },
 );
