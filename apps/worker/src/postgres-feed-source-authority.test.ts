@@ -36,17 +36,27 @@ test("source admission uses parameterized SQL and exact source snapshot", async 
 });
 
 test("database outage or malformed responses fail closed without leaking details", async () => {
-  for (const rows of [[], [{ authorized: "true" }], [{ authorized: true }, { authorized: false }]]) {
-    const db = { async query() { return { rows }; } } as unknown as Pool;
+  for (const rows of [
+    [],
+    [{ authorized: "true" }],
+    [{ authorized: true }, { authorized: false }],
+  ]) {
+    const db = {
+      async query() {
+        return { rows };
+      },
+    } as unknown as Pool;
     const authority = new PostgresFeedSourceAuthority(db);
     await assert.rejects(authority.admitted(source), /Feed source authority unavailable/);
   }
   const outage = new PostgresFeedSourceAuthority({
-    async query(): Promise<never> { throw new Error("SECRET_DB_PASSWORD"); },
+    async query(): Promise<never> {
+      throw new Error("SECRET_DB_PASSWORD");
+    },
   } as unknown as Pool);
   await assert.rejects(
     outage.admitted(source),
-    (error: unknown) => error instanceof Error &&
-      error.message === "Feed source authority unavailable",
+    (error: unknown) =>
+      error instanceof Error && error.message === "Feed source authority unavailable",
   );
 });
