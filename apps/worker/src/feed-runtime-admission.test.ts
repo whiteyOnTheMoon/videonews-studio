@@ -75,8 +75,10 @@ test("refuses automatic scheduling, arbitrary endpoints and shared database user
 const allowed = {
   session_user: login,
   feed_writer: true,
-  can_claim: true,
-  can_commit: true,
+  can_claim: false,
+  can_commit: false,
+  can_guarded_claim: true,
+  can_guarded_commit: true,
   can_project: false,
   can_read_candidates: false,
   can_edit_accounts: false,
@@ -102,6 +104,8 @@ test("requires the actual PostgreSQL session identity and narrow function privil
     "feed_writer",
     "can_claim",
     "can_commit",
+    "can_guarded_claim",
+    "can_guarded_commit",
     "can_project",
     "can_read_candidates",
     "can_edit_accounts",
@@ -113,7 +117,9 @@ test("requires the actual PostgreSQL session identity and narrow function privil
   ]) {
     const corrupt = {
       ...allowed,
-      [field]: ["feed_writer", "can_claim", "can_commit"].includes(field) ? false : true,
+      [field]: ["feed_writer", "can_guarded_claim", "can_guarded_commit"].includes(field)
+        ? false
+        : true,
     };
     await assert.rejects(attestFeedDatabaseIdentity(db(corrupt), login), /admission denied/, field);
   }

@@ -60,7 +60,12 @@ export function createDormantFeedScheduler(
     throw new Error("Reviewed feed registry unavailable");
   }
   const registry = parseReviewedSourceRegistry(contents, policy);
-  const store = new PostgresFeedPollStore(ports.pool);
+  const store = new PostgresFeedPollStore(
+    ports.pool,
+    env.VNS_FEED_RUNTIME_ENABLED === "true"
+      ? new Map(registry.map((source) => [source.id, source]))
+      : undefined,
+  );
   const transport = createPinnedFeedHttpsTransport(registry, policy, ports.https);
   // The explicitly authorized live one-shot mode consults the current
   // PostgreSQL source/host grants; the offline fixture mode stays injectable.

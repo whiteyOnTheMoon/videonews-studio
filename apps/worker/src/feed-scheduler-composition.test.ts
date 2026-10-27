@@ -91,7 +91,9 @@ function fixture() {
         return { rows: [{ authorized: currentlyApproved.has(source.id) }] };
       }
       if (sql.includes("vns.claim_feed_poll")) {
-        const id = String(args[0]);
+        const id = sql.includes("_authorized")
+          ? (JSON.parse(String(args[0])) as { id: string }).id
+          : String(args[0]);
         const state = db.get(id);
         if (state && dbNow < state.next) return { rows: [] };
         const next = {
@@ -112,7 +114,9 @@ function fixture() {
         };
       }
       if (sql.includes("vns.commit_feed_poll")) {
-        const id = String(args[0]);
+        const id = sql.includes("_authorized")
+          ? (JSON.parse(String(args[0])) as { id: string }).id
+          : String(args[0]);
         const state = db.get(id);
         if (!state || args[1] !== state.token) throw new Error("private SQL secret");
         const items = JSON.parse(String(args[2])) as Array<{ url: string }>;

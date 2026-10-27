@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import type { FeedItem, FeedPollLease, FeedPollStore, FeedValidators } from "./feed-poller.js";
+import type { RegisteredResearchSource } from "./source-registry.js";
 
 const ID = /^[a-z][a-z0-9_-]{2,40}$/;
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
@@ -10,7 +11,19 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
  * metadata-only persistence, and stale-lease rejection. No live pool is wired.
  */
 export class PostgresFeedPollStore implements FeedPollStore {
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly runtimeSources?: ReadonlyMap<string, RegisteredResearchSource>,
+  ) {}
+
+  private acceptedSource(id: string): RegisteredResearchSource | undefined {
+    if (!this.runtimeSources) return undefined;
+    const source = this.runtimeSources.get(id);
+    if (!source || source.status !== "approved") {
+      throw new Error("Feed source authorization required");
+    }
+    return source;
+  }
 
   async claim(sourceId: string, now: Date, intervalMinutes: number): Promise<FeedPollLease | null> {
     if (
@@ -23,15 +36,21 @@ export class PostgresFeedPollStore implements FeedPollStore {
     ) {
       throw new Error("Feed polling claim rejected");
     }
+    const approved = this.acceptedSource(sourceId);
+    if (approved && approved.intervalMinutes !== intervalMinutes) {
+      throw new Error("Feed polling claim rejected");
+    }
     // Do NOT send the worker clock: PostgreSQL clock_timestamp() is authoritative.
     const result = await this.pool.query<{
       token: string;
       etag: string | null;
       last_modified: string | null;
-    }>("SELECT token, etag, last_modified FROM vns.claim_feed_poll($1::text,$2::integer)", [
-      sourceId,
-      intervalMinutes,
-    ]);
+    }>(
+      approved
+        ? "SELECT token, etag, last_modified FROM vns.claim_feed_poll_authorized($1::jsonb,$2::integer)"
+        : "SELECT token, etag, last_modified FROM vns.claim_feed_poll($1::text,$2::integer)",
+      [approved ? JSON.stringify(approved) : sourceId, intervalMinutes],
+    );
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
     if (
@@ -67,14 +86,23 @@ export class PostgresFeedPollStore implements FeedPollStore {
     ) {
       throw new Error("Feed polling commit rejected");
     }
+    const approved = this.acceptedSource(sourceId);
     const payload = items.map(({ url, headline, publishedAt }) => ({
       url,
       headline,
       publishedAt,
     }));
     const result = await this.pool.query<{ created: number }>(
-      "SELECT vns.commit_feed_poll($1::text,$2::uuid,$3::jsonb,$4::text,$5::text) AS created",
-      [sourceId, token, JSON.stringify(payload), validators.etag, validators.lastModified],
+      approved
+        ? "SELECT vns.commit_feed_poll_authorized($1::jsonb,$2::uuid,$3::jsonb,$4::text,$5::text) AS created"
+        : "SELECT vns.commit_feed_poll($1::text,$2::uuid,$3::jsonb,$4::text,$5::text) AS created",
+      [
+        approved ? JSON.stringify(approved) : sourceId,
+        token,
+        JSON.stringify(payload),
+        validators.etag,
+        validators.lastModified,
+      ],
     );
     const created = result.rows[0]?.created;
     if (

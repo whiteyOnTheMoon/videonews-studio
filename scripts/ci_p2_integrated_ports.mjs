@@ -45,6 +45,7 @@ const sources = sourceIds.map((id, index) => ({
   reviewedAt: "2026-10-26",
 }));
 const env = {
+  VNS_FEED_RUNTIME_ENABLED: "true",
   VNS_FEED_OFFLINE_COMPOSITION_ENABLED: "true",
   VNS_FEED_OFFLINE_OPERATOR_ACK: "true",
   VNS_FEED_REGISTRY_FILE: REVIEWED_SOURCE_REGISTRY_PATH,
@@ -54,6 +55,76 @@ const env = {
   VNS_FEED_QUEUE_OPERATOR_ACK: "true",
   VNS_FEED_QUEUE_NAME: ISOLATED_FEED_QUEUE,
 };
+
+/** Synthetic governance setup: the identities are disposable CI fixtures only. */
+async function seedReviewedSyntheticSources(dba) {
+  const sourceActor = "ca340001-1111-4111-8111-111111111111";
+  const hostActor = "ca340002-2222-4222-8222-222222222222";
+  // Disposable CI superuser bootstrap only. Real operator enrollment must
+  // use a separately authenticated provisioner and documented governance.
+  await dba.query(
+    `INSERT INTO vns.editor_operator_registry
+      (login_role,operator_id,operator_label,active)
+     VALUES (session_user,$1::uuid,'CI synthetic provisioner',true)`,
+    ["ca340003-3333-4333-8333-333333333333"],
+  );
+  await dba.query(
+    `INSERT INTO vns.editor_accounts(id,username,display_name,role,password_hash,active)
+     VALUES ($1,'ci_port_source','Synthetic Source Reviewer','admin',
+       'scrypt$'||repeat('a',32)||'$'||repeat('b',128),true),
+       ($2,'ci_port_host','Synthetic Host Reviewer','admin',
+       'scrypt$'||repeat('a',32)||'$'||repeat('b',128),true)`,
+    [sourceActor, hostActor],
+  );
+  const recordedAt = "2026-10-26T12:00:00Z";
+  let revision = 0;
+  const snapshot = [];
+  for (const source of sources) {
+    snapshot.push({ ...source, status: "pending" });
+    let result = await dba.query(
+      `SELECT vns.admin_commit_source_registry(
+        $1::bigint,$2::bigint,$3::jsonb,$4::text,$5::text,
+        $6::uuid,$7::integer,$8::timestamptz) AS saved`,
+      [
+        revision,
+        revision + 1,
+        JSON.stringify(snapshot),
+        source.id,
+        "create_pending",
+        sourceActor,
+        0,
+        recordedAt,
+      ],
+    );
+    assert.equal(result.rows[0]?.saved, true);
+    revision++;
+    snapshot[snapshot.length - 1] = source;
+    result = await dba.query(
+      `SELECT vns.admin_commit_source_registry(
+        $1::bigint,$2::bigint,$3::jsonb,$4::text,$5::text,
+        $6::uuid,$7::integer,$8::timestamptz) AS saved`,
+      [
+        revision,
+        revision + 1,
+        JSON.stringify(snapshot),
+        source.id,
+        "approve",
+        sourceActor,
+        0,
+        recordedAt,
+      ],
+    );
+    assert.equal(result.rows[0]?.saved, true);
+    revision++;
+  }
+  const grant = await dba.query(
+    `SELECT vns.admin_change_source_host_approval(
+       0::bigint,$1::bigint,'grant',$2::text,$3::text,
+       $4::uuid,0::integer) AS saved`,
+    [revision, host, "Distinct synthetic reviewer authorizes metadata feed hostname.", hostActor],
+  );
+  assert.equal(grant.rows[0]?.saved, true);
+}
 
 test(
   "real isolated Redis/BullMQ delivery persists feed metadata to PostgreSQL and never publishes",
@@ -119,6 +190,7 @@ test(
       },
     };
     try {
+      await seedReviewedSyntheticSources(dba);
       await attestFeedDatabaseIdentity(sql, "vns_feed_login_ciunit");
       await assert.rejects(
         attestFeedDatabaseIdentity(dba, "vns_feed_login_ciunit"),
