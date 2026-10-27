@@ -4,6 +4,7 @@ import { readFeedRuntimeAdmission } from "./feed-runtime-admission.js";
 import { readBoundedFeedSchedule } from "./bounded-feed-scheduler.js";
 import {
   createDormantFeedQueueContract,
+  assertGatedFeedDelivery,
   createGatedFeedSlotEnqueuer,
   ISOLATED_FEED_QUEUE,
   type FeedQueuePort,
@@ -76,18 +77,18 @@ export function createSeparatedFeedConsumer(
   const worker = new Worker(
     ISOLATED_FEED_QUEUE,
     async (job) => {
+      const delivery = {
+        id: job.id,
+        name: job.name,
+        queueName: ISOLATED_FEED_QUEUE,
+        data: job.data,
+      };
+      const startedAt = now();
+      assertGatedFeedDelivery(env, delivery, startedAt);
       const context = await openContext();
       try {
         const contract = createDormantFeedQueueContract(env, context.scheduler, processingQueue);
-        return await contract.process(
-          {
-            id: job.id,
-            name: job.name,
-            queueName: ISOLATED_FEED_QUEUE,
-            data: job.data,
-          },
-          now(),
-        );
+        return await contract.process(delivery, startedAt);
       } catch {
         throw new Error("Separated feed job refused or failed");
       } finally {
