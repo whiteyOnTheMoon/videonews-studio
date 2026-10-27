@@ -1,0 +1,76 @@
+name: P1-09 first personal owner bootstrap (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_first_personal_admin.py"
+      - "scripts/test_p1_09_first_personal_admin.py"
+      - ".github/workflows/p1-09-first-owner-bootstrap.yml"
+permissions:
+  contents: read
+jobs:
+  bootstrap-auth-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      CI: "true"
+      VNS_P109_BOOTSTRAP_CI_PROJECT: vns-p109-bootstrap-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pure bootstrap unit tests
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_p1_09_first_personal_admin.py' -v
+      - name: Make disposable Postgres fixture credential
+        run: |
+          mkdir -p -m 700 secrets
+          python3 - <<'PY'
+          import os
+          fd=os.open("secrets/postgres_password",os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+          with os.fdopen(fd,"w") as f:
+              f.write("ci-bootstrap-fixture-pg-password-only\n")
+          PY
+      - name: Real SCRAM-authenticated operator and first admin bootstrap
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose -p vns-p109-bootstrap-ci -f compose.yaml \
+              --profile data down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p109-bootstrap-ci -f compose.yaml \
+            --profile data up -d --no-deps --no-build --pull missing postgres
+          ready=missing
+          for i in $(seq 1 60); do
+            ready="$(docker inspect -f '{{.State.Health.Status}}' \
+              vns-p109-bootstrap-ci-postgres-1 2>/dev/null || true)"
+            [[ "$ready" != unhealthy ]] || exit 1
+            [[ "$ready" != healthy ]] || break
+            sleep 2
+          done
+          [[ "$ready" == healthy ]] || { echo 'Disposable Postgres not healthy'; exit 1; }
+          sql() {
+            docker exec -i vns-p109-bootstrap-ci-postgres-1 \
+              psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews
+          }
+          for file in $(find db/migrations -maxdepth 1 -name '00*.up.sql' | sort | head -18); do
+            echo "Seeding disposable: $(basename "$file")"
+            sql < "$file"
+          done
+          python3 scripts/p1_09_first_personal_admin.py --preflight
+          python3 scripts/p1_09_first_personal_admin.py --apply
+          if python3 scripts/p1_09_first_personal_admin.py --preflight; then
+            echo "FAIL: duplicate first-owner preflight accepted"
+            exit 1
+          fi
+          if python3 scripts/p1_09_first_personal_admin.py --apply; then
+            echo "FAIL: duplicate first-owner apply accepted"
+            exit 1
+          fi
+          actual="$(docker exec vns-p109-bootstrap-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c "SELECT (SELECT count(*) FROM vns.editor_accounts WHERE active AND role='admin') ||
+            '|' || (SELECT count(*) FROM vns.editor_operator_registry WHERE active) ||
+            '|' || (SELECT count(*) FROM vns.editor_account_lifecycle_events) ||
+            '|' || (SELECT count(*) FROM vns.editor_operator_registry_events)")"
+          [[ "$actual" == "1|1|2|1" ]] || exit 1
+          echo 'PASS: authentic named SQL actors, personal lifecycle/registry audit; no provider enabled'
