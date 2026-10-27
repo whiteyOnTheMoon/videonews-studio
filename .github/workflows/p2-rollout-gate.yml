@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - "scripts/p2_rollout_gate.mjs"
+      - "scripts/p2_02_stage_a_vps_inventory.py"
+      - "scripts/test_p2_02_stage_a_vps_inventory.py"
+      - "docs/P2-02_STAGE_A_READ_ONLY_VPS_AUDIT.md"
       - "scripts/test_p2_rollout_gate.mjs"
       - ".github/workflows/p2-rollout-gate.yml"
 permissions:
@@ -17,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Verify read-only Stage-A inventory with synthetic host and Docker states
+        run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
       - name: Run fail-closed manifest tests
         run: node --test scripts/test_p2_rollout_gate.mjs
       - name: Assert missing evidence blocks review
