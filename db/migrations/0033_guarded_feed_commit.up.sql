@@ -1,5 +1,6 @@
 -- P2-01/P2-02: new guarded feed claim/commit, with one-statement governance locks.
 -- Reversible CI-only contract; do not apply to the VPS without a rollout plan.
+-- Production backup, migration ordering and reviewer enrollment require separate operator approval.
 BEGIN;
 -- The NOLOGIN security-definer authority may invoke only the already bounded
 -- feed functions. The authenticated feed writer will lose those direct grants.
