@@ -5,6 +5,7 @@ import type { NamedEditorialSessionFactory } from "./personal-editorial-admin.js
 
 export const PERSONAL_EDITORIAL_SECRETS_DIR = "/run/secrets/vns_editor_credentials" as const;
 const ACCOUNT = /^[a-z][a-z0-9_-]{2,31}$/;
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const LOGIN = /^editor_[a-z][a-z0-9_-]{2,31}$/;
 
 export interface PersonalEditorialAdmission {
@@ -90,6 +91,7 @@ export function createPersonalEditorialSessions(
     async open(identity: EditorIdentity) {
       if (!identity || identity.role !== "admin" ||
           !ACCOUNT.test(identity.username) ||
+          !UUID.test(identity.id) ||
           !Number.isSafeInteger(identity.authVersion) ||
           identity.authVersion < 0) {
         throw new Error("Personal editorial account refused");
