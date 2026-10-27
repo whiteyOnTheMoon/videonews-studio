@@ -16,6 +16,7 @@ import { editorialAdminProxyConfig } from "../../lib/admin-editorial-proxy";
 import EditorialProfiles from "./editorial-profiles";
 import EditorialAuditExport from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
+import EditorialTimelineEntry from "./editorial-timeline-entry";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function AdminPage() {
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialTimelineEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );
