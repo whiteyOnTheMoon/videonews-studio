@@ -5,6 +5,11 @@ import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
 
 export const FEED_DB_SECRET = "/run/secrets/vns_feed_db_password" as const;
 export const FEED_REDIS_SECRET = "/run/secrets/vns_feed_redis_password" as const;
+export const FEED_SOURCE_PUBLIC_KEY = "/run/secrets/vns_feed_source_public_key" as const;
+export const FEED_SOURCE_ANCHOR_PASSWORD = "/run/secrets/vns_feed_source_anchor_password" as const;
+export const FEED_SOURCE_ANCHOR_CA = "/run/secrets/vns_feed_source_anchor_ca" as const;
+export const FEED_SIGNED_SOURCE_INBOX = "/var/lib/vns/feed-source-inbox" as const;
+export const FEED_SOURCE_CHECKPOINT = "/var/lib/vns/feed-source-checkpoint" as const;
 
 const REQUIRED_FLAGS = [
   "VNS_FEED_RUNTIME_ENABLED",
@@ -17,6 +22,8 @@ const REQUIRED_FLAGS = [
   "VNS_FEED_QUEUE_OPERATOR_ACK",
   "VNS_FEED_BULLMQ_BRIDGE_ENABLED",
   "VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK",
+  "VNS_FEED_SIGNED_EXPORT_ENABLED",
+  "VNS_FEED_SOURCE_ANCHOR_APPROVED",
 ] as const;
 
 export interface FeedRuntimeAdmission {
@@ -24,6 +31,14 @@ export interface FeedRuntimeAdmission {
   dbHost: string;
   redisHost: string;
   redisUser: string;
+  anchorHost: string;
+  anchorUser: string;
+  initialBootstrap: boolean;
+  signedExportDirectory: typeof FEED_SIGNED_SOURCE_INBOX;
+  signedCheckpointDirectory: typeof FEED_SOURCE_CHECKPOINT;
+  sourcePublicKeyPath: typeof FEED_SOURCE_PUBLIC_KEY;
+  anchorPasswordPath: typeof FEED_SOURCE_ANCHOR_PASSWORD;
+  anchorCaPath: typeof FEED_SOURCE_ANCHOR_CA;
   dbSecretPath: typeof FEED_DB_SECRET;
   redisSecretPath: typeof FEED_REDIS_SECRET;
 }
@@ -41,6 +56,15 @@ export function readFeedRuntimeAdmission(env: NodeJS.ProcessEnv): FeedRuntimeAdm
     env.VNS_FEED_REGISTRY_FILE !== REVIEWED_SOURCE_REGISTRY_PATH ||
     env.VNS_FEED_DB_PASSWORD_FILE !== FEED_DB_SECRET ||
     env.VNS_FEED_REDIS_PASSWORD_FILE !== FEED_REDIS_SECRET ||
+    env.VNS_FEED_SIGNED_SOURCE_INBOX !== FEED_SIGNED_SOURCE_INBOX ||
+    env.VNS_FEED_SOURCE_CHECKPOINT_DIR !== FEED_SOURCE_CHECKPOINT ||
+    env.VNS_FEED_SOURCE_PUBLIC_KEY_FILE !== FEED_SOURCE_PUBLIC_KEY ||
+    env.VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE !== FEED_SOURCE_ANCHOR_PASSWORD ||
+    env.VNS_FEED_SOURCE_ANCHOR_CA_FILE !== FEED_SOURCE_ANCHOR_CA ||
+    env.VNS_FEED_SOURCE_BOOTSTRAP !== "false" &&
+      env.VNS_FEED_SOURCE_BOOTSTRAP !== "true" ||
+    (env.VNS_FEED_SOURCE_BOOTSTRAP === "true" &&
+      env.VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK !== "true") ||
     env.VNS_SOURCE_FETCH_ENABLED !== "true"
   ) {
     throw new Error("Feed production observation not authorized");
@@ -52,12 +76,18 @@ export function readFeedRuntimeAdmission(env: NodeJS.ProcessEnv): FeedRuntimeAdm
   const redisHost = env.VNS_FEED_REDIS_HOST ?? "";
   const dbUser = env.VNS_FEED_DB_USER ?? "";
   const redisUser = env.VNS_FEED_REDIS_USER ?? "";
+  const anchorHost = env.VNS_FEED_SOURCE_ANCHOR_HOST ?? "";
+  const anchorUser = env.VNS_FEED_SOURCE_ANCHOR_USER ?? "";
   if (
     !["postgres", "127.0.0.1"].includes(dbHost) ||
     !["redis", "127.0.0.1"].includes(redisHost) ||
     !/^vns_feed_login_[a-z0-9_]{3,24}$/.test(dbUser) ||
     !/^vns_feed_[a-z0-9_]{3,24}$/.test(redisUser) ||
-    dbUser === "vns_feed_poll_writer"
+    dbUser === "vns_feed_poll_writer" ||
+    anchorHost.length > 253 ||
+    !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(anchorHost) ||
+    /[.](local|internal|localhost|onion)$/.test(anchorHost) ||
+    !/^vns_anchor_login_[a-z0-9_]{3,24}$/.test(anchorUser)
   ) {
     throw new Error("Feed runtime identities or endpoints refused");
   }
@@ -68,6 +98,14 @@ export function readFeedRuntimeAdmission(env: NodeJS.ProcessEnv): FeedRuntimeAdm
     dbHost,
     redisHost,
     redisUser,
+    anchorHost,
+    anchorUser,
+    initialBootstrap: env.VNS_FEED_SOURCE_BOOTSTRAP === "true",
+    signedExportDirectory: FEED_SIGNED_SOURCE_INBOX,
+    signedCheckpointDirectory: FEED_SOURCE_CHECKPOINT,
+    sourcePublicKeyPath: FEED_SOURCE_PUBLIC_KEY,
+    anchorPasswordPath: FEED_SOURCE_ANCHOR_PASSWORD,
+    anchorCaPath: FEED_SOURCE_ANCHOR_CA,
     dbSecretPath: FEED_DB_SECRET,
     redisSecretPath: FEED_REDIS_SECRET,
   });
