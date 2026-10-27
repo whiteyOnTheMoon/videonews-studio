@@ -1,5 +1,12 @@
 # Phase 2 — Offline acceptance and rollout preparation
 
+**Operator update 2026-10-27:** Recurring backups by IONOS and normal operation
+of the existing Beszel monitoring are reported. The former backup-free
+experiment is no longer the desired operating model. Nevertheless, P2-02
+production approval still requires verification of IONOS backup coverage,
+a non-destructive isolated restore and a specific feed-health alarm delivery
+witnessed by the operator. See [IONOS/Beszel evidence checklist](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+
 **Status: NOT RELEASED / BLOCKED.** This runbook is an operator checklist and is not permission to touch the VPS or activate feeds, Docker services or AI calls.
 
 ## Evidence levels
