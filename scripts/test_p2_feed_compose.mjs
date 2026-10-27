@@ -86,6 +86,10 @@ export function verifySignedFeedOverlay(data) {
   assert.equal(continuous.environment.VNS_FEED_RUNTIME_MODE, "continuous_producer");
   assert.equal(continuous.environment.VNS_FEED_SCHEDULER_MODE, "continuous");
   assert.equal(consumer.environment.VNS_FEED_RUNTIME_MODE, "persistent_worker");
+  assert.equal(
+    consumer.environment.VNS_FEED_CONSUMER_MAX_JOB_SECONDS,
+    "${VNS_FEED_CONSUMER_MAX_JOB_SECONDS:-0}",
+  );
   assert.deepEqual(consumer.healthcheck.test, [
     "CMD",
     "node",
