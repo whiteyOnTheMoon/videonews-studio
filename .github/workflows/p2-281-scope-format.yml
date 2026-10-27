@@ -1,0 +1,33 @@
+name: One-time PR281 scoped formatting
+on:
+  push:
+    branches:
+      - feat/p2-02-atomic-feed-commit-admission
+permissions:
+  contents: write
+jobs:
+  format-once:
+    if: github.repository == 'whiteyOnTheMoon/videonews-studio' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/p2-02-atomic-feed-commit-admission
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Format only confirmed failing files and self-remove
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = feat/p2-02-atomic-feed-commit-admission
+          npx prettier --write apps/worker/src/postgres-feed-poll-store.test.ts docs/P2-02_ATOMIC_FEED_COMMIT_ADMISSION.md
+          rm .github/workflows/p2-281-scope-format.yml
+          git add apps/worker/src/postgres-feed-poll-store.test.ts docs/P2-02_ATOMIC_FEED_COMMIT_ADMISSION.md .github/workflows/p2-281-scope-format.yml
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'style(p2): scoped Prettier and workflow self-removal'
+          git push origin HEAD:refs/heads/feat/p2-02-atomic-feed-commit-admission
