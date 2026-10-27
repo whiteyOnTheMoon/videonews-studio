@@ -308,7 +308,10 @@ test("runtime checks source grants at feed boundaries", async () => {
     { sourceId: "agency_atom", status: "ingested", newItems: 1 },
     { sourceId: "agency_json", status: "ingested", newItems: 1 },
   ]);
-  assert.deepEqual(f.requests.map((x) => x.path), ["/atom/", "/api/"]);
+  assert.deepEqual(
+    f.requests.map((x) => x.path),
+    ["/atom/", "/api/"],
+  );
   assert.deepEqual([...f.db.keys()], ["agency_atom", "agency_json"]);
   assert.equal(f.saved.size, 2);
   const admissions = f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized"));
