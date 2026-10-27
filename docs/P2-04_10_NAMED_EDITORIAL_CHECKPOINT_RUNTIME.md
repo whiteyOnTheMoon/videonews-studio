@@ -16,14 +16,14 @@
 
 Der bereits vorhandene Admin-Quellenkatalog, Profile und Checkpoints verbleiben in PostgreSQL. Kein Provider/API-Key oder Nachrichten-Host ist im Code festgelegt.
 
-| Setting | Explizite Operator-Anforderung |
-| --- | --- |
-| `VNS_EDITORIAL_PERSONAL_DB_ENABLED` | `true` |
-| `VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK` | `true` |
-| `VNS_EDITORIAL_PERSONAL_DB_HOST` | `postgres` im Backendnetz |
-| `VNS_EDITORIAL_PERSONAL_DB_SECRETS_DIR` | `/run/secrets/vns_editor_credentials` |
+| Setting                                     | Explizite Operator-Anforderung                                      |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| `VNS_EDITORIAL_PERSONAL_DB_ENABLED`         | `true`                                                              |
+| `VNS_EDITORIAL_PERSONAL_DB_OPERATOR_ACK`    | `true`                                                              |
+| `VNS_EDITORIAL_PERSONAL_DB_HOST`            | `postgres` im Backendnetz                                           |
+| `VNS_EDITORIAL_PERSONAL_DB_SECRETS_DIR`     | `/run/secrets/vns_editor_credentials`                               |
 | `VNS_P2_EDITORIAL_PERSONAL_CREDENTIALS_DIR` | Lokal provisioniertes Secret-Verzeichnis, über read-only Bind-Mount |
-| `VNS_WEB_EDITORIAL_ADMIN_ENABLED` | `true` nur für bewusst freigegebene Admin-Anfragen |
+| `VNS_WEB_EDITORIAL_ADMIN_ENABLED`           | `true` nur für bewusst freigegebene Admin-Anfragen                  |
 
 Die erste persönliche LOGIN-Rolle z. B. `editor_<username>` und ihre `vns.editor_db_principals`-Zuordnung werden **nicht** durch eine Migration automatisch erzeugt. Eine andere Person oder ein unabhängiger Administrator vergibt nur `vns_p2_named_client`-Rechte; kein Direktzugriff auf Audit-Tabellen, Claims, Admin-Register oder Provider-Keys. Das Login muss exakt zur wirklich authentifizierten `username` passen. Aktivierungsflags allein genügen nicht als DB-Recht.
 
