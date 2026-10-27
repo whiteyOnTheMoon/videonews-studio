@@ -10,7 +10,7 @@ The API reads the encryption master key afresh within each HTTP operation and cl
 
 ## Optional rollout overlay
 
-`deploy/compose.provider-admin.yaml` is *never part of the routine stack*. It requires the existing, operator-verified compose files and an explicitly chosen rollout, plus:
+`deploy/compose.provider-admin.yaml` is _never part of the routine stack_. It requires the existing, operator-verified compose files and an explicitly chosen rollout, plus:
 
 1. A separate PostgreSQL LOGIN named `vns_provider_config_login`, with an independently provisioned strong password, only membership in the existing `vns_provider_config_writer` role, **no direct table grants**, no superuser/CREATEROLE/CREATEDB and role verification after configuration. The existing writer/executor remain NOLOGIN. Do not use the database superuser or reuse the admin password for this login.
 2. Private, untracked files `./secrets/pg_provider_admin_password` and `./secrets/vns/provider-master-key`; the latter is exactly 32 binary bytes, and is never printed, emailed, logged or committed. The containing directory must also be private and owned by the container UID. If files do not match the required permissions, startup must fail rather than relaxing checks.

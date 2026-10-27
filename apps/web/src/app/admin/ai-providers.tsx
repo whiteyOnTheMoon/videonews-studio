@@ -62,11 +62,14 @@ export default function AiProviders({
       if (response.status !== 200) return false;
       const result: unknown = await response.json();
       return Boolean(
-        result && typeof result === "object" &&
+        result &&
+        typeof result === "object" &&
         !Array.isArray(result) &&
         Object.keys(result).length === 2 &&
-        "saved" in result && result.saved === true &&
-        "active" in result && result.active === false
+        "saved" in result &&
+        result.saved === true &&
+        "active" in result &&
+        result.active === false,
       );
     } catch {
       return false;
@@ -104,7 +107,9 @@ export default function AiProviders({
             providers.find((entry) => entry.provider === provider) ? (
               <AiProviderEditForm
                 provider={provider}
-                selectedModel={providers.find((entry) => entry.provider === provider)!.selectedModel}
+                selectedModel={
+                  providers.find((entry) => entry.provider === provider)!.selectedModel
+                }
                 configured={providers.find((entry) => entry.provider === provider)!.configured}
                 ready
                 onCommand={submit}
