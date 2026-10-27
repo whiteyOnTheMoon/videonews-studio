@@ -23,8 +23,9 @@ export function providerUsageEvidenceStore(pool: Pick<Pool, "query">, enabled: b
   return {
     async record(value: unknown): Promise<ProviderEvidenceReceipt> {
       const usage = admitReportedUsage(value);
+      let result: { rows: { id: string }[] };
       try {
-        const result = await pool.query<{ id: string }>(
+        result = await pool.query<{ id: string }>(
           "SELECT vns.record_provider_usage_evidence(" +
             "$1::uuid,$2::text,$3::text,$4::text,$5::text,$6::text," +
             "$7::bigint,$8::bigint,$9::bigint,$10::bigint)::text AS id",
@@ -41,26 +42,26 @@ export function providerUsageEvidenceStore(pool: Pick<Pool, "query">, enabled: b
             usage.costMicroUsd,
           ],
         );
-        if (
-          result.rows.length !== 1 ||
-          typeof result.rows[0]?.id !== "string" ||
-          !UUID.test(result.rows[0].id)
-        ) {
-          throw new Error("Invalid provider evidence receipt");
-        }
-        return Object.freeze({
-          receiptId: result.rows[0].id,
-          source: "provider_response" as const,
-          calculatedCostMicroUsd: usage.costMicroUsd,
-          currency: "USD" as const,
-          persistent: true as const,
-          reconciled: false as const,
-          approvedForPayment: false as const,
-        });
       } catch {
         // Never reflect SQL diagnostics, connection URI, credentials or payload.
         throw new Error("Provider evidence persistence unavailable");
       }
+      if (
+        result.rows.length !== 1 ||
+        typeof result.rows[0]?.id !== "string" ||
+        !UUID.test(result.rows[0].id)
+      ) {
+        throw new Error("Invalid provider evidence receipt");
+      }
+      return Object.freeze({
+        receiptId: result.rows[0].id,
+        source: "provider_response" as const,
+        calculatedCostMicroUsd: usage.costMicroUsd,
+        currency: "USD" as const,
+        persistent: true as const,
+        reconciled: false as const,
+        approvedForPayment: false as const,
+      });
     },
   };
 }
