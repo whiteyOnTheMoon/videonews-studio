@@ -1,0 +1,43 @@
+# P2-03 feed candidate projection: independent, opt-in one-shot component.
+# Never included in default compose invocation and never auto-started.
+services:
+  feed-project-once:
+    profiles: [feed-project]
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    init: true
+    restart: "no"
+    read_only: true
+    user: "10004:10004"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 48
+    mem_limit: 192m
+    memswap_limit: 192m
+    cpus: 0.25
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=8m
+    entrypoint: ["node", "apps/worker/dist/feed-candidate-project-once.js", "--once"]
+    environment:
+      NODE_ENV: production
+      VNS_P2_FEED_PROJECTION_ENABLED: "${VNS_P2_FEED_PROJECTION_ENABLED:-false}"
+      VNS_P2_FEED_PROJECTION_OPERATOR_ACK: "${VNS_P2_FEED_PROJECTION_OPERATOR_ACK:-false}"
+      VNS_P2_FEED_PROJECTION_MODE: single_pass
+      VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP: "false"
+      VNS_P2_FEED_PROJECTION_DB_HOST: postgres
+      VNS_P2_FEED_PROJECTION_DB_USER: "${VNS_P2_FEED_PROJECTION_DB_USER:-}"
+      VNS_P2_FEED_PROJECTION_SOURCE_ID: "${VNS_P2_FEED_PROJECTION_SOURCE_ID:-}"
+      VNS_P2_FEED_PROJECTION_LIMIT: "${VNS_P2_FEED_PROJECTION_LIMIT:-0}"
+      VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE: /run/secrets/vns_feed_project_db_password
+    volumes:
+      - type: bind
+        source: ${VNS_P2_PROJECTOR_DB_PASSWORD_FILE:?Dedicated projector secret not provisioned}
+        target: /run/secrets/vns_feed_project_db_password
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]

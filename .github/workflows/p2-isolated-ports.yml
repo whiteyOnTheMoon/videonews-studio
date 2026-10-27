@@ -7,6 +7,9 @@ on:
       - "db/migrations/**"
       - "scripts/ci_p2_integrated_ports.mjs"
       - "scripts/ci_p2_separated_ports.mjs"
+      - "scripts/ci_p2_projection_ports.mjs"
+      - "scripts/test_p2_feed_projection_compose.mjs"
+      - "deploy/compose.feed-projection.yaml"
       - "scripts/test_p2_feed_compose.mjs"
       - "scripts/p2_feed_host_preflight.py"
       - "scripts/test_p2_feed_host_preflight.py"
@@ -48,6 +51,7 @@ jobs:
       VNS_P2_CI_PG_PASSWORD: ci_only_postgres_for_disposable_runner
       VNS_P2_CI_FEED_PASSWORD: ci_only_feed_for_disposable_runner
       VNS_P2_CI_EXPORT_PASSWORD: ci_only_source_export_runner
+      VNS_P2_CI_PROJECT_PASSWORD: ci_only_projector_disposable_password
       PGHOST: 127.0.0.1
       PGPORT: "5432"
       PGDATABASE: vns_p2_ci
@@ -65,6 +69,8 @@ jobs:
         run: |
           npm run format:check
           npm run lint
+      - name: Verify disabled candidate projection service permissions
+        run: node --test scripts/test_p2_feed_projection_compose.mjs
       - name: Verify disabled signed-source Compose architecture
         run: node --test scripts/test_p2_feed_compose.mjs
       - name: Validate signed feed Docker profiles without starting containers
@@ -81,11 +87,14 @@ jobs:
           VNS_P2_FEED_DB_PASSWORD_FILE: /tmp/vns-ci/feed-db-pass
           VNS_P2_FEED_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-redis-pass
           VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-producer-redis-pass
+          VNS_P2_PROJECTOR_DB_PASSWORD_FILE: /tmp/vns-ci/projector-secret
         run: |
           docker compose -f compose.yaml -f compose.feed-observation.yaml \
             --profile data --profile source-signing --profile source-handoff \
             --profile feed-observation --profile feed-scheduler \
             --profile feed-producer --profile feed-consumer config --quiet
+          docker compose -f compose.yaml -f deploy/compose.feed-projection.yaml \
+            --profile data --profile feed-project config --quiet
       - name: Test read-only host UID and secrets preflight with synthetic filesystem metadata
         run: python3 -m unittest discover -s scripts -p "test_p2_feed_host_preflight.py" -v
       - name: Compile shared and worker contracts
@@ -105,8 +114,12 @@ jobs:
           CREATE ROLE vns_source_export_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_source_export_runner';
           GRANT vns_source_export_reader TO vns_source_export_login_ciunit;
           GRANT USAGE ON SCHEMA vns TO vns_source_export_login_ciunit;
+          CREATE ROLE vns_feed_project_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_projector_disposable_password';
+          GRANT vns_feed_project_client TO vns_feed_project_login_ciunit;
           SQL
       - name: Verify Redis queue, PostgreSQL persistence and never-publish review
         run: node --test scripts/ci_p2_integrated_ports.mjs
+      - name: Verify named approved-source projection against real PostgreSQL
+        run: node --test scripts/ci_p2_projection_ports.mjs
       - name: Verify independent producer and consumer against disposable Redis ACLs
         run: node --test scripts/ci_p2_separated_ports.mjs
