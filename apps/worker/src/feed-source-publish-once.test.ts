@@ -104,13 +104,13 @@ test("publisher requires PostgreSQL authenticated least-privilege session_user",
   }
   await assert.rejects(attestSourcePublisherIdentity(db([]), login), /admission denied/);
   await assert.rejects(
-    attestSourcePublisherIdentity(db([{ ...allowed, session_user: "vns_source_export_login_other" }]), login),
+    attestSourcePublisherIdentity(
+      db([{ ...allowed, session_user: "vns_source_export_login_other" }]),
+      login,
+    ),
     /admission denied/,
   );
-  await assert.rejects(
-    attestSourcePublisherIdentity(db([allowed]), "postgres"),
-    /login refused/,
-  );
+  await assert.rejects(attestSourcePublisherIdentity(db([allowed]), "postgres"), /login refused/);
 });
 
 test("publisher hides backend errors and never assumes failed SQL grants are valid", async () => {

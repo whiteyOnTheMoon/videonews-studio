@@ -4,8 +4,7 @@ import { Pool, type QueryResult } from "pg";
 import { publishApprovedAdminSourceFile } from "./postgres-admin-source-publisher.js";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
 
-export const SOURCE_PUBLISHER_PASSWORD_PATH =
-  "/run/secrets/vns_source_export_db_password" as const;
+export const SOURCE_PUBLISHER_PASSWORD_PATH = "/run/secrets/vns_source_export_db_password" as const;
 export const SOURCE_PUBLISHER_SIGNING_KEY_PATH =
   "/run/secrets/vns_source_export_signing_key" as const;
 export const SOURCE_PUBLISHER_DIRECTORY = "/var/lib/vns/source-publisher" as const;
@@ -69,9 +68,7 @@ function readPrivateFile(path: string, maxBytes: number): string {
       stat.size < 1 ||
       stat.size > maxBytes ||
       (stat.mode & 0o027) !== 0 ||
-      (typeof process.getuid === "function" &&
-        stat.uid !== 0 &&
-        stat.uid !== process.getuid())
+      (typeof process.getuid === "function" && stat.uid !== 0 && stat.uid !== process.getuid())
     ) {
       throw new Error("Untrusted secret file");
     }
@@ -183,12 +180,7 @@ export async function publishApprovedSourceOnce(env: NodeJS.ProcessEnv = process
       VNS_SOURCE_FETCH_ENABLED: "true",
       VNS_ALLOWED_SOURCE_HOSTS: admission.approvedHosts,
     });
-    return await publishApprovedAdminSourceFile(
-      pool,
-      admission.directory,
-      policy,
-      privateKey,
-    );
+    return await publishApprovedAdminSourceFile(pool, admission.directory, policy, privateKey);
   } catch {
     throw new Error("Signed source publisher unavailable");
   } finally {
