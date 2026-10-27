@@ -38,7 +38,12 @@ export function readProjectionAdmission(env: NodeJS.ProcessEnv): ProjectionAdmis
   ) {
     throw new Error("P2 candidate projection identity or bounds refused");
   }
-  return { dbHost: dbHost as ProjectionAdmission["dbHost"], dbUser, sourceId, limit: Number(limit) };
+  return {
+    dbHost: dbHost as ProjectionAdmission["dbHost"],
+    dbUser,
+    sourceId,
+    limit: Number(limit),
+  };
 }
 
 export interface ProjectionIdentity {
@@ -83,15 +88,26 @@ export async function attestProjectionDatabaseIdentity(
     );
     const row = result.rows[0];
     if (
-      result.rows.length !== 1 || !row ||
+      result.rows.length !== 1 ||
+      !row ||
       row.session_user !== expectedLogin ||
-      row.project_member !== true || row.guarded_execute !== true ||
+      row.project_member !== true ||
+      row.guarded_execute !== true ||
       [
-        row.raw_execute,row.direct_candidates,row.direct_claims,
-        row.direct_events_write,row.feed_claim,row.edit_accounts,
-        row.superuser,row.create_role,row.create_db,row.replication,row.bypass_rls,
+        row.raw_execute,
+        row.direct_candidates,
+        row.direct_claims,
+        row.direct_events_write,
+        row.feed_claim,
+        row.edit_accounts,
+        row.superuser,
+        row.create_role,
+        row.create_db,
+        row.replication,
+        row.bypass_rls,
       ].some((flag) => flag !== false)
-    ) throw new Error("Projector privileges invalid");
+    )
+      throw new Error("Projector privileges invalid");
   } catch {
     throw new Error("P2 projection database admission denied");
   }
@@ -101,9 +117,15 @@ export async function projectApprovedSource(
   db: Pick<Pool, "query">,
   admission: ProjectionAdmission,
 ): Promise<number> {
-  if (!db || typeof db.query !== "function" || !LOGIN.test(admission.dbUser) ||
-      !SOURCE.test(admission.sourceId) || !Number.isSafeInteger(admission.limit) ||
-      admission.limit < 1 || admission.limit > 100) {
+  if (
+    !db ||
+    typeof db.query !== "function" ||
+    !LOGIN.test(admission.dbUser) ||
+    !SOURCE.test(admission.sourceId) ||
+    !Number.isSafeInteger(admission.limit) ||
+    admission.limit < 1 ||
+    admission.limit > 100
+  ) {
     throw new Error("P2 projection request invalid");
   }
   await attestProjectionDatabaseIdentity(db, admission.dbUser);
@@ -113,8 +135,14 @@ export async function projectApprovedSource(
       [admission.sourceId, admission.limit],
     );
     const count = r.rows[0]?.projected;
-    if (r.rows.length !== 1 || !Number.isSafeInteger(count) || count === undefined ||
-        count < 0 || count > admission.limit) throw new Error("Projection count invalid");
+    if (
+      r.rows.length !== 1 ||
+      !Number.isSafeInteger(count) ||
+      count === undefined ||
+      count < 0 ||
+      count > admission.limit
+    )
+      throw new Error("Projection count invalid");
     return count;
   } catch {
     throw new Error("P2 approved source projection unavailable");
@@ -126,9 +154,14 @@ function readPrivatePassword(path: string): string {
   try {
     fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = fstatSync(fd);
-    if (!stat.isFile() || stat.nlink !== 1 || stat.size < 40 || stat.size > 256 ||
-        (stat.mode & 0o077) !== 0 ||
-        (typeof process.getuid === "function" && stat.uid !== process.getuid() && stat.uid !== 0)) {
+    if (
+      !stat.isFile() ||
+      stat.nlink !== 1 ||
+      stat.size < 40 ||
+      stat.size > 256 ||
+      (stat.mode & 0o077) !== 0 ||
+      (typeof process.getuid === "function" && stat.uid !== process.getuid() && stat.uid !== 0)
+    ) {
       throw new Error("Unsafe projector secret");
     }
     const value = readFileSync(fd, "utf8").trimEnd();
@@ -144,7 +177,9 @@ function readPrivatePassword(path: string): string {
 }
 
 /** One-shot no HTTP, queue, scheduler or publisher key. */
-export async function runApprovedProjectionOnce(env: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runApprovedProjectionOnce(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   const admission = readProjectionAdmission(env);
   const password = readPrivatePassword(PROJECTION_DB_PASSWORD_PATH);
   const pool = new Pool({
