@@ -2,6 +2,7 @@ import { createSeparatedFeedConsumer, requireSeparatedFeedGate } from "./feed-bu
 import { openSeparatedFeedRedis } from "./feed-separated-redis.js";
 import { openTrustedFeedContext } from "./feed-trusted-context.js";
 import { publishFeedConsumerHealth } from "./feed-consumer-health.js";
+import { readFeedConsumerWatchdogSeconds } from "./feed-consumer-watchdog.js";
 
 /**
  * Long-lived consumer with no internal scheduling or producer connection.
@@ -11,6 +12,7 @@ import { publishFeedConsumerHealth } from "./feed-consumer-health.js";
  */
 export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.env): Promise<void> {
   requireSeparatedFeedGate(env, "consumer");
+  const maxJobMillis = readFeedConsumerWatchdogSeconds(env) * 1000;
   const controller = new AbortController();
   const stop = () => controller.abort();
   process.once("SIGINT", stop);
@@ -20,6 +22,7 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let consecutiveFailures = 0;
   let unexpectedConnectionFailure = false;
+  let activeSince: number | null = null;
   const pulse = (state: "ready" | "stopped") =>
     publishFeedConsumerHealth({
       version: 1,
@@ -32,17 +35,24 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     consumer = createSeparatedFeedConsumer(env, redis, () =>
       openTrustedFeedContext(env, "persistent_worker"),
     );
+    consumer.worker.on("active", () => {
+      activeSince = Date.now();
+    });
     consumer.worker.on("completed", () => {
+      activeSince = null;
       consecutiveFailures = 0;
       console.info(JSON.stringify({ event: "feed_consumer_job_completed" }));
     });
     consumer.worker.on("failed", () => {
+      activeSince = null;
       consecutiveFailures++;
       console.error(JSON.stringify({ event: "feed_consumer_job_failed", consecutiveFailures }));
       if (consecutiveFailures >= 3) controller.abort();
     });
     consumer.worker.on("stalled", () => {
       console.error(JSON.stringify({ event: "feed_consumer_job_stalled" }));
+      unexpectedConnectionFailure = true;
+      controller.abort();
     });
     const failClosed = () => {
       unexpectedConnectionFailure = true;
@@ -54,6 +64,12 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     pulse("ready");
     heartbeat = setInterval(() => {
       try {
+        if (activeSince !== null && Date.now() - activeSince > maxJobMillis) {
+          console.error(JSON.stringify({ event: "feed_consumer_job_watchdog_halted" }));
+          unexpectedConnectionFailure = true;
+          controller.abort();
+          return;
+        }
         pulse("ready");
       } catch {
         unexpectedConnectionFailure = true;
@@ -79,7 +95,9 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     }
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
-    await consumer?.close().catch(() => undefined);
+    await consumer?.close(unexpectedConnectionFailure || consecutiveFailures >= 3).catch(
+      () => undefined,
+    );
     await redis.quit().catch(() => redis.disconnect());
   }
 }
