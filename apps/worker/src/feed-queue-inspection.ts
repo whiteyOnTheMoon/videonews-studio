@@ -10,11 +10,12 @@ export async function inspectFeedQueue(queue: InspectionPort): Promise<FeedQueue
     throw new Error("Feed queue inspection port invalid");
   }
   try {
-    const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed", "paused");
+    const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed", "completed", "paused");
     const waiting = counts.waiting ?? 0;
     const active = counts.active ?? 0;
     const delayed = counts.delayed ?? 0;
     const failed = counts.failed ?? 0;
+    const completed = counts.completed ?? 0;
     const paused = counts.paused ?? 0;
     const pending = waiting + active + delayed + paused;
     const queuePaused = await queue.isPaused();
@@ -30,7 +31,7 @@ export async function inspectFeedQueue(queue: InspectionPort): Promise<FeedQueue
       }
       oldestPendingAt = Math.min(...timestamps);
     }
-    return { waiting, active, delayed, failed, paused, queuePaused, oldestPendingAt };
+    return { waiting, active, delayed, failed, completed, paused, queuePaused, oldestPendingAt };
   } catch {
     throw new Error("Feed queue inspection unavailable");
   }
