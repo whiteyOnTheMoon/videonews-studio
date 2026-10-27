@@ -1,8 +1,10 @@
 # P1-07 — Full-stack recovery runbook and release gates
 
-**Status: full disaster recovery is NOT approved.** VideoNews Studio still
-has **no approved off-host backup destination, retention budget, recovery
-objectives, or full-stack restore drill**. The **2026-10-25 operator-approved
+**Status: full disaster recovery is NOT approved.** On 2026-10-27 the operator
+reported regular IONOS backups and functioning Beszel monitoring. The IONOS
+backup product, protected data volumes, retention, independent recovery access,
+recovery objectives and full-stack restore drill are **not yet verified**.
+See [P2-02 IONOS/Beszel acceptance](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md). The **2026-10-25 operator-approved
 no-backup experimental exception** allowed a narrowly isolated PostgreSQL 17,
 Redis 7 and probe-only worker rollout on the VPS. Their health, eleven schema
 migrations, ACL, a retained harmless BullMQ probe and an idle worker-only restart
@@ -25,7 +27,7 @@ The independent operator must explicitly decide and document:
 
 | Decision                                                | Current approval          | Evidence to collect                                                             |
 | ------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
-| Off-host storage location, ownership and access         | **Not approved**          | Independent destination, access controls and recovery-access proof              |
+| Off-host storage location, ownership and access         | **IONOS backups reported; scope unverified** | Independent destination, access controls and recovery-access proof              |
 | Recovery point objective (RPO, acceptable data loss)    | **Not defined**           | Explicit maximum tolerable lost data, agreed retention and backup schedule      |
 | Recovery time objective (RTO, time to resume)           | **Not defined**           | Explicit recovery target and completed realistic, timed rehearsal               |
 | Backup encryption and independent key custody           | **Not approved**          | Audited key recovery and authorized access to an offline recovery copy          |
