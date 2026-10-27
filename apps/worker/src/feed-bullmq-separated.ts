@@ -109,6 +109,7 @@ export function createSeparatedFeedConsumer(
       connection,
       prefix: ISOLATED_FEED_REDIS_PREFIX,
       concurrency: 1,
+      maxStalledCount: 0,
       autorun: true,
     },
   );
