@@ -327,5 +327,6 @@ test("live authority denies all sources without touching network or feed leases"
   assert.ok(results.every((x) => x.status === "failed" && x.newItems === 0));
   assert.equal(f.requests.length, 0);
   assert.equal(f.db.size, 0);
-  assert.equal(f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized")).length, 3);
+  const admissionQueries = f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized"));
+  assert.equal(admissionQueries.length, 3);
 });
