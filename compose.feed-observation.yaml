@@ -274,6 +274,7 @@ services:
       VNS_FEED_REDIS_USER: "${VNS_FEED_CONSUMER_REDIS_USER:-}"
       VNS_FEED_SEPARATE_WORKER_ENABLED: "${VNS_FEED_SEPARATE_WORKER_ENABLED:-false}"
       VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "${VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK:-false}"
+      VNS_FEED_CONSUMER_MAX_JOB_SECONDS: "${VNS_FEED_CONSUMER_MAX_JOB_SECONDS:-0}"
 
 # Only the observer, bounded scheduler and separate consumer have explicit feed egress.
 networks:
