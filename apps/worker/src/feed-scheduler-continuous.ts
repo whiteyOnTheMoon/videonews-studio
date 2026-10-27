@@ -60,12 +60,22 @@ export function readContinuousFeedPolicy(env: NodeJS.ProcessEnv): ContinuousFeed
   const maxCompletedJobs = Number(values[1]);
   const maxPendingAgeMinutes = Number(values[2]);
   const maxConsecutiveEnqueueFailures = Number(values[3]);
-  if (maxBacklog > 20 || maxCompletedJobs < 100 || maxCompletedJobs > 100000 ||
-    maxPendingAgeMinutes < 15 || maxPendingAgeMinutes > 29 ||
-    maxConsecutiveEnqueueFailures > 3) {
+  if (
+    maxBacklog > 20 ||
+    maxCompletedJobs < 100 ||
+    maxCompletedJobs > 100000 ||
+    maxPendingAgeMinutes < 15 ||
+    maxPendingAgeMinutes > 29 ||
+    maxConsecutiveEnqueueFailures > 3
+  ) {
     throw new Error("Continuous feed limits invalid");
   }
-  return Object.freeze({ maxBacklog, maxCompletedJobs, maxPendingAgeMinutes, maxConsecutiveEnqueueFailures });
+  return Object.freeze({
+    maxBacklog,
+    maxCompletedJobs,
+    maxPendingAgeMinutes,
+    maxConsecutiveEnqueueFailures,
+  });
 }
 
 export function validateFeedQueueSnapshot(
@@ -77,24 +87,36 @@ export function validateFeedQueueSnapshot(
     throw new Error("Feed queue observation unavailable");
   }
   const counts = [
-    snapshot.waiting, snapshot.active, snapshot.delayed, snapshot.failed,
-    snapshot.completed, snapshot.paused,
+    snapshot.waiting,
+    snapshot.active,
+    snapshot.delayed,
+    snapshot.failed,
+    snapshot.completed,
+    snapshot.paused,
   ];
   if (counts.some((n) => !Number.isSafeInteger(n) || n < 0 || n > 1_000_000)) {
     throw new Error("Feed queue observation unavailable");
   }
   const pending = snapshot.waiting + snapshot.active + snapshot.delayed + snapshot.paused;
-  if (typeof snapshot.queuePaused !== "boolean" || snapshot.queuePaused ||
-    snapshot.failed > 0 || snapshot.completed >= policy.maxCompletedJobs ||
-    pending > policy.maxBacklog || snapshot.paused > 0) {
+  if (
+    typeof snapshot.queuePaused !== "boolean" ||
+    snapshot.queuePaused ||
+    snapshot.failed > 0 ||
+    snapshot.completed >= policy.maxCompletedJobs ||
+    pending > policy.maxBacklog ||
+    snapshot.paused > 0
+  ) {
     throw new Error("Feed queue risk threshold exceeded");
   }
   const oldest = snapshot.oldestPendingAt;
   if (
     (pending === 0 && oldest !== null) ||
     (pending > 0 &&
-      (!Number.isSafeInteger(oldest) || oldest === null || oldest > now ||
-        oldest < 0 || now - oldest >= policy.maxPendingAgeMinutes * 60_000))
+      (!Number.isSafeInteger(oldest) ||
+        oldest === null ||
+        oldest > now ||
+        oldest < 0 ||
+        now - oldest >= policy.maxPendingAgeMinutes * 60_000))
   ) {
     throw new Error("Feed queue risk threshold exceeded");
   }
@@ -114,9 +136,13 @@ export async function runContinuousFeedSchedule(
 ): Promise<void> {
   const policy = readContinuousFeedPolicy(env);
   if (
-    !ports || !signal || typeof ports.now !== "function" ||
-    typeof ports.delay !== "function" || typeof ports.inspect !== "function" ||
-    typeof ports.enqueue !== "function" || typeof ports.record !== "function"
+    !ports ||
+    !signal ||
+    typeof ports.now !== "function" ||
+    typeof ports.delay !== "function" ||
+    typeof ports.inspect !== "function" ||
+    typeof ports.enqueue !== "function" ||
+    typeof ports.record !== "function"
   ) {
     throw new Error("Continuous feed ports invalid");
   }
@@ -126,8 +152,11 @@ export async function runContinuousFeedSchedule(
   while (!signal.aborted) {
     const current = ports.now();
     const now = current instanceof Date ? current.getTime() : NaN;
-    if (!Number.isSafeInteger(now) || now < 0 ||
-      (lastClock >= 0 && now < lastClock - MAX_CLOCK_ROLLBACK_MS)) {
+    if (
+      !Number.isSafeInteger(now) ||
+      now < 0 ||
+      (lastClock >= 0 && now < lastClock - MAX_CLOCK_ROLLBACK_MS)
+    ) {
       ports.record("clock_invalid", { slot: lastSlot, pending: 0, failed: 0 });
       throw new Error("Continuous feed clock unavailable");
     }
