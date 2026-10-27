@@ -48,6 +48,7 @@ const env: NodeJS.ProcessEnv = {
   VNS_FEED_CONTINUOUS_ENABLED: "true",
   VNS_FEED_CONTINUOUS_OPERATOR_ACK: "true",
   VNS_FEED_CONTINUOUS_MAX_BACKLOG: "3",
+  VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS: "1000",
   VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES: "20",
   VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT: "2",
 };
@@ -57,6 +58,7 @@ const empty: FeedQueueSnapshot = {
   active: 0,
   delayed: 0,
   failed: 0,
+  completed: 0,
   paused: 0,
   queuePaused: false,
   oldestPendingAt: null,
@@ -65,6 +67,7 @@ const empty: FeedQueueSnapshot = {
 test("all continuous safety gates and explicit operator limits fail closed", () => {
   assert.deepEqual(readContinuousFeedPolicy(env), {
     maxBacklog: 3,
+    maxCompletedJobs: 1000,
     maxPendingAgeMinutes: 20,
     maxConsecutiveEnqueueFailures: 2,
   });
@@ -88,6 +91,7 @@ test("all continuous safety gates and explicit operator limits fail closed", () 
     { VNS_FEED_REDIS_USER: "vns_feed_consumer_restricted" },
     { VNS_FEED_CONTINUOUS_MAX_BACKLOG: "0" },
     { VNS_FEED_CONTINUOUS_MAX_BACKLOG: "21" },
+    { VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS: "10" },
     { VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES: "30" },
     { VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT: "4" },
   ]) assert.throws(() => readContinuousFeedPolicy({ ...env, ...change }));
@@ -103,6 +107,7 @@ test("monitor rejects failed jobs, paused queues, unbounded or stale backlog", (
   );
   const bad: FeedQueueSnapshot[] = [
     { ...empty, failed: 1 },
+    { ...empty, completed: 1000 },
     { ...empty, waiting: 4, oldestPendingAt: now },
     { ...empty, waiting: 1, oldestPendingAt: now - 21 * 60000 },
     { ...empty, waiting: 1, oldestPendingAt: now + 1 },
