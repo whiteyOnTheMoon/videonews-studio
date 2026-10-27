@@ -16,7 +16,6 @@ class FirstOperatorTests(unittest.TestCase):
         self.assertTrue(script.rstrip().endswith("COMMIT;"))
         self.assertEqual(script.count("CREATE ROLE"), 2)
         self.assertEqual(script.count("GRANT vns_"), 2)
-        self.assertIn("NOLOGIN", admin.PREFLIGHT) if False else None
         for value in values:
             self.assertNotIn(value, script)
         for role in (admin.GOVERNOR, admin.PROVISIONER):
