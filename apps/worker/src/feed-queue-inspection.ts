@@ -5,8 +5,12 @@ type InspectionPort = Pick<Queue, "getJobCounts" | "getJobs" | "isPaused">;
 
 /** Only bounded counts and timestamps. Never read or log job payloads/errors. */
 export async function inspectFeedQueue(queue: InspectionPort): Promise<FeedQueueSnapshot> {
-  if (!queue || typeof queue.getJobCounts !== "function" ||
-    typeof queue.getJobs !== "function" || typeof queue.isPaused !== "function") {
+  if (
+    !queue ||
+    typeof queue.getJobCounts !== "function" ||
+    typeof queue.getJobs !== "function" ||
+    typeof queue.isPaused !== "function"
+  ) {
     throw new Error("Feed queue inspection port invalid");
   }
   try {
