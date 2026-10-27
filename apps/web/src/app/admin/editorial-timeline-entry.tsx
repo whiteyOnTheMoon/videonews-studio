@@ -28,7 +28,7 @@ export default function EditorialTimelineEntry({ enabled }: { enabled: boolean }
       !UUID.test(storyId) ||
       summary.length < 8 ||
       summary.length > 2000 ||
-      /[\u0000-\u001f]/.test(summary) ||
+      [...summary].some((char) => char.charCodeAt(0) < 32) ||
       reasonCodes.length < 1 ||
       reasonCodes.length > 20 ||
       reasonCodes.some((code) => !CODE.test(code)) ||
