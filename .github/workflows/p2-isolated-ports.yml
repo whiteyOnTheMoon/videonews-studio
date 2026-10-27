@@ -6,6 +6,7 @@ on:
       - "apps/worker/**"
       - "db/migrations/**"
       - "scripts/ci_p2_integrated_ports.mjs"
+      - "scripts/ci_p2_separated_ports.mjs"
       - "scripts/test_p2_feed_compose.mjs"
       - "scripts/p2_feed_host_preflight.py"
       - "scripts/test_p2_feed_host_preflight.py"
@@ -107,3 +108,5 @@ jobs:
           SQL
       - name: Verify Redis queue, PostgreSQL persistence and never-publish review
         run: node --test scripts/ci_p2_integrated_ports.mjs
+      - name: Verify independent producer and consumer against disposable Redis ACLs
+        run: node --test scripts/ci_p2_separated_ports.mjs
