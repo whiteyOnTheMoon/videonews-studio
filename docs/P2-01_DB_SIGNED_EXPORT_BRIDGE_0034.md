@@ -17,6 +17,7 @@ It requires caller-provisioned signing authority; it does not generate
 private keys, grant hosts, or contact network sources.
 
 The real isolated CI now covers:
+
 1. Two synthetic distinct editor identities and the audited source+host grant.
 2. Restricted PostgreSQL feed and distinct export reader logins.
 3. Atomic DB snapshot → signed private file → signature-verified consumer.
@@ -36,7 +37,7 @@ signatures, malformed/mismatched snapshots and fail-closed database errors.
   secure distribution of the signed artifact.
 - The consumer must use an independently pinned Ed25519 public key and a
   **separately controlled, monotonic revision anchor** at runtime. The CI
-  anchor callback is deliberately synthetic; it is *not* external proof.
+  anchor callback is deliberately synthetic; it is _not_ external proof.
 - Publisher/consumer 0700 private directories and separate Docker UIDs
   require an explicit cross-boundary transfer mechanism, not shared write
   permissions or root shortcuts.

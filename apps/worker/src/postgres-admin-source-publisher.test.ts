@@ -50,12 +50,7 @@ test("one locked DB projection is signed, atomically published and accepted", as
         return { rows: [{ snapshot }] };
       },
     };
-    const revision = await publishApprovedAdminSourceFile(
-      db,
-      publisher,
-      policy,
-      key.privateKey,
-    );
+    const revision = await publishApprovedAdminSourceFile(db, publisher, policy, key.privateKey);
     assert.deepEqual(revision, { sourceRevision: 8, hostApprovalRevision: 3 });
     assert.equal(reads, 1);
     let advances = 0;
@@ -73,7 +68,10 @@ test("one locked DB projection is signed, atomically published and accepted", as
         },
       },
     );
-    assert.deepEqual(sources, [blocked, parent].sort((a, b) => a.id.localeCompare(b.id)));
+    assert.deepEqual(
+      sources,
+      [blocked, parent].sort((a, b) => a.id.localeCompare(b.id)),
+    );
     assert.equal(advances, 1);
     const signed = JSON.parse(
       await readFile(join(publisher, "source-export.signed.json"), "utf8"),
@@ -83,9 +81,7 @@ test("one locked DB projection is signed, atomically published and accepted", as
       join(publisher, "source-export.signed.json"),
       JSON.stringify({ ...signed, signature: "A".repeat(86) }),
     );
-    await assert.rejects(
-      acceptDormantSourceFile(publisher, consumer, policy, key.publicKey),
-    );
+    await assert.rejects(acceptDormantSourceFile(publisher, consumer, policy, key.publicKey));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -107,7 +103,11 @@ test("snapshot mismatch, SQL failure and malformed responses never publish", asy
     for (const rows of invalid) {
       await assert.rejects(
         publishApprovedAdminSourceFile(
-          { async query() { return { rows }; } },
+          {
+            async query() {
+              return { rows };
+            },
+          },
           publisher,
           policy,
           privateKey,
@@ -117,7 +117,11 @@ test("snapshot mismatch, SQL failure and malformed responses never publish", asy
     }
     await assert.rejects(
       publishApprovedAdminSourceFile(
-        { async query(): Promise<never> { throw new Error("PRIVATE_DB_SECRET"); } },
+        {
+          async query(): Promise<never> {
+            throw new Error("PRIVATE_DB_SECRET");
+          },
+        },
         publisher,
         policy,
         privateKey,

@@ -42,10 +42,7 @@ export async function publishApprovedAdminSourceFile(
     }
     // Source and host snapshots come from the *same SQL statement*,
     // never separate reads or caller-created approval objects.
-    const bundle = prepareDormantSourceExport(
-      fields.sourceSnapshot,
-      fields.hostApproval,
-    );
+    const bundle = prepareDormantSourceExport(fields.sourceSnapshot, fields.hostApproval);
     await publishDormantSourceFile(
       directory,
       bundle,
