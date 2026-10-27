@@ -6,7 +6,13 @@ import AiProviderSettingsPreview from "./ai-provider-settings-preview";
 import AiProviderEditForm from "./ai-provider-edit-form";
 import type { ProviderEditCommand } from "./ai-provider-edit-model";
 
-export default function AiProviders({ readOnlyEnabled, writeEnabled = false }: { readOnlyEnabled: boolean; writeEnabled?: boolean }) {
+export default function AiProviders({
+  readOnlyEnabled,
+  writeEnabled = false,
+}: {
+  readOnlyEnabled: boolean;
+  writeEnabled?: boolean;
+}) {
   const [providers, setProviders] = useState<AdminAiProviderView[]>([]);
   const [loading, setLoading] = useState(readOnlyEnabled);
   const [error, setError] = useState("");
@@ -75,7 +81,12 @@ export default function AiProviders({ readOnlyEnabled, writeEnabled = false }: {
         sichtbar, bleiben aber vollständig deaktiviert.
       </p>
       <div className="notice" role="status">
-        <strong>{writeEnabled ? "Sichere Konfiguration freigeschaltet." : "Schlüsselverwaltung noch nicht freigeschaltet."}</strong> Es werden keine KI-Anfragen ausgelöst.
+        <strong>
+          {writeEnabled
+            ? "Sichere Konfiguration freigeschaltet."
+            : "Schlüsselverwaltung noch nicht freigeschaltet."}
+        </strong>{" "}
+        Es werden keine KI-Anfragen ausgelöst.
       </div>
       {loading ? <p role="status">Lade Anbieterstatus …</p> : null}
       {error ? <p role="alert">{error}</p> : null}
@@ -86,7 +97,11 @@ export default function AiProviders({ readOnlyEnabled, writeEnabled = false }: {
               provider={provider}
               status={providers.find((entry) => entry.provider === provider)}
             />
-            {writeEnabled && readOnlyEnabled && !loading && !error && providers.find((entry) => entry.provider === provider) ? (
+            {writeEnabled &&
+            readOnlyEnabled &&
+            !loading &&
+            !error &&
+            providers.find((entry) => entry.provider === provider) ? (
               <AiProviderEditForm
                 provider={provider}
                 selectedModel={providers.find((entry) => entry.provider === provider)!.selectedModel}
@@ -99,7 +114,8 @@ export default function AiProviders({ readOnlyEnabled, writeEnabled = false }: {
         ))}
       </ul>
       <p>
-        Die Ausführung kostenpflichtiger Provider bleibt unabhängig von diesen Einstellungen deaktiviert.
+        Die Ausführung kostenpflichtiger Provider bleibt unabhängig von diesen Einstellungen
+        deaktiviert.
       </p>
     </section>
   );
