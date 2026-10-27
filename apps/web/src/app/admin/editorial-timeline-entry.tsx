@@ -81,7 +81,7 @@ export default function EditorialTimelineEntry({ enabled }: { enabled: boolean }
         typeof raw !== "object" ||
         Array.isArray(raw) ||
         typeof (raw as Record<string, unknown>).eventId !== "string" ||
-        !UUID.test((raw as Record<string, string>).eventId) ||
+        !UUID.test((raw as Record<string, string>).eventId ?? "") ||
         (raw as Record<string, unknown>).approvedForPublication !== false
       )
         throw new Error("Redaktionsereignis nicht bestätigt.");
