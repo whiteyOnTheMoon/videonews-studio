@@ -63,7 +63,7 @@ Because `feed-queue-contract` currently treats any failed source as
 a failed tick, one failing provider may fail that whole slot, but the
 remaining source polls still execute independently inside that tick and
 the bounded scheduler can attempt the **next** authorized slot. There is
-no automatic retry storm. Operators must inspect failed jobs before
+no automatic retry storm. Retained failed BullMQ jobs require operator inspection before
 further promotion.
 
 Offline unit tests prove fail-closed gates, UTC slot alignment, no catch-up
