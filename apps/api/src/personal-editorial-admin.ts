@@ -176,7 +176,7 @@ export function validateNamedTimelineWrite(raw: unknown): NamedTimelineWrite | n
     typeof raw.details.summary !== "string" ||
     raw.details.summary.length < 8 ||
     raw.details.summary.length > 2000 ||
-    /[\u0000-\u001f]/.test(raw.details.summary) ||
+    [...raw.details.summary].some((char: string) => char.charCodeAt(0) < 32) ||
     !Array.isArray(raw.details.reasonCodes) ||
     raw.details.reasonCodes.length < 1 ||
     raw.details.reasonCodes.length > 20 ||
