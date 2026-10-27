@@ -74,6 +74,7 @@ const responses: Record<string, { type: string; body: string }> = {
 function fixture() {
   let dbNow = START;
   let cached = false;
+  const currentlyApproved = new Set(["agency_rss", "agency_atom", "agency_json"]);
   let readCount = 0;
   const requests: Array<{ path: string; ip: string; etag: string | undefined }> = [];
   const saved = new Set<string>();
@@ -85,6 +86,10 @@ function fixture() {
   const pool = {
     async query(sql: string, args: unknown[]) {
       queries.push({ sql, args });
+      if (sql.includes("vns.feed_runtime_source_authorized")) {
+        const source = JSON.parse(String(args[0])) as { id: string };
+        return { rows: [{ authorized: currentlyApproved.has(source.id) }] };
+      }
       if (sql.includes("vns.claim_feed_poll")) {
         const id = String(args[0]);
         const state = db.get(id);
@@ -166,6 +171,9 @@ function fixture() {
     },
     setNow(minutes: number) {
       dbNow = START + minutes * 60000;
+    },
+    revoke(sourceId: string) {
+      currentlyApproved.delete(sourceId);
     },
     use304() {
       cached = true;
@@ -285,4 +293,39 @@ test("database outage fails closed before any HTTPS request", async () => {
   assert.ok(results.every((result) => result.status === "failed"));
   assert.equal(JSON.stringify(results).includes("SECRET"), false);
   assert.equal(f.requests.length, 0);
+});
+
+test("live one-shot gate checks database before claim, before HTTPS and before commit", async () => {
+  const f = fixture();
+  const scheduler = createDormantFeedScheduler(
+    { ...env, VNS_FEED_RUNTIME_ENABLED: "true" },
+    f.ports,
+  );
+  f.revoke("agency_rss");
+  const results = await scheduler.tick(new Date(START));
+  assert.deepEqual(results, [
+    { sourceId: "agency_rss", status: "failed", newItems: 0 },
+    { sourceId: "agency_atom", status: "ingested", newItems: 1 },
+    { sourceId: "agency_json", status: "ingested", newItems: 1 },
+  ]);
+  assert.deepEqual(f.requests.map((x) => x.path), ["/atom/", "/api/"]);
+  assert.deepEqual([...f.db.keys()], ["agency_atom", "agency_json"]);
+  assert.equal(f.saved.size, 2);
+  const admissions = f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized"));
+  assert.equal(admissions.length, 7);
+});
+
+test("live authority denies all sources without touching network or feed leases", async () => {
+  const f = fixture();
+  for (const id of ["agency_rss", "agency_atom", "agency_json"]) f.revoke(id);
+  const scheduler = createDormantFeedScheduler(
+    { ...env, VNS_FEED_RUNTIME_ENABLED: "true" },
+    f.ports,
+  );
+  const results = await scheduler.tick(new Date(START));
+  assert.equal(results.length, 3);
+  assert.ok(results.every((x) => x.status === "failed" && x.newItems === 0));
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.db.size, 0);
+  assert.equal(f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized")).length, 3);
 });
