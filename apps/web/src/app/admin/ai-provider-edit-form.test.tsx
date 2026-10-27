@@ -104,7 +104,7 @@ test("provider editor is mounted only behind the separate Web write gate", async
     readFile(new URL("../api/admin/ai-providers/route.ts", import.meta.url), "utf8"),
   ]);
   assert.match(adminPage, /VNS_WEB_AI_PROVIDER_WRITE_ENABLED/);
-  assert.match(preview, /writeEnabled && readOnlyEnabled && !loading && !error/);
+  assert.match(preview, /writeEnabled &&\s+readOnlyEnabled &&\s+!loading &&\s+!error/);
   assert.match(preview, /AiProviderEditForm/);
   assert.match(route, /export async function POST/);
   assert.match(route, /VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"/);
