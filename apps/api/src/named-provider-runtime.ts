@@ -55,7 +55,7 @@ export async function namedProviderRuntimeFromEnv(
   poolFactory: (options: PoolConfig) => Pool = (options) => new pg.Pool(options),
   withKey: typeof withProviderMasterKey = withProviderMasterKey,
 ): Promise<NamedProviderRequestRuntime | undefined> {
-  if (env.VNS_PROVIDER_ADMIN_WRITE_ENABLED === undefined || env.VNS_PROVIDER_ADMIN_WRITE_ENABLED === "false") {
+  if ([undefined, "false"].includes(env.VNS_PROVIDER_ADMIN_WRITE_ENABLED)) {
     return undefined;
   }
   if (
