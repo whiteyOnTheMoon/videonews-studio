@@ -7,50 +7,67 @@ import {
   createPersonalEditorialSessions,
   readPersonalEditorialAdmission,
 } from "./personal-editorial-runtime.js";
+import { namedProviderRuntimeFromEnv } from "./named-provider-runtime.js";
 
-const host = process.env.API_HOST ?? "127.0.0.1";
-const port = Number(process.env.API_PORT ?? "4000");
+async function start(): Promise<void> {
+  const host = process.env.API_HOST ?? "127.0.0.1";
+  const port = Number(process.env.API_PORT ?? "4000");
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("API_PORT must be an integer from 1 to 65535.");
+  }
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  throw new Error("API_PORT must be an integer from 1 to 65535.");
-}
+  const auth = adminAuthFromEnv(process.env);
+  const jobs = adminJobsFromEnv(auth, process.env);
+  const editor = editorAuthFromEnv(auth, jobs, process.env);
+  const personalAdmission = readPersonalEditorialAdmission(process.env);
+  if (personalAdmission && (!auth || !editor)) {
+    throw new Error("Personal editorial runtime requires authenticated API and editor");
+  }
+  const personalEditorial =
+    personalAdmission && auth && editor
+      ? new DormantPersonalEditorialAdmin(
+          editor,
+          auth,
+          createPersonalEditorialSessions(personalAdmission),
+          true,
+        )
+      : undefined;
 
-// Explicit opt-in only. Invalid secrets or a non-HTTPS origin prevent startup.
-const auth = adminAuthFromEnv(process.env);
-const jobs = adminJobsFromEnv(auth, process.env);
-const editor = editorAuthFromEnv(auth, jobs, process.env);
-const personalAdmission = readPersonalEditorialAdmission(process.env);
-if (personalAdmission && (!auth || !editor)) {
-  throw new Error("Personal editorial runtime requires authenticated API and editor");
-}
-const personalEditorial =
-  personalAdmission && auth && editor
-    ? new DormantPersonalEditorialAdmin(
-        editor,
-        auth,
-        createPersonalEditorialSessions(personalAdmission),
-        true,
-      )
-    : undefined;
-const server = createApiServer({ auth, jobs, editor, personalEditorial });
-server.listen(port, host, () => {
-  console.log(`VideoNews Studio API ready at http://${host}:${port}`);
-});
+  let providerConfig: Awaited<ReturnType<typeof namedProviderRuntimeFromEnv>>;
+  try {
+    providerConfig = await namedProviderRuntimeFromEnv(editor, auth);
+  } catch {
+    await editor?.close().catch(() => undefined);
+    await jobs?.close().catch(() => undefined);
+    throw new Error("Named provider configuration failed startup checks");
+  }
 
-function shutdown(): void {
-  server.close((error) => {
-    if (error) console.error("API shutdown failed");
-    void editor?.close().catch(() => {
-      console.error("Editor database shutdown failed");
-      process.exitCode = 1;
-    });
-    void jobs?.close().catch(() => {
-      console.error("Admin-job database shutdown failed");
-      process.exitCode = 1;
-    });
-    if (error) process.exitCode = 1;
+  const server = createApiServer({ auth, jobs, editor, personalEditorial, providerConfig });
+  server.listen(port, host, () => {
+    console.log(`VideoNews Studio API ready at http://${host}:${port}`);
   });
+
+  async function close(): Promise<void> {
+    server.close((error) => {
+      if (error) process.exitCode = 1;
+      void Promise.allSettled([
+        editor?.close(),
+        jobs?.close(),
+        providerConfig?.close(),
+      ]).then((results) => {
+        if (results.some((result) => result.status === "rejected")) {
+          console.error("API resource shutdown failed");
+          process.exitCode = 1;
+        }
+      });
+    });
+  }
+  process.once("SIGINT", () => void close());
+  process.once("SIGTERM", () => void close());
 }
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+void start().catch(() => {
+  // Startup diagnostics must never print provider key material or DB URLs.
+  console.error("API startup failed");
+  process.exitCode = 1;
+});
