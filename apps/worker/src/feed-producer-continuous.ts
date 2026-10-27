@@ -2,7 +2,10 @@ import { setTimeout as delay } from "node:timers/promises";
 import { createSeparatedFeedProducer, requireSeparatedFeedGate } from "./feed-bullmq-separated.js";
 import { openSeparatedFeedRedis } from "./feed-separated-redis.js";
 import { inspectFeedQueue } from "./feed-queue-inspection.js";
-import { runContinuousFeedSchedule, readContinuousFeedPolicy } from "./feed-scheduler-continuous.js";
+import {
+  runContinuousFeedSchedule,
+  readContinuousFeedPolicy,
+} from "./feed-scheduler-continuous.js";
 import { publishFeedConsumerHealth } from "./feed-consumer-health.js";
 
 export const FEED_PRODUCER_HEALTH_PATH = "/tmp/vns-feed-producer-health.json";
@@ -12,7 +15,9 @@ export const FEED_PRODUCER_HEALTH_PATH = "/tmp/vns-feed-producer-health.json";
  * Source rights, per-source intervals and DB revision are checked by
  * independent consumer on EACH delivery.
  */
-export async function runContinuousFeedProducer(env: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runContinuousFeedProducer(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   requireSeparatedFeedGate(env, "producer", "continuous_producer");
   readContinuousFeedPolicy(env);
   const controller = new AbortController();
