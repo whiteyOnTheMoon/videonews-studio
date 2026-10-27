@@ -116,7 +116,8 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
           (!Number.isSafeInteger(input.score) ||
             (input.score as number) < 0 ||
             (input.score as number) > 1000))
-      ) return null;
+      )
+        return null;
     } else if (
       Object.keys(input).length !== 2 ||
       !Object.hasOwn(input, "expectedRevision") ||
@@ -125,7 +126,8 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
       (input.expectedRevision as number) < 0 ||
       !Array.isArray(input.profiles) ||
       input.profiles.length > 20
-    ) return null;
+    )
+      return null;
     return JSON.stringify(input);
   } catch {
     return null;
@@ -147,17 +149,22 @@ export async function dormantEditorialAdminProxy(
 ): Promise<Response> {
   if (!config) return reply(404, { error: "not_found" });
   if (!(endpoint in ENDPOINTS)) return reply(404, { error: "not_found" });
-  if (request.method !== "GET" &&
-      !(["profiles", "checkpoints"].includes(endpoint) && request.method === "POST")) {
+  if (
+    request.method !== "GET" &&
+    !(["profiles", "checkpoints"].includes(endpoint) && request.method === "POST")
+  ) {
     return reply(405, { error: "method_not_allowed" });
   }
   if (request.method === "POST" && request.headers.get("origin") !== config.origin) {
     return reply(403, { error: "forbidden" });
   }
   const url = new URL(request.url);
-  if (request.method === "POST" && endpoint === "checkpoints"
+  if (
+    request.method === "POST" && endpoint === "checkpoints"
       ? url.search !== ""
-      : !validQuery(endpoint, url)) return reply(400, { error: "invalid_request" });
+      : !validQuery(endpoint, url)
+  )
+    return reply(400, { error: "invalid_request" });
   const cookie = clientEditorCookie(request.headers.get("cookie"));
   if (!cookie) return reply(401, { error: "unauthorized" });
   const profile = await editorProfile(request, config, fetcher);
@@ -211,8 +218,11 @@ export async function dormantEditorialAdminProxy(
       });
     }
     if (endpoint === "checkpoints" && request.method === "POST") {
-      if (value.saved !== true || value.approvedForPublication !== false ||
-          !Number.isSafeInteger(value.revision)) {
+      if (
+        value.saved !== true ||
+        value.approvedForPublication !== false ||
+        !Number.isSafeInteger(value.revision)
+      ) {
         return reply(503, { error: "temporarily_unavailable" });
       }
       return reply(200, {
