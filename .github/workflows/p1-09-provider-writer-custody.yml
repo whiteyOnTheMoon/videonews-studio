@@ -56,17 +56,69 @@ jobs:
           for file in $(find db/migrations -maxdepth 1 -name '00*.up.sql' | sort | head -18); do
             sql < "$file"
           done
-          # Disposable records ONLY: the real personal operator registration
-          # was independently verified by first-owner bootstrap CI.
+          # Disposable-only synthetic registered actor; real first-owner
+          # PostgreSQL SCRAM bootstrap has its own independent CI acceptance.
+          # Even this fixture must honor the account lifecycle audit trigger.
           sql <<'SQL'
-          INSERT INTO vns.editor_accounts
-            (username,display_name,role,password_hash,active)
-          VALUES ('ci_test_owner','Synthetic CI Admin','admin',
-                  'scrypt$' || repeat('0',32) || '$' || repeat('0',128),true);
+          CREATE ROLE vns_ci_synthetic_owner LOGIN NOINHERIT NOSUPERUSER
+            NOCREATEDB NOCREATEROLE NOREPLICATION;
+          GRANT vns_editor_provisioner TO vns_ci_synthetic_owner;
           INSERT INTO vns.editor_operator_registry
             (login_role,operator_id,operator_label,active)
           VALUES ('vns_ci_synthetic_owner','aaaaaaaa-1234-4123-8123-aaaaaaaaaaaa',
                   'Disposable CI Operator',true);
+          SET SESSION AUTHORIZATION vns_ci_synthetic_owner;
+          SET ROLE vns_editor_provisioner;
+          INSERT INTO vns.editor_accounts
+            (username,display_name,role,password_hash)
+          VALUES ('ci_test_owner','Synthetic CI Admin','admin',
+                  'scrypt
+          python3 scripts/p1_09_provider_writer_custody.py --preflight
+          python3 scripts/p1_09_provider_writer_custody.py --apply
+          if python3 scripts/p1_09_provider_writer_custody.py --preflight; then
+            echo "FAIL: duplicate writer preflight accepted"
+            exit 1
+          fi
+          if python3 scripts/p1_09_provider_writer_custody.py --apply; then
+            echo "FAIL: duplicate writer activation accepted"
+            exit 1
+          fi
+          actual="$(docker exec vns-p109-writer-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c "SELECT (SELECT count(*) FROM pg_auth_members m
+            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
+            WHERE r.rolname='vns_provider_config_writer'
+              AND u.rolname='vns_provider_config_login') || '|' ||
+            (SELECT count(*) FROM vns.ai_provider_sealed_credentials) || '|' ||
+            (SELECT count(*) FROM vns.ai_provider_settings WHERE enabled)")"
+          [[ "$actual" == "1|0|0" ]] || exit 1
+          echo 'PASS: one dedicated provider login and private master key; providers disabled'
+ || repeat('0',32) || '
+          python3 scripts/p1_09_provider_writer_custody.py --preflight
+          python3 scripts/p1_09_provider_writer_custody.py --apply
+          if python3 scripts/p1_09_provider_writer_custody.py --preflight; then
+            echo "FAIL: duplicate writer preflight accepted"
+            exit 1
+          fi
+          if python3 scripts/p1_09_provider_writer_custody.py --apply; then
+            echo "FAIL: duplicate writer activation accepted"
+            exit 1
+          fi
+          actual="$(docker exec vns-p109-writer-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
+            -c "SELECT (SELECT count(*) FROM pg_auth_members m
+            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
+            WHERE r.rolname='vns_provider_config_writer'
+              AND u.rolname='vns_provider_config_login') || '|' ||
+            (SELECT count(*) FROM vns.ai_provider_sealed_credentials) || '|' ||
+            (SELECT count(*) FROM vns.ai_provider_settings WHERE enabled)")"
+          [[ "$actual" == "1|0|0" ]] || exit 1
+          echo 'PASS: one dedicated provider login and private master key; providers disabled'
+ || repeat('0',128));
+          UPDATE vns.editor_accounts SET active=true
+            WHERE username='ci_test_owner';
+          RESET ROLE;
+          RESET SESSION AUTHORIZATION;
           SQL
           python3 scripts/p1_09_provider_writer_custody.py --preflight
           python3 scripts/p1_09_provider_writer_custody.py --apply
