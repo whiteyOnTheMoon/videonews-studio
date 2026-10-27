@@ -31,12 +31,7 @@ function readPinnedFile(path: string): string {
   try {
     fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = fstatSync(fd);
-    if (
-      !stat.isFile() ||
-      stat.size < 16 ||
-      stat.size > 16384 ||
-      (stat.mode & 0o022) !== 0
-    ) {
+    if (!stat.isFile() || stat.size < 16 || stat.size > 16384 || (stat.mode & 0o022) !== 0) {
       throw new Error("Untrusted file");
     }
     return readFileSync(fd, "utf8");

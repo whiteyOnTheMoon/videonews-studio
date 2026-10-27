@@ -61,8 +61,7 @@ export function readFeedRuntimeAdmission(env: NodeJS.ProcessEnv): FeedRuntimeAdm
     env.VNS_FEED_SOURCE_PUBLIC_KEY_FILE !== FEED_SOURCE_PUBLIC_KEY ||
     env.VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE !== FEED_SOURCE_ANCHOR_PASSWORD ||
     env.VNS_FEED_SOURCE_ANCHOR_CA_FILE !== FEED_SOURCE_ANCHOR_CA ||
-    env.VNS_FEED_SOURCE_BOOTSTRAP !== "false" &&
-      env.VNS_FEED_SOURCE_BOOTSTRAP !== "true" ||
+    (env.VNS_FEED_SOURCE_BOOTSTRAP !== "false" && env.VNS_FEED_SOURCE_BOOTSTRAP !== "true") ||
     (env.VNS_FEED_SOURCE_BOOTSTRAP === "true" &&
       env.VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK !== "true") ||
     env.VNS_SOURCE_FETCH_ENABLED !== "true"

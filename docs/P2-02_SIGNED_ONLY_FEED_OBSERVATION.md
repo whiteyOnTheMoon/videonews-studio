@@ -7,6 +7,7 @@ provider or production settings are activated by merging it.
 ## Startup admission
 
 Before reaching Redis or network fetching, the observer must:
+
 1. Pass **all** existing one-shot, rights, queue and network operator gates.
 2. Require `VNS_FEED_SIGNED_EXPORT_ENABLED=true` and
    `VNS_FEED_SOURCE_ANCHOR_APPROVED=true`.
@@ -40,6 +41,7 @@ ceremony** before any startup, not performed by the feed worker.
 
 Required environment fields are **exactly** the path constants in the
 module; they are not user-supplied paths:
+
 - `VNS_FEED_SIGNED_SOURCE_INBOX=/var/lib/vns/feed-source-inbox`
 - `VNS_FEED_SOURCE_CHECKPOINT_DIR=/var/lib/vns/feed-source-checkpoint`
 - `VNS_FEED_SOURCE_PUBLIC_KEY_FILE=/run/secrets/vns_feed_source_public_key`
@@ -64,7 +66,7 @@ not simply a new schema in the same mutable application PostgreSQL cluster.
   workflow. Do not infer productive operability from the CI fixture alone.
 - No continuous scheduler exists. No real provider, API key, payable AI model,
   editorial release or publishing action is enabled.
-- A revoke may race with a request *already being sent* to HTTPS. Migration
+- A revoke may race with a request _already being sent_ to HTTPS. Migration
   0033 atomically protects the final PostgreSQL candidate write, not every
   remote HTTP byte. A revocation-aware transport lease remains open work.
 - Keeping the legacy `VNS_FEED_REGISTRY_FILE` selector only preserves

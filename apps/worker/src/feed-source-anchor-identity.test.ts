@@ -44,10 +44,7 @@ test("independent source anchor login has only the monotonic advance function", 
       ...allowed,
       [key]: key === "can_advance" ? false : true,
     };
-    await assert.rejects(
-      attestFeedSourceAnchorIdentity(db([bad]), login),
-      /admission denied/,
-    );
+    await assert.rejects(attestFeedSourceAnchorIdentity(db([bad]), login), /admission denied/);
   }
   await assert.rejects(
     attestFeedSourceAnchorIdentity(db([{ ...allowed, session_user: "other" }]), login),
@@ -65,7 +62,6 @@ test("anchor outage and malformed data fail closed without exposing credentials"
   await assert.rejects(
     attestFeedSourceAnchorIdentity(dbPort, login),
     (error: unknown) =>
-      error instanceof Error &&
-      error.message === "Independent feed source anchor admission denied",
+      error instanceof Error && error.message === "Independent feed source anchor admission denied",
   );
 });
