@@ -136,7 +136,12 @@ test(
       consumerRedis.on("error", () => undefined);
       await events.waitUntilReady();
       producer = createSeparatedFeedProducer(producerEnv, producerRedis);
-      consumer = createSeparatedFeedConsumer(consumerEnv, consumerRedis, openContext, () => syntheticNow);
+      consumer = createSeparatedFeedConsumer(
+        consumerEnv,
+        consumerRedis,
+        openContext,
+        () => syntheticNow,
+      );
       await Promise.all([producer.queue.waitUntilReady(), consumer.worker.waitUntilReady()]);
       await assert.rejects(producerRedis.set("outside:source", "never"), /NOPERM/);
       await assert.rejects(consumerRedis.get("outside:source"), /NOPERM/);
