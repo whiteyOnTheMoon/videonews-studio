@@ -54,6 +54,7 @@ export async function observeFeedOnce(
   });
   let producer: Redis | undefined;
   let consumer: Redis | undefined;
+  let eventsConnection: Redis | undefined;
   let queueEvents: QueueEvents | undefined;
   let bridge: ReturnType<typeof createGatedFeedBullmqBridge> | undefined;
   try {
@@ -84,10 +85,14 @@ export async function observeFeedOnce(
     };
     producer = new Redis(redisConfig);
     consumer = new Redis(redisConfig);
+    // QueueEvents performs blocking Redis reads. Never multiplex that connection
+    // with the producer: dedicated ownership makes shutdown and ACLs predictable.
+    eventsConnection = new Redis(redisConfig);
     // A worker Redis failure must be an application failure, not an unhandled
     // error which prints connection/credential details to logs.
     producer.on("error", () => undefined);
     consumer.on("error", () => undefined);
+    eventsConnection.on("error", () => undefined);
     bridge = createGatedFeedBullmqBridge(env, scheduler, {
       producer,
       consumer,
@@ -95,7 +100,7 @@ export async function observeFeedOnce(
     });
     bridge.worker.on("error", () => undefined);
     queueEvents = new QueueEvents(ISOLATED_FEED_QUEUE, {
-      connection: producer,
+      connection: eventsConnection,
       prefix: ISOLATED_FEED_REDIS_PREFIX,
     });
     queueEvents.on("error", () => undefined);
@@ -130,6 +135,7 @@ export async function observeFeedOnce(
     await queueEvents?.close().catch(() => undefined);
     await bridge?.close().catch(() => undefined);
     await consumer?.quit().catch(() => consumer?.disconnect());
+    await eventsConnection?.quit().catch(() => eventsConnection?.disconnect());
     await producer?.quit().catch(() => producer?.disconnect());
     await pool.end().catch(() => undefined);
   }
