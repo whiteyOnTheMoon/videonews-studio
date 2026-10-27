@@ -53,10 +53,3 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           node --test scripts/test_p2_personal_editorial_compose.mjs
-      - name: Prepare P2 story timeline formatting patch
-        run: |
-          npx prettier --write apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-admin.test.ts apps/web/src/lib/admin-editorial-proxy.ts apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/app/admin/editorial-timeline-entry.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/admin/editorial-admin.test.tsx apps/web/src/app/api/admin/editorial-timeline/route.ts docs/P2-10_PERSONAL_STORY_TIMELINE.md
-          echo '===VNS_P210_FORMAT_START==='
-          git diff --no-color -- apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-admin.test.ts apps/web/src/lib/admin-editorial-proxy.ts apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/app/admin/editorial-timeline-entry.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/admin/editorial-admin.test.tsx apps/web/src/app/api/admin/editorial-timeline/route.ts docs/P2-10_PERSONAL_STORY_TIMELINE.md
-          echo '===VNS_P210_FORMAT_END==='
-          git diff --exit-code -- apps/api/src/personal-editorial-admin.ts apps/api/src/personal-editorial-admin.test.ts apps/web/src/lib/admin-editorial-proxy.ts apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/app/admin/editorial-timeline-entry.tsx apps/web/src/app/admin/page.tsx apps/web/src/app/admin/editorial-admin.test.tsx apps/web/src/app/api/admin/editorial-timeline/route.ts docs/P2-10_PERSONAL_STORY_TIMELINE.md
