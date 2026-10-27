@@ -44,7 +44,7 @@ The database login must be nonprivileged, hold
 `vns_source_export_reader` membership and EXECUTE on
 `vns.read_approved_source_export()`, but **not** direct SELECT on the
 source/host/audit tables or EXECUTE on the admin source mutation function.
-A shared API/feed-worker DB identity does not qualify.
+A shared API/feed-worker DB identity does not qualify. The export login is a\ntechnical service identity, **not** a substitute for two independently\nauthenticated human source and host reviewers in the admin audit ledger.
 
 ## Security and operational limitations
 
