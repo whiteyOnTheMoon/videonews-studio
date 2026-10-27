@@ -132,6 +132,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0035_approved_feed_candidate_projection.test.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.up.sql"
   sql < "$root/db/tests/0036_provider_usage_evidence.test.sql"
+  sql < "$root/db/migrations/0037_provider_live_budget_ledger.up.sql"
+  sql < "$root/db/tests/0037_provider_live_budget_ledger.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -257,6 +259,44 @@ for iteration in 1 2; do
     rm -rf -- "$host_work"
     echo "PASS: two independent host-approval sessions persist one grant and audit"
   fi
+  if [[ "$iteration" -eq 1 ]]; then
+    # Two independent SQL connections race for a single $0.0003 reservation.
+    sql < "$root/db/tests/0037_provider_live_budget_concurrency.setup.sql"
+    live_work="$(mktemp -d /tmp/vns-live-budget-ci-XXXXXXXX)"
+    for label in a b; do
+      if [[ "$label" = a ]]; then
+        job="b3710001-1111-4111-8111-111111111111"
+      else
+        job="b3710002-2222-4222-8222-222222222222"
+      fi
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_provider_usage_writer;
+         SELECT vns.reserve_provider_live_budget(
+         '$job','openai','ci-parallel-model','ci_parallel_request_0001',
+         'b3710000-0000-4000-8000-000000000001',100,100)" \
+         > "$live_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then live_pid_a=$!; else live_pid_b=$!; fi
+    done
+    live_pass_a=0
+    live_pass_b=0
+    if wait "$live_pid_a"; then live_pass_a=1; fi
+    if wait "$live_pid_b"; then live_pass_b=1; fi
+    test $((live_pass_a + live_pass_b)) -eq 1 || {
+      echo "FAIL: two concurrent real-budget reservations exceeded cap" >&2
+      rm -rf -- "$live_work"
+      exit 1
+    }
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT count(*) FROM vns.provider_live_reservations')" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT sum(reserved_micro_usd) FROM vns.provider_live_reservations')" = 300
+    rm -rf -- "$live_work"
+    echo "PASS: two independent SQL sessions admit exactly one $0.0003 reservation"
+  fi
+  sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
   sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
   sql < "$root/db/migrations/0034_atomic_source_export_authority.down.sql"
@@ -298,4 +338,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0036 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0037 migrations, source authority, leases and budgets twice"
