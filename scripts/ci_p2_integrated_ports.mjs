@@ -24,6 +24,7 @@ import {
 import { gateOfflineClaimEvidence } from "../apps/worker/dist/offline-evidence-gate.js";
 import { assessEditorialCandidate } from "../apps/worker/dist/bounded-editorial-production.js";
 import { attestFeedDatabaseIdentity } from "../apps/worker/dist/feed-runtime-admission.js";
+import { attestSourcePublisherIdentity } from "../apps/worker/dist/feed-source-publish-once.js";
 import { publishApprovedAdminSourceFile } from "../apps/worker/dist/postgres-admin-source-publisher.js";
 import { acceptDormantSourceFile } from "../apps/worker/dist/source-export-files.js";
 
@@ -211,6 +212,12 @@ test(
     };
     try {
       await seedReviewedSyntheticSources(dba);
+      // Real disposable login, not a SET ROLE simulation of the publisher.
+      await attestSourcePublisherIdentity(exportSql, "vns_source_export_login_ciunit");
+      await assert.rejects(
+        attestSourcePublisherIdentity(dba, "vns_source_export_login_ciunit"),
+        /database admission denied/,
+      );
       const { privateKey, publicKey } = generateKeyPairSync("ed25519");
       const sourcePolicy = { enabled: true, hosts: [host] };
       const revisions = await publishApprovedAdminSourceFile(
