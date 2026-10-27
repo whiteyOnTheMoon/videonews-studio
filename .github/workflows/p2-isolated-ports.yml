@@ -79,10 +79,12 @@ jobs:
           VNS_P2_ANCHOR_CA_FILE: /tmp/vns-ci/anchor-ca
           VNS_P2_FEED_DB_PASSWORD_FILE: /tmp/vns-ci/feed-db-pass
           VNS_P2_FEED_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-redis-pass
+          VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-producer-redis-pass
         run: |
           docker compose -f compose.yaml -f compose.feed-observation.yaml \
             --profile data --profile source-signing --profile source-handoff \
-            --profile feed-observation --profile feed-scheduler config --quiet
+            --profile feed-observation --profile feed-scheduler \
+            --profile feed-producer --profile feed-consumer config --quiet
       - name: Test read-only host UID and secrets preflight with synthetic filesystem metadata
         run: python3 -m unittest discover -s scripts -p "test_p2_feed_host_preflight.py" -v
       - name: Compile shared and worker contracts
