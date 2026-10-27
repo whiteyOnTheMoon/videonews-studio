@@ -72,24 +72,15 @@ const consumerEnv = {
   VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "true",
 };
 
-test("real isolated Redis: distinct ACL identities, durable slot delivery and restarted consumer", { timeout: 60000 }, async () => {
+test(
+  "real isolated Redis: distinct ACL identities, durable slot delivery and restarted consumer",
+  { timeout: 60000 },
+  async () => {
   const address = { host: "127.0.0.1", port: 6379 };
   const admin = new Redis(address);
-  const producerRedis = new Redis({
-    ...address,
-    username: producerUser,
-    password: producerPassword,
-    maxRetriesPerRequest: null,
-  });
-  const consumerRedis = new Redis({
-    ...address,
-    username: consumerUser,
-    password: consumerPassword,
-    maxRetriesPerRequest: null,
-  });
-  // Created after ACL provisioning below. No real publisher or source access.
-  producerRedis.on("error", () => undefined);
-  consumerRedis.on("error", () => undefined);
+  // Connections are created only AFTER Redis ACL users exist.
+  let producerRedis;
+  let consumerRedis;
   const events = new QueueEvents(ISOLATED_FEED_QUEUE, {
     connection: address,
     prefix: ISOLATED_FEED_REDIS_PREFIX,
@@ -129,6 +120,20 @@ test("real isolated Redis: distinct ACL identities, durable slot delivery and re
         "-@dangerous",
       );
     }
+    producerRedis = new Redis({
+      ...address,
+      username: producerUser,
+      password: producerPassword,
+      maxRetriesPerRequest: null,
+    });
+    consumerRedis = new Redis({
+      ...address,
+      username: consumerUser,
+      password: consumerPassword,
+      maxRetriesPerRequest: null,
+    });
+    producerRedis.on("error", () => undefined);
+    consumerRedis.on("error", () => undefined);
     await events.waitUntilReady();
     producer = createSeparatedFeedProducer(producerEnv, producerRedis);
     consumer = createSeparatedFeedConsumer(consumerEnv, consumerRedis, openContext, () => syntheticNow);
@@ -162,7 +167,12 @@ test("real isolated Redis: distinct ACL identities, durable slot delivery and re
     restartedConnection.on("error", () => undefined);
     try {
       syntheticNow = new Date(syntheticNow.getTime() + 900000);
-      consumer = createSeparatedFeedConsumer(consumerEnv, restartedConnection, openContext, () => syntheticNow);
+      consumer = createSeparatedFeedConsumer(
+        consumerEnv,
+        restartedConnection,
+        openContext,
+        () => syntheticNow,
+      );
       await consumer.worker.waitUntilReady();
       const nextId = await producer.enqueue(syntheticNow);
       const nextJob = await producer.queue.getJob(nextId);
@@ -179,9 +189,10 @@ test("real isolated Redis: distinct ACL identities, durable slot delivery and re
     await consumer?.close().catch(() => undefined);
     await producer?.close().catch(() => undefined);
     await events.close().catch(() => undefined);
-    await producerRedis.quit().catch(() => producerRedis.disconnect());
-    await consumerRedis.quit().catch(() => consumerRedis.disconnect());
+    await producerRedis?.quit().catch(() => producerRedis.disconnect());
+    await consumerRedis?.quit().catch(() => consumerRedis.disconnect());
     await admin.acl("DELUSER", producerUser, consumerUser).catch(() => undefined);
     await admin.quit().catch(() => admin.disconnect());
   }
-});
+  },
+);
