@@ -14,7 +14,7 @@
 
 Both roles require all existing `readFeedRuntimeAdmission` flags, configured approved hosts, fixed container secret paths and `VNS_FEED_SOURCE_BOOTSTRAP=false`.
 
-Producer alone: `VNS_FEED_RUNTIME_MODE=bounded_producer`, `VNS_FEED_SEPARATE_PRODUCER_ENABLED=true`, `VNS_FEED_SEPARATE_PRODUCER_OPERATOR_ACK=true`, Redis user `vns_feed_producer_*`, plus existing bounded scheduler flags, max ticks and failure limit. Producer Redis secret comes exclusively from operator-supplied `VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE`; it must be verified to have only enqueue privileges for the isolated BullMQ namespace.
+Producer alone: `VNS_FEED_RUNTIME_MODE=bounded_producer`, `VNS_FEED_SEPARATE_PRODUCER_ENABLED=true`, `VNS_FEED_SEPARATE_PRODUCER_OPERATOR_ACK=true`, Redis user `vns_feed_producer_*`, plus existing bounded scheduler flags, max ticks and failure limit. Redis ACL verification must include the narrowly scoped read-only `INFO` command needed by ioredis readiness checks while denying Redis administration and keys outside `bull:vns:feed:*`. Producer Redis secret comes exclusively from operator-supplied `VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE`; it must be verified to have only enqueue privileges for the isolated BullMQ namespace.
 
 Consumer alone: `VNS_FEED_RUNTIME_MODE=persistent_worker`, `VNS_FEED_SEPARATE_WORKER_ENABLED=true`, `VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK=true`, Redis user `vns_feed_consumer_*`. Its existing secret mounts must be separately provisioned, host-permission-checked and attested before startup. The consumer remains running until signaled, Redis connection failure, or the configured failure stop. Its restart policy is deliberately `no` until recovery/monitoring are proven.
 
