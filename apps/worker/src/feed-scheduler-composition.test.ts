@@ -295,7 +295,7 @@ test("database outage fails closed before any HTTPS request", async () => {
   assert.equal(f.requests.length, 0);
 });
 
-test("live one-shot gate checks database before claim, before HTTPS and before commit", async () => {
+test("runtime checks source grants at feed boundaries", async () => {
   const f = fixture();
   const scheduler = createDormantFeedScheduler(
     { ...env, VNS_FEED_RUNTIME_ENABLED: "true" },
@@ -327,8 +327,5 @@ test("live authority denies all sources without touching network or feed leases"
   assert.ok(results.every((x) => x.status === "failed" && x.newItems === 0));
   assert.equal(f.requests.length, 0);
   assert.equal(f.db.size, 0);
-  assert.equal(
-    f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized")).length,
-    3,
-  );
+  assert.equal(f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized")).length, 3);
 });
