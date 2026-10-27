@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFeedConsumerWatchdogSeconds } from "./feed-consumer-watchdog.js";
 import {
   readContinuousFeedPolicy,
   runContinuousFeedSchedule,
@@ -172,4 +173,26 @@ test("queue observation failure prevents dispatch and reports only sanitized cou
   );
   assert.equal(enqueued, false);
   assert.deepEqual(events, [{ event: "queue_unhealthy", slot: 1992240, pending: 0, failed: 0 }]);
+});
+
+test("consumer watchdog requires its own independently approved bounded timeout", () => {
+  const worker = {
+    ...env,
+    VNS_FEED_RUNTIME_MODE: "persistent_worker",
+    VNS_FEED_REDIS_USER: "vns_feed_consumer_restricted",
+    VNS_FEED_SEPARATE_WORKER_ENABLED: "true",
+    VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "true",
+    VNS_FEED_CONSUMER_MAX_JOB_SECONDS: "180",
+  };
+  assert.equal(readFeedConsumerWatchdogSeconds(worker), 180);
+  for (const value of ["0", "29", "601", "9999", "unbounded", ""]) {
+    assert.throws(() => readFeedConsumerWatchdogSeconds({
+      ...worker,
+      VNS_FEED_CONSUMER_MAX_JOB_SECONDS: value,
+    }));
+  }
+  assert.throws(() => readFeedConsumerWatchdogSeconds({
+    ...worker,
+    VNS_FEED_SEPARATE_WORKER_ENABLED: "false",
+  }));
 });
