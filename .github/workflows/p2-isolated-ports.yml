@@ -79,7 +79,7 @@ jobs:
           VNS_P2_FEED_REDIS_PASSWORD_FILE: /tmp/vns-ci/feed-redis-pass
         run: |
           docker compose -f compose.yaml -f compose.feed-observation.yaml \
-            --profile source-signing --profile source-handoff \
+            --profile data --profile source-signing --profile source-handoff \
             --profile feed-observation config --quiet
       - name: Compile shared and worker contracts
         run: |
