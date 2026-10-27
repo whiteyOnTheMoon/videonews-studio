@@ -1,3 +1,5 @@
+> **Verbindliche Betreiberentscheidung (27.10.2026):** Das vorhandene, funktionierende Beszel mit externer Serverbeobachtung ist für die allgemeine P1-Überwachung vollständig akzeptiert. Eine weitere Monitoringlösung oder gesonderte Alarm-Testabnahme ist für #229 kein P1-Blocker. Nicht durchgeführte Tests gelten nicht nachträglich als bestanden; neu ausgerollte P2-Feed-Dienste brauchen weiterhin ihre eigene Integrationsprüfung. Siehe [P1-Betreiberentscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).
+
 # P1-09 — Zentrales VPS-Monitoring mit Beszel
 
 **Aktualisierung 2026-10-27:** Der Betreiber bestätigt erneut, dass Beszel
