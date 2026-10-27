@@ -211,11 +211,7 @@ test(
         try {
           const policy = readContinuousFeedPolicy(continuousEnv);
           assert.equal(
-            validateFeedQueueSnapshot(
-              await inspectFeedQueue(continuous.queue),
-              policy,
-              Date.now(),
-            ),
+            validateFeedQueueSnapshot(await inspectFeedQueue(continuous.queue), policy, Date.now()),
             0,
           );
           syntheticNow = new Date(syntheticNow.getTime() + 900000);
@@ -259,9 +255,7 @@ test(
           await assert.rejects(forged.waitUntilFinished(events, 20000));
           const snapshot = await inspectFeedQueue(continuous.queue);
           assert.ok(snapshot.failed >= 1);
-          assert.throws(() =>
-            validateFeedQueueSnapshot(snapshot, policy, syntheticNow.getTime()),
-          );
+          assert.throws(() => validateFeedQueueSnapshot(snapshot, policy, syntheticNow.getTime()));
           let extraEnqueue = false;
           await assert.rejects(
             runContinuousFeedSchedule(
