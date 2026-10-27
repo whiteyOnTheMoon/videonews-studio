@@ -154,3 +154,7 @@ vite.config.ts.timestamp-*
 *.key
 *.p12
 *.pfx
+
+# Python tooling outputs (not repository changes)
+__pycache__/
+*.py[cod]
