@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import EditorialProfiles, { parseEditorialProfileSnapshot } from "./editorial-profiles";
 import EditorialAuditExport, { validEditorialExportBatch } from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
+import EditorialTimelineEntry from "./editorial-timeline-entry";
 
 const profile = {
   id: "science_news",
@@ -65,4 +66,14 @@ test("checkpoint entry is hidden until feature opt-in and never publishes", () =
   assert.match(active, /Qualität/);
   assert.match(active, /Prüfentscheidung speichern/);
   assert.doesNotMatch(active, /veröffentlichen|Upload starten|Freigabe erteilen/i);
+});
+
+test("Story audit entry shows no form by default and no publishing controls", () => {
+  const dormant = renderToStaticMarkup(<EditorialTimelineEntry enabled={false} />);
+  assert.match(dormant, /Story-Protokoll nicht freigeschaltet/);
+  assert.doesNotMatch(dormant, /<form|<input|<textarea/);
+  const enabled = renderToStaticMarkup(<EditorialTimelineEntry enabled />);
+  assert.match(enabled, /Abgelehnte Aussage/);
+  assert.match(enabled, /Story-Ereignis speichern/);
+  assert.doesNotMatch(enabled, /Jetzt veröffentlichen/);
 });
