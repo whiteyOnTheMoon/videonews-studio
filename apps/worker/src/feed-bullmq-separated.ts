@@ -114,6 +114,6 @@ export function createSeparatedFeedConsumer(
   );
   return {
     worker,
-    close: () => worker.close(),
+    close: (force = false) => worker.close(force),
   };
 }
