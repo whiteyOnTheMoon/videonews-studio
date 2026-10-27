@@ -15,7 +15,9 @@
     "feed-observe-once": "node dist/feed-observe-once.js --once",
     "feed-scheduler-bounded": "node dist/feed-scheduler-bounded.js --bounded",
     "feed-source-publish-once": "node dist/feed-source-publish-once.js --once",
-    "source-handoff-import-once": "node dist/source-handoff-import-once.js --once"
+    "source-handoff-import-once": "node dist/source-handoff-import-once.js --once",
+    "feed-producer-bounded": "node dist/feed-producer-bounded.js --bounded-producer",
+    "feed-worker-persistent": "node dist/feed-worker-persistent.js --persistent-worker"
   },
   "dependencies": {
     "@vns/shared": "*",
