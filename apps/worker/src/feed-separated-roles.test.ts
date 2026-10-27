@@ -9,6 +9,7 @@ import {
 } from "./feed-bullmq-separated.js";
 import { readFeedRuntimeAdmission } from "./feed-runtime-admission.js";
 
+const login = "vns_feed_login_observer";
 const env: NodeJS.ProcessEnv = {
   VNS_FEED_RUNTIME_ENABLED: "true",
   VNS_FEED_SIGNED_EXPORT_ENABLED: "true",
@@ -43,7 +44,6 @@ const env: NodeJS.ProcessEnv = {
   VNS_ALLOWED_SOURCE_HOSTS: "news.example.org",
 };
 
-
 test("producer and consumer are independently opt-in and cannot impersonate one another", () => {
   const producer = {
     ...env,
@@ -73,7 +73,9 @@ test("producer and consumer are independently opt-in and cannot impersonate one 
     { VNS_FEED_REDIS_USER: "vns_feed_consumer_restricted" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
     { VNS_FEED_SCHEDULER_ENABLED: "false" },
-  ]) assert.throws(() => requireSeparatedFeedGate({ ...producer, ...change }, "producer"));
+  ]) {
+    assert.throws(() => requireSeparatedFeedGate({ ...producer, ...change }, "producer"));
+  }
   for (const change of [
     { VNS_FEED_SEPARATE_WORKER_ENABLED: "false" },
     { VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "false" },
@@ -81,13 +83,21 @@ test("producer and consumer are independently opt-in and cannot impersonate one 
     { VNS_FEED_REDIS_USER: "vns_feed_producer_restricted" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
     { VNS_FEED_SIGNED_EXPORT_ENABLED: "false" },
-  ]) assert.throws(() => requireSeparatedFeedGate({ ...consumer, ...change }, "consumer"));
+  ]) {
+    assert.throws(() => requireSeparatedFeedGate({ ...consumer, ...change }, "consumer"));
+  }
   assert.throws(() => requireSeparatedFeedGate(producer, "consumer"));
   assert.throws(() => requireSeparatedFeedGate(consumer, "producer"));
   assert.throws(() => readFeedRuntimeAdmission(producer), /not authorized/);
   assert.throws(() => readFeedRuntimeAdmission(consumer), /not authorized/);
-  assert.equal(readFeedRuntimeAdmission(producer, "bounded_producer").redisUser, "vns_feed_producer_restricted");
-  assert.equal(readFeedRuntimeAdmission(consumer, "persistent_worker").redisUser, "vns_feed_consumer_restricted");
+  assert.equal(
+    readFeedRuntimeAdmission(producer, "bounded_producer").redisUser,
+    "vns_feed_producer_restricted",
+  );
+  assert.equal(
+    readFeedRuntimeAdmission(consumer, "persistent_worker").redisUser,
+    "vns_feed_consumer_restricted",
+  );
   // No connection should be touched when a role is not approved.
   assert.throws(() => createSeparatedFeedProducer(env, undefined as unknown as Redis));
   assert.throws(() =>
