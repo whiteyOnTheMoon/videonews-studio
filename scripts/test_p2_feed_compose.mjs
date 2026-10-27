@@ -12,6 +12,7 @@ export function verifySignedFeedOverlay(data) {
   const services = data.services;
   assert.deepEqual(Object.keys(services).sort(), [
     "feed-observer",
+    "feed-scheduler",
     "source-handoff-import",
     "source-publisher",
   ]);
@@ -20,6 +21,7 @@ export function verifySignedFeedOverlay(data) {
     "source-publisher": "source-signing",
     "source-handoff-import": "source-handoff",
     "feed-observer": "feed-observation",
+    "feed-scheduler": "feed-scheduler",
   };
   for (const [name, service] of Object.entries(services)) {
     assert.deepEqual(service.profiles, [profiles[name]]);
@@ -28,7 +30,7 @@ export function verifySignedFeedOverlay(data) {
     must(service.read_only === true, name + " writable root");
     assert.deepEqual(service.cap_drop, ["ALL"]);
     assert.deepEqual(service.security_opt, ["no-new-privileges:true"]);
-    assert.equal(service.entrypoint.at(-1), "--once");
+    assert.equal(service.entrypoint.at(-1), name === "feed-scheduler" ? "--bounded" : "--once");
     assert.equal(service.image, "vns-worker:local");
     assert.equal(service.build.target, "worker");
     must(service.mem_limit && service.memswap_limit && service.cpus, name + " uncapped");
@@ -45,13 +47,18 @@ export function verifySignedFeedOverlay(data) {
   const publisher = services["source-publisher"];
   const importer = services["source-handoff-import"];
   const observer = services["feed-observer"];
+  const scheduler = services["feed-scheduler"];
   assert.equal(publisher.user, "10001:10001");
   assert.equal(importer.user, "10002:10002");
   assert.equal(observer.user, "10002:10002");
+  assert.equal(scheduler.user, "10002:10002");
   assert.deepEqual(publisher.networks, ["backend"]);
   assert.equal(importer.network_mode, "none");
   must(!importer.networks && !importer.depends_on, "importer has network connections");
   assert.deepEqual(observer.networks, ["backend", "feed_egress"]);
+  assert.deepEqual(scheduler.networks, ["backend", "feed_egress"]);
+  assert.deepEqual(scheduler.volumes, observer.volumes);
+  assert.deepEqual(scheduler.depends_on, observer.depends_on);
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
   const mountTargets = (name) => services[name].volumes.map((x) => x.target);
   const signer = "/run/secrets/vns_source_export_signing_key";
@@ -62,6 +69,7 @@ export function verifySignedFeedOverlay(data) {
   ]);
   must(!mountTargets("source-handoff-import").includes(signer), "importer has signer key");
   must(!mountTargets("feed-observer").includes(signer), "observer has signer key");
+  must(!mountTargets("feed-scheduler").includes(signer), "scheduler has signer key");
   assert.deepEqual(mountTargets("source-handoff-import"), [
     "/var/lib/vns/source-handoff",
     "/var/lib/vns/feed-source-inbox",
@@ -106,7 +114,25 @@ export function verifySignedFeedOverlay(data) {
       );
     }
   }
-  must(!observer.secrets, "unsigned legacy registry mounted into observer");
+  for (const flag of ["VNS_FEED_SCHEDULER_ENABLED", "VNS_FEED_SCHEDULER_OPERATOR_ACK"]) {
+    assert.equal(scheduler.environment[flag], "${" + flag + ":-false}");
+  }
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_MODE,
+    "${VNS_FEED_SCHEDULER_MODE:-disabled}",
+  );
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_MAX_TICKS,
+    "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}",
+  );
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_FAILURE_LIMIT,
+    "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}",
+  );
+  for (const flag of ["VNS_FEED_RUNTIME_ENABLED", "VNS_FEED_SOURCE_ANCHOR_APPROVED"]) {
+    assert.equal(scheduler.environment[flag], observer.environment[flag]);
+  }
+  must(!observer.secrets && !scheduler.secrets, "unsigned legacy registry mounted into observer");
   return true;
 }
 
@@ -141,6 +167,12 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["source-publisher"].profiles = [];
+    },
+    (copy) => {
+      copy.services["feed-scheduler"].environment.VNS_FEED_SCHEDULER_ENABLED = "true";
+    },
+    (copy) => {
+      copy.services["feed-scheduler"].ports = ["443:443"];
     },
   ]) {
     const copy = structuredClone(overlay);

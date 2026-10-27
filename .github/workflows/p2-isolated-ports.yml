@@ -80,7 +80,7 @@ jobs:
         run: |
           docker compose -f compose.yaml -f compose.feed-observation.yaml \
             --profile data --profile source-signing --profile source-handoff \
-            --profile feed-observation config --quiet
+            --profile feed-observation --profile feed-scheduler config --quiet
       - name: Compile shared and worker contracts
         run: |
           npm run build --workspace @vns/shared

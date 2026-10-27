@@ -97,7 +97,7 @@ services:
         bind: { create_host_path: false }
 
   # Existing one-shot feed bridge, now with signed inbox and remote anchor.
-  feed-observer:
+  feed-observer: &vns-feed-observer
     <<: *feed-locked
     profiles: [feed-observation]
     image: vns-worker:local
@@ -110,7 +110,7 @@ services:
     memswap_limit: 384m
     cpus: 0.50
     pids_limit: 96
-    environment:
+    environment: &vns-feed-environment
       NODE_ENV: production
       VNS_FEED_RUNTIME_ENABLED: "${VNS_FEED_RUNTIME_ENABLED:-false}"
       VNS_FEED_RUNTIME_OPERATOR_ACK: "${VNS_FEED_RUNTIME_OPERATOR_ACK:-false}"
@@ -184,6 +184,20 @@ services:
       redis: { condition: service_healthy }
     networks: [backend, feed_egress]
 
-# Only the feed observer is connected to this explicit egress network.
+  # A bounded, explicit schedule re-opens and re-authorizes the signed one-shot
+  # path for each 15-minute slot. Never starts without its separate profile.
+  feed-scheduler:
+    <<: *vns-feed-observer
+    profiles: [feed-scheduler]
+    entrypoint: ["node", "apps/worker/dist/feed-scheduler-bounded.js", "--bounded"]
+    environment:
+      <<: *vns-feed-environment
+      VNS_FEED_SCHEDULER_ENABLED: "${VNS_FEED_SCHEDULER_ENABLED:-false}"
+      VNS_FEED_SCHEDULER_OPERATOR_ACK: "${VNS_FEED_SCHEDULER_OPERATOR_ACK:-false}"
+      VNS_FEED_SCHEDULER_MODE: "${VNS_FEED_SCHEDULER_MODE:-disabled}"
+      VNS_FEED_SCHEDULER_MAX_TICKS: "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}"
+      VNS_FEED_SCHEDULER_FAILURE_LIMIT: "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}"
+
+# Only the observer and bounded scheduler have this explicit egress network.
 networks:
   feed_egress: {}
