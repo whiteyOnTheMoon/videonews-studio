@@ -6,7 +6,10 @@ import {
   attestFeedDatabaseIdentity,
   type FeedRuntimeMode,
 } from "./feed-runtime-admission.js";
-import { createDormantFeedScheduler, type OfflineFeedScheduler } from "./feed-scheduler-composition.js";
+import {
+  createDormantFeedScheduler,
+  type OfflineFeedScheduler,
+} from "./feed-scheduler-composition.js";
 import { productionFeedHttpsDependencies } from "./feed-https-transport.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
