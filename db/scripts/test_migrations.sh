@@ -77,6 +77,26 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0018_ai_provider_named_audit.test.sql"
   sql < "$root/db/migrations/0019_feed_poll_contract.up.sql"
   sql < "$root/db/tests/0019_feed_poll_contract.test.sql"
+  if [[ "$iteration" -eq 1 ]]; then
+    # Two independent SQL sessions compete for one feed lease.
+    feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_feed_poll_writer; SELECT count(*) FROM vns.claim_feed_poll('ci_parallel_feed',60)" \
+        > "$feed_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then feed_pid_a=$!; else feed_pid_b=$!; fi
+    done
+    wait "$feed_pid_a" && wait "$feed_pid_b"
+    test "$(cat "$feed_work/a" "$feed_work/b" | grep -cx 1)" = 1 &&
+    test "$(cat "$feed_work/a" "$feed_work/b" | grep -cx 0)" = 1 || {
+      echo "FAIL: concurrent feed claims bypassed one-slot admission" >&2
+      rm -rf -- "$feed_work"
+      exit 1
+    }
+    rm -rf -- "$feed_work"
+    echo "PASS: concurrent feed claim selects only one writer"
+  fi
   sql < "$root/db/migrations/0020_source_admin_registry.up.sql"
   sql < "$root/db/tests/0020_source_admin_registry.test.sql"
   sql < "$root/db/migrations/0021_source_transition_guard.up.sql"
@@ -107,24 +127,6 @@ for iteration in 1 2; do
   sql < "$root/db/migrations/0033_guarded_feed_commit.up.sql"
   sql < "$root/db/tests/0033_guarded_feed_commit.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
-    # Two independent SQL sessions compete for one feed lease.
-    feed_work="$(mktemp -d /tmp/vns-feed-ci-XXXXXXXX)"
-    for label in a b; do
-      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
-        -U postgres -d vns_schema_test -c \
-        "SET ROLE vns_feed_poll_writer; SELECT count(*) FROM vns.claim_feed_poll('ci_parallel_feed',60)" \
-        > "$feed_work/$label" 2>&1 &
-      if [[ "$label" = a ]]; then feed_pid_a=$!; else feed_pid_b=$!; fi
-    done
-    wait "$feed_pid_a" && wait "$feed_pid_b"
-    test "$(cat "$feed_work/a" "$feed_work/b" | grep -cx 1)" = 1 &&
-    test "$(cat "$feed_work/a" "$feed_work/b" | grep -cx 0)" = 1 || {
-      echo "FAIL: concurrent feed claims bypassed one-slot admission" >&2
-      rm -rf -- "$feed_work"
-      exit 1
-    }
-    rm -rf -- "$feed_work"
-    echo "PASS: concurrent feed claim selects only one writer"
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
     for label in a b; do
