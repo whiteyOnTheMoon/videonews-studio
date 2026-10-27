@@ -14,6 +14,7 @@ export function verifySignedFeedOverlay(data) {
     "feed-consumer",
     "feed-observer",
     "feed-producer",
+    "feed-producer-continuous",
     "feed-scheduler",
     "source-handoff-import",
     "source-publisher",
@@ -25,6 +26,7 @@ export function verifySignedFeedOverlay(data) {
     "feed-observer": "feed-observation",
     "feed-scheduler": "feed-scheduler",
     "feed-producer": "feed-producer",
+    "feed-producer-continuous": "feed-producer-continuous",
     "feed-consumer": "feed-consumer",
   };
   for (const [name, service] of Object.entries(services)) {
@@ -37,6 +39,7 @@ export function verifySignedFeedOverlay(data) {
     const roleArgs = {
       "feed-scheduler": "--bounded",
       "feed-producer": "--bounded-producer",
+      "feed-producer-continuous": "--continuous",
       "feed-consumer": "--persistent-worker",
     };
     assert.equal(service.entrypoint.at(-1), roleArgs[name] ?? "--once");
@@ -58,12 +61,14 @@ export function verifySignedFeedOverlay(data) {
   const observer = services["feed-observer"];
   const scheduler = services["feed-scheduler"];
   const producer = services["feed-producer"];
+  const continuous = services["feed-producer-continuous"];
   const consumer = services["feed-consumer"];
   assert.equal(publisher.user, "10001:10001");
   assert.equal(importer.user, "10002:10002");
   assert.equal(observer.user, "10002:10002");
   assert.equal(scheduler.user, "10002:10002");
   assert.equal(producer.user, "10002:10002");
+  assert.equal(continuous.user, "10002:10002");
   assert.equal(consumer.user, "10002:10002");
   assert.deepEqual(publisher.networks, ["backend"]);
   assert.equal(importer.network_mode, "none");
@@ -71,11 +76,15 @@ export function verifySignedFeedOverlay(data) {
   assert.deepEqual(observer.networks, ["backend", "feed_egress"]);
   assert.deepEqual(scheduler.networks, ["backend", "feed_egress"]);
   assert.deepEqual(producer.networks, ["backend"]);
+  assert.deepEqual(continuous.networks, ["backend"]);
+  assert.deepEqual(continuous.volumes, producer.volumes);
   assert.deepEqual(consumer.networks, ["backend", "feed_egress"]);
   assert.deepEqual(consumer.volumes, observer.volumes);
   assert.equal(producer.volumes.length, 1);
   assert.equal(producer.volumes[0].target, "/run/secrets/vns_feed_redis_password");
   assert.equal(producer.environment.VNS_FEED_RUNTIME_MODE, "bounded_producer");
+  assert.equal(continuous.environment.VNS_FEED_RUNTIME_MODE, "continuous_producer");
+  assert.equal(continuous.environment.VNS_FEED_SCHEDULER_MODE, "continuous");
   assert.equal(consumer.environment.VNS_FEED_RUNTIME_MODE, "persistent_worker");
   assert.deepEqual(consumer.healthcheck.test, [
     "CMD",
@@ -86,7 +95,26 @@ export function verifySignedFeedOverlay(data) {
   assert.equal(consumer.healthcheck.timeout, "5s");
   assert.equal(consumer.healthcheck.retries, 3);
   assert.equal(consumer.healthcheck.start_period, "60s");
-  must(!producer.healthcheck, "queue-only producer must not pose as a persistent worker");
+  must(!producer.healthcheck, "bounded queue producer must not pose as a persistent worker");
+  assert.deepEqual(continuous.healthcheck.test, [
+    "CMD",
+    "node",
+    "apps/worker/dist/feed-producer-healthcheck.js",
+  ]);
+  assert.equal(continuous.healthcheck.retries, 3);
+  for (const key of [
+    "VNS_FEED_CONTINUOUS_ENABLED",
+    "VNS_FEED_CONTINUOUS_OPERATOR_ACK",
+  ]) {
+    assert.equal(continuous.environment[key], "${" + key + ":-false}");
+  }
+  for (const key of [
+    "VNS_FEED_CONTINUOUS_MAX_BACKLOG",
+    "VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES",
+    "VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT",
+  ]) {
+    assert.equal(continuous.environment[key], "${" + key + ":-0}");
+  }
   assert.deepEqual(scheduler.volumes, observer.volumes);
   assert.deepEqual(scheduler.depends_on, observer.depends_on);
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
@@ -101,6 +129,7 @@ export function verifySignedFeedOverlay(data) {
   must(!mountTargets("feed-observer").includes(signer), "observer has signer key");
   must(!mountTargets("feed-scheduler").includes(signer), "scheduler has signer key");
   must(!mountTargets("feed-producer").includes(signer), "producer has signer key");
+  must(!mountTargets("feed-producer-continuous").includes(signer), "continuous producer has signer key");
   must(!mountTargets("feed-consumer").includes(signer), "consumer has signer key");
   must(
     !mountTargets("feed-producer").some((x) => x.includes("db_password") || x.includes("anchor")),
@@ -181,7 +210,7 @@ export function verifySignedFeedOverlay(data) {
     assert.equal(service.environment.VNS_FEED_SOURCE_BOOTSTRAP, "false");
   }
   must(
-    !observer.secrets && !scheduler.secrets && !consumer.secrets && !producer.secrets,
+    !observer.secrets && !scheduler.secrets && !consumer.secrets && !producer.secrets && !continuous.secrets,
     "unexpected runtime secrets",
   );
   return true;
@@ -235,6 +264,15 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["feed-producer"].networks = ["backend", "feed_egress"];
+    },
+    (copy) => {
+      copy.services["feed-producer-continuous"].networks = ["backend", "feed_egress"];
+    },
+    (copy) => {
+      copy.services["feed-producer-continuous"].environment.VNS_FEED_CONTINUOUS_ENABLED = "true";
+    },
+    (copy) => {
+      copy.services["feed-producer-continuous"].healthcheck.test = ["CMD-SHELL", "exit 0"];
     },
     (copy) => {
       copy.services["feed-consumer"].healthcheck.test = ["CMD-SHELL", "exit 0"];
