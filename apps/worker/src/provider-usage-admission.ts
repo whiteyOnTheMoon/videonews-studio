@@ -3,7 +3,7 @@
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TOKEN_ID = /^[A-Za-z0-9_-]{12,80}$/;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
-const COST = /^\\d{1,15}$/;
+const COST = /^[0-9]{1,15}$/;
 export type ProviderUsageAdmission = Readonly<{
   jobId: string;
   requestId: string;
