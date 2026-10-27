@@ -6,6 +6,8 @@ on:
       - "apps/worker/**"
       - "db/migrations/**"
       - "scripts/ci_p2_integrated_ports.mjs"
+      - "scripts/test_p2_feed_compose.mjs"
+      - "compose.feed-observation.yaml"
       - ".github/workflows/p2-isolated-ports.yml"
   workflow_dispatch:
 permissions:
@@ -60,6 +62,8 @@ jobs:
         run: |
           npm run format:check
           npm run lint
+      - name: Verify disabled signed-source Compose architecture
+        run: node --test scripts/test_p2_feed_compose.mjs
       - name: Compile shared and worker contracts
         run: |
           npm run build --workspace @vns/shared
