@@ -117,9 +117,18 @@ export function verifySignedFeedOverlay(data) {
   for (const flag of ["VNS_FEED_SCHEDULER_ENABLED", "VNS_FEED_SCHEDULER_OPERATOR_ACK"]) {
     assert.equal(scheduler.environment[flag], "${" + flag + ":-false}");
   }
-  assert.equal(scheduler.environment.VNS_FEED_SCHEDULER_MODE, "${VNS_FEED_SCHEDULER_MODE:-disabled}");
-  assert.equal(scheduler.environment.VNS_FEED_SCHEDULER_MAX_TICKS, "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}");
-  assert.equal(scheduler.environment.VNS_FEED_SCHEDULER_FAILURE_LIMIT, "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}");
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_MODE,
+    "${VNS_FEED_SCHEDULER_MODE:-disabled}",
+  );
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_MAX_TICKS,
+    "${VNS_FEED_SCHEDULER_MAX_TICKS:-0}",
+  );
+  assert.equal(
+    scheduler.environment.VNS_FEED_SCHEDULER_FAILURE_LIMIT,
+    "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}",
+  );
   for (const flag of ["VNS_FEED_RUNTIME_ENABLED", "VNS_FEED_SOURCE_ANCHOR_APPROVED"]) {
     assert.equal(scheduler.environment[flag], observer.environment[flag]);
   }

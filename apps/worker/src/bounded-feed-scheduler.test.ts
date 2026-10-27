@@ -48,9 +48,15 @@ function fixture(initialTime = START + 3 * 60000) {
   const delays: number[] = [];
   const events: Array<{ event: string; slot: number; failures: number }> = [];
   return {
-    get calls() { return calls; },
-    get delays() { return delays; },
-    get events() { return events; },
+    get calls() {
+      return calls;
+    },
+    get delays() {
+      return delays;
+    },
+    get events() {
+      return events;
+    },
     ports: {
       now: () => new Date(clock),
       async delay(ms: number, signal: AbortSignal) {
@@ -63,7 +69,10 @@ function fixture(initialTime = START + 3 * 60000) {
         calls++;
         return { ok: true as const, sourcesExamined: 3, candidatesAdded: 0, notModified: 3 };
       },
-      record(event: "tick_ok" | "tick_failed" | "halted", fields: {slot: number; consecutiveFailures: number}) {
+      record(
+        event: "tick_ok" | "tick_failed" | "halted",
+        fields: { slot: number; consecutiveFailures: number },
+      ) {
         events.push({ event, slot: fields.slot, failures: fields.consecutiveFailures });
       },
     },
@@ -97,7 +106,8 @@ test("scheduler starts only after every existing source/rights/anchor/queue appr
     { VNS_FEED_SCHEDULER_MAX_TICKS: "2.5" },
     { VNS_FEED_SCHEDULER_FAILURE_LIMIT: "4" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
-  ]) assert.throws(() => readBoundedFeedSchedule({ ...env, ...change }));
+  ])
+    assert.throws(() => readBoundedFeedSchedule({ ...env, ...change }));
 });
 
 test("late startup skips missed slot and each new slot runs at most once", async () => {
@@ -106,7 +116,10 @@ test("late startup skips missed slot and each new slot runs at most once", async
   assert.deepEqual(result, { attempted: 3, succeeded: 3, failures: 0 });
   assert.equal(f.calls, 3);
   assert.deepEqual(f.delays, [12 * 60000, 15 * 60000, 15 * 60000]);
-  assert.deepEqual(f.events.map((x) => x.event), ["tick_ok", "tick_ok", "tick_ok"]);
+  assert.deepEqual(
+    f.events.map((x) => x.event),
+    ["tick_ok", "tick_ok", "tick_ok"],
+  );
   assert.equal(new Set(f.events.map((x) => x.slot)).size, 3);
 });
 
@@ -120,7 +133,10 @@ test("a failing tick only retries on the next slot and halts after consecutive f
     /stopped after repeated failures/,
   );
   assert.equal(f.calls, 0);
-  assert.deepEqual(f.events.map((x) => x.event), ["tick_failed", "tick_failed", "halted"]);
+  assert.deepEqual(
+    f.events.map((x) => x.event),
+    ["tick_failed", "tick_failed", "halted"],
+  );
   assert.deepEqual(f.delays, [15 * 60000]);
   assert.equal(JSON.stringify(f.events).includes("SECRET"), false);
 });
@@ -136,7 +152,10 @@ test("failed observation is not counted as success and next slot may recover", a
   const result = await runBoundedFeedSchedule(env, f.ports, new AbortController().signal);
   assert.deepEqual(result, { attempted: 3, succeeded: 2, failures: 1 });
   assert.equal(times, 3);
-  assert.deepEqual(f.events.map((x) => x.event), ["tick_failed", "tick_ok", "tick_ok"]);
+  assert.deepEqual(
+    f.events.map((x) => x.event),
+    ["tick_failed", "tick_ok", "tick_ok"],
+  );
 });
 
 test("shutdown cancels the next interval without starting another feed request", async () => {
@@ -148,9 +167,10 @@ test("shutdown cancels the next interval without starting another feed request",
     controller.abort();
     return { ok: true, sourcesExamined: 3, candidatesAdded: 0, notModified: 0 };
   };
-  assert.deepEqual(
-    await runBoundedFeedSchedule(env, f.ports, controller.signal),
-    { attempted: 1, succeeded: 1, failures: 0 },
-  );
+  assert.deepEqual(await runBoundedFeedSchedule(env, f.ports, controller.signal), {
+    attempted: 1,
+    succeeded: 1,
+    failures: 0,
+  });
   assert.equal(calls, 1);
 });

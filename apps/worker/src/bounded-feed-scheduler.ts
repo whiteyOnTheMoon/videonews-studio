@@ -16,11 +16,14 @@ export interface BoundedFeedSchedulePorts {
   delay(ms: number, signal: AbortSignal): Promise<void>;
   observe(): Promise<FeedObservationSummary>;
   /** Never include raw error text, source URLs or credentials in alarms. */
-  record(event: "tick_ok" | "tick_failed" | "halted", fields: {
-    slot: number;
-    attempts: number;
-    consecutiveFailures: number;
-  }): void;
+  record(
+    event: "tick_ok" | "tick_failed" | "halted",
+    fields: {
+      slot: number;
+      attempts: number;
+      consecutiveFailures: number;
+    },
+  ): void;
 }
 
 /**
