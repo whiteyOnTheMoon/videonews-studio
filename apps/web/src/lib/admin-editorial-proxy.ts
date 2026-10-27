@@ -119,8 +119,9 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
         input.details.reasonCodes.some(
           (code: unknown) => typeof code !== "string" || !/^[a-z][a-z0-9_]{1,39}$/.test(code),
         )
-      ) return null;
-    } else     if (endpoint === "checkpoints") {
+      )
+        return null;
+    } else if (endpoint === "checkpoints") {
       if (
         Object.keys(input).sort().join(",") !==
           "artifactSha256,eventId,expectedRevision,outcome,reasonCodes,score,stage" ||
@@ -247,9 +248,11 @@ export async function dormantEditorialAdminProxy(
       });
     }
     if (endpoint === "timeline" && request.method === "POST") {
-      if (typeof value.eventId !== "string" ||
-          !UUID.test(value.eventId) ||
-          value.approvedForPublication !== false) {
+      if (
+        typeof value.eventId !== "string" ||
+        !UUID.test(value.eventId) ||
+        value.approvedForPublication !== false
+      ) {
         return reply(503, { error: "temporarily_unavailable" });
       }
       return reply(200, {
