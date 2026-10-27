@@ -3,6 +3,7 @@
 Relates to #227 and #230. This document records the live production blockers against the current `main` baseline; **it does not report an unperformed VPS rollout**.
 
 ## Operator decisions (authoritative)
+
 - No paid GitHub branch-protection upgrade; manual PR/head-CI/approval policy.
 - Existing Beszel and external monitoring accepted for P1.
 - **No VideoNews Studio backups** for now, 0 EUR backup budget; experimental data-loss risk accepted. No backup claim or restore success may be inferred.
@@ -13,6 +14,7 @@ Relates to #227 and #230. This document records the live production blockers aga
 Currently `apps/api/src/index.ts` does **not** inject `providerConfig`; `apps/web/src/app/api/admin/ai-providers/route.ts` implements **GET only**. The optional provider master-key loader requires owner-private binary key storage; the personally audited DB mutation adapter is not mounted. The visible Admin editor remains disabled.
 
 ### Conditions before enabling write endpoint
+
 1. Dedicated least-privilege DB LOGIN and scoped pool on target VPS with migrations/ACLs proved on the actual deployment.
 2. Real named session from browser through BFF, API and SQL, with audit written atomically and CSRF, revoked-session and spoofing negative tests.
 3. KEK custody: loss, rotation, file rights and restart behavior validated without disclosing key material. Under the no-backup policy, irreversible loss of a single encryption key means provider credential ciphertext is unrecoverable; require explicit acceptance or an independent approved recovery design **before receiving any valuable production API key**.
@@ -25,6 +27,7 @@ Currently `apps/api/src/index.ts` does **not** inject `providerConfig`; `apps/we
 `apps/worker/src/token-usage.ts` and migration 0013 are **synthetic only**. PR #299 introduced a pure parser/reconciliation contract, not a provider adapter or live billing ledger.
 
 ### Conditions before claiming measured costs
+
 1. Strict per-provider adapter for actual response metadata (including caching, missing/late fields, retries, partial failures and non-text modalities).
 2. Versioned pricing and original request identity, with DB uniqueness, serializable/resilient upsert and immutable audit.
 3. Atomic reconciliation to reserved job budgets; missing/conflicting usage must refuse further spend.
