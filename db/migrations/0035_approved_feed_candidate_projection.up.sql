@@ -5,7 +5,9 @@ BEGIN;
 -- Dedicated NOLOGIN caller can execute only the guarded version.
 CREATE ROLE vns_feed_project_client NOLOGIN NOINHERIT;
 GRANT USAGE ON SCHEMA vns TO vns_feed_project_client;
-GRANT SELECT ON vns.admin_source_registry TO vns_feed_project_executor;
+-- UPDATE(singleton) is required by PostgreSQL FOR SHARE row locking.
+-- The executor is NOLOGIN and the client gets no direct UPDATE grants.
+GRANT SELECT,UPDATE(singleton) ON vns.admin_source_registry TO vns_feed_project_executor;
 GRANT EXECUTE ON FUNCTION vns.feed_runtime_source_authorized(jsonb)
   TO vns_feed_project_executor;
 
