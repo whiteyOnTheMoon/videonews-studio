@@ -39,6 +39,7 @@ def _command(argv: list[str], cwd: str) -> tuple[int, str]:
             text=True,
             timeout=8,
             check=False,
+            env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
         )
         return result.returncode, result.stdout[:16384]
     except (OSError, subprocess.TimeoutExpired):
@@ -74,7 +75,7 @@ def inspect_stage_a(
 
     # Compose project-label filter prevents observing unrelated projects. Never
     # request docker inspect, env, mounts, credentials, labels dump or logs.
-    fmt = '{{.Label "com.docker.compose.service"}}\\t{{.State}}\\t{{.Status}}\\t{{.Ports}}'
+    fmt = '{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Status}}|{{.Ports}}'
     code, raw = run(
         [
             "docker", "ps", "--all",
@@ -87,7 +88,7 @@ def inspect_stage_a(
     observed: dict[str, list[dict]] = {name: [] for name in SERVICES}
     if docker_accessible:
         for line in raw.splitlines():
-            parts = line.split("\t")
+            parts = line.split("|")
             if len(parts) != 4:
                 continue
             service, state, status, ports = parts
