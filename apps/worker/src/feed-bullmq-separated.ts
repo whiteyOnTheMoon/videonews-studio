@@ -15,6 +15,7 @@ import type { TrustedFeedContext } from "./feed-trusted-context.js";
 export function requireSeparatedFeedGate(
   env: NodeJS.ProcessEnv,
   kind: "producer" | "consumer",
+  mode: "bounded_producer" | "continuous_producer" = "bounded_producer",
 ): void {
   const enabled =
     kind === "producer" ? "VNS_FEED_SEPARATE_PRODUCER_ENABLED" : "VNS_FEED_SEPARATE_WORKER_ENABLED";
@@ -32,13 +33,19 @@ export function requireSeparatedFeedGate(
   ) {
     throw new Error("Separated feed role not authorized");
   }
-  readFeedRuntimeAdmission(env, kind === "producer" ? "bounded_producer" : "persistent_worker");
-  if (kind === "producer") readBoundedFeedSchedule(env, "bounded_producer");
+  readFeedRuntimeAdmission(env, kind === "producer" ? mode : "persistent_worker");
+  if (kind === "producer" && mode === "bounded_producer") {
+    readBoundedFeedSchedule(env, "bounded_producer");
+  }
 }
 
 /** Persistent BullMQ slot producer. It cannot perform HTTP or SQL operations. */
-export function createSeparatedFeedProducer(env: NodeJS.ProcessEnv, connection: Redis) {
-  requireSeparatedFeedGate(env, "producer");
+export function createSeparatedFeedProducer(
+  env: NodeJS.ProcessEnv,
+  connection: Redis,
+  mode: "bounded_producer" | "continuous_producer" = "bounded_producer",
+) {
+  requireSeparatedFeedGate(env, "producer", mode);
   if (!connection) throw new Error("Feed producer connection missing");
   const queue = new Queue(ISOLATED_FEED_QUEUE, {
     connection,
