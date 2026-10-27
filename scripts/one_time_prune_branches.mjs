@@ -25,7 +25,7 @@ if (
 function branchPath(name) {
   if (
     typeof name !== "string" ||
-    !/^(?:docs|feat|fix|maintenance|test)\/[a-zA-Z0-9._/-]+$/.test(name) ||
+    !/^(?:chore|docs|feat|fix|maintenance|test)\/[a-zA-Z0-9._/-]+$/.test(name) ||
     name.includes("..") ||
     name.endsWith("/")
   ) {
