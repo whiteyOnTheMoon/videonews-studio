@@ -19,10 +19,8 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
   try {
     let consecutiveFailures = 0;
     let unexpectedConnectionFailure = false;
-    consumer = createSeparatedFeedConsumer(
-      env,
-      redis,
-      () => openTrustedFeedContext(env, "persistent_worker"),
+    consumer = createSeparatedFeedConsumer(env, redis, () =>
+      openTrustedFeedContext(env, "persistent_worker"),
     );
     consumer.worker.on("completed", () => {
       consecutiveFailures = 0;
