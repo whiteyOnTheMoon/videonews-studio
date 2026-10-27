@@ -13,6 +13,7 @@
     "status-sync": "node dist/status-sync.js",
     "research-service": "node dist/research-service.js",
     "feed-observe-once": "node dist/feed-observe-once.js --once",
+    "feed-scheduler-bounded": "node dist/feed-scheduler-bounded.js --bounded",
     "feed-source-publish-once": "node dist/feed-source-publish-once.js --once",
     "source-handoff-import-once": "node dist/source-handoff-import-once.js --once"
   },
