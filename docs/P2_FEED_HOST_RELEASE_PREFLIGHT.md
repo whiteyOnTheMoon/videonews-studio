@@ -58,7 +58,7 @@ running Docker mounts, effective container UIDs, host parent directory and
 ACL inheritance, filesystem/mount replacement risks, user namespace mapping,
 backups, recovery, DB TLS and trusted independent anchor custody.
 
-A world-readable signed export or signing key is *never* a workaround. If the
+A world-readable signed export or signing key is _never_ a workaround. If the
 permitted host modes differ, revise the vetted deployment design and tests
 rather than bypassing checks. The source transfer principal and externally
 held signature key still require independent enrollment and human approval.
