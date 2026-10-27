@@ -238,6 +238,12 @@ services:
     <<: *vns-feed-observer
     profiles: [feed-consumer]
     entrypoint: ["node", "apps/worker/dist/feed-worker-persistent.js", "--persistent-worker"]
+    healthcheck:
+      test: ["CMD", "node", "apps/worker/dist/feed-consumer-healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     environment:
       <<: *vns-feed-environment
       VNS_FEED_RUNTIME_MODE: persistent_worker
