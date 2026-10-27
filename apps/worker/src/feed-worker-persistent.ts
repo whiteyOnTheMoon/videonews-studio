@@ -95,9 +95,9 @@ export async function runPersistentFeedWorker(env: NodeJS.ProcessEnv = process.e
     }
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
-    await consumer?.close(unexpectedConnectionFailure || consecutiveFailures >= 3).catch(
-      () => undefined,
-    );
+    await consumer
+      ?.close(unexpectedConnectionFailure || consecutiveFailures >= 3)
+      .catch(() => undefined);
     await redis.quit().catch(() => redis.disconnect());
   }
 }
