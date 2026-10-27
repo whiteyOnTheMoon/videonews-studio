@@ -19,6 +19,11 @@ export interface FeedPollLease {
   validators: FeedValidators;
 }
 
+export interface FeedSourceAuthority {
+  /** Reject changed, blocked or host-revoked source snapshots before HTTP. */
+  admitted(source: RegisteredResearchSource): Promise<boolean>;
+}
+
 export interface FeedPollStore {
   /**
    * Must atomically reserve (sourceId, next eligible time) across workers.
@@ -242,6 +247,7 @@ export function createDormantFeedPoller(
   enabled: boolean,
   store: FeedPollStore,
   transport: FeedTransport,
+  authority?: FeedSourceAuthority,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -265,6 +271,18 @@ export function createDormantFeedPoller(
       }
       const results: PollResult[] = [];
       for (const source of sources) {
+        // Never consume a poll lease or contact HTTPS for a stale/revoked
+        // snapshot. An unavailable authority is a per-source failure.
+        if (authority) {
+          try {
+            if (!(await authority.admitted(source))) {
+              throw new Error("Source authorization rejected");
+            }
+          } catch {
+            results.push({ sourceId: source.id, status: "failed", newItems: 0 });
+            continue;
+          }
+        }
         let lease: FeedPollLease | null;
         try {
           lease = await store.claim(source.id, now, source.intervalMinutes);
@@ -284,6 +302,10 @@ export function createDormantFeedPoller(
             etag: safeValidator(lease.validators.etag),
             lastModified: safeValidator(lease.validators.lastModified),
           };
+          // A revocation may have occurred while claiming the lease.
+          if (authority && !(await authority.admitted(source))) {
+            throw new Error("Source authorization revoked");
+          }
           const result = await transport.request(source, validators);
           if (result.status === 304) {
             if (result.body !== "") throw new Error("Not-modified payload refused");
@@ -291,6 +313,12 @@ export function createDormantFeedPoller(
             continue;
           }
           const items = decodeApprovedFeed(source, registry, result);
+          // Never voluntarily persist metadata after the current authority
+          // has rejected this source. SQL-side atomic commit admission is a
+          // separate prerequisite for a fully race-free production guarantee.
+          if (authority && !(await authority.admitted(source))) {
+            throw new Error("Source authorization revoked");
+          }
           const written = await store.commit(source.id, lease.token, items, {
             etag: safeValidator(result.etag),
             lastModified: safeValidator(result.lastModified),
