@@ -20,6 +20,7 @@ import {
   publishDormantSourceFile,
 } from "./source-export-files.js";
 import { prepareDormantSourceExport } from "./source-registry-export.js";
+import { sealDormantSourceExport } from "./source-export-signature.js";
 import { readSourceHandoffAdmission } from "./source-handoff-import-once.js";
 
 const policy = { enabled: true as const, hosts: ["news.example.org"] };
@@ -105,6 +106,31 @@ test("rollback, same-revision equivocation and tampered signatures never replace
     await assert.rejects(
       importSignedSourceHandoff(f.staging, f.inbox, policy, f.keys.publicKey),
       /rollback/,
+    );
+    assert.deepEqual(await readFile(join(f.inbox, "source-export.signed.json")), current);
+    const alternative = sealDormantSourceExport(
+      prepareDormantSourceExport(
+        {
+          revision: 9,
+          sources: [
+            source,
+            {
+              ...source,
+              id: "pending_report",
+              baseUrl: "https://news.example.org/pending/",
+              status: "pending" as const,
+            },
+          ],
+        },
+        { revision: 4, approvedHosts: ["news.example.org"] },
+      ),
+      policy,
+      f.keys.privateKey,
+    );
+    await writeFile(f.staged, JSON.stringify(alternative));
+    await assert.rejects(
+      importSignedSourceHandoff(f.staging, f.inbox, policy, f.keys.publicKey),
+      /equivocation/,
     );
     assert.deepEqual(await readFile(join(f.inbox, "source-export.signed.json")), current);
     const altered = JSON.parse(old.toString("utf8")) as Record<string, unknown>;
