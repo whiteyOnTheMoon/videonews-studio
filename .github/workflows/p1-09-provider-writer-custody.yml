@@ -56,9 +56,8 @@ jobs:
           for file in $(find db/migrations -maxdepth 1 -name '00*.up.sql' | sort | head -18); do
             sql < "$file"
           done
-          # Disposable-only synthetic registered actor; real first-owner
-          # PostgreSQL SCRAM bootstrap has its own independent CI acceptance.
-          # Even this fixture must honor the account lifecycle audit trigger.
+          # CI-only synthetic registered actor. The first-owner SCRAM
+          # enrollment has independent real-PostgreSQL acceptance.
           sql <<'SQL'
           CREATE ROLE vns_ci_synthetic_owner LOGIN NOINHERIT NOSUPERUSER
             NOCREATEDB NOCREATEROLE NOREPLICATION;
@@ -72,49 +71,7 @@ jobs:
           INSERT INTO vns.editor_accounts
             (username,display_name,role,password_hash)
           VALUES ('ci_test_owner','Synthetic CI Admin','admin',
-                  'scrypt
-          python3 scripts/p1_09_provider_writer_custody.py --preflight
-          python3 scripts/p1_09_provider_writer_custody.py --apply
-          if python3 scripts/p1_09_provider_writer_custody.py --preflight; then
-            echo "FAIL: duplicate writer preflight accepted"
-            exit 1
-          fi
-          if python3 scripts/p1_09_provider_writer_custody.py --apply; then
-            echo "FAIL: duplicate writer activation accepted"
-            exit 1
-          fi
-          actual="$(docker exec vns-p109-writer-ci-postgres-1 \
-            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
-            -c "SELECT (SELECT count(*) FROM pg_auth_members m
-            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
-            WHERE r.rolname='vns_provider_config_writer'
-              AND u.rolname='vns_provider_config_login') || '|' ||
-            (SELECT count(*) FROM vns.ai_provider_sealed_credentials) || '|' ||
-            (SELECT count(*) FROM vns.ai_provider_settings WHERE enabled)")"
-          [[ "$actual" == "1|0|0" ]] || exit 1
-          echo 'PASS: one dedicated provider login and private master key; providers disabled'
- || repeat('0',32) || '
-          python3 scripts/p1_09_provider_writer_custody.py --preflight
-          python3 scripts/p1_09_provider_writer_custody.py --apply
-          if python3 scripts/p1_09_provider_writer_custody.py --preflight; then
-            echo "FAIL: duplicate writer preflight accepted"
-            exit 1
-          fi
-          if python3 scripts/p1_09_provider_writer_custody.py --apply; then
-            echo "FAIL: duplicate writer activation accepted"
-            exit 1
-          fi
-          actual="$(docker exec vns-p109-writer-ci-postgres-1 \
-            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews \
-            -c "SELECT (SELECT count(*) FROM pg_auth_members m
-            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
-            WHERE r.rolname='vns_provider_config_writer'
-              AND u.rolname='vns_provider_config_login') || '|' ||
-            (SELECT count(*) FROM vns.ai_provider_sealed_credentials) || '|' ||
-            (SELECT count(*) FROM vns.ai_provider_settings WHERE enabled)")"
-          [[ "$actual" == "1|0|0" ]] || exit 1
-          echo 'PASS: one dedicated provider login and private master key; providers disabled'
- || repeat('0',128));
+                  'scrypt' || chr(36) || repeat('0',32) || chr(36) || repeat('0',128));
           UPDATE vns.editor_accounts SET active=true
             WHERE username='ci_test_owner';
           RESET ROLE;
