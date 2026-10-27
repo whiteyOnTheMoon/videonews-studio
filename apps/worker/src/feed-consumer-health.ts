@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
 import {
   closeSync,
   constants,
@@ -20,6 +21,10 @@ export interface FeedConsumerHealthRecord {
   at: number;
   pid: number;
   consecutiveFailures: number;
+}
+
+function safePath(path: string): boolean {
+  return typeof path === "string" && path.startsWith("/tmp/") && resolve(path) === path;
 }
 
 function validRecord(value: unknown): value is FeedConsumerHealthRecord {
@@ -44,7 +49,7 @@ export function publishFeedConsumerHealth(
   record: FeedConsumerHealthRecord,
   path: string = FEED_CONSUMER_HEALTH_PATH,
 ): void {
-  if (!validRecord(record) || !path.startsWith("/tmp/")) {
+  if (!validRecord(record) || !safePath(path)) {
     throw new Error("Feed consumer heartbeat refused");
   }
   const temporary = path + "." + process.pid + "." + randomUUID() + ".tmp";
@@ -84,13 +89,13 @@ export function checkFeedConsumerHealth(
     }
   },
 ): boolean {
-  if (!path.startsWith("/tmp/") || !Number.isSafeInteger(now) || now < 0) return false;
+  if (!safePath(path) || !Number.isSafeInteger(now) || now < 0) return false;
   let fd: number | undefined;
   try {
     fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = fstatSync(fd);
     if (!stat.isFile() || stat.nlink !== 1 || stat.size < 20 || stat.size > 512) return false;
-    if ((stat.mode & 0o077) !== 0) return false;
+    if ((stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid?.()) return false;
     const data: unknown = JSON.parse(readFileSync(fd, "utf8"));
     if (!validRecord(data) || data.state !== "ready") return false;
     if (data.at > now || now - data.at > FEED_CONSUMER_MAX_HEARTBEAT_AGE_MS) return false;
