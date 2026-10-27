@@ -38,10 +38,11 @@ not news providers, secrets or mutable admin editorial settings.
 - `VNS_P2_WORKER_INBOX_DIR`: 0700, owner UID 10002, read/write only to
   importer, read-only mount for observer
 - `VNS_P2_WORKER_CHECKPOINT_DIR`: 0700, owner UID 10002
-- `VNS_P2_PINNED_PUBLIC_KEY_FILE`: operator-pinned Ed25519 public key,
-  readable by UID 10002; NOT taken from untrusted signed export
+- `VNS_P2_PINNED_PUBLIC_KEY_FILE`: mode 0440, root UID 0, group 10002,
+  operator-pinned Ed25519 public key; NOT taken from untrusted signed export
 - `VNS_P2_ANCHOR_DB_PASSWORD_FILE`: 0400, owner UID 10002
-- `VNS_P2_ANCHOR_CA_FILE`: private/trusted CA file readable by UID 10002
+- `VNS_P2_ANCHOR_CA_FILE`: mode 0440, root UID 0, group 10002,
+  pinned TLS CA certificate, not writable by the observer
 - `VNS_P2_FEED_DB_PASSWORD_FILE` and `VNS_P2_FEED_REDIS_PASSWORD_FILE`:
   regular files readable only by UID 10002, not from the signer
 
