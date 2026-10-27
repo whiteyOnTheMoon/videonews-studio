@@ -59,10 +59,8 @@ test("explicit one-shot mode, source id, separate login and bounds required befo
     sourceId: "ci_news_source",
     limit: 25,
   });
-  for (const key of [
-    "VNS_P2_FEED_PROJECTION_ENABLED",
-    "VNS_P2_FEED_PROJECTION_OPERATOR_ACK",
-  ]) assert.throws(() => readProjectionAdmission({ ...valid, [key]: "false" }));
+  for (const key of ["VNS_P2_FEED_PROJECTION_ENABLED", "VNS_P2_FEED_PROJECTION_OPERATOR_ACK"])
+    assert.throws(() => readProjectionAdmission({ ...valid, [key]: "false" }));
   for (const [key, value] of [
     ["VNS_P2_FEED_PROJECTION_MODE", "continuous"],
     ["VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP", "true"],
@@ -73,15 +71,23 @@ test("explicit one-shot mode, source id, separate login and bounds required befo
     ["VNS_P2_FEED_PROJECTION_LIMIT", "101"],
     ["VNS_P2_FEED_PROJECTION_LIMIT", "0"],
     ["VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE", "/tmp/secret"],
-  ] as const) assert.throws(() => readProjectionAdmission({ ...valid, [key]: value }));
+  ] as const)
+    assert.throws(() => readProjectionAdmission({ ...valid, [key]: value }));
 });
 
 test("projector executes only current approved projection SQL with bound arguments", async () => {
   const pool = db();
   await attestProjectionDatabaseIdentity(pool as never, goodIdentity.session_user);
   assert.equal(await projectApprovedSource(pool as never, readProjectionAdmission(valid)), 2);
-  assert.equal(pool.statements.filter((x) => x.startsWith("SELECT vns.project_approved_feed_candidates(")).length, 1);
-  assert.equal(pool.statements.some((x) => x.startsWith("SELECT vns.project_feed_candidates(")), false);
+  assert.equal(
+    pool.statements.filter((x) => x.startsWith("SELECT vns.project_approved_feed_candidates("))
+      .length,
+    1,
+  );
+  assert.equal(
+    pool.statements.some((x) => x.startsWith("SELECT vns.project_feed_candidates(")),
+    false,
+  );
 });
 
 test("stolen/overprivileged PostgreSQL identities fail before projection", async () => {
@@ -107,7 +113,10 @@ test("stolen/overprivileged PostgreSQL identities fail before projection", async
       projectApprovedSource(pool as never, readProjectionAdmission(valid)),
       /database admission denied/,
     );
-    assert.equal(pool.statements.some((x) => x.startsWith("SELECT vns.project_approved_feed_candidates(")), false);
+    assert.equal(
+      pool.statements.some((x) => x.startsWith("SELECT vns.project_approved_feed_candidates(")),
+      false,
+    );
   }
 });
 
@@ -126,7 +135,6 @@ test("projection errors and impossible counts are redacted", async () => {
   await assert.rejects(
     projectApprovedSource(failing as never, readProjectionAdmission(valid)),
     (error: unknown) =>
-      error instanceof Error &&
-      error.message === "P2 approved source projection unavailable",
+      error instanceof Error && error.message === "P2 approved source projection unavailable",
   );
 });
