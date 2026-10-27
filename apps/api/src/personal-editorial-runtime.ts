@@ -29,10 +29,12 @@ export function readPersonalEditorialAdmission(
     return null;
   }
   if (
-    enabled !== "true" || acknowledged !== "true" ||
+    enabled !== "true" ||
+    acknowledged !== "true" ||
     env.VNS_EDITORIAL_PERSONAL_DB_SECRETS_DIR !== PERSONAL_EDITORIAL_SECRETS_DIR ||
     !["postgres", "127.0.0.1"].includes(env.VNS_EDITORIAL_PERSONAL_DB_HOST ?? "")
-  ) throw new Error("Personal editorial runtime admission denied");
+  )
+    throw new Error("Personal editorial runtime admission denied");
   return {
     pgHost: env.VNS_EDITORIAL_PERSONAL_DB_HOST as PersonalEditorialAdmission["pgHost"],
     secretDirectory: PERSONAL_EDITORIAL_SECRETS_DIR,
@@ -45,9 +47,13 @@ function readIndividualCredential(directory: string, login: string): string {
   try {
     folder = openSync(directory, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
     const dirInfo = fstatSync(folder);
-    if (!dirInfo.isDirectory() || (dirInfo.mode & 0o077) !== 0 ||
-        (typeof process.getuid === "function" && dirInfo.uid !== 0 &&
-          dirInfo.uid !== process.getuid())) {
+    if (
+      !dirInfo.isDirectory() ||
+      (dirInfo.mode & 0o077) !== 0 ||
+      (typeof process.getuid === "function" &&
+        dirInfo.uid !== 0 &&
+        dirInfo.uid !== process.getuid())
+    ) {
       throw new Error("Unsafe personal credential directory");
     }
     // Exact, verified directory with no group/world writes, login restricts
@@ -55,10 +61,14 @@ function readIndividualCredential(directory: string, login: string): string {
     const path = directory + "/" + login + ".password";
     file = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = fstatSync(file);
-    if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 ||
-        stat.size < 40 || stat.size > 256 ||
-        (typeof process.getuid === "function" && stat.uid !== 0 &&
-          stat.uid !== process.getuid())) {
+    if (
+      !stat.isFile() ||
+      stat.nlink !== 1 ||
+      (stat.mode & 0o077) !== 0 ||
+      stat.size < 40 ||
+      stat.size > 256 ||
+      (typeof process.getuid === "function" && stat.uid !== 0 && stat.uid !== process.getuid())
+    ) {
       throw new Error("Personal credential inaccessible");
     }
     const password = readFileSync(file, "utf8").trimEnd();
@@ -86,14 +96,18 @@ export function createPersonalEditorialSessions(
     !admission ||
     !["postgres", "127.0.0.1"].includes(admission.pgHost) ||
     admission.secretDirectory !== PERSONAL_EDITORIAL_SECRETS_DIR
-  ) throw new Error("Personal editorial session configuration invalid");
+  )
+    throw new Error("Personal editorial session configuration invalid");
   return {
     async open(identity: EditorIdentity) {
-      if (!identity || identity.role !== "admin" ||
-          !ACCOUNT.test(identity.username) ||
-          !UUID.test(identity.id) ||
-          !Number.isSafeInteger(identity.authVersion) ||
-          identity.authVersion < 0) {
+      if (
+        !identity ||
+        identity.role !== "admin" ||
+        !ACCOUNT.test(identity.username) ||
+        !UUID.test(identity.id) ||
+        !Number.isSafeInteger(identity.authVersion) ||
+        identity.authVersion < 0
+      ) {
         throw new Error("Personal editorial account refused");
       }
       const login = "editor_" + identity.username;
