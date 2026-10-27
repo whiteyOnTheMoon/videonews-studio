@@ -42,7 +42,10 @@ export default async function AdminPage() {
       <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
       <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
       <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
-      <AiProviders readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null} />
+      <AiProviders
+        readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null}
+        writeEnabled={process.env.VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"}
+      />
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />

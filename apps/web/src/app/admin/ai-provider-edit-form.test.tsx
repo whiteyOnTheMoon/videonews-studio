@@ -97,16 +97,16 @@ test("builders reject unsupported models, activation, malformed and whitespace k
   });
 });
 
-test("dormant component cannot be mounted from the current admin page or route", async () => {
+test("provider editor is mounted only behind the separate Web write gate", async () => {
   const [adminPage, preview, route] = await Promise.all([
     readFile(new URL("./page.tsx", import.meta.url), "utf8"),
     readFile(new URL("./ai-providers.tsx", import.meta.url), "utf8"),
     readFile(new URL("../api/admin/ai-providers/route.ts", import.meta.url), "utf8"),
   ]);
-  for (const deployed of [adminPage, preview, route]) {
-    assert.ok(!deployed.includes("ai-provider-edit-form"));
-    assert.ok(!deployed.includes("ai-provider-edit-model"));
-  }
-  assert.ok(!route.includes("export async function POST"));
-  assert.ok(!route.includes("admin-ai-provider-write-contract"));
+  assert.match(adminPage, /VNS_WEB_AI_PROVIDER_WRITE_ENABLED/);
+  assert.match(preview, /writeEnabled &&\s+readOnlyEnabled &&\s+!loading &&\s+!error/);
+  assert.match(preview, /AiProviderEditForm/);
+  assert.match(route, /export async function POST/);
+  assert.match(route, /VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"/);
+  assert.match(route, /dormantAdminAiProviderWriteProxy/);
 });

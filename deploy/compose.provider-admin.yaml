@@ -1,0 +1,30 @@
+# P1-09 / #227: add ONLY after the operator has installed and verified
+# the dedicated named provider DB login and node-owned private KEK directory.
+# No provider SDK, paid request, secret plaintext or publication is enabled.
+services:
+  api:
+    environment:
+      VNS_ADMIN_JOBS_ENABLED: "true"
+      VNS_EDITOR_AUTH_ENABLED: "true"
+      VNS_POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      VNS_PROVIDER_ADMIN_WRITE_ENABLED: "true"
+      VNS_PROVIDER_WRITER_PASSWORD_FILE: /run/secrets/pg_provider_admin_password
+    secrets:
+      - postgres_password
+      - pg_provider_admin_password
+    volumes:
+      - type: bind
+        source: ./secrets/vns
+        target: /run/secrets/vns
+        read_only: true
+
+  web:
+    environment:
+      VNS_WEB_ADMIN_JOBS_ENABLED: "true"
+      VNS_WEB_EDITOR_AUTH_ENABLED: "true"
+      VNS_WEB_AI_PROVIDER_READONLY_ENABLED: "true"
+      VNS_WEB_AI_PROVIDER_WRITE_ENABLED: "true"
+
+secrets:
+  pg_provider_admin_password:
+    file: ./secrets/pg_provider_admin_password
