@@ -60,8 +60,8 @@ $off$;
 RESET ROLE;
 
 UPDATE vns.provider_live_budget_policy SET
-  enabled=true,global_cap_micro_usd=400,day_cap_micro_usd=400,
-  month_cap_micro_usd=400,job_cap_micro_usd=350,request_cap_micro_usd=350;
+  enabled=true,global_cap_micro_usd=500,day_cap_micro_usd=500,
+  month_cap_micro_usd=500,job_cap_micro_usd=350,request_cap_micro_usd=350;
 
 SET LOCAL ROLE vns_provider_usage_writer;
 DO $reservations$
