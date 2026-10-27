@@ -220,3 +220,14 @@ export function createGatedFeedSlotEnqueuer(
     }
   };
 }
+
+/** Validate a Redis-delivered slot BEFORE opening database/anchor/source secrets. */
+export function assertGatedFeedDelivery(
+  env: NodeJS.ProcessEnv,
+  job: FeedTickDelivery,
+  now: Date,
+): void {
+  requireGate(env);
+  slotAt(now);
+  if (!validDelivery(job, now)) throw new Error("Feed queue delivery refused");
+}
