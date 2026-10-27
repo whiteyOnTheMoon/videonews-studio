@@ -10,6 +10,7 @@ export interface FeedQueueSnapshot {
   active: number;
   delayed: number;
   failed: number;
+  completed: number;
   paused: number;
   queuePaused: boolean;
   oldestPendingAt: number | null;
@@ -17,6 +18,7 @@ export interface FeedQueueSnapshot {
 
 export interface ContinuousFeedPolicy {
   maxBacklog: number;
+  maxCompletedJobs: number;
   maxPendingAgeMinutes: number;
   maxConsecutiveEnqueueFailures: number;
 }
@@ -47,20 +49,23 @@ export function readContinuousFeedPolicy(env: NodeJS.ProcessEnv): ContinuousFeed
   }
   const values = [
     env.VNS_FEED_CONTINUOUS_MAX_BACKLOG,
+    env.VNS_FEED_CONTINUOUS_MAX_COMPLETED_JOBS,
     env.VNS_FEED_CONTINUOUS_MAX_PENDING_AGE_MINUTES,
     env.VNS_FEED_CONTINUOUS_ENQUEUE_FAILURE_LIMIT,
   ];
-  if (values.some((value) => typeof value !== "string" || !/^[1-9][0-9]?$/.test(value))) {
+  if (values.some((value) => typeof value !== "string" || !/^[1-9][0-9]{0,5}$/.test(value))) {
     throw new Error("Continuous feed limits invalid");
   }
   const maxBacklog = Number(values[0]);
-  const maxPendingAgeMinutes = Number(values[1]);
-  const maxConsecutiveEnqueueFailures = Number(values[2]);
-  if (maxBacklog > 20 || maxPendingAgeMinutes < 15 || maxPendingAgeMinutes > 29 ||
+  const maxCompletedJobs = Number(values[1]);
+  const maxPendingAgeMinutes = Number(values[2]);
+  const maxConsecutiveEnqueueFailures = Number(values[3]);
+  if (maxBacklog > 20 || maxCompletedJobs < 100 || maxCompletedJobs > 100000 ||
+    maxPendingAgeMinutes < 15 || maxPendingAgeMinutes > 29 ||
     maxConsecutiveEnqueueFailures > 3) {
     throw new Error("Continuous feed limits invalid");
   }
-  return Object.freeze({ maxBacklog, maxPendingAgeMinutes, maxConsecutiveEnqueueFailures });
+  return Object.freeze({ maxBacklog, maxCompletedJobs, maxPendingAgeMinutes, maxConsecutiveEnqueueFailures });
 }
 
 export function validateFeedQueueSnapshot(
@@ -71,13 +76,17 @@ export function validateFeedQueueSnapshot(
   if (!snapshot || !policy || !Number.isSafeInteger(now) || now < 0) {
     throw new Error("Feed queue observation unavailable");
   }
-  const counts = [snapshot.waiting, snapshot.active, snapshot.delayed, snapshot.failed, snapshot.paused];
+  const counts = [
+    snapshot.waiting, snapshot.active, snapshot.delayed, snapshot.failed,
+    snapshot.completed, snapshot.paused,
+  ];
   if (counts.some((n) => !Number.isSafeInteger(n) || n < 0 || n > 1_000_000)) {
     throw new Error("Feed queue observation unavailable");
   }
   const pending = snapshot.waiting + snapshot.active + snapshot.delayed + snapshot.paused;
   if (typeof snapshot.queuePaused !== "boolean" || snapshot.queuePaused ||
-    snapshot.failed > 0 || pending > policy.maxBacklog || snapshot.paused > 0) {
+    snapshot.failed > 0 || snapshot.completed >= policy.maxCompletedJobs ||
+    pending > policy.maxBacklog || snapshot.paused > 0) {
     throw new Error("Feed queue risk threshold exceeded");
   }
   const oldest = snapshot.oldestPendingAt;
