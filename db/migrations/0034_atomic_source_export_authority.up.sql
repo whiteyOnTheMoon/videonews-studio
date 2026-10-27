@@ -1,5 +1,6 @@
 -- P2-01: atomic read-only source + independently reviewed host snapshot.
 -- Does not activate network access, schedulers, signing keys or VPS migration.
+-- Signer login and Ed25519 private key are operator-provisioned outside SQL.
 BEGIN;
 CREATE ROLE vns_source_export_authority NOLOGIN NOINHERIT;
 CREATE ROLE vns_source_export_reader NOLOGIN NOINHERIT;
