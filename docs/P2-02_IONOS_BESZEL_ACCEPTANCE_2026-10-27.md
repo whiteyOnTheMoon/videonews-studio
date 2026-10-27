@@ -1,4 +1,4 @@
-# P2-02 — IONOS backup and Beszel acceptance update (2026-10-27)
+> **Neueste Betreiberentscheidung 27.10.2026 (Vorrang vor historischen IONOS-Angaben):** Für VideoNews Studio werden vorerst **keine Backups erstellt**, Kostenbudget dafür **0 €**. Das Risiko eines dauerhaften Datenverlusts im experimentellen Betrieb ist ausdrücklich akzeptiert. Keine Sicherung, kein Restore und keine produktive Wiederherstellbarkeit werden dadurch als nachgewiesen betrachtet. Keine Backup-Dienste aktivieren oder IONOS konfigurieren. Siehe [verbindliche P1-Entscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).\n\n# P2-02 — IONOS backup and Beszel acceptance update (2026-10-27)
 
 **Status: OPERATOR REPORTED / NOT YET INDEPENDENTLY VERIFIED.**
 On 2026-10-27 the operator reported that **IONOS now performs regular backups** and that **Beszel works correctly**. This supersedes the historical preference to operate without backups. It does **not** prove that the existing backups include the complete VideoNews Studio recovery set or that P2-02-specific alerts have been delivered.
