@@ -10,10 +10,11 @@ function must(condition, message) {
 export function verifySignedFeedOverlay(data) {
   must(data && typeof data === "object", "Feed overlay YAML missing");
   const services = data.services;
-  assert.deepEqual(
-    Object.keys(services).sort(),
-    ["feed-observer", "source-handoff-import", "source-publisher"],
-  );
+  assert.deepEqual(Object.keys(services).sort(), [
+    "feed-observer",
+    "source-handoff-import",
+    "source-publisher",
+  ]);
   assert.deepEqual(Object.keys(data.networks), ["feed_egress"]);
   const profiles = {
     "source-publisher": "source-signing",
@@ -35,8 +36,10 @@ export function verifySignedFeedOverlay(data) {
     for (const mount of service.volumes) {
       assert.equal(mount.type, "bind");
       assert.equal(mount.bind.create_host_path, false);
-      must(mount.source.startsWith("${VNS_P2_") && mount.source.includes(":?"),
-        name + " unprovisioned host bind");
+      must(
+        mount.source.startsWith("${VNS_P2_") && mount.source.includes(":?"),
+        name + " unprovisioned host bind",
+      );
     }
   }
   const publisher = services["source-publisher"];
@@ -52,29 +55,21 @@ export function verifySignedFeedOverlay(data) {
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
   const mountTargets = (name) => services[name].volumes.map((x) => x.target);
   const signer = "/run/secrets/vns_source_export_signing_key";
-  assert.deepEqual(
-    mountTargets("source-publisher"),
-    [
-      "/var/lib/vns/source-publisher",
-      "/run/secrets/vns_source_export_db_password",
-      signer,
-    ],
-  );
+  assert.deepEqual(mountTargets("source-publisher"), [
+    "/var/lib/vns/source-publisher",
+    "/run/secrets/vns_source_export_db_password",
+    signer,
+  ]);
   must(!mountTargets("source-handoff-import").includes(signer), "importer has signer key");
   must(!mountTargets("feed-observer").includes(signer), "observer has signer key");
-  assert.deepEqual(
-    mountTargets("source-handoff-import"),
-    [
-      "/var/lib/vns/source-handoff",
-      "/var/lib/vns/feed-source-inbox",
-      "/run/secrets/vns_feed_source_public_key",
-    ],
-  );
+  assert.deepEqual(mountTargets("source-handoff-import"), [
+    "/var/lib/vns/source-handoff",
+    "/var/lib/vns/feed-source-inbox",
+    "/run/secrets/vns_feed_source_public_key",
+  ]);
   const stage = importer.volumes.find((x) => x.target === "/var/lib/vns/source-handoff");
   assert.equal(stage.read_only, true);
-  const inbox = observer.volumes.find(
-    (x) => x.target === "/var/lib/vns/feed-source-inbox",
-  );
+  const inbox = observer.volumes.find((x) => x.target === "/var/lib/vns/feed-source-inbox");
   assert.equal(inbox.read_only, true);
   must(
     observer.volumes.some(
@@ -87,12 +82,8 @@ export function verifySignedFeedOverlay(data) {
     inbox.source,
   );
   assert.equal(
-    importer.volumes.find(
-      (x) => x.target === "/run/secrets/vns_feed_source_public_key",
-    ).source,
-    observer.volumes.find(
-      (x) => x.target === "/run/secrets/vns_feed_source_public_key",
-    ).source,
+    importer.volumes.find((x) => x.target === "/run/secrets/vns_feed_source_public_key").source,
+    observer.volumes.find((x) => x.target === "/run/secrets/vns_feed_source_public_key").source,
   );
   for (const [name, flags] of [
     ["source-publisher", ["VNS_SOURCE_PUBLISHER_ENABLED", "VNS_SOURCE_PUBLISHER_OPERATOR_ACK"]],
@@ -128,15 +119,29 @@ test("signed feed Compose mounts are isolated and all activation gates fail clos
 
 test("Compose safety check rejects exposure, wrong UID and writable staging", () => {
   for (const modify of [
-    (copy) => { copy.services["source-handoff-import"].network_mode = "host"; },
-    (copy) => { copy.services["source-handoff-import"].user = "10001:10001"; },
-    (copy) => { copy.services["feed-observer"].ports = ["443:443"]; },
-    (copy) => { copy.services["source-handoff-import"].volumes[0].read_only = false; },
-    (copy) => { copy.services["feed-observer"].volumes.push(
-      structuredClone(copy.services["source-publisher"].volumes[2]),
-    ); },
-    (copy) => { copy.services["feed-observer"].environment.VNS_FEED_RUNTIME_ENABLED = "true"; },
-    (copy) => { copy.services["source-publisher"].profiles = []; },
+    (copy) => {
+      copy.services["source-handoff-import"].network_mode = "host";
+    },
+    (copy) => {
+      copy.services["source-handoff-import"].user = "10001:10001";
+    },
+    (copy) => {
+      copy.services["feed-observer"].ports = ["443:443"];
+    },
+    (copy) => {
+      copy.services["source-handoff-import"].volumes[0].read_only = false;
+    },
+    (copy) => {
+      copy.services["feed-observer"].volumes.push(
+        structuredClone(copy.services["source-publisher"].volumes[2]),
+      );
+    },
+    (copy) => {
+      copy.services["feed-observer"].environment.VNS_FEED_RUNTIME_ENABLED = "true";
+    },
+    (copy) => {
+      copy.services["source-publisher"].profiles = [];
+    },
   ]) {
     const copy = structuredClone(overlay);
     modify(copy);

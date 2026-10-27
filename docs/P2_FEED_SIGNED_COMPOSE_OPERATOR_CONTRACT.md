@@ -9,11 +9,11 @@ existing production VPS is unchanged.
 
 ## Separate identities and networks
 
-| Container | Linux UID:GID | Network | Responsibility |
-| --- | --- | --- | --- |
-| `source-publisher` | `10001:10001` | internal backend only | Signed SQL snapshot; sole process with Ed25519 PRIVATE key |
-| `source-handoff-import` | `10002:10002` | **none** | Verify signed read-only staging into private inbox |
-| `feed-observer` | `10002:10002` | backend + feed egress | Verify remote revision anchor and observe a SINGLE authorized feed pass |
+| Container               | Linux UID:GID | Network               | Responsibility                                                          |
+| ----------------------- | ------------- | --------------------- | ----------------------------------------------------------------------- |
+| `source-publisher`      | `10001:10001` | internal backend only | Signed SQL snapshot; sole process with Ed25519 PRIVATE key              |
+| `source-handoff-import` | `10002:10002` | **none**              | Verify signed read-only staging into private inbox                      |
+| `feed-observer`         | `10002:10002` | backend + feed egress | Verify remote revision anchor and observe a SINGLE authorized feed pass |
 
 All images use the compiled worker target, but no application publishing API.
 Each service has immutable root filesystem, dropped capabilities,
@@ -47,7 +47,7 @@ not news providers, secrets or mutable admin editorial settings.
 
 The Docker bind mount options do NOT create or guarantee these permissions.
 A deployment preflight must verify them, including ownership, inode types,
-mount point stability, read-only staging and distinct *real* Linux UIDs.
+mount point stability, read-only staging and distinct _real_ Linux UIDs.
 The signed artifact must be transferred from the publisher output to
 staging by a separately authorized, restricted principal. That transfer is
 not silently accomplished by a shared volume or by this overlay.
