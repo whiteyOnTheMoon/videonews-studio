@@ -50,16 +50,14 @@ async function start(): Promise<void> {
   async function close(): Promise<void> {
     server.close((error) => {
       if (error) process.exitCode = 1;
-      void Promise.allSettled([
-        editor?.close(),
-        jobs?.close(),
-        providerConfig?.close(),
-      ]).then((results) => {
-        if (results.some((result) => result.status === "rejected")) {
-          console.error("API resource shutdown failed");
-          process.exitCode = 1;
-        }
-      });
+      void Promise.allSettled([editor?.close(), jobs?.close(), providerConfig?.close()]).then(
+        (results) => {
+          if (results.some((result) => result.status === "rejected")) {
+            console.error("API resource shutdown failed");
+            process.exitCode = 1;
+          }
+        },
+      );
     });
   }
   process.once("SIGINT", () => void close());
