@@ -94,7 +94,11 @@ export function validateNamedEditorialProfiles(
 }
 
 const CHECKPOINT_STAGES = [
-  "ranking", "claim_review", "freshness", "script_revision", "quality",
+  "ranking",
+  "claim_review",
+  "freshness",
+  "script_revision",
+  "quality",
 ] as const;
 const CHECKPOINT_OUTCOMES = ["candidate", "blocked", "needs_review"] as const;
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -127,13 +131,13 @@ export function validateNamedCheckpointWrite(raw: unknown): NamedCheckpointWrite
     !Array.isArray(raw.reasonCodes) ||
     raw.reasonCodes.length < 1 ||
     raw.reasonCodes.length > 20 ||
-    raw.reasonCodes.some(
-      (code: unknown) => typeof code !== "string" || !REASON_CODE.test(code),
-    ) ||
+    raw.reasonCodes.some((code: unknown) => typeof code !== "string" || !REASON_CODE.test(code)) ||
     (raw.score !== null &&
-      (!Number.isSafeInteger(raw.score) || (raw.score as number) < 0 ||
+      (!Number.isSafeInteger(raw.score) ||
+        (raw.score as number) < 0 ||
         (raw.score as number) > 1000))
-  ) return null;
+  )
+    return null;
   return raw as unknown as NamedCheckpointWrite;
 }
 
@@ -310,11 +314,12 @@ export class DormantPersonalEditorialAdmin {
             throw new Error("Checkpoint write result invalid");
           }
           if (!result.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
-          else respond(res, 200, {
-            saved: true,
-            revision: input.expectedRevision + 1,
-            approvedForPublication: false,
-          });
+          else
+            respond(res, 200, {
+              saved: true,
+              revision: input.expectedRevision + 1,
+              approvedForPublication: false,
+            });
           return true;
         }
         const eventId = uri.searchParams.get("eventId");
