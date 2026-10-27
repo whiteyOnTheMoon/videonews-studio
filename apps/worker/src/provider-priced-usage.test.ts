@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { quoteNativeTextUsage } from "./provider-priced-usage.js";
-import { geminiFixture, openaiFixture } from "./provider-native-usage.test.js";
+import { geminiFixture, openaiFixture } from "./provider-native-usage-fixtures.js";
 
 const price = Object.freeze({
   provider: "openai" as const,

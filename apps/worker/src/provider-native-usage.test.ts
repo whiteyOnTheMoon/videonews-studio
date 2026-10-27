@@ -2,37 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { extractNativeTextUsage } from "./provider-native-usage.js";
 
-export const openaiFixture = Object.freeze({
-  object: "response",
-  id: "resp_native_openai_000001",
-  model: "operator-chosen-model",
-  status: "completed",
-  error: null,
-  incomplete_details: null,
-  output: [{ type: "message" }],
-  usage: {
-    input_tokens: 100,
-    output_tokens: 40,
-    total_tokens: 140,
-    input_tokens_details: { cached_tokens: 25 },
-    output_tokens_details: { reasoning_tokens: 5 },
-  },
-});
-
-export const geminiFixture = Object.freeze({
-  responseId: "gemini_native_response_01",
-  modelVersion: "operator-chosen-gemini",
-  candidates: [{ finishReason: "STOP" }],
-  usageMetadata: {
-    promptTokenCount: 100,
-    cachedContentTokenCount: 20,
-    candidatesTokenCount: 10,
-    thoughtsTokenCount: 3,
-    totalTokenCount: 113,
-    promptTokensDetails: [{ modality: "TEXT", tokenCount: 100 }],
-    candidatesTokensDetails: [{ modality: "TEXT", tokenCount: 10 }],
-  },
-});
+import { geminiFixture, openaiFixture } from "./provider-native-usage-fixtures.js";
 
 test("OpenAI Responses usage: cached and reasoning tokens stay within reported totals", () => {
   assert.deepEqual(extractNativeTextUsage("openai", "operator-chosen-model", openaiFixture), {
@@ -47,14 +17,13 @@ test("OpenAI Responses usage: cached and reasoning tokens stay within reported t
     persistent: false,
     approvedForPayment: false,
   });
-  assert.ok(
-    Object.isFrozen(extractNativeTextUsage("openai", "operator-chosen-model", openaiFixture)),
-  );
+  const first = extractNativeTextUsage("openai", "operator-chosen-model", openaiFixture);
+  assert.ok(Object.isFrozen(first));
 });
 
 test("Gemini usage: thinking tokens add to candidate output and cached prompt is included", () => {
-  assert.deepEqual(extractNativeTextUsage("google_gemini", "operator-chosen-gemini", geminiFixture), {
-
+  const usage = extractNativeTextUsage("google_gemini", "operator-chosen-gemini", geminiFixture);
+  assert.deepEqual(usage, {
     provider: "google_gemini",
     model: "operator-chosen-gemini",
     responseId: "gemini_native_response_01",
@@ -148,14 +117,9 @@ test("Gemini blocks incomplete, non-text, tool, malformed usage and mismatched m
 
 test("invalid model, response IDs and unexpected provider cannot be admitted", () => {
   assert.throws(() => extractNativeTextUsage("openai", "../../bad", openaiFixture));
-  assert.throws(() =>
-    extractNativeTextUsage("unknown" as never, "operator-chosen-model", openaiFixture),
-  );
-  assert.throws(
-    () =>
-      extractNativeTextUsage("openai", "operator-chosen-model", {
-        ...openaiFixture,
-        id: "resp\nfake",
-      }),
-  );
+  const invalidProvider = () =>
+    extractNativeTextUsage("unknown" as never, "operator-chosen-model", openaiFixture);
+  assert.throws(invalidProvider);
+  const forgedId = { ...openaiFixture, id: "resp\nfake" };
+  assert.throws(() => extractNativeTextUsage("openai", "operator-chosen-model", forgedId));
 });
