@@ -199,3 +199,82 @@ test("checkpoint write accepts only an authenticated same-origin revision-bound 
     400,
   );
 });
+
+test("P2-10 personal story timeline writes audited events but cannot publish", async () => {
+  const storyId = "ca310002-2222-4222-8222-222222222222";
+  const created = "ca310004-4444-4444-8444-444444444444";
+  const calls: string[] = [];
+  const mock = (async (resource: string | URL | Request, init?: RequestInit) => {
+    const url = String(resource);
+    calls.push(url);
+    if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/admin/editorial-timeline") && init?.method === "POST") {
+      return Response.json({ eventId: created, approvedForPublication: false });
+    }
+    return Response.json({ error: "unexpected" }, { status: 503 });
+  }) as typeof fetch;
+  const command = {
+    storyId,
+    eventKind: "claim_rejected",
+    referenceUri: "https://example.org/review",
+    documentSha256: "b".repeat(64),
+    details: {
+      summary: "Claim rejected because its numerical evidence was not corroborated.",
+      reasonCodes: ["independent_evidence_required"],
+    },
+  };
+  const result = await dormantEditorialAdminProxy(
+    request("/api/admin/editorial-timeline", "POST", command),
+    "timeline",
+    config,
+    mock,
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(await result.json(), {
+    eventId: created,
+    approvedForPublication: false,
+  });
+  const count = calls.length;
+  for (const bad of [
+    { ...command, actor: "forged" },
+    { ...command, approvedForPublication: true },
+    { ...command, documentSha256: "bad" },
+    { ...command, eventKind: "publish" },
+    { ...command, details: { ...command.details, apiToken: "private" } },
+  ]) {
+    assert.equal(
+      (
+        await dormantEditorialAdminProxy(
+          request("/api/admin/editorial-timeline", "POST", bad),
+          "timeline",
+          config,
+          mock,
+        )
+      ).status,
+      400,
+    );
+  }
+  assert.equal(calls.length, count);
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-timeline", "POST", command, "https://evil.invalid"),
+        "timeline",
+        config,
+        mock,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-timeline?storyId=" + storyId, "POST", command),
+        "timeline",
+        config,
+        mock,
+      )
+    ).status,
+    400,
+  );
+});

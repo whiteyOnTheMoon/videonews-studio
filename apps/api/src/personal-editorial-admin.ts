@@ -141,6 +141,51 @@ export function validateNamedCheckpointWrite(raw: unknown): NamedCheckpointWrite
   return raw as unknown as NamedCheckpointWrite;
 }
 
+const TIMELINE_KINDS = [
+  "source",
+  "claim",
+  "claim_rejected",
+  "review",
+  "script_revision",
+  "decision",
+] as const;
+const HTTPS_REFERENCE = /^https:\/\/[a-z0-9.-]+(?::443)?\/[a-zA-Z0-9/._~-]*$/;
+export interface NamedTimelineWrite {
+  storyId: string;
+  eventKind: (typeof TIMELINE_KINDS)[number];
+  referenceUri: string | null;
+  documentSha256: string | null;
+  details: { summary: string; reasonCodes: readonly string[] };
+}
+/** Restrict operator-authored timeline evidence to bounded, non-secret fields. */
+export function validateNamedTimelineWrite(raw: unknown): NamedTimelineWrite | null {
+  if (
+    !object(raw) ||
+    Object.keys(raw).sort().join(",") !== "details,documentSha256,eventKind,referenceUri,storyId" ||
+    typeof raw.storyId !== "string" ||
+    !UUID.test(raw.storyId) ||
+    !TIMELINE_KINDS.includes(raw.eventKind as (typeof TIMELINE_KINDS)[number]) ||
+    (raw.referenceUri !== null &&
+      (typeof raw.referenceUri !== "string" ||
+        raw.referenceUri.length > 2048 ||
+        !HTTPS_REFERENCE.test(raw.referenceUri))) ||
+    (raw.documentSha256 !== null &&
+      (typeof raw.documentSha256 !== "string" || !SHA256.test(raw.documentSha256))) ||
+    !object(raw.details) ||
+    Object.keys(raw.details).sort().join(",") !== "reasonCodes,summary" ||
+    typeof raw.details.summary !== "string" ||
+    raw.details.summary.length < 8 ||
+    raw.details.summary.length > 2000 ||
+    [...raw.details.summary].some((char: string) => char.charCodeAt(0) < 32) ||
+    !Array.isArray(raw.details.reasonCodes) ||
+    raw.details.reasonCodes.length < 1 ||
+    raw.details.reasonCodes.length > 20 ||
+    raw.details.reasonCodes.some((x: unknown) => typeof x !== "string" || !REASON_CODE.test(x))
+  )
+    return null;
+  return raw as unknown as NamedTimelineWrite;
+}
+
 async function boundedJson(request: IncomingMessage): Promise<unknown> {
   if (
     request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
@@ -209,10 +254,7 @@ export class DormantPersonalEditorialAdmin {
       respond(res, 404, { error: "not_found" });
       return true;
     }
-    if (
-      !["GET", "POST"].includes(req.method ?? "") ||
-      (req.method === "POST" && path === "/admin/editorial-timeline")
-    ) {
+    if (!["GET", "POST"].includes(req.method ?? "")) {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
     }
@@ -241,7 +283,9 @@ export class DormantPersonalEditorialAdmin {
           !Object.hasOwn(command, "profiles") ||
           revision(command.expectedRevision) === null ||
           !validateNamedEditorialProfiles(command.profiles)
-        : uri.search !== "" || !validateNamedCheckpointWrite(command))
+        : path === "/admin/editorial-checkpoints"
+          ? uri.search !== "" || !validateNamedCheckpointWrite(command)
+          : uri.search !== "" || !validateNamedTimelineWrite(command))
     ) {
       respond(res, 400, { error: "invalid_request" });
       return true;
@@ -342,6 +386,26 @@ export class DormantPersonalEditorialAdmin {
         if (rows.rows.length > limit) throw new Error("Checkpoint page invalid");
         respond(res, 200, { events: rows.rows, nextRevision: rows.rows.at(-1)?.revision ?? after });
       } else {
+        if (req.method === "POST") {
+          const input = validateNamedTimelineWrite(command);
+          if (!input) throw new Error("Timeline authorization missing");
+          const rows = await session.query<{ event_id: string }>(
+            "SELECT vns.named_timeline_append($1::uuid,$2::text,$3::text,$4::text,$5::jsonb) AS event_id",
+            [
+              input.storyId,
+              input.eventKind,
+              input.referenceUri,
+              input.documentSha256,
+              JSON.stringify(input.details),
+            ],
+          );
+          const created = rows.rows[0]?.event_id;
+          if (rows.rows.length !== 1 || typeof created !== "string" || !UUID.test(created)) {
+            throw new Error("Timeline write result invalid");
+          }
+          respond(res, 200, { eventId: created, approvedForPublication: false });
+          return true;
+        }
         const storyId = uri.searchParams.get("storyId");
         const afterTimeInput = uri.searchParams.get("afterTime");
         const afterId = uri.searchParams.get("afterId");

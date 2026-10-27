@@ -6,6 +6,7 @@ import {
   DormantPersonalEditorialAdmin,
   validateNamedEditorialProfiles,
   validateNamedCheckpointWrite,
+  validateNamedTimelineWrite,
   type NamedEditorialPgSession,
 } from "./personal-editorial-admin.js";
 
@@ -65,6 +66,9 @@ function setup(mismatch = false, enabled = true) {
             },
           ],
         };
+      }
+      if (sqlText.includes("named_timeline_append")) {
+        return { rows: [{ event_id: "ca310004-4444-4444-8444-444444444444" }] };
       }
       if (sqlText.includes("named_profile_read")) {
         return { rows: [{ revision: "0", profiles: [] }] };
@@ -294,6 +298,79 @@ test("checkpoint command rejects forged identity, non-revisioned data and origin
   assert.equal(state.opened, 0);
   assert.equal(
     (await serve(setup(true).handler, "/admin/editorial-checkpoints", "POST", payload)).status,
+    403,
+  );
+});
+
+test("personally authenticated story audit appends exact bounded metadata only", async () => {
+  const state = setup();
+  const payload = {
+    storyId: "ca310002-2222-4222-8222-222222222222",
+    eventKind: "claim_rejected",
+    referenceUri: "https://example.org/source/review",
+    documentSha256: "a".repeat(64),
+    details: {
+      summary: "Rejected unsupported numerical estimate from current source.",
+      reasonCodes: ["claim_evidence_unverified"],
+    },
+  };
+  assert.deepEqual(validateNamedTimelineWrite(payload), payload);
+  const result = await serve(state.handler, "/admin/editorial-timeline", "POST", payload);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.json, {
+    eventId: "ca310004-4444-4444-8444-444444444444",
+    approvedForPublication: false,
+  });
+  assert.ok(state.sql.some((sql) => sql.includes("named_timeline_append")));
+  assert.ok(state.sql.every((sql) => !sql.includes(payload.details.summary)));
+  assert.equal(state.closed, 1);
+});
+
+test("redacted story audit refuses unsafe references, unapproved fields and stale identities", async () => {
+  const base = {
+    storyId: "ca310002-2222-4222-8222-222222222222",
+    eventKind: "source",
+    referenceUri: "https://example.org/a",
+    documentSha256: null,
+    details: {
+      summary: "Evidence source awaits independent review.",
+      reasonCodes: ["source_attested"],
+    },
+  };
+  const state = setup();
+  for (const change of [
+    { actorId: ACTOR },
+    { approvedForPublication: true },
+    { eventKind: "publish" },
+    { referenceUri: "file:///etc/passwd" },
+    { referenceUri: "https://user:pass@example.org/a" },
+    { documentSha256: "bogus" },
+    { details: { summary: "short", reasonCodes: ["ok"] } },
+    { details: { summary: "This is long enough.", reasonCodes: ["invalid Reason"] } },
+    { details: { ...base.details, credential: "forbidden" } },
+  ]) {
+    assert.equal(validateNamedTimelineWrite({ ...base, ...change }), null);
+    const reply = await serve(state.handler, "/admin/editorial-timeline", "POST", {
+      ...base,
+      ...change,
+    });
+    assert.equal(reply.status, 400);
+  }
+  assert.equal(state.opened, 0);
+  assert.equal(
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-timeline",
+        "POST",
+        base,
+        "https://forged.example",
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-timeline", "POST", base)).status,
     403,
   );
 });
