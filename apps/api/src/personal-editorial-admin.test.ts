@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   DormantPersonalEditorialAdmin,
   validateNamedEditorialProfiles,
+  validateNamedCheckpointWrite,
   type NamedEditorialPgSession,
 } from "./personal-editorial-admin.js";
 
@@ -68,7 +69,8 @@ function setup(mismatch = false, enabled = true) {
       if (sqlText.includes("named_profile_read")) {
         return { rows: [{ revision: "0", profiles: [] }] };
       }
-      if (sqlText.includes("named_profile_commit")) {
+      if (sqlText.includes("named_profile_commit") ||
+          sqlText.includes("named_append_editorial_checkpoint")) {
         return { rows: [{ saved: true }] };
       }
       return { rows: [] };
@@ -215,4 +217,72 @@ test("bounded timeline and checkpoint cursor exports require exact IDs", async (
   );
   assert.equal(state.opened, 3);
   assert.equal(state.closed, 3);
+});
+
+test("authenticated admin writes bounded append-only checkpoint, never publication approval", async () => {
+  const state = setup();
+  const payload = {
+    eventId: "ca310002-2222-4222-8222-222222222222",
+    expectedRevision: 0,
+    stage: "ranking",
+    outcome: "candidate",
+    artifactSha256: "a".repeat(64),
+    reasonCodes: ["metadata_candidate_only"],
+    score: 42,
+  };
+  assert.deepEqual(validateNamedCheckpointWrite(payload), payload);
+  const result = await serve(state.handler, "/admin/editorial-checkpoints", "POST", payload);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.json, {
+    saved: true,
+    revision: 1,
+    approvedForPublication: false,
+  });
+  assert.equal(state.opened, 1);
+  assert.equal(state.closed, 1);
+  assert.ok(state.sql.some((sql) => sql.includes("named_append_editorial_checkpoint")));
+  assert.ok(state.sql.every((sql) => !sql.includes("metadata_candidate_only")));
+});
+
+test("checkpoint command rejects forged identity, non-revisioned data and origin bypass", async () => {
+  const payload = {
+    eventId: "ca310002-2222-4222-8222-222222222222",
+    expectedRevision: 0,
+    stage: "quality",
+    outcome: "needs_review",
+    artifactSha256: "b".repeat(64),
+    reasonCodes: ["independent_review_required"],
+    score: null,
+  };
+  const state = setup();
+  for (const delta of [
+    { actorId: ACTOR },
+    { stage: "publish" },
+    { approvedForPublication: true },
+    { expectedRevision: -1 },
+    { artifactSha256: "not_a_digest" },
+    { reasonCodes: [] },
+    { reasonCodes: ["bad Secret"] },
+    { score: 1001 },
+  ]) {
+    assert.equal(validateNamedCheckpointWrite({ ...payload, ...delta }), null);
+    assert.equal(
+      (await serve(state.handler, "/admin/editorial-checkpoints", "POST", {
+        ...payload,
+        ...delta,
+      })).status,
+      400,
+    );
+  }
+  assert.equal(state.opened, 0);
+  assert.equal(
+    (await serve(state.handler, "/admin/editorial-checkpoints", "POST", payload,
+      "https://attacker.example")).status,
+    403,
+  );
+  assert.equal(state.opened, 0);
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-checkpoints", "POST", payload)).status,
+    403,
+  );
 });
