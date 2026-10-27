@@ -38,6 +38,11 @@ checkpoint. No real provider, source, or paid model is activated.
 
 ## Remaining production blockers
 
+- The SQL gate verifies the selected source record but not the **entire**
+  source registry. A stale worker file could omit a newly blocked, narrower
+  article URL scope while retaining an otherwise unchanged approved parent.
+  Exact current registry/projection admission must be checked before trusting
+  article URLs; this is a blocker for production activation.
 - The authorization check and later HTTPS request are separate transactions.
   A revoke may race between check and transport. Likewise the last check and
   `commit_feed_poll` are not atomic. A DB-side authorized claim/commit path is
