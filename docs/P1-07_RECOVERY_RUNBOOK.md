@@ -25,20 +25,20 @@ deployment approvals are stored here.
 
 The independent operator must explicitly decide and document:
 
-| Decision                                                | Current approval          | Evidence to collect                                                             |
-| ------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| Decision                                                | Current approval                             | Evidence to collect                                                             |
+| ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
 | Off-host storage location, ownership and access         | **IONOS backups reported; scope unverified** | Independent destination, access controls and recovery-access proof              |
-| Recovery point objective (RPO, acceptable data loss)    | **Not defined**           | Explicit maximum tolerable lost data, agreed retention and backup schedule      |
-| Recovery time objective (RTO, time to resume)           | **Not defined**           | Explicit recovery target and completed realistic, timed rehearsal               |
-| Backup encryption and independent key custody           | **Not approved**          | Audited key recovery and authorized access to an offline recovery copy          |
-| Retention, privacy, deletion and audit completeness     | **Not approved**          | Approved policy for people, review reasons and other sensitive metadata         |
-| Media and external assets                               | **Not backed up**         | Hash-verified upload/media inventory and independent restored copy              |
-| PostgreSQL data, globals, roles and login secrets       | **CI-only tested**        | Full off-host database restore, reissued individual credentials                 |
-| Redis AOF/BullMQ and PostgreSQL outbox consistency      | **Not full-stack tested** | Reconciliation and duplicate/retry handling before workers resume               |
-| Signed audit data                                       | **CI-only tested**        | Independent public-key trust, signature/key rotation, immutable off-host anchor |
-| Config, tunnel, third-party credentials and publication | **Not rehearsed**         | Independently retained configuration and post-restore nonpublication check      |
-| Real identity/MFA and administrator grant approvals     | **Not complete**          | Operator-owned authorization and revocation evidence                            |
-| Explicit live activation                                | **Not granted**           | New human approval for VPS migration, containers, flags and cutover             |
+| Recovery point objective (RPO, acceptable data loss)    | **Not defined**                              | Explicit maximum tolerable lost data, agreed retention and backup schedule      |
+| Recovery time objective (RTO, time to resume)           | **Not defined**                              | Explicit recovery target and completed realistic, timed rehearsal               |
+| Backup encryption and independent key custody           | **Not approved**                             | Audited key recovery and authorized access to an offline recovery copy          |
+| Retention, privacy, deletion and audit completeness     | **Not approved**                             | Approved policy for people, review reasons and other sensitive metadata         |
+| Media and external assets                               | **Not backed up**                            | Hash-verified upload/media inventory and independent restored copy              |
+| PostgreSQL data, globals, roles and login secrets       | **CI-only tested**                           | Full off-host database restore, reissued individual credentials                 |
+| Redis AOF/BullMQ and PostgreSQL outbox consistency      | **Not full-stack tested**                    | Reconciliation and duplicate/retry handling before workers resume               |
+| Signed audit data                                       | **CI-only tested**                           | Independent public-key trust, signature/key rotation, immutable off-host anchor |
+| Config, tunnel, third-party credentials and publication | **Not rehearsed**                            | Independently retained configuration and post-restore nonpublication check      |
+| Real identity/MFA and administrator grant approvals     | **Not complete**                             | Operator-owned authorization and revocation evidence                            |
+| Explicit live activation                                | **Not granted**                              | New human approval for VPS migration, containers, flags and cutover             |
 
 Cost constraint: **do not provision or subscribe to a new backup service
 automatically**. A future approved backup plan might use an operator-owned
