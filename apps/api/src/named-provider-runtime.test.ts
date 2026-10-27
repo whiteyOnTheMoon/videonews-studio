@@ -24,7 +24,9 @@ function scenario(allowed: boolean) {
     async query() {
       return { rows: [{ who: "vns_provider_config_login", admitted: allowed }] };
     },
-    async end() { closed++; },
+    async end() {
+      closed++;
+    },
   } as unknown as Pool;
   const factory = (config: PoolConfig): Pool => {
     configs.push(config);
@@ -35,8 +37,11 @@ function scenario(allowed: boolean) {
   ): Promise<T> => {
     const bytes = randomBytes(32);
     keys.push(bytes);
-    try { return await callback(bytes); }
-    finally { bytes.fill(0); }
+    try {
+      return await callback(bytes);
+    } finally {
+      bytes.fill(0);
+    }
   };
   return { factory, key, configs, keys, closed: () => closed };
 }
@@ -49,7 +54,14 @@ test("provider administration stays off unless all runtime gates are enabled", a
 test("role mismatch refuses startup and closes dedicated pool", async () => {
   const f = scenario(false);
   await assert.rejects(
-    namedProviderRuntimeFromEnv(editor, auth, valid, () => "ci_placeholder_not_real_1234567", f.factory, f.key),
+    namedProviderRuntimeFromEnv(
+      editor,
+      auth,
+      valid,
+      () => "ci_placeholder_not_real_1234567",
+      f.factory,
+      f.key,
+    ),
     /Named provider runtime unavailable/,
   );
   assert.equal(f.closed(), 1);
@@ -58,7 +70,12 @@ test("role mismatch refuses startup and closes dedicated pool", async () => {
 test("verified dedicated pool and private key are required", async () => {
   const f = scenario(true);
   const runtime = await namedProviderRuntimeFromEnv(
-    editor, auth, valid, () => "ci_placeholder_not_real_1234567", f.factory, f.key,
+    editor,
+    auth,
+    valid,
+    () => "ci_placeholder_not_real_1234567",
+    f.factory,
+    f.key,
   );
   assert.ok(runtime);
   assert.equal(f.configs[0]?.user, "vns_provider_config_login");
