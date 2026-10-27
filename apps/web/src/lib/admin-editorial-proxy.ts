@@ -91,7 +91,36 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
     output.fill(0);
     const input: unknown = JSON.parse(raw);
     if (!object(input)) return null;
-    if (endpoint === "checkpoints") {
+    if (endpoint === "timeline") {
+      if (
+        Object.keys(input).sort().join(",") !==
+          "details,documentSha256,eventKind,referenceUri,storyId" ||
+        typeof input.storyId !== "string" ||
+        !UUID.test(input.storyId) ||
+        !["source", "claim", "claim_rejected", "review", "script_revision", "decision"].includes(
+          input.eventKind as string,
+        ) ||
+        (input.referenceUri !== null &&
+          (typeof input.referenceUri !== "string" ||
+            input.referenceUri.length > 2048 ||
+            !/^https:\/\/[a-z0-9.-]+(?::443)?\/[a-zA-Z0-9/._~-]*$/.test(input.referenceUri))) ||
+        (input.documentSha256 !== null &&
+          (typeof input.documentSha256 !== "string" ||
+            !/^[0-9a-f]{64}$/.test(input.documentSha256))) ||
+        !object(input.details) ||
+        Object.keys(input.details).sort().join(",") !== "reasonCodes,summary" ||
+        typeof input.details.summary !== "string" ||
+        input.details.summary.length < 8 ||
+        input.details.summary.length > 2000 ||
+        /[\u0000-\u001f]/.test(input.details.summary) ||
+        !Array.isArray(input.details.reasonCodes) ||
+        input.details.reasonCodes.length < 1 ||
+        input.details.reasonCodes.length > 20 ||
+        input.details.reasonCodes.some(
+          (code: unknown) => typeof code !== "string" || !/^[a-z][a-z0-9_]{1,39}$/.test(code),
+        )
+      ) return null;
+    } else     if (endpoint === "checkpoints") {
       if (
         Object.keys(input).sort().join(",") !==
           "artifactSha256,eventId,expectedRevision,outcome,reasonCodes,score,stage" ||
@@ -151,7 +180,7 @@ export async function dormantEditorialAdminProxy(
   if (!(endpoint in ENDPOINTS)) return reply(404, { error: "not_found" });
   if (
     request.method !== "GET" &&
-    !(["profiles", "checkpoints"].includes(endpoint) && request.method === "POST")
+    !(["profiles", "checkpoints", "timeline"].includes(endpoint) && request.method === "POST")
   ) {
     return reply(405, { error: "method_not_allowed" });
   }
@@ -160,7 +189,7 @@ export async function dormantEditorialAdminProxy(
   }
   const url = new URL(request.url);
   if (
-    request.method === "POST" && endpoint === "checkpoints"
+    request.method === "POST" && endpoint !== "profiles"
       ? url.search !== ""
       : !validQuery(endpoint, url)
   )
@@ -215,6 +244,17 @@ export async function dormantEditorialAdminProxy(
         saved: true,
         revision: value.revision,
         productionActive: false,
+      });
+    }
+    if (endpoint === "timeline" && request.method === "POST") {
+      if (typeof value.eventId !== "string" ||
+          !UUID.test(value.eventId) ||
+          value.approvedForPublication !== false) {
+        return reply(503, { error: "temporarily_unavailable" });
+      }
+      return reply(200, {
+        eventId: value.eventId,
+        approvedForPublication: false,
       });
     }
     if (endpoint === "checkpoints" && request.method === "POST") {
