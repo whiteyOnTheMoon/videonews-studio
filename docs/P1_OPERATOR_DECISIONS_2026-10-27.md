@@ -21,8 +21,14 @@ The operator explicitly confirms that the existing Beszel installation works as 
 
 No new test alert, alert-receiver evidence, synthetic failure, or container restart is required **for this scoped Phase-1 monitoring acceptance**. Previous checklist items in #229 are waived as separate Phase-1 gates by the operator; do not falsely mark them as tested. Beszel does not provide provider token accounting, PostgreSQL/Redis backup restoration, or evidence of application-specific feed-processing health. New P2-only producers/consumers must still be observed **when deployed** as part of the applicable P2 integration acceptance; do not reopen general Beszel adequacy or require parallel monitoring infrastructure.
 
+## P1 backup policy: zero backup budget
+
+**Operator decision 27 October 2026 (latest, superseding the earlier IONOS-backup report):** For the time being, **no backups will be created for VideoNews Studio because of cost**. Do not order, install, configure, schedule or execute backups and do not assume the provider's backup service covers VideoNews Studio. No automatic backup onboarding, additional offsite storage or backup charges. The operator explicitly accepts the possibility of permanent loss of experimental PostgreSQL, Redis/BullMQ, configuration and other non-recoverable data while working under this exception.
+
+This is a **risk acceptance, not a successful backup or restore test**. Keep the backup/restore requirement as deliberately deferred/not planned for the current Phase-1 experimental scope; do not mislabel recovery gates or simulate evidence. Any later production workflow involving irreplaceable content, secrets or irreversible side effects must reassess data loss, recovery and key custody before enabling it. Later Phase-6 recovery tests remain distinct from this P1 decision. Do not modify the server or existing IONOS account on the basis of this documentation.
+
 ## Distinct concerns remain
 
-IONOS regular backups have also been affirmed by the operator, but isolated database restoration is a different criterion (#228). Productive provider-key access (#227) and actual provider-usage/job-cost measurements (#230) have not yet been accepted. These decisions do not authorize billable external calls, real feed activation or a VPS deployment.
+The latest operator decision explicitly postpones VideoNews Studio backups; isolated restoration remains untested (#228). Productive provider-key access (#227) and actual provider-usage/job-cost measurements (#230) have not yet been accepted. These decisions do not authorize billable external calls, real feed activation or a VPS deployment.
 
 Historical documents and issue descriptions may describe earlier constraints; this dated operator decision supersedes them **only** for GitHub-paid-protection policy and baseline Beszel monitoring acceptance.
