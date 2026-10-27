@@ -6,6 +6,16 @@ import { readFeedRuntimeAdmission, attestFeedDatabaseIdentity } from "./feed-run
 const login = "vns_feed_login_observer";
 const env: NodeJS.ProcessEnv = {
   VNS_FEED_RUNTIME_ENABLED: "true",
+  VNS_FEED_SIGNED_EXPORT_ENABLED: "true",
+  VNS_FEED_SOURCE_ANCHOR_APPROVED: "true",
+  VNS_FEED_SIGNED_SOURCE_INBOX: "/var/lib/vns/feed-source-inbox",
+  VNS_FEED_SOURCE_CHECKPOINT_DIR: "/var/lib/vns/feed-source-checkpoint",
+  VNS_FEED_SOURCE_PUBLIC_KEY_FILE: "/run/secrets/vns_feed_source_public_key",
+  VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE: "/run/secrets/vns_feed_source_anchor_password",
+  VNS_FEED_SOURCE_ANCHOR_CA_FILE: "/run/secrets/vns_feed_source_anchor_ca",
+  VNS_FEED_SOURCE_ANCHOR_HOST: "source-anchor.example.org",
+  VNS_FEED_SOURCE_ANCHOR_USER: "vns_anchor_login_worker",
+  VNS_FEED_SOURCE_BOOTSTRAP: "false",
   VNS_FEED_RUNTIME_OPERATOR_ACK: "true",
   VNS_FEED_RIGHTS_ATTESTED: "true",
   VNS_FEED_NETWORK_APPROVED: "true",
@@ -34,6 +44,8 @@ test("every independent operator gate is required before opening any connections
   assert.equal(admission.dbHost, "postgres");
   for (const flag of [
     "VNS_FEED_RUNTIME_ENABLED",
+    "VNS_FEED_SIGNED_EXPORT_ENABLED",
+    "VNS_FEED_SOURCE_ANCHOR_APPROVED",
     "VNS_FEED_RUNTIME_OPERATOR_ACK",
     "VNS_FEED_RIGHTS_ATTESTED",
     "VNS_FEED_NETWORK_APPROVED",
@@ -66,6 +78,15 @@ test("refuses automatic scheduling, arbitrary endpoints and shared database user
     { VNS_FEED_DB_PASSWORD_FILE: "/tmp/unsafe" },
     { VNS_FEED_REDIS_PASSWORD_FILE: "/tmp/unsafe" },
     { VNS_FEED_REGISTRY_FILE: "/tmp/unsafe" },
+    { VNS_FEED_SIGNED_SOURCE_INBOX: "/tmp/unsafe" },
+    { VNS_FEED_SOURCE_CHECKPOINT_DIR: "/tmp/unsafe" },
+    { VNS_FEED_SOURCE_PUBLIC_KEY_FILE: "/tmp/pubkey" },
+    { VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE: "/tmp/key" },
+    { VNS_FEED_SOURCE_ANCHOR_CA_FILE: "/tmp/ca" },
+    { VNS_FEED_SOURCE_ANCHOR_HOST: "localhost" },
+    { VNS_FEED_SOURCE_ANCHOR_USER: "postgres" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "unknown" },
     { VNS_ALLOWED_SOURCE_HOSTS: "" },
   ]) {
     assert.throws(() => readFeedRuntimeAdmission({ ...env, ...change }));
@@ -129,4 +150,18 @@ test("requires the actual PostgreSQL session identity and narrow function privil
   );
   await assert.rejects(attestFeedDatabaseIdentity(db(null), login), /admission denied/);
   await assert.rejects(attestFeedDatabaseIdentity(db(allowed), "postgres"), /identity refused/);
+});
+
+test("signed worker bootstrap requires a separate explicit operator acknowledgement", () => {
+  const approved = readFeedRuntimeAdmission({
+    ...env,
+    VNS_FEED_SOURCE_BOOTSTRAP: "true",
+    VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK: "true",
+  });
+  assert.equal(approved.initialBootstrap, true);
+  assert.equal(approved.anchorHost, "source-anchor.example.org");
+  assert.equal(approved.anchorUser, "vns_anchor_login_worker");
+  assert.equal(approved.signedExportDirectory, "/var/lib/vns/feed-source-inbox");
+  assert.equal(approved.signedCheckpointDirectory, "/var/lib/vns/feed-source-checkpoint");
+  assert.equal(readFeedRuntimeAdmission(env).initialBootstrap, false);
 });

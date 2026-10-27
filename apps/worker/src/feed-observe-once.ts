@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readFileSync } from "node:fs";
+import { createPublicKey } from "node:crypto";
 import { Pool } from "pg";
 import { Redis } from "ioredis";
 import { QueueEvents } from "bullmq";
@@ -8,6 +9,10 @@ import { createGatedFeedBullmqBridge, ISOLATED_FEED_REDIS_PREFIX } from "./feed-
 import { ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
 import { productionFeedHttpsDependencies } from "./feed-https-transport.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
+import { readApprovedFetchPolicy } from "./source-fetch.js";
+import { acceptDormantSourceFile } from "./source-export-files.js";
+import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.js";
+import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 
 function secret(path: string): string {
   try {
@@ -18,6 +23,22 @@ function secret(path: string): string {
     return password;
   } catch {
     throw new Error("Feed runtime secret unavailable");
+  }
+}
+
+function readPinnedFile(path: string): string {
+  let fd: number | undefined;
+  try {
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size < 16 || stat.size > 16384 || (stat.mode & 0o022) !== 0) {
+      throw new Error("Untrusted file");
+    }
+    return readFileSync(fd, "utf8");
+  } catch {
+    throw new Error("Pinned feed trust material unavailable");
+  } finally {
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
@@ -52,6 +73,7 @@ export async function observeFeedOnce(
     idleTimeoutMillis: 5000,
     application_name: "vns_feed_observation",
   });
+  let anchorPool: Pool | undefined;
   let producer: Redis | undefined;
   let consumer: Redis | undefined;
   let eventsConnection: Redis | undefined;
@@ -61,6 +83,40 @@ export async function observeFeedOnce(
     // Do not read a source file or create Redis connections until PostgreSQL
     // has proved the actual authenticated session_user has narrow permissions.
     await attestFeedDatabaseIdentity(pool, admission.dbUser);
+    const pinnedKey = createPublicKey(readPinnedFile(admission.sourcePublicKeyPath));
+    if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
+      throw new Error("Pinned feed publisher identity invalid");
+    }
+    const ca = readPinnedFile(admission.anchorCaPath);
+    const anchorPassword = secret(admission.anchorPasswordPath);
+    anchorPool = new Pool({
+      host: admission.anchorHost,
+      port: 5432,
+      database: "vns_source_anchor",
+      user: admission.anchorUser,
+      password: anchorPassword,
+      ssl: { ca, rejectUnauthorized: true, servername: admission.anchorHost },
+      max: 1,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 5000,
+      application_name: "vns_source_anchor_observation",
+    });
+    await attestFeedSourceAnchorIdentity(anchorPool, admission.anchorUser);
+    const anchor = postgresSourceRevisionAnchor({
+      async query(sql, params) {
+        const result = await anchorPool!.query<{ accepted: unknown }>(sql, [...params]);
+        return { rowCount: result.rowCount, rows: result.rows };
+      },
+    });
+    const sources = await acceptDormantSourceFile(
+      admission.signedExportDirectory,
+      admission.signedCheckpointDirectory,
+      readApprovedFetchPolicy(env),
+      pinnedKey,
+      admission.initialBootstrap,
+      anchor,
+    );
+    const verifiedRegistry = JSON.stringify({ version: 1, sources });
     const scheduler = createDormantFeedScheduler(env, {
       pool,
       https: productionFeedHttpsDependencies(),
@@ -68,7 +124,9 @@ export async function observeFeedOnce(
         if (path !== REVIEWED_SOURCE_REGISTRY_PATH) {
           throw new Error("Unexpected source registry");
         }
-        return readFileSync(path, "utf8");
+        // The legacy unsigned file is NEVER opened in the live observer.
+        // This registry was authenticated and anchored before returning.
+        return verifiedRegistry;
       },
     });
 
@@ -137,6 +195,7 @@ export async function observeFeedOnce(
     await consumer?.quit().catch(() => consumer?.disconnect());
     await eventsConnection?.quit().catch(() => eventsConnection?.disconnect());
     await producer?.quit().catch(() => producer?.disconnect());
+    await anchorPool?.end().catch(() => undefined);
     await pool.end().catch(() => undefined);
   }
 }
