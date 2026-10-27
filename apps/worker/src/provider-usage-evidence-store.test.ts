@@ -18,32 +18,32 @@ const input = Object.freeze({
 });
 
 test("provider receipts are opt-in and never imply payment approval", async () => {
-  assert.throws(
-    () => providerUsageEvidenceStore({} as Pick<Pool, "query">, false),
-    /disabled/,
-  );
+  assert.throws(() => providerUsageEvidenceStore({} as Pick<Pool, "query">, false), /disabled/);
   let calls = 0;
+  let observed: { statement: string; params: unknown[] } | null = null;
   const pool = {
     async query(statement: string, params: unknown[]) {
       calls++;
-      assert.match(statement, /^SELECT vns\.record_provider_usage_evidence\(/);
-      assert.deepEqual(params, [
-        input.jobId,
-        input.provider,
-        input.model,
-        input.requestId,
-        input.responseId,
-        input.priceVersion,
-        "100",
-        "40",
-        "25",
-        "250",
-      ]);
+      observed = { statement, params };
       return { rows: [{ id: "bbea0001-1111-4111-8111-111111111111" }] };
     },
   } as unknown as Pick<Pool, "query">;
   const receipt = await providerUsageEvidenceStore(pool, true).record(input);
   assert.equal(calls, 1);
+  assert.ok(observed);
+  assert.match(observed.statement, /^SELECT vns\.record_provider_usage_evidence\(/);
+  assert.deepEqual(observed.params, [
+    input.jobId,
+    input.provider,
+    input.model,
+    input.requestId,
+    input.responseId,
+    input.priceVersion,
+    "100",
+    "40",
+    "25",
+    "250",
+  ]);
   assert.deepEqual(receipt, {
     receiptId: "bbea0001-1111-4111-8111-111111111111",
     source: "provider_response",
