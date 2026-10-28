@@ -267,8 +267,6 @@ test("ranking profiles reject duplicate or contradictory normalized terms", () =
     { ...profile, keywords: Array.from({ length: 31 }, (_, i) => "topic" + i) },
   ]) {
     assert.throws(() => validateEditorialProfile(invalid));
-    assert.throws(() =>
-      rankOfflineEvents([], invalid, new Date("2026-10-26T13:00:00.000Z")),
-    );
+    assert.throws(() => rankOfflineEvents([], invalid, new Date("2026-10-26T13:00:00.000Z")));
   }
 });
