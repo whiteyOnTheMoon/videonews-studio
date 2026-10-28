@@ -20,7 +20,7 @@ import sys
 from provision_pg_runtime_logins import scram_verifier
 
 ROOT = Path(__file__).resolve().parent.parent
-DIRECTORY = ROOT / "secrets" / "vns"
+DIRECTORY = ROOT / "secrets" / "vns-outbox"
 CONTAINER = "videonews-studio-postgres-1"
 LOGIN = "vns_provider_outbox_login"
 READER = "vns_provider_outbox_reader"
