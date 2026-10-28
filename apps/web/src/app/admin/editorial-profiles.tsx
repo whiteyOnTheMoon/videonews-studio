@@ -28,9 +28,11 @@ export function validEditorialProfileTerms(
   if (keywords.length > 30 || blockedTerms.length > 30) return false;
   const seen = new Set<string>();
   for (const term of [...keywords, ...blockedTerms]) {
-    if (typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term))
-      return false;
-    const tokens = term.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu);
+    if (typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term)) return false;
+    const tokens = term
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu);
     const key = tokens?.join(" ");
     if (!key || seen.has(key)) return false;
     seen.add(key);
@@ -181,9 +183,7 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
     if (!snapshot || !ID.test(draft.id) || !LOCALE.test(draft.language)) return;
     const keywords = terms(draft.keywords);
     const blockedTerms = terms(draft.blockedTerms);
-    if (
-      !validEditorialProfileTerms(keywords, blockedTerms)
-    ) {
+    if (!validEditorialProfileTerms(keywords, blockedTerms)) {
       setError("Schlüsselwörter und Sperrbegriffe bitte prüfen.");
       return;
     }
