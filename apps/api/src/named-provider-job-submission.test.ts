@@ -73,22 +73,35 @@ test("named submission sends encrypted payload, author identity and bounded SQL 
   assert.equal(calls.length, 1);
   assert.match(calls[0]!.sql, /admin_create_sealed_provider_job_as_editor/);
   assert.deepEqual(calls[0]!.params.slice(0, 7), [
-    ID, 0, valid().idempotencyKey, valid().requestId,
-    "openai", "reviewed-model-47", PRICE,
+    ID,
+    0,
+    valid().idempotencyKey,
+    valid().requestId,
+    "openai",
+    "reviewed-model-47",
+    PRICE,
   ]);
   assert.equal(calls[0]!.params.length, 13);
-  assert.equal(calls[0]!.params.slice(10).every((x) => typeof x === "string"), true);
+  assert.equal(
+    calls[0]!.params.slice(10).every((x) => typeof x === "string"),
+    true,
+  );
   assert.equal(JSON.stringify(calls[0]).includes(valid().prompt), false);
   sealedKey.fill(0);
 });
 
 test("database errors are suppressed and non-admin identities rejected", async () => {
   const db = {
-    async query() { throw new Error("postgres-private-password"); },
+    async query() {
+      throw new Error("postgres-private-password");
+    },
   } as unknown as Pick<Pool, "query">;
   const store = new PostgresNamedProviderJobStore(db);
   const secret = randomBytes(32);
-  await assert.rejects(store.create(valid() as never, identity, secret), /Named provider job unavailable/);
+  await assert.rejects(
+    store.create(valid() as never, identity, secret),
+    /Named provider job unavailable/,
+  );
   await assert.rejects(
     store.create(valid() as never, { ...identity, role: "editor" }, secret),
     /Named provider job unavailable/,
@@ -96,7 +109,10 @@ test("database errors are suppressed and non-admin identities rejected", async (
   secret.fill(0);
 });
 
-function req(payload: unknown = valid(), origin = "https://studio.example.invalid"): IncomingMessage {
+function req(
+  payload: unknown = valid(),
+  origin = "https://studio.example.invalid",
+): IncomingMessage {
   const raw = Buffer.from(JSON.stringify(payload));
   return Object.assign(Readable.from([raw]), {
     url: "/admin/ai-provider-jobs",
@@ -124,12 +140,23 @@ function scenario(role: "admin" | "editor" | null = "admin", admit = true) {
   let writes = 0;
   let keyReads = 0;
   const handler = new NamedProviderJobSubmissionHttp(
-    { async authenticatedAdminIdentity() {
-      return role ? { ...identity, role } : null;
-    } },
+    {
+      async authenticatedAdminIdentity() {
+        return role ? { ...identity, role } : null;
+      },
+    },
     { originAllowed: (request) => request.headers.origin === "https://studio.example.invalid" },
-    { async create() { writes++; return JOB; } },
-    { async allow() { return admit; } },
+    {
+      async create() {
+        writes++;
+        return JOB;
+      },
+    },
+    {
+      async allow() {
+        return admit;
+      },
+    },
     async <T>(op: (secret: Buffer) => T | Promise<T>) => {
       keyReads++;
       return key(op);
@@ -160,7 +187,10 @@ test("valid request only records pending SQL intent, not Redis dispatch", async 
   assert.equal(await s.handler.handle(req(), res), true);
   assert.equal(res.status, 202);
   assert.deepEqual(JSON.parse(res.output), {
-    accepted: true, enqueued: false, active: false, jobId: JOB,
+    accepted: true,
+    enqueued: false,
+    active: false,
+    jobId: JOB,
   });
   assert.equal(s.writes(), 1);
   assert.equal(s.keyReads(), 1);
