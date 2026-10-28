@@ -1,0 +1,82 @@
+name: P1-09 controlled 0018 to 0043 upgrade (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_schema_0018_to_0043.py"
+      - "scripts/test_p1_09_schema_0018_to_0043.py"
+      - ".github/workflows/p1-09-schema-0043.yml"
+permissions:
+  contents: read
+jobs:
+  isolated-schema-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      VNS_P109_0043_CI_PROJECT: vns-p109-0043-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only Python safety tests
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_p1_09_schema_0018_to_0043.py' -v
+      - name: Prepare synthetic disposable PostgreSQL secret
+        run: |
+          install -d -m 700 secrets
+          python3 - <<'PY'
+          import os
+          fd = os.open("secrets/postgres_password",
+            os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+          try:
+              os.write(fd,b"ci-ephemeral-only-never-use-on-production\n")
+          finally:
+              os.close(fd)
+          PY
+      - name: Exercise exact 0018 to 0043 migration on isolated database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cleanup() {
+            docker compose -p vns-p109-0043-ci -f compose.yaml --profile data \
+              down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          docker compose -p vns-p109-0043-ci -f compose.yaml --profile data \
+            up -d --no-deps --no-build --pull missing postgres
+          status=missing
+          for i in $(seq 1 60); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' \
+              vns-p109-0043-ci-postgres-1 2>/dev/null || true)"
+            [[ "$status" != unhealthy ]] || exit 1
+            [[ "$status" != healthy ]] || break
+            sleep 2
+          done
+          [[ "$status" == healthy ]] || exit 1
+          sql() {
+            docker exec -i vns-p109-0043-ci-postgres-1 \
+              psql -X -q -v ON_ERROR_STOP=1 -U vns -d videonews
+          }
+          for file in $(find db/migrations -maxdepth 1 -name '00*.up.sql' | sort | head -18); do
+            sql < "$file"
+          done
+          python3 scripts/p1_09_schema_0018_to_0043.py --status
+          python3 scripts/p1_09_schema_0018_to_0043.py --preflight
+          if python3 scripts/p1_09_schema_0018_to_0043.py --apply; then
+            echo "FAIL: unapproved migration was possible"; exit 1
+          fi
+          VNS_P109_0043_OPERATOR_APPROVED=APPLY_ADDITIVE_0019_0043 \
+            python3 scripts/p1_09_schema_0018_to_0043.py --apply
+          python3 scripts/p1_09_schema_0018_to_0043.py --status
+          if python3 scripts/p1_09_schema_0018_to_0043.py --preflight; then
+            echo "FAIL: preflight accepted already-upgraded DB"; exit 1
+          fi
+          if VNS_P109_0043_OPERATOR_APPROVED=APPLY_ADDITIVE_0019_0043 \
+              python3 scripts/p1_09_schema_0018_to_0043.py --apply; then
+            echo "FAIL: duplicate 0043 migration accepted"; exit 1
+          fi
+          result="$(docker exec vns-p109-0043-ci-postgres-1 \
+            psql -X -A -t -q -v ON_ERROR_STOP=1 -U vns -d videonews -c \
+            "SELECT count(*) FROM vns.schema_migrations")"
+          [[ "$result" == 43 ]] || exit 1
+          echo "PASS: isolated 0018 -> 0043, no provider activation, replay denied"
