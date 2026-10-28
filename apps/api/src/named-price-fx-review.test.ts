@@ -22,13 +22,13 @@ const price = () => ({
   cachedMicroUsdPerMillion: "250000",
   outputMicroUsdPerMillion: "2000000",
   expiresAt: later(),
-  sourceReference: "https://example.org/prices",
+  sourceReference: "https://developers.openai.com/api/docs/pricing",
 });
 const fx = () => ({
   action: "review_fx",
   microEurPerMicroUsdNanos: "1150000000",
   expiresAt: later(),
-  sourceReference: "https://example.org/rates",
+  sourceReference: "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
 });
 
 test("price FX commands are exact, decimal and contain no activation, secrets or endpoints", () => {
