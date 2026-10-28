@@ -221,7 +221,7 @@ test("ranking validates source/hash integrity and refuses a forged display headl
     { ...event, articles: [{ ...articles[0]!, sourceId: "another_feed" }, articles[1]!] },
   ];
   for (const bad of forgeries) {
-    assert.throws(() => rankOfflineEvents([bad], profile, at), /Ranking candidate/);
+    assert.throws(() => rankOfflineEvents([bad], profile, at), /Editorial event metadata/);
   }
   assert.throws(() => rankOfflineEvents([event, event], profile, at));
 });

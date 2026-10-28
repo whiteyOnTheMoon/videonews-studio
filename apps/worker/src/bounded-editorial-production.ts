@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import {
+  attestEditorialEventMetadata,
+  matchesEditorialPhrase,
   validateEditorialProfile,
   type EditorialProfile,
   type NewsEvent,
@@ -59,6 +61,7 @@ export function assessEditorialCandidate(
   ) {
     throw new Error("Editorial assessment configuration invalid");
   }
+  attestEditorialEventMetadata(event);
   const weights = [
     policy.relevanceWeight,
     policy.freshnessWeight,
@@ -70,7 +73,7 @@ export function assessEditorialCandidate(
   }
   if (
     policy.blockedTerms.some(
-      (term) => typeof term !== "string" || term.length < 2 || term.length > 50,
+      (term) => typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term),
     )
   ) {
     throw new Error("Editorial assessment blocklist invalid");
@@ -113,15 +116,11 @@ export function assessEditorialCandidate(
     reasons.push("stale_or_future_article");
   }
   const combinedBlocklist = [...profile.blockedTerms, ...policy.blockedTerms];
-  if (
-    combinedBlocklist.some((term) =>
-      event.headline.toLocaleLowerCase().includes(term.toLocaleLowerCase()),
-    )
-  ) {
+  if (combinedBlocklist.some((term) => matchesEditorialPhrase(event.headline, term))) {
     reasons.push("editorial_blocklisted");
   }
   const keywords = profile.keywords.filter((term) =>
-    event.headline.toLocaleLowerCase().includes(term.toLocaleLowerCase()),
+    matchesEditorialPhrase(event.headline, term),
   ).length;
   const newest = Math.max(...timestamps);
   const hours = Math.max(0, (now.getTime() - newest) / 3600000);
@@ -323,6 +322,11 @@ export function independentlyReviewMockScript(
   }
   if (script.revision < 1 || script.revision > limits.maxRevisions) {
     reasons.push("script_revision_out_of_bounds");
+  }
+  try {
+    attestEditorialEventMetadata(event);
+  } catch {
+    reasons.push("event_metadata_mismatch");
   }
   const articleIds = new Set(event.articles.map((article) => article.id));
   const claimMap = new Map<string, ClaimCandidate>();
