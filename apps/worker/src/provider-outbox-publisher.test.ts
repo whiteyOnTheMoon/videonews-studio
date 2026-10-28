@@ -67,7 +67,9 @@ function setup() {
     sql,
     queue,
     jobs,
-    setFailAck: () => { failAck = true; },
+    setFailAck: () => {
+      failAck = true;
+    },
     reads: () => reads,
     adds: () => added,
     acks: () => acks,
@@ -75,7 +77,10 @@ function setup() {
 }
 test("disabled by default and consumer queue prefix matches", () => {
   const ports = setup();
-  assert.throws(() => dormantProviderOutboxPublisher(ports.sql as never, ports.queue, scope), /disabled/);
+  assert.throws(
+    () => dormantProviderOutboxPublisher(ports.sql as never, ports.queue, scope),
+    /disabled/,
+  );
   assert.equal(PROVIDER_OUTBOX_REDIS_TARGET.name, "vns-provider-text");
   assert.equal(PROVIDER_OUTBOX_REDIS_TARGET.prefix, "bull:vns");
   assert.equal(ports.reads(), 0);
