@@ -1,4 +1,6 @@
 BEGIN;
+REVOKE SELECT(id,kind,max_attempts) ON vns.jobs FROM vns_provider_usage_executor;
+REVOKE SELECT(id,role,active,auth_version) ON vns.editor_accounts FROM vns_provider_usage_executor;
 DROP FUNCTION vns.verify_provider_named_job_authorization(uuid,text,text,text,uuid,text,integer,integer);
 DROP FUNCTION vns.admin_authorize_provider_job_as_editor(uuid,integer,uuid,text,text,text,uuid,text,integer,integer);
 DROP TABLE vns.provider_named_job_outbox;
