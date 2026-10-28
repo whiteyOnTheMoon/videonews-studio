@@ -181,10 +181,7 @@ export function dormantProviderBudgetBridge(
       }
     },
 
-    async settle(
-      id: string,
-      usage: ProviderUsageAdmission,
-    ): Promise<"settled" | "halted"> {
+    async settle(id: string, usage: ProviderUsageAdmission): Promise<"settled" | "halted"> {
       if (!UUID.test(id)) throw new Error("Provider budget settlement unavailable");
       let connection: PoolClient | undefined;
       let inTransaction = false;
@@ -192,16 +189,27 @@ export function dormantProviderBudgetBridge(
         connection = await db.connect();
         await connection.query("BEGIN");
         inTransaction = true;
-        const receipt = await providerUsageEvidenceStore(connection, true).record(usage);
+        // The evidence store deliberately accepts only the ten canonical
+        // provider-native accounting fields, not admission metadata.
+        const receipt = await providerUsageEvidenceStore(connection, true).record({
+          jobId: usage.jobId,
+          requestId: usage.requestId,
+          responseId: usage.responseId,
+          provider: usage.provider,
+          model: usage.model,
+          priceVersion: usage.priceVersion,
+          currency: usage.currency,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          cachedInputTokens: usage.cachedInputTokens,
+          costMicroUsd: usage.costMicroUsd,
+        });
         const result = await connection.query<{ status: string }>(
           "SELECT vns.settle_provider_live_budget($1::uuid,$2::uuid) AS status",
           [id, receipt.receiptId],
         );
         const status = result.rows[0]?.status;
-        if (
-          result.rows.length !== 1 ||
-          (status !== "settled" && status !== "halted")
-        ) {
+        if (result.rows.length !== 1 || (status !== "settled" && status !== "halted")) {
           throw new Error("Unexpected settlement result");
         }
         await connection.query("COMMIT");
@@ -273,10 +281,7 @@ export async function replayProviderBudgetFixture(
         : "response_invalid",
     );
   }
-  if (
-    usage.inputTokens > input.maxInputTokens ||
-    usage.outputTokens > input.maxOutputTokens
-  ) {
+  if (usage.inputTokens > input.maxInputTokens || usage.outputTokens > input.maxOutputTokens) {
     return fail("quote_over_reservation");
   }
 
