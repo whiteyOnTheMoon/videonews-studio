@@ -146,6 +146,10 @@ test("budget bridge is dormant, and rejects noncanonical requests before SQL", a
     bridge.reserve({ ...request, requestId: "bad" }, FIXTURE_DIGEST),
     /Provider budget request invalid/,
   );
+  await assert.rejects(
+    bridge.reserve(request, "invalid-digest"),
+    /Provider budget request invalid/,
+  );
   assert.deepEqual(events, []);
 });
 
