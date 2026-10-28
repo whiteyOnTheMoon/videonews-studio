@@ -1,0 +1,28 @@
+name: P1-09 provider outbox Compose safety (no runtime activation)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/compose.provider-outbox.yaml"
+      - "scripts/test_p1_09_provider_outbox_compose.mjs"
+      - ".github/workflows/p1-09-provider-outbox-compose.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p1-09-provider-outbox-compose-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  provider-outbox-compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned parser without service startup
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate default-off and digest-pinned Compose overlay
+        run: node --test scripts/test_p1_09_provider_outbox_compose.mjs
