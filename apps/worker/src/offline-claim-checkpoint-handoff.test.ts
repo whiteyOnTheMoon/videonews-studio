@@ -113,7 +113,10 @@ test("claim evidence metadata is digested consistently regardless of input order
 
 test("unverified, missing or inconsistent evidence can produce only blocked checkpoints", () => {
   const variants = [
-    { draft: { ...draft, claims: [{ ...draft.claims[0]!, status: "uncertain" as const }] }, reviews },
+    {
+      draft: { ...draft, claims: [{ ...draft.claims[0]!, status: "uncertain" as const }] },
+      reviews,
+    },
     { draft, reviews: [] },
     {
       draft,
@@ -166,7 +169,10 @@ test("named DB handoff binds digest-only fields, conflict stays a conflict", asy
     now,
     24,
   );
-  assert.deepEqual({ saved: first.saved, conflict: first.conflict }, { saved: true, conflict: false });
+  assert.deepEqual(
+    { saved: first.saved, conflict: first.conflict },
+    { saved: true, conflict: false },
+  );
   const second = await recordOfflineClaimCheckpoint(
     store,
     dbEventId,
@@ -177,7 +183,10 @@ test("named DB handoff binds digest-only fields, conflict stays a conflict", asy
     now,
     24,
   );
-  assert.deepEqual({ saved: second.saved, conflict: second.conflict }, { saved: false, conflict: true });
+  assert.deepEqual(
+    { saved: second.saved, conflict: second.conflict },
+    { saved: false, conflict: true },
+  );
   assert.equal(calls.length, 2);
   assert.deepEqual(calls[0]!.args, [
     dbEventId,
@@ -200,10 +209,7 @@ test("invalid input or disabled human DB session never writes a checkpoint", asy
       return { rows: [{ saved: true }] };
     },
   } as unknown as Pool;
-  assert.throws(
-    () => new DormantEditorialCheckpointStore(pool, {}),
-    /disabled/,
-  );
+  assert.throws(() => new DormantEditorialCheckpointStore(pool, {}), /disabled/);
   const store = new DormantEditorialCheckpointStore(pool, {
     VNS_EDITORIAL_CHECKPOINT_OFFLINE_ENABLED: "true",
     VNS_EDITORIAL_CHECKPOINT_OPERATOR_ACK: "true",
