@@ -1,0 +1,37 @@
+# Temporary, read-only formatter preview. Removed before merging.
+name: P1-09 temporary claim formatting preview
+on:
+  pull_request:
+    paths:
+      - "apps/worker/src/provider-one-shot-text-coordinator.test.ts"
+      - "docs/P1-09_PROVIDER_WORKER_LOGIN_PROVISIONING.md"
+      - "docs/P1-09_SCHEMA_0018_TO_0043_RUNBOOK.md"
+      - ".github/workflows/p1-09-claim-format-preview.yml"
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Preview exact canonical formatted source
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/worker/src/provider-one-shot-text-coordinator.test.ts
+            docs/P1-09_PROVIDER_WORKER_LOGIN_PROVISIONING.md
+            docs/P1-09_SCHEMA_0018_TO_0043_RUNBOOK.md
+          )
+          npx prettier --write "${files[@]}"
+          for file in "${files[@]}"; do
+            printf '===VNS_CLAIM_FMT_BEGIN:%s===\n' "$file"
+            base64 -w0 "$file"
+            printf '\n===VNS_CLAIM_FMT_END:%s===\n' "$file"
+          done
