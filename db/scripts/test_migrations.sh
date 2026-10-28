@@ -332,6 +332,48 @@ for iteration in 1 2; do
     rm -rf -- "$claim_work"
     echo "PASS: two independent SQL sessions issue exactly one provider dispatch claim"
   fi
+  sql < "$root/db/migrations/0040_provider_offline_eur_fx_guard.up.sql"
+  sql < "$root/db/tests/0040_provider_offline_eur_fx_guard.test.sql"
+  if [[ "$iteration" -eq 1 ]]; then
+    # Independent PostgreSQL sessions compete for exactly one EUR cap slot;
+    # the USD cap admits both, so only the EUR gate can reject the second.
+    sql < "$root/db/tests/0040_provider_eur_concurrency.setup.sql"
+    eur_work="$(mktemp -d /tmp/vns-eur-budget-ci-XXXXXXXX)"
+    for label in a b; do
+      if [[ "$label" = a ]]; then
+        job="a4010001-1111-4111-8111-111111111111"
+      else
+        job="a4010002-2222-4222-8222-222222222222"
+      fi
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_provider_usage_writer;
+         SELECT vns.reserve_provider_live_budget(
+           '$job','openai','ci-eur-race-model','ci_eur_race_req_0001',
+           'a4010000-0000-4000-8000-000000000001',100,100)" \
+         > "$eur_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then eur_pid_a=$!; else eur_pid_b=$!; fi
+    done
+    eur_ok_a=0
+    eur_ok_b=0
+    if wait "$eur_pid_a"; then eur_ok_a=1; fi
+    if wait "$eur_pid_b"; then eur_ok_b=1; fi
+    test $((eur_ok_a + eur_ok_b)) -eq 1 || {
+      echo "FAIL: simultaneous EUR cap admission race" >&2
+      cat "$eur_work/a" "$eur_work/b" >&2
+      rm -rf -- "$eur_work"
+      exit 1
+    }
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT count(*) FROM vns.provider_live_eur_admissions')" = 1
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT sum(reserved_micro_eur) FROM vns.provider_live_eur_admissions')" = 300
+    rm -rf -- "$eur_work"
+    echo "PASS: independent SQL sessions cannot exceed 300 micro-EUR"
+  fi
+  sql < "$root/db/migrations/0040_provider_offline_eur_fx_guard.down.sql"
   sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.down.sql"
   sql < "$root/db/migrations/0038_provider_worker_budget_guard.down.sql"
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
@@ -376,4 +418,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0039 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0040 migrations, source authority, leases and budgets twice"
