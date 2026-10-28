@@ -1,14 +1,10 @@
 import type { Pool } from "pg";
-import {
-  dormantProviderBudgetBridge,
-} from "./provider-budget-worker-bridge.js";
+import { dormantProviderBudgetBridge } from "./provider-budget-worker-bridge.js";
 import {
   dormantPostClaimCredentialScope,
   type WorkerMasterKeyScope,
 } from "./provider-claimed-credential-scope.js";
-import {
-  dormantOneShotTextCoordinator,
-} from "./provider-one-shot-text-coordinator.js";
+import { dormantOneShotTextCoordinator } from "./provider-one-shot-text-coordinator.js";
 import type { DormantTextTransport } from "./provider-native-text-transport.js";
 import { attestSeparatedProviderWorkerDatabases } from "./provider-worker-db-admission.js";
 
