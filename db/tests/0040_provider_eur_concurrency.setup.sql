@@ -24,6 +24,8 @@ UPDATE vns.provider_live_budget_policy
  day_cap_micro_usd=1000,month_cap_micro_usd=1000,
  job_cap_micro_usd=1000,request_cap_micro_usd=1000;
 UPDATE vns.provider_live_eur_policy
- SET enabled=true,global_cap_micro_eur=300,
+ SET enabled=true,
+ global_cap_micro_eur=(SELECT coalesce(sum(reserved_micro_eur),0)+300
+   FROM vns.provider_live_eur_admissions),
  active_fx_snapshot_id='a4010000-0000-4000-8000-000000000002';
 COMMIT;
