@@ -51,7 +51,8 @@ class WorkerLoginCustodyTests(unittest.TestCase):
                 custody, "checked_command", side_effect=["main", ""]
             ):
                 custody.stage(expected_uid=uid)
-            values = custody.read_passwords(expected_uid=uid)
+            with patch.object(custody, "SECRET_DIR", directory):
+                values = custody.read_passwords(expected_uid=uid)
             self.assertEqual(len(values), 2)
             self.assertNotEqual(values[0], values[1])
             self.assertTrue(all(re.fullmatch(r"[A-Za-z0-9_-]{40,128}", x) for x in values))
@@ -64,7 +65,8 @@ class WorkerLoginCustodyTests(unittest.TestCase):
             ):
                 with self.assertRaises(FileExistsError):
                     custody.stage(expected_uid=uid)
-            self.assertEqual(custody.read_passwords(expected_uid=uid), values)
+            with patch.object(custody, "SECRET_DIR", directory):
+                self.assertEqual(custody.read_passwords(expected_uid=uid), values)
 
     def test_symlink_and_loose_permissions_fail_without_disclosing_secret(self):
         uid = os.geteuid()
