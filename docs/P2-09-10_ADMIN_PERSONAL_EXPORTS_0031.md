@@ -33,3 +33,28 @@ beweist **keine kryptografische Echtheit** der Daten: Die Hashkette
 wird im Browser nicht gegen einen extern verankerten oder signierten
 Root-Digest verifiziert. Eine vom Datenbankserver selbst manipulierte
 oder inkonsistente Quittung bleibt ein separates Abnahmerisiko.
+
+## P2-10: vollständig geformte Exportdaten prüfen (Code-only, 28.10.2026)
+
+Der Admin-Exporter überprüft nun **auch den Inhalt** jeder paginierten Seite:
+Checkpoint-Seiten müssen alle zehn tatsächlich von der Datenbankprojektion
+gelieferten Felder enthalten; die erste Revision muss ausdrücklich an den
+Null-Genesis-Digest anschließen. Timeline-Seiten müssen die sieben erwarteten
+Felder einschließlich `details.summary` und `details.reasonCodes` enthalten.
+Fehlende Begründungen, ungültige Digest-/Referenz-URLs, unbekannte Zusatzfelder,
+falsche Akteure und unvollständige Antwortumschläge stoppen den Download.
+
+Die leere Abschlussseite muss zum letzten abgefragten Cursor passen:
+Checkpoint-Revision unverändert, Timeline-Cursor `null`. Falsche Abschluss-
+oder Zusatzfelder dürfen kein vermeintlich vollständiges JSON-Dokument ergeben.
+Regressionstests decken manipulierte/verkürzte Felder und Cursor ab.
+
+**Grenze:** Auch diese zusätzlichen Prüfungen belegen lediglich den
+konsistenten Empfang der verfügbaren SQL-Seiten. Ein fehlerhafter oder
+manipulierter Datenbankserver könnte weiterhin eine zu kurze Liste liefern;
+extern signierte/ankergebundene Bestätigungen und die vollständige
+Story-/Claim-/Lizenzzuordnung fehlen weiter. Die Formulierung
+`exportCompleteness: all_pages_read` bedeutet **nicht**, dass die
+inhaltliche Vollständigkeit aller Produktionsbelege unabhängig nachgewiesen
+wurde. Kein VPS-Rollout, kein persönlicher SQL-LOGIN, keine echten Feeds und
+keine Veröffentlichung werden durch diese Änderung aktiviert.
