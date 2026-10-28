@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Pool } from "pg";
@@ -5,6 +6,7 @@ import { dormantProviderBudgetBridge } from "./provider-budget-worker-bridge.js"
 import { openaiFixture } from "./provider-native-usage-fixtures.js";
 import { processOneShotRecordedFixture } from "./provider-one-shot-fixture-dispatch.js";
 
+const DIGEST = createHash("sha256").update("Recorded fixture prompt").digest("hex");
 const reservationId = "a3900001-0000-4000-8000-000000000001";
 const claimId = "a3900002-0000-4000-8000-000000000002";
 const receiptId = "a3900003-0000-4000-8000-000000000003";
@@ -22,7 +24,7 @@ function memorySql(options: { claimFailure?: boolean; missingUsage?: boolean } =
   const events: string[] = [];
   let claimed = false;
   const query = async (sql: string) => {
-    if (sql.includes("reserve_provider_live_budget")) {
+    if (sql.includes("reserve_authorized_provider_live_budget")) {
       events.push("reserve");
       return { rows: [{ id: reservationId }] };
     }
@@ -84,7 +86,7 @@ function memorySql(options: { claimFailure?: boolean; missingUsage?: boolean } =
 
 test("one and only one recorded response can follow an SQL dispatch claim", async () => {
   const { bridge, events } = memorySql();
-  const first = await processOneShotRecordedFixture(bridge, request, openaiFixture);
+  const first = await processOneShotRecordedFixture(bridge, request, openaiFixture, DIGEST);
   assert.equal(first.reservationId, reservationId);
   assert.equal(first.costMicroUsd, "162");
   assert.equal(first.reconciled, true);
@@ -93,7 +95,7 @@ test("one and only one recorded response can follow an SQL dispatch claim", asyn
   assert.equal(events.filter((event) => event === "reserve").length, 1);
   assert.equal(events.filter((event) => event === "settle").length, 1);
   await assert.rejects(
-    processOneShotRecordedFixture(bridge, request, openaiFixture),
+    processOneShotRecordedFixture(bridge, request, openaiFixture, DIGEST),
     /Provider dispatch claim unavailable/,
   );
   assert.equal(events.filter((event) => event === "claim").length, 2);
@@ -105,7 +107,7 @@ test("one and only one recorded response can follow an SQL dispatch claim", asyn
 test("claim persistence uncertainty cannot process any response", async () => {
   const { bridge, events } = memorySql({ claimFailure: true });
   await assert.rejects(
-    processOneShotRecordedFixture(bridge, request, openaiFixture),
+    processOneShotRecordedFixture(bridge, request, openaiFixture, DIGEST),
     (error: Error) =>
       error.message === "Provider dispatch claim unavailable" &&
       !error.message.includes("db-secret"),
@@ -117,14 +119,14 @@ test("invalid or missing vendor-shaped response after claim halts permanently", 
   for (const response of [null, { ...openaiFixture, status: "incomplete" }]) {
     const { bridge, events } = memorySql();
     await assert.rejects(
-      processOneShotRecordedFixture(bridge, request, response),
+      processOneShotRecordedFixture(bridge, request, response, DIGEST),
       /Provider budget review required/,
     );
     assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "projection", "halt"]);
     assert.equal(events.at(-1), "halt");
     assert.equal(events.includes("record"), false);
     await assert.rejects(
-      processOneShotRecordedFixture(bridge, request, openaiFixture),
+      processOneShotRecordedFixture(bridge, request, openaiFixture, DIGEST),
       /Provider dispatch claim unavailable/,
     );
     assert.equal(events.includes("record"), false);
@@ -134,7 +136,7 @@ test("invalid or missing vendor-shaped response after claim halts permanently", 
 test("an unavailable budget does not create a claim or measured receipt", async () => {
   const { bridge, events } = memorySql();
   await assert.rejects(
-    processOneShotRecordedFixture(bridge, { ...request, maxInputTokens: 0 }, openaiFixture),
+    processOneShotRecordedFixture(bridge, { ...request, maxInputTokens: 0 }, openaiFixture, DIGEST),
     /Provider budget request invalid/,
   );
   assert.deepEqual(events, []);

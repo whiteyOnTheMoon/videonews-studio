@@ -16,8 +16,9 @@ export async function processOneShotRecordedFixture(
   bridge: ReturnType<typeof dormantProviderBudgetBridge>,
   request: BudgetReplayRequest,
   recordedFixture: unknown,
+  promptSha256: string,
 ): Promise<Readonly<{ reservationId: string; costMicroUsd: string; reconciled: true }>> {
-  const reservationId = await bridge.reserve(request);
+  const reservationId = await bridge.reserve(request, promptSha256);
   // This is irreversible. If the process exits after claim, the SQL record
   // remains and a retry must refuse to simulate a second paid request.
   await bridge.claim(reservationId);
