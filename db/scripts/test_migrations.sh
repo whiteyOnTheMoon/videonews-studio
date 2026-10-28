@@ -136,6 +136,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0037_provider_live_budget_ledger.test.sql"
   sql < "$root/db/migrations/0038_provider_worker_budget_guard.up.sql"
   sql < "$root/db/tests/0038_provider_worker_budget_guard.test.sql"
+  sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.up.sql"
+  sql < "$root/db/tests/0039_provider_one_shot_dispatch_claim.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -298,6 +300,131 @@ for iteration in 1 2; do
     rm -rf -- "$live_work"
     echo "PASS: two independent SQL sessions admit exactly one $0.0003 reservation"
   fi
+  if [[ "$iteration" -eq 1 ]]; then
+    # Two independent SQL sessions compete to claim ONE reserved request.
+    # The losing session must receive NULL (printed as "denied").
+    sql < "$root/db/tests/0039_provider_dispatch_claim_concurrency.setup.sql"
+    claim_work="$(mktemp -d /tmp/vns-provider-claim-ci-XXXXXXXX)"
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_provider_usage_writer;
+         SELECT coalesce(vns.claim_provider_live_dispatch(
+           'a3910003-0000-4000-8000-000000000003')::text,'denied')" \
+        > "$claim_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then claim_pid_a=$!; else claim_pid_b=$!; fi
+    done
+    wait "$claim_pid_a" && wait "$claim_pid_b"
+    test "$(cat "$claim_work/a" "$claim_work/b" | grep -c '^denied
+  sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
+  sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
+  sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
+  sql < "$root/db/migrations/0034_atomic_source_export_authority.down.sql"
+  sql < "$root/db/migrations/0033_guarded_feed_commit.down.sql"
+  sql < "$root/db/migrations/0032_feed_runtime_source_authorization.down.sql"
+  sql < "$root/db/migrations/0031_personal_editor_exports.down.sql"
+  sql < "$root/db/migrations/0030_editorial_checkpoints.down.sql"
+  sql < "$root/db/migrations/0029_named_editor_db_gateway.down.sql"
+  sql < "$root/db/migrations/0028_feed_candidate_projection.down.sql"
+  sql < "$root/db/migrations/0027_editorial_profiles.down.sql"
+  sql < "$root/db/migrations/0026_editorial_research_persistence.down.sql"
+  sql < "$root/db/migrations/0025_editorial_timeline_contract.down.sql"
+  sql < "$root/db/migrations/0024_editorial_timeline.down.sql"
+  sql < "$root/db/migrations/0023_two_person_host_grants.down.sql"
+  sql < "$root/db/migrations/0022_independent_host_approval.down.sql"
+  sql < "$root/db/migrations/0021_source_transition_guard.down.sql"
+  sql < "$root/db/migrations/0020_source_admin_registry.down.sql"
+  sql < "$root/db/migrations/0019_feed_poll_contract.down.sql"
+  sql < "$root/db/migrations/0018_ai_provider_named_audit.down.sql"
+  sql < "$root/db/migrations/0017_ai_provider_mutation_admission.down.sql"
+  sql < "$root/db/migrations/0016_ai_provider_audit_store.down.sql"
+  sql < "$root/db/migrations/0015_ai_provider_admin_configuration.down.sql"
+  sql < "$root/db/migrations/0014_synthetic_ai_budget_reservations.down.sql"
+  sql < "$root/db/migrations/0013_synthetic_token_usage.down.sql"
+  sql < "$root/db/migrations/0012_runtime_least_privilege.down.sql"
+  sql < "$root/db/migrations/0011_operator_registry_governance.down.sql"
+  sql < "$root/db/migrations/0010_editor_account_lifecycle_audit.down.sql"
+  sql < "$root/db/migrations/0009_scoped_editor_review.down.sql"
+  sql < "$root/db/migrations/0008_editor_session_revocation.down.sql"
+  sql < "$root/db/migrations/0007_runtime_role_boundaries.down.sql"
+  sql < "$root/db/migrations/0006_offline_role_boundaries.down.sql"
+  sql < "$root/db/migrations/0005_editorial_review_audit.down.sql"
+  sql < "$root/db/migrations/0004_research_evidence.down.sql"
+  sql < "$root/db/migrations/0003_research_requests.down.sql"
+  sql < "$root/db/migrations/0002_job_outbox.down.sql"
+  sql < "$root/db/migrations/0001_editorial_core.down.sql"
+  left="$(docker exec "$name" psql -X -A -t -v ON_ERROR_STOP=1 \
+    -U postgres -d vns_schema_test \
+    -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
+  test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
+done
+echo "PASS: reversible 0001-0039 migrations, source authority, leases and budgets twice"
+)" = 1 || {
+      echo "FAIL: identical claim replay was not denied" >&2
+      rm -rf -- "$claim_work"
+      exit 1
+    }
+    test "$(cat "$claim_work/a" "$claim_work/b" | grep -c \
+      '^a[0-9a-f]\{7\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}
+  sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
+  sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
+  sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
+  sql < "$root/db/migrations/0034_atomic_source_export_authority.down.sql"
+  sql < "$root/db/migrations/0033_guarded_feed_commit.down.sql"
+  sql < "$root/db/migrations/0032_feed_runtime_source_authorization.down.sql"
+  sql < "$root/db/migrations/0031_personal_editor_exports.down.sql"
+  sql < "$root/db/migrations/0030_editorial_checkpoints.down.sql"
+  sql < "$root/db/migrations/0029_named_editor_db_gateway.down.sql"
+  sql < "$root/db/migrations/0028_feed_candidate_projection.down.sql"
+  sql < "$root/db/migrations/0027_editorial_profiles.down.sql"
+  sql < "$root/db/migrations/0026_editorial_research_persistence.down.sql"
+  sql < "$root/db/migrations/0025_editorial_timeline_contract.down.sql"
+  sql < "$root/db/migrations/0024_editorial_timeline.down.sql"
+  sql < "$root/db/migrations/0023_two_person_host_grants.down.sql"
+  sql < "$root/db/migrations/0022_independent_host_approval.down.sql"
+  sql < "$root/db/migrations/0021_source_transition_guard.down.sql"
+  sql < "$root/db/migrations/0020_source_admin_registry.down.sql"
+  sql < "$root/db/migrations/0019_feed_poll_contract.down.sql"
+  sql < "$root/db/migrations/0018_ai_provider_named_audit.down.sql"
+  sql < "$root/db/migrations/0017_ai_provider_mutation_admission.down.sql"
+  sql < "$root/db/migrations/0016_ai_provider_audit_store.down.sql"
+  sql < "$root/db/migrations/0015_ai_provider_admin_configuration.down.sql"
+  sql < "$root/db/migrations/0014_synthetic_ai_budget_reservations.down.sql"
+  sql < "$root/db/migrations/0013_synthetic_token_usage.down.sql"
+  sql < "$root/db/migrations/0012_runtime_least_privilege.down.sql"
+  sql < "$root/db/migrations/0011_operator_registry_governance.down.sql"
+  sql < "$root/db/migrations/0010_editor_account_lifecycle_audit.down.sql"
+  sql < "$root/db/migrations/0009_scoped_editor_review.down.sql"
+  sql < "$root/db/migrations/0008_editor_session_revocation.down.sql"
+  sql < "$root/db/migrations/0007_runtime_role_boundaries.down.sql"
+  sql < "$root/db/migrations/0006_offline_role_boundaries.down.sql"
+  sql < "$root/db/migrations/0005_editorial_review_audit.down.sql"
+  sql < "$root/db/migrations/0004_research_evidence.down.sql"
+  sql < "$root/db/migrations/0003_research_requests.down.sql"
+  sql < "$root/db/migrations/0002_job_outbox.down.sql"
+  sql < "$root/db/migrations/0001_editorial_core.down.sql"
+  left="$(docker exec "$name" psql -X -A -t -v ON_ERROR_STOP=1 \
+    -U postgres -d vns_schema_test \
+    -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
+  test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
+done
+echo "PASS: reversible 0001-0038 migrations, source authority, leases and budgets twice"
+)" = 1 || {
+      echo "FAIL: two-session one-shot claim count mismatch" >&2
+      rm -rf -- "$claim_work"
+      exit 1
+    }
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT count(*) FROM vns.provider_live_dispatch_claims')" = 1 || {
+      echo "FAIL: more than one dispatch claim persisted" >&2
+      rm -rf -- "$claim_work"
+      exit 1
+    }
+    rm -rf -- "$claim_work"
+    echo "PASS: two independent sessions issue exactly one provider dispatch claim"
+  fi
+  sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.down.sql"
   sql < "$root/db/migrations/0038_provider_worker_budget_guard.down.sql"
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
