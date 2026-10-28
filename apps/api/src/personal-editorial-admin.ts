@@ -51,7 +51,10 @@ function revision(value: unknown): number | null {
  */
 function editorialTermKey(term: unknown): string | null {
   if (typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term)) return null;
-  const words = term.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu);
+  const words = term
+    .normalize("NFKC")
+    .toLocaleLowerCase("en")
+    .match(/[\p{L}\p{N}]+/gu);
   return words?.length ? words.join(" ") : null;
 }
 
