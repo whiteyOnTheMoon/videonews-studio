@@ -26,7 +26,9 @@ test("tampering, wrong key and digest substitution all fail closed", () => {
     { ...payload, tag: "AAAA" },
     { ...payload, version: 2 },
     { ...payload, unexpected: "extra" },
-  ]) assert.throws(() => openProviderPrompt(changed as never, key), /unavailable/);
+  ]) {
+    assert.throws(() => openProviderPrompt(changed as never, key), /unavailable/);
+  }
   assert.throws(() => openProviderPrompt(payload, randomBytes(32)), /unavailable/);
 });
 
