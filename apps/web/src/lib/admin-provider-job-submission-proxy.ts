@@ -81,10 +81,7 @@ async function boundedBody(request: Request): Promise<unknown> {
     return null;
   }
   const declared = request.headers.get("content-length");
-  if (
-    declared !== null &&
-    (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_BODY)
-  ) {
+  if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > MAX_BODY)) {
     return null;
   }
   const reader = request.body?.getReader();
