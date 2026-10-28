@@ -1,0 +1,24 @@
+name: P1-09 operator-only provider outbox custody (offline tests)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_provider_outbox_custody.py"
+      - "scripts/test_p1_09_provider_outbox_custody.py"
+      - ".github/workflows/p1-09-provider-outbox-custody.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p1-09-provider-outbox-custody-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  provider-outbox-custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test private secret staging and restricted SCRAM contract without Docker
+        run: python3 -m unittest discover -s scripts -p 'test_p1_09_provider_outbox_custody.py' -v
