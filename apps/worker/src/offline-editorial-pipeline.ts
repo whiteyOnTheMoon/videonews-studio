@@ -229,7 +229,14 @@ export function independentlyCheckDraft(
       claim.articleIds.some((id) => !ids.has(id))
     )
       reasons.push("unattributed_claim");
-    if (claim.status !== "verified") reasons.push("unverified_claim");
+    if (claim.status !== "verified") {
+      reasons.push("unverified_claim");
+    } else {
+      // A self-reported status is not an independent review attestation.
+      // This offline candidate model contains no reviewer identity, signed
+      // decision or evidence provenance that could justify acceptance.
+      reasons.push("independent_review_not_attested");
+    }
   }
   if (!draft.paragraphs.length || draft.paragraphs.some((text) => !text.trim())) {
     reasons.push("empty_draft");
