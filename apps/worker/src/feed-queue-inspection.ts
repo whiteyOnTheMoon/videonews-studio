@@ -17,15 +17,22 @@ export async function inspectFeedQueue(queue: InspectionPort): Promise<FeedQueue
     const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed", "completed");
     // Missing or malformed counters must never be interpreted as an empty
     // queue: in particular an absent failed count must not admit new jobs.
-    if (
-      !counts ||
-      ![counts.waiting, counts.active, counts.delayed, counts.failed, counts.completed].every(
-        (n) => Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000,
-      )
-    ) {
-      throw new Error("Invalid feed queue counters");
-    }
-    const { waiting, active, delayed, failed, completed } = counts;
+    const requireCount = (value: unknown): number => {
+      if (
+        typeof value !== "number" ||
+        !Number.isSafeInteger(value) ||
+        value < 0 ||
+        value > 1_000_000
+      ) {
+        throw new Error("Invalid feed queue counters");
+      }
+      return value;
+    };
+    const waiting = requireCount(counts?.waiting);
+    const active = requireCount(counts?.active);
+    const delayed = requireCount(counts?.delayed);
+    const failed = requireCount(counts?.failed);
+    const completed = requireCount(counts?.completed);
     // BullMQ v6 exposes pause as a queue-level state, not a JobType.
     const paused = 0;
     const pending = waiting + active + delayed + paused;
