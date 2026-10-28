@@ -115,7 +115,7 @@ export function prepareOfflineClaimCheckpoint(
             sourceUrl: proof.sourceUrl,
             checkedAt: proof.checkedAt,
           }))
-          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+          .sort((a: IndependentClaimReview["evidence"][number], b: IndependentClaimReview["evidence"][number]) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
       }))
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
     reasonCodes,
