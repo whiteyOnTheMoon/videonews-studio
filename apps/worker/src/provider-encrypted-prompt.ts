@@ -51,7 +51,8 @@ export function sealProviderPrompt(prompt: string, key: Buffer): EncryptedProvid
     !prompt.trim() ||
     Buffer.byteLength(prompt, "utf8") > 32768 ||
     Buffer.byteLength(prompt, "utf8") < 1
-  ) denied();
+  )
+    denied();
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   cipher.setAAD(AAD);
