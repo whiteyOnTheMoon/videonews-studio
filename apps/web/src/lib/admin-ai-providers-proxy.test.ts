@@ -154,7 +154,7 @@ test("all unknown, key-bearing or incomplete upstream data fail closed", async (
     payload({ apiKey: "sk-fixture" }),
     payload({ ciphertext: "sensitive" }),
     payload({ active: true }),
-    payload({ selectedModel: "gpt-unknown" }),
+    payload({ selectedModel: "invalid model with spaces" }),
     payload({ selectedModel: "invalid/model" }),
     { providers: [payload().providers[0], payload().providers[0]] },
     { providers: [] },
