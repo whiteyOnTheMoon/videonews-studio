@@ -139,7 +139,8 @@ export default function AiProviderEditForm({
           disabled={busy}
         />
         <p>
-          Nur Modelle mit gültiger, persönlich geprüfter Preisversion werden serverseitig zugelassen.
+          Nur Modelle mit gültiger, persönlich geprüfter Preisversion werden serverseitig
+          zugelassen.
         </p>
         <button type="submit" disabled={busy}>
           Modell speichern
