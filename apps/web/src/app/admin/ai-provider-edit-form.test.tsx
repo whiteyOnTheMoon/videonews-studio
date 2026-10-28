@@ -26,7 +26,7 @@ test("not-ready form has no password input, submission, transport or removal but
   assert.doesNotMatch(html, /<select/);
 });
 
-test("isolated ready form offers masked key replacement, allowlisted model and confirmed removal", () => {
+test("isolated ready form offers masked key replacement, reviewed model ID and confirmed removal", () => {
   const html = renderToStaticMarkup(
     <AiProviderEditForm
       provider="openai"
@@ -41,15 +41,15 @@ test("isolated ready form offers masked key replacement, allowlisted model and c
   assert.match(html, /Schlüssel sicher übermitteln/);
   assert.match(html, /Schlüssel entfernen/);
   assert.match(html, /type="checkbox"/);
-  assert.match(html, /gpt-6-luna/);
   assert.match(html, /gpt-6.1-sol/);
+  assert.match(html, /persönlich geprüfter Preisversion/);
   assert.match(html, /deaktiviert/);
   assert.doesNotMatch(html, /value="sk-/);
   assert.doesNotMatch(html, /<form[^>]+action=/);
   assert.doesNotMatch(html, /https?:\/\//);
 });
 
-test("Gemini selector cannot expose OpenAI models; absent key cannot be removed", () => {
+test("Gemini model input uses current DB metadata; absent key cannot be removed", () => {
   const html = renderToStaticMarkup(
     <AiProviderEditForm
       provider="google_gemini"
@@ -85,7 +85,10 @@ test("builders reject unsupported models, activation, malformed and whitespace k
     provider: "openai",
     model: "gpt-6-luna",
   });
-  assert.equal(makeModelCommand("google_gemini", "gpt-6-luna"), null);
+  assert.deepEqual(makeModelCommand("google_gemini", "ci_reviewed_model_0042"), {
+    action: "set_model", provider: "google_gemini", model: "ci_reviewed_model_0042",
+  });
+  assert.equal(makeModelCommand("google_gemini", "bad/model"), null);
   assert.equal(makeModelCommand("openai", "https://bad.example"), null);
   assert.equal(makeModelCommand("unknown", "gpt-6-luna"), null);
   assert.equal(makeRemoveCommand("openai", true, false), null);
