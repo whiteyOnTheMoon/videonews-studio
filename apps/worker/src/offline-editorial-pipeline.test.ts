@@ -179,3 +179,28 @@ test("candidate grouping rejects forged identities and headline fingerprints", (
   }
   assert.equal(groupConservativeEventCandidates(articles).length, 2);
 });
+
+test("self-labelled verified claims never pass the independent offline review gate", () => {
+  const articles = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/a"),
+    item("news_two", "https://two.example.org/news/b"),
+  ]);
+  const event = { ...groupExactHeadlineEvents(articles)[0]!, score: 1 };
+  const draft = buildOfflineDraft(event, profile);
+  const forged = {
+    ...draft,
+    claims: [
+      {
+        statement: "Unsupported fictional statistic",
+        articleIds: [articles[0]!.id],
+        status: "verified" as const,
+      },
+    ],
+  };
+  const review = independentlyCheckDraft(event, forged);
+  assert.equal(review.accepted, false);
+  assert.ok(review.reasons.includes("independent_review_not_attested"));
+  const report = exportOfflineEditorialReport(event, profile, forged);
+  assert.equal(report.approvedForPublication, false);
+  assert.ok(report.decisions.includes("independent_review_not_attested"));
+});
