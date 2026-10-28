@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { officialPriceReviewSource } from "@vns/shared";
 import type { Pool } from "pg";
 import type { AdminAuth } from "./auth.js";
 import type { EditorAuth, EditorIdentity } from "./editor-auth.js";
@@ -46,30 +47,12 @@ function expires(value: unknown): value is string {
     new Date(value).toISOString().startsWith(value.slice(0, 19))
   );
 }
-function reference(value: unknown): value is string {
-  if (typeof value !== "string" || value.length < 12 || value.length > 512) return false;
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      !url.username &&
-      !url.password &&
-      !url.hash &&
-      !/\s/.test(value) &&
-      url.pathname !== "/" &&
-      value.startsWith("https://") &&
-      !value.includes("@")
-    );
-  } catch {
-    return false;
-  }
-}
 
 /** Exact contract; no budget enabling, endpoint selection, key or spending command. */
 export function parseNamedPriceReview(input: unknown): NamedPriceReviewCommand | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const row = input as Record<string, unknown>;
-  if (!expires(row.expiresAt) || !reference(row.sourceReference)) return null;
+  if (!expires(row.expiresAt)) return null;
   if (
     row.action === "review_price" &&
     exactKeys(row, [
@@ -84,6 +67,7 @@ export function parseNamedPriceReview(input: unknown): NamedPriceReviewCommand |
       "sourceReference",
     ]) &&
     (row.provider === "openai" || row.provider === "google_gemini") &&
+    officialPriceReviewSource(row.provider, row.sourceReference) &&
     typeof row.model === "string" &&
     MODEL.test(row.model) &&
     typeof row.priceVersion === "string" &&
@@ -99,6 +83,7 @@ export function parseNamedPriceReview(input: unknown): NamedPriceReviewCommand |
   if (
     row.action === "review_fx" &&
     exactKeys(row, ["action", "microEurPerMicroUsdNanos", "expiresAt", "sourceReference"]) &&
+    officialPriceReviewSource("eur_usd", row.sourceReference) &&
     integer(row.microEurPerMicroUsdNanos, 10_000_000_000n) &&
     BigInt(row.microEurPerMicroUsdNanos) > 0n
   ) {
