@@ -138,6 +138,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0038_provider_worker_budget_guard.test.sql"
   sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.up.sql"
   sql < "$root/db/tests/0039_provider_one_shot_dispatch_claim.test.sql"
+  sql < "$root/db/migrations/0040_provider_offline_eur_fx_guard.up.sql"
+  sql < "$root/db/tests/0040_provider_offline_eur_fx_guard.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -332,12 +334,16 @@ for iteration in 1 2; do
     rm -rf -- "$claim_work"
     echo "PASS: two independent SQL sessions issue exactly one provider dispatch claim"
   fi
-  sql < "$root/db/migrations/0040_provider_offline_eur_fx_guard.up.sql"
-  sql < "$root/db/tests/0040_provider_offline_eur_fx_guard.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Independent PostgreSQL sessions compete for exactly one EUR cap slot;
     # the USD cap admits both, so only the EUR gate can reject the second.
     sql < "$root/db/tests/0040_provider_eur_concurrency.setup.sql"
+    eur_before_count="$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT count(*) FROM vns.provider_live_eur_admissions')"
+    eur_before_sum="$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT coalesce(sum(reserved_micro_eur),0) FROM vns.provider_live_eur_admissions')"
     eur_work="$(mktemp -d /tmp/vns-eur-budget-ci-XXXXXXXX)"
     for label in a b; do
       if [[ "$label" = a ]]; then
@@ -366,10 +372,10 @@ for iteration in 1 2; do
     }
     test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
       -U postgres -d vns_schema_test -c \
-      'SELECT count(*) FROM vns.provider_live_eur_admissions')" = 1
+      'SELECT count(*) FROM vns.provider_live_eur_admissions')" = "$((eur_before_count + 1))"
     test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
       -U postgres -d vns_schema_test -c \
-      'SELECT sum(reserved_micro_eur) FROM vns.provider_live_eur_admissions')" = 300
+      'SELECT sum(reserved_micro_eur) FROM vns.provider_live_eur_admissions')" = "$((eur_before_sum + 300))"
     rm -rf -- "$eur_work"
     echo "PASS: independent SQL sessions cannot exceed 300 micro-EUR"
   fi
