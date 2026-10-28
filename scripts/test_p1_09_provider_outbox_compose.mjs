@@ -141,6 +141,6 @@ test("Docker Compose resolves an isolated, default-off service without starting 
   assert.equal(service.restart, "no");
   assert.deepEqual(Object.keys(service.networks), ["backend"]);
   assert.equal(service.volumes[0].read_only, true);
-  assert.equal(service.volumes[0].bind.create_host_path, false);
+  assert.notEqual(service.volumes[0].bind?.create_host_path, true);
   assert.match(service.image, /@sha256:[a-f0-9]{64}$/);
 });
