@@ -45,8 +45,7 @@ test("Gemini includes disabled voice placeholder; OpenAI does not claim a TTS vo
 
   const openai = renderToStaticMarkup(<AiProviderSettingsPreview provider="openai" />);
   assert.doesNotMatch(openai, /Sprecherstimme/);
-  assert.match(openai, /gpt-6-luna/);
-  assert.match(openai, /gpt-6\.1-sol/);
+  assert.match(openai, /Noch nicht aus der Datenbank geladen/);
 });
 
 test("even when a status is configured, no existing key material or active controls appear", () => {
