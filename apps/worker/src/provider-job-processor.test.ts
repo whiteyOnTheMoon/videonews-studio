@@ -52,7 +52,11 @@ test("first attempt reaches injected SQL coordinator exactly once", async () => 
       return { reservationId: jobId, costMicroUsd: "5", reconciled: true as const };
     },
   } as unknown as Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">;
-  const result = await createDormantProviderJobProcessor(coordinator, async () => true, true)(job());
+  const result = await createDormantProviderJobProcessor(
+    coordinator,
+    async () => true,
+    true,
+  )(job());
   assert.equal(result.reconciled, true);
   assert.deepEqual(calls, [[request, "Verified facts."]]);
 });
