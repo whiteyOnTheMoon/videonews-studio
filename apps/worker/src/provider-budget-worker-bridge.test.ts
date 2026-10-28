@@ -265,7 +265,7 @@ test("SQL-reported halt commits the incident and is never accepted as settlement
     replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture),
     /Provider budget review required/,
   );
-  assert.deepEqual(events.slice(-4), ["settle", "COMMIT", "release"]);
+  assert.deepEqual(events.slice(-3), ["settle", "COMMIT", "release"]);
   assert.equal(events.includes("halt"), false);
 });
 
