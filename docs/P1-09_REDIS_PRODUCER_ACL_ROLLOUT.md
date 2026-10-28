@@ -37,6 +37,43 @@ It never runs Redis commands or restarts a container.
    preserved in the backup and the newly installed file is exactly the old
    bytes plus one restricted producer user.
 
+## Exact-state recovery after a failed ACL file installation
+
+The VPS operator invokes deployment shells with `umask 077`. In the original
+implementation, `safe_create(..., mode=0644)` did not override the process
+umask, so the atomic host ACL replacement could succeed with mode `0600`.
+The final `--installed` read-only check then correctly refused the
+nonconforming mode, reporting a generic failure **after the rename**.
+No Redis restart or ACL reload is performed by that helper.
+
+**Do not retry `--install-file`, regenerate passwords, delete the backup,
+run `chmod` manually, or restart Redis when this happens.** First inspect,
+read-only and without printing ACL contents or hashes: the host file mode,
+private saved original/merged candidate modes, presence of the pending
+temporary file, and whether the host bytes match the original or merged
+candidate. The cases are intentionally different:
+
+- Existing host file still `0644` and equals the original: no installation
+  occurred; any newly created backup/temporary file needs separate manual
+  review, and the original install command must not be blindly repeated.
+- Existing host file `0600`, exactly equals the *fully installed* merged
+  candidate; original saved backup and baseline hash match; no pending temp:
+  only then may a separately SHA- and operator-approved
+  `--repair-installed-mode` correct the already-installed host inode to
+  `0644`. This command reads and verifies all bytes and identities through
+  no-follow file descriptors; it **changes only the permission mode**, not
+  the ACL content, running Redis, users, volumes or jobs.
+- Any other state (missing backup, different bytes, a temp file or unexpected
+  modes): stop and perform a manual read-only investigation before changes.
+
+Required repair-specific approval:
+`VNS_P109_REDIS_ACL_MODE_REPAIR_APPROVED=
+REPAIR_INSTALLED_0600_TO_0644_ONLY`, plus the matching full main SHA in
+`VNS_P109_REDIS_ACL_EXPECTED_SHA`. A normal `--installed` must succeed
+after the repair. Treat it as a one-off recovery, not an idempotent retry.
+The regular future installation now calls `fchmod` on newly created files
+before the atomic rename; CI reproduces the operator's restrictive umask.
+
 ## Why a live Redis restart is a separate, controlled operation
 
 The existing `vns_worker` user is denied Redis administrative commands

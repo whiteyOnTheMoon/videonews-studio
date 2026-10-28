@@ -39,6 +39,7 @@ BACKUP = "redis-acl-before-producer"
 TEMP = ".redis_acl.p1_09_pending"
 APPROVAL = "VNS_P109_REDIS_ACL_FILE_INSTALL_APPROVED"
 PIN = "VNS_P109_REDIS_ACL_EXPECTED_SHA"
+REPAIR_APPROVAL = "VNS_P109_REDIS_ACL_MODE_REPAIR_APPROVED"
 FAIL = "REFUSED: additive provider Redis ACL rollout preconditions failed"
 
 
@@ -51,7 +52,7 @@ def command(argv: list[str]) -> str:
     return result.stdout.strip()
 
 
-def operator(*, approving: bool = False) -> None:
+def operator(*, approving: bool = False, repairing: bool = False) -> None:
     if os.geteuid() != 1000:
         raise PermissionError(FAIL)
     if command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
@@ -63,6 +64,13 @@ def operator(*, approving: bool = False) -> None:
         raise RuntimeError(FAIL)
     if approving and (
         os.getenv(APPROVAL) != "INSTALL_PRODUCER_ACL_FILE_ONLY"
+        or os.getenv(PIN) != current
+        or command(["git", "-C", str(ROOT), "ls-remote",
+                    "origin", "refs/heads/main"]).split("\t")[0] != current
+    ):
+        raise RuntimeError(FAIL)
+    if repairing and (
+        os.getenv(REPAIR_APPROVAL) != "REPAIR_INSTALLED_0600_TO_0644_ONLY"
         or os.getenv(PIN) != current
         or command(["git", "-C", str(ROOT), "ls-remote",
                     "origin", "refs/heads/main"]).split("\t")[0] != current
@@ -161,6 +169,9 @@ def safe_create(fd: int, name: str, content: bytes, mode: int) -> None:
     try:
         if os.write(handle, content) != len(content):
             raise OSError(FAIL)
+        # os.open(mode) is filtered by the operator's restrictive umask.
+        # Restore the exact intended ACL mode on the new inode *before* rename.
+        os.fchmod(handle, mode)
         os.fsync(handle)
     finally:
         os.close(handle)
@@ -254,7 +265,7 @@ def install_file() -> None:
     installed()
 
 
-def installed() -> None:
+def installed(*, expected_mode: int = 0o644) -> None:
     operator()
     private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
@@ -262,7 +273,7 @@ def installed() -> None:
         original = file_read(private, BACKUP, mode=0o600)
         digest = file_read(private, BASELINE, mode=0o600, max_size=128)
         combined = file_read(private, MERGED, mode=0o600)
-        current = file_read(secrets, ACL, mode=0o644)
+        current = file_read(secrets, ACL, mode=expected_mode)
         if (
             digest != sha256(original).hexdigest().encode("ascii") + b"\n"
             or combined != desired(private, original)
@@ -272,6 +283,48 @@ def installed() -> None:
     finally:
         os.close(secrets)
         os.close(private)
+
+
+
+def repair_installed_mode() -> None:
+    """Recover ONLY the exact fully installed 0600 candidate from old umask.
+
+    Refuse all other partial states. This changes one host inode's mode only;
+    it never writes ACL bytes, reloads Redis or touches existing jobs.
+    """
+    operator(repairing=True)
+    installed(expected_mode=0o600)
+    private = private_fd(PRIVATE)
+    secrets = private_fd(SECRETS)
+    handle = None
+    try:
+        absent(secrets, TEMP)
+        combined = file_read(private, MERGED, mode=0o600)
+        handle = os.open(
+            ACL, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+            dir_fd=secrets,
+        )
+        info = os.fstat(handle)
+        actual = os.stat(ACL, dir_fd=secrets, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid != os.geteuid()
+            or info.st_nlink != 1
+            or stat.S_IMODE(info.st_mode) != 0o600
+            or (actual.st_dev, actual.st_ino) != (info.st_dev, info.st_ino)
+            or info.st_size != len(combined)
+            or os.read(handle, len(combined) + 1) != combined
+        ):
+            raise RuntimeError(FAIL)
+        os.fchmod(handle, 0o644)
+        os.fsync(handle)
+        os.fsync(secrets)
+    finally:
+        if handle is not None:
+            os.close(handle)
+        os.close(secrets)
+        os.close(private)
+    installed()
 
 
 def main(args: list[str]) -> None:
@@ -291,6 +344,9 @@ def main(args: list[str]) -> None:
     elif args == ["--installed"]:
         installed()
         print("PASS: installed host ACL retains original users and adds producer")
+    elif args == ["--repair-installed-mode"]:
+        repair_installed_mode()
+        print("PASS: fully installed exact ACL mode repaired to 0644; no Redis reload")
     else:
         raise ValueError(FAIL)
 
