@@ -86,7 +86,7 @@ test("invalid identifiers, providers and missing SQL evidence never load the KEK
     [ID, "openai/../"],
     ["", "google_gemini"],
   ]) {
-    await assert.rejects(scope.withCredential(id, provider as never, async () => SECRET), /unavailable/);
+    await assert.rejects(scope.withCredential(id!, provider as never, async () => SECRET), /unavailable/);
   }
   assert.equal(reads, 0);
   assert.equal(statements.length, 0);
