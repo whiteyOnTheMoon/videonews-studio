@@ -58,6 +58,12 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Diagnose new provider submission formatting
+        if: failure()
+        run: |
+          for f in apps/api/src/named-provider-job-submission.ts apps/api/src/named-provider-job-submission.test.ts apps/api/src/named-provider-runtime.ts apps/api/src/server.ts; do
+            npx prettier "$f" | diff -u "$f" - || true
+          done
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
