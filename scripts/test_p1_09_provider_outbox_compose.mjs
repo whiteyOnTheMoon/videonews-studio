@@ -42,10 +42,7 @@ export function verifyProviderOutboxCompose(source) {
   assert.equal(service.volumes.length, 1);
   const mount = service.volumes[0];
   assert.equal(mount.type, "bind");
-  assert.equal(
-    mount.source,
-    "./secrets/vns-outbox",
-  );
+  assert.equal(mount.source, "./secrets/vns-outbox");
   assert.equal(mount.target, "/run/secrets/vns");
   assert.equal(mount.read_only, true);
   assert.equal(mount.bind.create_host_path, false);
@@ -54,10 +51,7 @@ export function verifyProviderOutboxCompose(source) {
     env.VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED,
     "${VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED:-false}",
   );
-  assert.equal(
-    env.VNS_PROVIDER_OUTBOX_OPERATOR_ACK,
-    "${VNS_PROVIDER_OUTBOX_OPERATOR_ACK:-false}",
-  );
+  assert.equal(env.VNS_PROVIDER_OUTBOX_OPERATOR_ACK, "${VNS_PROVIDER_OUTBOX_OPERATOR_ACK:-false}");
   assert.equal(env.VNS_PROVIDER_OUTBOX_QUEUE_NAME, "vns-provider-text");
   assert.equal(env.VNS_PROVIDER_OUTBOX_PG_USER, "vns_provider_outbox_login");
   assert.equal(env.VNS_PROVIDER_OUTBOX_REDIS_USER, "vns_provider_producer");
@@ -81,16 +75,36 @@ test("opt-in Compose contract fails closed and isolates queue producer", () => {
 
 test("weakening any critical lifecycle or credential restriction is rejected", () => {
   const cases = [
-    (s) => { s.profiles = []; },
-    (s) => { s.restart = "always"; },
-    (s) => { s.entrypoint = ["node", "apps/worker/dist/index.js"]; },
-    (s) => { s.environment.VNS_PROVIDER_OUTBOX_OPERATOR_ACK = "true"; },
-    (s) => { s.environment.VNS_P1_PROVIDER_CANARY_ENABLED = "true"; },
-    (s) => { s.volumes[0].read_only = false; },
-    (s) => { s.volumes[0].bind.create_host_path = true; },
-    (s) => { s.networks = ["frontend", "backend"]; },
-    (s) => { s.image = "vns-worker:local"; },
-    (s) => { s.ports = ["4001:4001"]; },
+    (s) => {
+      s.profiles = [];
+    },
+    (s) => {
+      s.restart = "always";
+    },
+    (s) => {
+      s.entrypoint = ["node", "apps/worker/dist/index.js"];
+    },
+    (s) => {
+      s.environment.VNS_PROVIDER_OUTBOX_OPERATOR_ACK = "true";
+    },
+    (s) => {
+      s.environment.VNS_P1_PROVIDER_CANARY_ENABLED = "true";
+    },
+    (s) => {
+      s.volumes[0].read_only = false;
+    },
+    (s) => {
+      s.volumes[0].bind.create_host_path = true;
+    },
+    (s) => {
+      s.networks = ["frontend", "backend"];
+    },
+    (s) => {
+      s.image = "vns-worker:local";
+    },
+    (s) => {
+      s.ports = ["4001:4001"];
+    },
   ];
   for (const modify of cases) {
     const bad = structuredClone(manifest);
