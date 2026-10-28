@@ -80,6 +80,12 @@ BEGIN
     OR fx.expires_at <= v_checked_at THEN
     RAISE EXCEPTION 'EUR FX ceiling unavailable' USING ERRCODE='42501';
   END IF;
+  -- A schema upgraded after prior USD-only admissions must not ignore them.
+  -- Such history has no vetted EUR basis, so freeze until separately reviewed.
+  IF (SELECT count(*) FROM vns.provider_live_reservations)
+    <> (SELECT count(*) FROM vns.provider_live_eur_admissions) + 1 THEN
+    RAISE EXCEPTION 'Historic EUR exposure unavailable' USING ERRCODE='42501';
+  END IF;
   amount := ceil(NEW.reserved_micro_usd::numeric
     * fx.micro_eur_per_micro_usd_nanos / 1000000000);
   IF amount NOT BETWEEN 1 AND policy.global_cap_micro_eur THEN
@@ -131,6 +137,10 @@ BEGIN
     OR fx.expires_at <= v_checked_at
     OR admission.fx_snapshot_id <> fx.id THEN
     RAISE EXCEPTION 'EUR dispatch FX unavailable' USING ERRCODE='42501';
+  END IF;
+  IF (SELECT count(*) FROM vns.provider_live_reservations)
+    <> (SELECT count(*) FROM vns.provider_live_eur_admissions) THEN
+    RAISE EXCEPTION 'Historic EUR exposure unavailable' USING ERRCODE='42501';
   END IF;
   SELECT coalesce(sum(reserved_micro_eur),0)::numeric INTO total
     FROM vns.provider_live_eur_admissions;
