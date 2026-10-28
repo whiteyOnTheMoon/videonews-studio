@@ -193,11 +193,12 @@ export function rankOfflineEvents(
         throw new Error("Ranking candidate invalid");
       }
       seenEvents.add(event.id);
+      const articles: readonly NormalizedArticle[] = event.articles;
       // Standalone ranking may be called with forged, caller-constructed event
       // metadata: verify both immutable article hashes and the display headline
       // before allowing that headline to decide blocklist/keyword results.
       const normalized = normalizeFeedArticles(
-        event.articles.map((article) => ({
+        articles.map((article) => ({
           sourceId: article.sourceId,
           url: article.url,
           headline: article.headline,
@@ -208,8 +209,8 @@ export function rankOfflineEvents(
       if (
         normalized.some(
           (article, i) =>
-            article.id !== event.articles[i]!.id ||
-            article.titleFingerprint !== event.articles[i]!.titleFingerprint,
+            article.id !== articles[i]!.id ||
+            article.titleFingerprint !== articles[i]!.titleFingerprint,
         ) ||
         !normalized.some((article) => article.headline === event.headline)
       ) {
@@ -217,11 +218,11 @@ export function rankOfflineEvents(
       }
       const title = normalizePhrase(event.headline);
       if (blocked.some((term) => matchesPhrase(title, term))) return [];
-      const distinctSources = new Set(event.articles.map((article) => article.sourceId));
+      const distinctSources = new Set(articles.map((article) => article.sourceId));
       // Historical field name is retained for stored profile compatibility;
       // the threshold counts source IDs, not independent publishers/evidence.
       if (distinctSources.size < profile.minIndependentSources) return [];
-      const times = event.articles.map((article) => Date.parse(article.publishedAt));
+      const times = articles.map((article) => Date.parse(article.publishedAt));
       if (
         times.some(
           (value) =>
