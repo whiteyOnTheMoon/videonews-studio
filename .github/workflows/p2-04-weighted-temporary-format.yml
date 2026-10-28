@@ -1,0 +1,28 @@
+name: P2-04 temporary Prettier diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    if: github.event.pull_request.head.ref == 'fix/p2-04-08-weighted-qa-metadata-consistency-20261028'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Canonical formatting, read-only output only
+        run: |
+          npx prettier --write \
+            apps/worker/src/bounded-editorial-production.test.ts \
+            apps/worker/src/offline-editorial-pipeline.ts
+          node -e "const fs=require('fs');for(const p of process.argv.slice(1)) console.log('VNS_FORMAT_START '+p+' '+fs.readFileSync(p).toString('base64')+' VNS_FORMAT_END')" \
+            apps/worker/src/bounded-editorial-production.test.ts \
+            apps/worker/src/offline-editorial-pipeline.ts
