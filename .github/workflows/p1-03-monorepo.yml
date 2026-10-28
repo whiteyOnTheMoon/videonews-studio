@@ -58,6 +58,11 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Diagnose formatting delta (temporary)
+        if: failure()
+        run: |
+          npx prettier apps/worker/src/provider-job-processor.test.ts |
+            diff -u apps/worker/src/provider-job-processor.test.ts - || true
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
