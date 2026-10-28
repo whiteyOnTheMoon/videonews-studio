@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 import { QUEUE_PREFIX } from "./queue.js";
-import { createDormantProviderJobProcessor } from "./provider-job-processor.js";
+import { createDormantProviderJobProcessor, type NamedProviderJobVerifier } from "./provider-job-processor.js";
 import type { dormantOneShotTextCoordinator } from "./provider-one-shot-text-coordinator.js";
 
 /**
@@ -55,6 +55,7 @@ export function readProviderQueueConfig(
 export function createDormantProviderQueueWorker(
   config: ProviderQueueConfig,
   coordinator: Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">,
+  verify: NamedProviderJobVerifier,
   enabled = false,
 ): { worker: Worker; connection: Redis } {
   if (
@@ -67,7 +68,7 @@ export function createDormantProviderQueueWorker(
   ) {
     throw new Error("Provider queue worker disabled");
   }
-  const processor = createDormantProviderJobProcessor(coordinator, true);
+  const processor = createDormantProviderJobProcessor(coordinator, verify, true);
   const connection = new Redis({
     host: config.host,
     port: config.port,
