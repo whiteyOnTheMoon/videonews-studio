@@ -6,10 +6,7 @@ export type ProviderEditCommand =
   | { action: "remove_key"; provider: AdminAiProvider }
   | { action: "set_model"; provider: AdminAiProvider; model: string };
 
-export const PROVIDER_MODEL_CHOICES: Record<AdminAiProvider, readonly string[]> = {
-  openai: ["gpt-6-luna", "gpt-6.1-sol"],
-  google_gemini: ["gemini-3.8-flash-tts"],
-};
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 function knownProvider(provider: unknown): provider is AdminAiProvider {
   return provider === "openai" || provider === "google_gemini";
@@ -31,11 +28,7 @@ export function makeKeyCommand(provider: unknown, apiKey: unknown): ProviderEdit
 }
 
 export function makeModelCommand(provider: unknown, model: unknown): ProviderEditCommand | null {
-  if (
-    !knownProvider(provider) ||
-    typeof model !== "string" ||
-    !PROVIDER_MODEL_CHOICES[provider].includes(model)
-  ) {
+  if (!knownProvider(provider) || typeof model !== "string" || !MODEL_ID.test(model)) {
     return null;
   }
   return { action: "set_model", provider, model };

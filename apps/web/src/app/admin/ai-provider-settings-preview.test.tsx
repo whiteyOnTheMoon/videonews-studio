@@ -41,12 +41,11 @@ test("Gemini includes disabled voice placeholder; OpenAI does not claim a TTS vo
   const gemini = renderToStaticMarkup(<AiProviderSettingsPreview provider="google_gemini" />);
   assert.match(gemini, /Sprecherstimme/);
   assert.match(gemini, /Noch nicht festgelegt/);
-  assert.match(gemini, /gemini-3.8-flash-tts/);
+  assert.match(gemini, /Noch nicht aus der Datenbank geladen/);
 
   const openai = renderToStaticMarkup(<AiProviderSettingsPreview provider="openai" />);
   assert.doesNotMatch(openai, /Sprecherstimme/);
-  assert.match(openai, /gpt-6-luna/);
-  assert.match(openai, /gpt-6\.1-sol/);
+  assert.match(openai, /Noch nicht aus der Datenbank geladen/);
 });
 
 test("even when a status is configured, no existing key material or active controls appear", () => {
@@ -70,7 +69,7 @@ test("even when a status is configured, no existing key material or active contr
   assert.doesNotMatch(html, /ciphertext/);
 });
 
-test("unrecognized model in status is never inserted as a select choice", () => {
+test("database supplied model metadata renders read-only without enabling transport", () => {
   const html = renderToStaticMarkup(
     <AiProviderSettingsPreview
       provider="openai"
@@ -82,6 +81,6 @@ test("unrecognized model in status is never inserted as a select choice", () => 
       }}
     />,
   );
-  assert.doesNotMatch(html, /untrusted-model/);
-  assert.match(html, /Noch nicht aus der Datenbank geladen/);
+  assert.match(html, /untrusted-model/);
+  assert.match(html, /disabled/);
 });

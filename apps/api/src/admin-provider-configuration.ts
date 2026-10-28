@@ -25,10 +25,7 @@ export interface ProviderConfigStore {
   mutateWithAudit(change: ProviderMutation): Promise<void>;
 }
 
-const MODELS: Record<AiProvider, readonly string[]> = Object.freeze({
-  openai: Object.freeze(["gpt-6-luna", "gpt-6.1-sol"]),
-  google_gemini: Object.freeze(["gemini-3.8-flash-tts"]),
-});
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const PROVIDERS: readonly AiProvider[] = ["openai", "google_gemini"];
 
 type Command =
@@ -72,7 +69,7 @@ export function parseProviderAdminCommand(input: unknown): Command | null {
     row.action === "set_model" &&
     hasExactKeys(row, ["action", "provider", "model"]) &&
     typeof row.model === "string" &&
-    MODELS[provider].includes(row.model)
+    MODEL_ID.test(row.model)
   ) {
     return { action: "set_model", provider, model: row.model };
   }
@@ -99,7 +96,7 @@ export function validatePublicProviderList(data: unknown): ProviderMetadata[] {
       throw new Error("Invalid provider configuration");
     }
     const provider = row.provider as AiProvider;
-    if (found.has(provider) || !MODELS[provider].includes(row.selectedModel)) {
+    if (found.has(provider) || !MODEL_ID.test(row.selectedModel)) {
       throw new Error("Invalid provider configuration");
     }
     found.add(provider);

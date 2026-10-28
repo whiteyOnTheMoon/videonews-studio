@@ -67,7 +67,7 @@ test("named store refuses invalid identity and provider mutations before SQL", a
   }
   await assert.rejects(
     store.mutateAsNamedAdmin(
-      { provider: "openai", action: "set_model", selectedModel: "gemini-3.8-flash-tts" },
+      { provider: "openai", action: "set_model", selectedModel: "invalid/model" },
       ADMIN,
     ),
     /Invalid provider mutation/,

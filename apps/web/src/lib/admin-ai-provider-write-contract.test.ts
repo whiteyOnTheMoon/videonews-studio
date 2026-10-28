@@ -41,6 +41,7 @@ test("strict command allowlist blocks extra data, arbitrary URLs and provider ac
     { action: "remove_key", provider: "openai" },
     { action: "set_model", provider: "openai", model: "gpt-6-luna" },
     { action: "set_model", provider: "google_gemini", model: "gemini-3.8-flash-tts" },
+    { action: "set_model", provider: "openai", model: "ci_reviewed_model_0042" },
   ];
   for (const candidate of valid) {
     assert.deepEqual(parseAdminAiProviderMutation(candidate), candidate);
@@ -61,10 +62,10 @@ test("strict command allowlist blocks extra data, arbitrary URLs and provider ac
     { action: "test_connection", provider: "openai" },
     { action: "remove_key", provider: "openai", apiKey: FAKE_KEY },
     { action: "remove_key", provider: "unknown" },
-    { action: "set_model", provider: "openai", model: "unknown" },
+    { action: "set_model", provider: "openai", model: "invalid model" },
     { action: "set_model", provider: "openai", model: "https://external.invalid" },
-    { action: "set_model", provider: "openai", model: "gemini-3.8-flash-tts" },
-    { action: "set_model", provider: "google_gemini", model: "gpt-6.1-sol" },
+    { action: "set_model", provider: "openai", model: "bad/model" },
+    { action: "set_model", provider: "google_gemini", model: "a".repeat(81) },
     { action: "set_model", provider: "openai", model: "gpt-6-luna", apiKey: FAKE_KEY },
   ]) {
     assert.equal(parseAdminAiProviderMutation(candidate), null);
@@ -162,7 +163,7 @@ test("invalid payloads, body formats and over-limit inputs never reach write end
     { action: "enable", provider: "openai" },
     { action: "set_key", provider: "openai", apiKey: "short" },
     { action: "set_key", provider: "openai", apiKey: FAKE_KEY, extra: true },
-    { action: "set_model", provider: "openai", model: "google" },
+    { action: "set_model", provider: "openai", model: "evil/model" },
     {},
     null,
   ]) {

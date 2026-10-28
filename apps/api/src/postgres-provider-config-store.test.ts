@@ -98,7 +98,7 @@ test("unrecognized provider, model and corrupted envelope never reach SQL", asyn
     { provider: "openai", action: "set_key", sealedKey: { ...sealed, ciphertext: "" } },
     { provider: "openai", action: "set_key", sealedKey: { ...sealed, version: 2 } },
     { provider: "openai", action: "set_key", sealedKey: sealed, selectedModel: "gpt-6-luna" },
-    { provider: "google_gemini", action: "set_model", selectedModel: "gpt-6-luna" },
+    { provider: "google_gemini", action: "set_model", selectedModel: "bad/model" },
     { provider: "openai", action: "set_model", selectedModel: "gpt-6.1-sol", sealedKey: sealed },
     { provider: "openai", action: "remove_key", selectedModel: "gpt-6-luna" },
   ];

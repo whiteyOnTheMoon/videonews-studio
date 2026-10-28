@@ -4,7 +4,6 @@ type ProviderPlan = {
   provider: "openai" | "google_gemini";
   label: string;
   use: string;
-  models: readonly string[];
   voicePreview: boolean;
 };
 
@@ -13,14 +12,12 @@ const plans: readonly ProviderPlan[] = [
     provider: "openai",
     label: "OpenAI",
     use: "Englische Nachrichtenanalyse und Skripte",
-    models: ["gpt-6-luna", "gpt-6.1-sol"],
     voicePreview: false,
   },
   {
     provider: "google_gemini",
     label: "Google Gemini",
     use: "Englische Sprecherstimme (TTS-Kandidat)",
-    models: ["gemini-3.8-flash-tts"],
     voicePreview: true,
   },
 ];
@@ -41,8 +38,7 @@ export default function AiProviderSettingsPreview({
   if (!plan) return null;
 
   const prefix = "ai-preview-" + provider;
-  const selectedModel =
-    status && plan.models.includes(status.selectedModel) ? status.selectedModel : "";
+  const selectedModel = status?.selectedModel ?? "";
 
   return (
     <div className="ai-provider-preview" aria-label={plan.label + " – Einstellungen gesperrt"}>
@@ -76,14 +72,14 @@ export default function AiProviderSettingsPreview({
         </div>
         <div className="ai-provider-field">
           <label htmlFor={prefix + "-model"}>KI-Modell</label>
-          <select id={prefix + "-model"} value={selectedModel} disabled>
-            <option value="">Noch nicht aus der Datenbank geladen</option>
-            {plan.models.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </select>
+          <input
+            id={prefix + "-model"}
+            type="text"
+            value={selectedModel}
+            readOnly
+            disabled
+            placeholder="Noch nicht aus der Datenbank geladen"
+          />
         </div>
         <div className="ai-provider-field">
           <label htmlFor={prefix + "-language"}>Videosprache</label>
