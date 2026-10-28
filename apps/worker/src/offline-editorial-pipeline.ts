@@ -150,36 +150,107 @@ export function groupExactHeadlineEvents(
     }));
 }
 
+/**
+ * Preliminary metadata ranking only. A source ID is not publisher
+ * independence, and a normalized title is not verified news evidence.
+ */
 export function rankOfflineEvents(
   events: readonly NewsEvent[],
   profile: EditorialProfile,
   now: Date,
 ): readonly NewsEvent[] {
   validateEditorialProfile(profile);
-  if (Number.isNaN(now.getTime())) throw new Error("Ranking clock invalid");
-  const blocked = profile.blockedTerms.map((term) => term.toLowerCase());
-  const keywords = profile.keywords.map((term) => term.toLowerCase());
+  if (
+    !(now instanceof Date) ||
+    !Number.isFinite(now.getTime()) ||
+    !Array.isArray(events) ||
+    events.length > 100
+  ) {
+    throw new Error("Ranking input invalid");
+  }
+  const phraseTokens = (value: string): readonly string[] =>
+    value
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
+  const matchesPhrase = (title: string, term: string): boolean => {
+    const words = phraseTokens(title);
+    const expected = phraseTokens(term);
+    return (
+      expected.length > 0 &&
+      words.some((_, index) => expected.every((word, offset) => words[index + offset] === word))
+    );
+  };
+  const blocked = [...profile.blockedTerms];
+  const keywords = [...profile.keywords];
+  const seenEvents = new Set<string>();
   return events
     .flatMap((event) => {
-      const title = event.headline.toLowerCase();
-      if (blocked.some((term) => title.includes(term))) return [];
-      const publishers = new Set(event.articles.map((article) => article.sourceId));
-      if (publishers.size < profile.minIndependentSources) return [];
-      const newest = Math.max(...event.articles.map((article) => Date.parse(article.publishedAt)));
-      const ageHours = (now.getTime() - newest) / 3600000;
-      if (ageHours < 0 || ageHours > profile.maximumArticleAgeHours) return [];
-      const matches = keywords.filter((term) => title.includes(term)).length;
+      if (
+        !event ||
+        typeof event.headline !== "string" ||
+        !/^[0-9a-f]{64}$/.test(event.id) ||
+        seenEvents.has(event.id) ||
+        !Array.isArray(event.articles) ||
+        event.articles.length < 1 ||
+        event.articles.length > 100
+      ) {
+        throw new Error("Ranking candidate invalid");
+      }
+      seenEvents.add(event.id);
+      const articles: readonly NormalizedArticle[] = event.articles;
+      // Standalone ranking may be called with forged, caller-constructed event
+      // metadata: verify both immutable article hashes and the display headline
+      // before allowing that headline to decide blocklist/keyword results.
+      const normalized = normalizeFeedArticles(
+        articles.map((article) => ({
+          sourceId: article.sourceId,
+          url: article.url,
+          headline: article.headline,
+          publishedAt: article.publishedAt,
+          reviewStatus: "candidate" as const,
+        })),
+      );
+      if (
+        normalized.some(
+          (article, i) =>
+            article.id !== articles[i]!.id ||
+            article.titleFingerprint !== articles[i]!.titleFingerprint,
+        ) ||
+        !normalized.some((article) => article.headline === event.headline)
+      ) {
+        throw new Error("Ranking candidate metadata mismatch");
+      }
+      const title = event.headline;
+      if (blocked.some((term) => matchesPhrase(title, term))) return [];
+      const distinctSources = new Set(articles.map((article) => article.sourceId));
+      // Historical field name is retained for stored profile compatibility;
+      // the threshold counts source IDs, not independent publishers/evidence.
+      if (distinctSources.size < profile.minIndependentSources) return [];
+      const times = articles.map((article) => Date.parse(article.publishedAt));
+      if (
+        times.some(
+          (value) =>
+            value > now.getTime() ||
+            now.getTime() - value > profile.maximumArticleAgeHours * 3600000,
+        )
+      ) {
+        return [];
+      }
+      const ageHours = (now.getTime() - Math.max(...times)) / 3600000;
+      const matches = keywords.filter((term) => matchesPhrase(title, term)).length;
       return [
         {
           ...event,
           score:
             matches * 10 +
-            publishers.size * 3 +
+            distinctSources.size * 3 +
             Math.max(0, Math.floor(profile.maximumArticleAgeHours - ageHours)),
           reasons: [
             `keyword_matches:${matches}`,
-            `independent_sources:${publishers.size}`,
+            `distinct_source_ids:${distinctSources.size}`,
             `age_hours:${Math.floor(ageHours)}`,
+            "independent_verification_required",
           ],
         },
       ];
