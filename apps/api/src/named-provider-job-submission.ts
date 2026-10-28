@@ -6,7 +6,7 @@ import type { AdminAuth } from "./auth.js";
 import { respond } from "./admin-provider-configuration.js";
 import { withProviderPromptKey } from "./provider-master-key-file.js";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TOKEN_KEY = /^[A-Za-z0-9_-]{24,80}$/;
 const REQUEST = /^[A-Za-z0-9_-]{12,80}$/;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
