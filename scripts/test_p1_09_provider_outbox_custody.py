@@ -132,7 +132,7 @@ class OutboxCustodyTests(unittest.TestCase):
                 custody, "expected_versions", return_value=versions
             ), patch.object(
                 custody, "owner_sql",
-                side_effect=lambda sql: wrong if "current_user" in sql else "\\n".join(versions),
+                side_effect=lambda sql: wrong if "current_user" in sql else "\n".join(versions),
             ):
                 with self.assertRaises(RuntimeError):
                     custody.preflight()
