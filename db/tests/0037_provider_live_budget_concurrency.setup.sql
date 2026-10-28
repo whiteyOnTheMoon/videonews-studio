@@ -16,4 +16,16 @@ INSERT INTO vns.provider_live_price_snapshots(
 UPDATE vns.provider_live_budget_policy SET enabled=true,halted=false,
  global_cap_micro_usd=300,day_cap_micro_usd=300,
  month_cap_micro_usd=300,job_cap_micro_usd=300,request_cap_micro_usd=300;
+-- The newer EUR gate is also installed by the time CI executes this
+-- original USD race. Only synthetic FX is used; no live approval.
+INSERT INTO vns.provider_live_fx_snapshots (
+ id,micro_eur_per_micro_usd_nanos,source_reference,reviewed_by,expires_at
+) VALUES (
+ 'b3710000-0000-4000-8000-000000000002',1000000000,
+ 'CI synthetic USD race FX review','synthetic_ci',
+ clock_timestamp()+interval '1 hour'
+);
+UPDATE vns.provider_live_eur_policy SET
+ enabled=true,global_cap_micro_eur=1000000,
+ active_fx_snapshot_id='b3710000-0000-4000-8000-000000000002';
 COMMIT;
