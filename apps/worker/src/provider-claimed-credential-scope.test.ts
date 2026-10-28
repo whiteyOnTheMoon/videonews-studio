@@ -30,10 +30,7 @@ function encrypted(provider: string = "openai", key: Buffer = KEY): SealedWorker
   };
 }
 
-function fixtureDb(
-  producer: () => SealedWorkerCredential = () => encrypted(),
-  onSql?: () => void,
-) {
+function fixtureDb(producer: () => SealedWorkerCredential = () => encrypted(), onSql?: () => void) {
   const statements: Array<{ text: string; args: unknown[] }> = [];
   const pool = {
     async query(text: string, args: unknown[]) {
@@ -54,7 +51,10 @@ test("worker secret scope is dormant unless explicitly constructed", () => {
 test("PostgreSQL claim-bound envelope is read exactly once before master key", async () => {
   const events: string[] = [];
   const sealed = encrypted();
-  const { pool, statements } = fixtureDb(() => sealed, () => events.push("sql"));
+  const { pool, statements } = fixtureDb(
+    () => sealed,
+    () => events.push("sql"),
+  );
   const scope = dormantPostClaimCredentialScope(pool, true, async (callback) => {
     events.push("master-key");
     return callback(Buffer.from(KEY));
@@ -67,7 +67,10 @@ test("PostgreSQL claim-bound envelope is read exactly once before master key", a
   assert.deepEqual(result, { ok: true });
   assert.deepEqual(events, ["sql", "master-key", "operation"]);
   assert.equal(statements.length, 1);
-  assert.match(statements[0]!.text, /^SELECT format_version,nonce,ciphertext,auth_tag FROM vns\.claimed_provider_sealed_key/);
+  assert.match(
+    statements[0]!.text,
+    /^SELECT format_version,nonce,ciphertext,auth_tag FROM vns\.claimed_provider_sealed_key/,
+  );
   assert.deepEqual(statements[0]!.args, [ID, "openai"]);
   assert.ok(sealed.nonce.every((x) => x === 0));
   assert.ok(sealed.ciphertext.every((x) => x === 0));
@@ -76,7 +79,10 @@ test("PostgreSQL claim-bound envelope is read exactly once before master key", a
 
 test("invalid identifiers, providers and missing SQL evidence never load the KEK", async () => {
   let reads = 0;
-  const { pool, statements } = fixtureDb(() => encrypted(), () => reads++);
+  const { pool, statements } = fixtureDb(
+    () => encrypted(),
+    () => reads++,
+  );
   const scope = dormantPostClaimCredentialScope(pool, true, async () => {
     throw Error("unexpected master-key access");
   });
@@ -86,7 +92,10 @@ test("invalid identifiers, providers and missing SQL evidence never load the KEK
     [ID, "openai/../"],
     ["", "google_gemini"],
   ]) {
-    await assert.rejects(scope.withCredential(id!, provider as never, async () => SECRET), /unavailable/);
+    await assert.rejects(
+      scope.withCredential(id!, provider as never, async () => SECRET),
+      /unavailable/,
+    );
   }
   assert.equal(reads, 0);
   assert.equal(statements.length, 0);
@@ -162,16 +171,28 @@ test("worker key file rejects symlinks, loose modes and wrong lengths", async ()
     assert.equal(success, 42);
     assert.ok(observed?.every((x) => x === 0));
     await chmod(file, 0o644);
-    await assert.rejects(withWorkerMasterKey(async () => 1, directory), /unavailable/);
+    await assert.rejects(
+      withWorkerMasterKey(async () => 1, directory),
+      /unavailable/,
+    );
     await chmod(file, 0o600);
     await unlink(file);
     await writeFile(file, Buffer.alloc(31), { mode: 0o600, flag: "wx" });
-    await assert.rejects(withWorkerMasterKey(async () => 1, directory), /unavailable/);
+    await assert.rejects(
+      withWorkerMasterKey(async () => 1, directory),
+      /unavailable/,
+    );
     await unlink(file);
     await symlink(join(directory, "missing"), file);
-    await assert.rejects(withWorkerMasterKey(async () => 1, directory), /unavailable/);
+    await assert.rejects(
+      withWorkerMasterKey(async () => 1, directory),
+      /unavailable/,
+    );
     await chmod(directory, 0o755);
-    await assert.rejects(withWorkerMasterKey(async () => 1, directory), /unavailable/);
+    await assert.rejects(
+      withWorkerMasterKey(async () => 1, directory),
+      /unavailable/,
+    );
   } finally {
     await chmod(directory, 0o700).catch(() => undefined);
     await rm(directory, { recursive: true, force: true });
