@@ -11,6 +11,10 @@ import p1_09_provider_outbox_custody as custody
 
 
 class OutboxCustodyTests(unittest.TestCase):
+    def test_producer_directory_must_not_be_provider_api_master_key_directory(self):
+        self.assertEqual(custody.DIRECTORY.name, "vns-outbox")
+        self.assertNotEqual(custody.DIRECTORY, custody.ROOT / "secrets" / "vns")
+
     def test_role_sql_is_scram_only_with_single_limited_membership(self):
         password = "A" * 48
         sql = custody.role_sql(password, b"1" * 16)
