@@ -34,7 +34,7 @@ services:
       VNS_P1_PROVIDER_CANARY_ENABLED: "false"
     volumes:
       - type: bind
-        source: "${VNS_PROVIDER_OUTBOX_SECRET_HOST_DIR:?Private producer secret directory required}"
+        source: ./secrets/vns-outbox
         target: /run/secrets/vns
         read_only: true
         bind: { create_host_path: false }
