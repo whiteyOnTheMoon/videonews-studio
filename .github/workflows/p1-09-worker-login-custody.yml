@@ -1,0 +1,23 @@
+name: P1-09 provider worker LOGIN custody (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p1_09_provider_worker_login_custody.py"
+      - "scripts/test_p1_09_provider_worker_login_custody.py"
+      - ".github/workflows/p1-09-worker-login-custody.yml"
+permissions:
+  contents: read
+jobs:
+  provider-worker-logins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test guarded role provisioning offline
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p1_09_provider_worker_login_custody.py' -v
