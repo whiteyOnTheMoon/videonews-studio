@@ -12,7 +12,7 @@ import type { TrustedProviderCredentialScope } from "./provider-one-shot-text-co
  * The SQL function only returns one sealed envelope after a one-shot
  * dispatch claim, and persists an immutable single-access audit.
  */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const KEY_DIRECTORY = "/run/secrets/vns";
 const KEY_FILE = "provider-master-key";
 const FAIL = "Provider credential unavailable";
