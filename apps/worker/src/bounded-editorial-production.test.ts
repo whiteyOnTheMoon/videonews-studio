@@ -371,7 +371,10 @@ test("weighted ranking rejects forged normalized article hashes and display head
     { ...event, articles: [{ ...articles[0]!, id: "f".repeat(64) }, articles[1]!] },
     { ...event, articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!] },
     { ...event, articles: [{ ...articles[0]!, sourceId: "foreign_source" }, articles[1]!] },
-    { ...event, articles: [{ ...articles[0]!, url: "https://tampered.example.org/story" }, articles[1]!] },
+    {
+      ...event,
+      articles: [{ ...articles[0]!, url: "https://tampered.example.org/story" }, articles[1]!],
+    },
   ]) {
     assert.throws(() => assessEditorialCandidate(forged, profile, policy, provenance, now));
   }
