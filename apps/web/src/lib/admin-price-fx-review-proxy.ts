@@ -6,7 +6,7 @@ const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const VERSION = /^[A-Za-z0-9_-]{12,80}$/;
 const UINT = /^(0|[1-9][0-9]{0,12})$/;
 const DATE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function priceReviewProxyConfig(
   env: Record<string, string | undefined>,
