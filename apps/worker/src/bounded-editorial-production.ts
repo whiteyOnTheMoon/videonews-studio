@@ -283,6 +283,7 @@ export function independentlyReviewMockScript(
   policy: WeightedRankingPolicy,
   provenance: readonly SourceProvenance[],
   now: Date,
+  limits: ScriptLimits,
 ): {
   acceptedForHumanReview: boolean;
   approvedForPublication: false;
@@ -290,6 +291,27 @@ export function independentlyReviewMockScript(
   digest: string;
 } {
   const reasons: string[] = [];
+  // Independently supplied operator limits are required. Never trust a
+  // script's own claimed cost, budget or maximum permitted revision.
+  if (
+    !limits ||
+    !Number.isSafeInteger(limits.maxCharacters) ||
+    limits.maxCharacters < 20 ||
+    limits.maxCharacters > 20000 ||
+    !Number.isSafeInteger(limits.maxMockTokens) ||
+    limits.maxMockTokens < 1 ||
+    limits.maxMockTokens > 10000 ||
+    !Number.isSafeInteger(limits.maxMicroUsd) ||
+    limits.maxMicroUsd < 0 ||
+    !Number.isSafeInteger(limits.mockMicroUsdPerToken) ||
+    limits.mockMicroUsdPerToken < 0 ||
+    limits.mockMicroUsdPerToken > 1000 ||
+    !Number.isSafeInteger(limits.maxRevisions) ||
+    limits.maxRevisions < 1 ||
+    limits.maxRevisions > 3
+  ) {
+    throw new Error("Independent script budget policy invalid");
+  }
   if (
     !script ||
     script.eventId !== event.id ||
@@ -298,6 +320,9 @@ export function independentlyReviewMockScript(
     !Number.isSafeInteger(script.revision)
   ) {
     throw new Error("Independent script input invalid");
+  }
+  if (script.revision < 1 || script.revision > limits.maxRevisions) {
+    reasons.push("script_revision_out_of_bounds");
   }
   const articleIds = new Set(event.articles.map((article) => article.id));
   const claimMap = new Map<string, ClaimCandidate>();
@@ -309,24 +334,50 @@ export function independentlyReviewMockScript(
       reasons.push("claim_evidence_mismatch");
     }
   }
-  if (!script.sections.length || script.sections.length > 30)
-    reasons.push("script_sections_invalid");
-  for (const section of script.sections) {
+  const sections = Array.isArray(script.sections) ? script.sections : [];
+  if (!sections.length || sections.length > 30) reasons.push("script_sections_invalid");
+  let characters = 0;
+  const represented = new Set<string>();
+  for (const section of sections) {
+    if (
+      !section ||
+      typeof section.narration !== "string" ||
+      !Array.isArray(section.claimIds) ||
+      !section.claimIds.every((id) => typeof id === "string")
+    ) {
+      reasons.push("script_sections_invalid");
+      continue;
+    }
+    characters += section.narration.length;
     if (!section.narration.trim() || !section.claimIds.length) {
       reasons.push("unattributed_script_section");
     }
-    if (section.claimIds.some((id) => !claimMap.has(id))) reasons.push("unknown_claim_reference");
+    for (const id of section.claimIds) {
+      represented.add(id);
+      if (!claimMap.has(id)) reasons.push("unknown_claim_reference");
+    }
     if (event.articles.some((article) => section.narration.includes(article.headline))) {
       reasons.push("source_text_similarity_risk");
     }
   }
   for (const claim of claims) {
-    if (!script.sections.some((section) => section.claimIds.includes(claim.id))) {
-      reasons.push("unrepresented_claim");
-    }
+    if (!represented.has(claim.id)) reasons.push("unrepresented_claim");
   }
-  if (script.estimatedMockTokens < 1 || script.estimatedMicroUsd < 0) {
-    reasons.push("invalid_mock_cost");
+  const actualTokens = Math.ceil(characters / 4);
+  const actualMicroUsd = actualTokens * limits.mockMicroUsdPerToken;
+  if (
+    characters > limits.maxCharacters ||
+    actualTokens > limits.maxMockTokens ||
+    actualMicroUsd > limits.maxMicroUsd
+  ) {
+    reasons.push("script_budget_exceeded");
+  }
+  if (
+    actualTokens < 1 ||
+    script.estimatedMockTokens !== actualTokens ||
+    script.estimatedMicroUsd !== actualMicroUsd
+  ) {
+    reasons.push("script_cost_integrity_mismatch");
   }
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
     reasons.push("invalid_review_clock");
