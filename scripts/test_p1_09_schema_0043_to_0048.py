@@ -20,7 +20,7 @@ class Schema0048UpgradeTests(unittest.TestCase):
             root = Path(temp)
             for name in versions:
                 (root / (name + ".up.sql")).write_text(
-                    "-- synthetic\nBEGIN;\nSELECT 1;\nCOMMIT;\n", encoding="utf8"
+                    "-- synthetic fixture " + "a" * 120 + "\nBEGIN;\nSELECT 1;\nCOMMIT;\n", encoding="utf8"
                 )
             with patch.object(upgrade, "MIGRATIONS", root):
                 self.assertEqual(upgrade.expected_versions(), versions)
