@@ -168,14 +168,21 @@ export function rankOfflineEvents(
   ) {
     throw new Error("Ranking input invalid");
   }
-  const normalizePhrase = (value: string): string =>
+  const phraseTokens = (value: string): readonly string[] =>
     value
       .normalize("NFKC")
       .toLocaleLowerCase("en")
-      .replace(/[^\\p{L}\\p{N}]+/gu, " ")
-      .trim();
-  const matchesPhrase = (title: string, term: string): boolean =>
-    (" " + title + " ").includes(" " + normalizePhrase(term) + " ");
+      .match(/[\\p{L}\\p{N}]+/gu) ?? [];
+  const matchesPhrase = (title: string, term: string): boolean => {
+    const words = phraseTokens(title);
+    const expected = phraseTokens(term);
+    return (
+      expected.length > 0 &&
+      words.some((_, index) =>
+        expected.every((word, offset) => words[index + offset] === word),
+      )
+    );
+  };
   const blocked = [...profile.blockedTerms];
   const keywords = [...profile.keywords];
   const seenEvents = new Set<string>();
@@ -216,7 +223,7 @@ export function rankOfflineEvents(
       ) {
         throw new Error("Ranking candidate metadata mismatch");
       }
-      const title = normalizePhrase(event.headline);
+      const title = event.headline;
       if (blocked.some((term) => matchesPhrase(title, term))) return [];
       const distinctSources = new Set(articles.map((article) => article.sourceId));
       // Historical field name is retained for stored profile compatibility;
