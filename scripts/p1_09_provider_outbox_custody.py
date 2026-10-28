@@ -225,7 +225,7 @@ def preflight() -> None:
     if (len(values) != 13 or values[:2] != ["vns", "videonews"]
             or not re.fullmatch(r"17[0-9]{4}", values[2])
             or values[3:] != ["scram-sha-256", "1", "0", "0", "0", "0", "0",
-                              "t", "t", "f"]):
+                              "true", "true", "false"]):
         raise RuntimeError(REFUSED)
     read_files()
 
