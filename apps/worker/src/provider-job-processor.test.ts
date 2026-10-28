@@ -129,10 +129,8 @@ test("SQL verifier binds all immutable request fields and prompt digest", async 
       return { rows: [{ authorized: true }] };
     },
   };
-  const verified = await createSqlNamedProviderJobVerifier(db as never)(
-    request as never,
-    "a".repeat(64),
-  );
+  const verifier = createSqlNamedProviderJobVerifier(db as never);
+  const verified = await verifier(request as never, "a".repeat(64));
   assert.equal(verified, true);
   assert.deepEqual(calls, [
     [
@@ -167,5 +165,6 @@ test("SQL false, uncertain confirmation and database outage fail closed", async 
       throw Error("sensitive connection details");
     },
   } as never);
-  await assert.rejects(verify(request as never, "a".repeat(64)), /authorization unavailable/);
+  const unavailable = verify(request as never, "a".repeat(64));
+  await assert.rejects(unavailable, /authorization unavailable/);
 });
