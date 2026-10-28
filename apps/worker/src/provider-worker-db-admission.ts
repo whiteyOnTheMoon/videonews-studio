@@ -98,7 +98,8 @@ export async function attestProviderWorkerDatabaseRole(
   if (
     (kind !== "usage" && kind !== "secret") ||
     expectedLogin !== PROVIDER_WORKER_DB_IDENTITIES[kind] ||
-    !db || typeof db.query !== "function"
+    !db ||
+    typeof db.query !== "function"
   ) {
     throw new Error("Provider worker identity unavailable");
   }
@@ -114,7 +115,8 @@ export async function attestProviderWorkerDatabaseRole(
       result.rows.length !== 1 ||
       !result.rows[0] ||
       !allowedIdentity(result.rows[0], expectedLogin, requireReadOnly)
-    ) throw new Error("Provider worker privileges invalid");
+    )
+      throw new Error("Provider worker privileges invalid");
   } catch {
     throw new Error("Provider worker database admission denied");
   }
@@ -133,9 +135,15 @@ export async function attestSeparatedProviderWorkerDatabases(
     throw new Error("Provider worker database separation unavailable");
   }
   await attestProviderWorkerDatabaseRole(
-    usageDb, "usage", PROVIDER_WORKER_DB_IDENTITIES.usage, requireReadOnly,
+    usageDb,
+    "usage",
+    PROVIDER_WORKER_DB_IDENTITIES.usage,
+    requireReadOnly,
   );
   await attestProviderWorkerDatabaseRole(
-    secretDb, "secret", PROVIDER_WORKER_DB_IDENTITIES.secret, requireReadOnly,
+    secretDb,
+    "secret",
+    PROVIDER_WORKER_DB_IDENTITIES.secret,
+    requireReadOnly,
   );
 }
