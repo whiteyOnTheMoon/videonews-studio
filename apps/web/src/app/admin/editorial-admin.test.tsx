@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import EditorialProfiles, { parseEditorialProfileSnapshot } from "./editorial-profiles";
-import EditorialAuditExport, { validEditorialExportBatch } from "./editorial-audit-export";
+import EditorialAuditExport, {
+  validEditorialExportBatch,
+  validEditorialExportTerminator,
+} from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
 
@@ -48,13 +51,30 @@ test("audit export is disabled by default and never renders a file control", () 
   assert.match(enabled, /disabled/);
 });
 
-test("audit export envelope never accepts oversized or malformed rows", () => {
-  assert.equal(validEditorialExportBatch({ events: [], nextRevision: 0 }), true);
-  assert.equal(
-    validEditorialExportBatch({ events: Array.from({ length: 101 }, () => ({})) }),
-    false,
-  );
-  assert.equal(validEditorialExportBatch({ events: ["forged string"] }), false);
+test("audit export envelope rejects missing or forged page metadata", () => {
+  const checkpoint = { events: [], nextRevision: 0 };
+  const timeline = { events: [], cursor: null };
+  assert.equal(validEditorialExportBatch(checkpoint, "checkpoints"), true);
+  assert.equal(validEditorialExportBatch(timeline, "timeline"), true);
+  for (const bad of [
+    { events: [], nextRevision: 0, leakedSecret: "forbidden" },
+    { events: [], nextRevision: -1 },
+    { events: [], nextRevision: 1.5 },
+    { events: [], cursor: null },
+    { events: ["forged string"], nextRevision: 0 },
+    { events: Array.from({ length: 101 }, () => ({})), nextRevision: 0 },
+  ]) {
+    assert.equal(validEditorialExportBatch(bad, "checkpoints"), false);
+  }
+  for (const bad of [
+    { events: [] },
+    { events: [], cursor: {} },
+    { events: [], cursor: null, extra: "unreviewed" },
+    { events: [], cursor: { afterTime: "not-a-time", afterId: "invalid" } },
+    { events: Array.from({ length: 101 }, () => ({})), cursor: null },
+  ]) {
+    assert.equal(validEditorialExportBatch(bad, "timeline"), false);
+  }
 });
 
 test("checkpoint entry is hidden until feature opt-in and never publishes", () => {
@@ -76,4 +96,29 @@ test("Story audit entry shows no form by default and no publishing controls", ()
   assert.match(enabled, /Abgelehnte Aussage/);
   assert.match(enabled, /Story-Ereignis speichern/);
   assert.doesNotMatch(enabled, /Jetzt veröffentlichen/);
+});
+
+test("audit export terminator never accepts changed checkpoint cursor or nonempty timeline cursor", () => {
+  const emptyCheckpoint = { events: [], nextRevision: 4 };
+  assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 4), true);
+  assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 3), false);
+  assert.equal(
+    validEditorialExportTerminator("checkpoints", { events: [{}], nextRevision: 4 }, 4),
+    false,
+  );
+  assert.equal(validEditorialExportTerminator("timeline", { events: [], cursor: null }, 0), true);
+  assert.equal(
+    validEditorialExportTerminator(
+      "timeline",
+      {
+        events: [],
+        cursor: {
+          afterTime: "2026-10-26T12:00:00.000Z",
+          afterId: "ca310001-1111-4111-8111-111111111111",
+        },
+      },
+      0,
+    ),
+    false,
+  );
 });

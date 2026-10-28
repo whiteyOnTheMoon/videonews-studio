@@ -15,6 +15,44 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return (
+    Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
+  );
+}
+const CHECKPOINT_KEYS = [
+  "revision",
+  "stage",
+  "outcome",
+  "actor_id",
+  "artifact_sha256",
+  "reason_codes",
+  "score",
+  "previous_sha256",
+  "chain_sha256",
+  "recorded_at",
+] as const;
+const TIMELINE_KEYS = [
+  "event_id",
+  "event_kind",
+  "actor_id",
+  "reference_uri",
+  "document_sha256",
+  "details",
+  "recorded_at",
+] as const;
+const REASON = /^[a-z][a-z0-9_]{1,39}$/;
+const HTTPS_REFERENCE = /^https:\/\/[a-z0-9.-]+(?::443)?\/[a-zA-Z0-9/._~-]*$/;
+
+function validReasons(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= 20 &&
+    value.every((code: unknown) => typeof code === "string" && REASON.test(code))
+  );
+}
+
 function isoTime(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const time = Date.parse(value);
@@ -43,7 +81,9 @@ export function verifyCheckpointPage(
     rows.length > 100 ||
     !Number.isSafeInteger(prior.revision) ||
     prior.revision < 0 ||
-    (prior.chain !== null && !SHA256.test(prior.chain))
+    (prior.chain !== null && !SHA256.test(prior.chain)) ||
+    (prior.revision === 0 && prior.chain !== null) ||
+    (prior.revision > 0 && prior.chain === null)
   )
     return null;
   let revision = prior.revision;
@@ -51,6 +91,7 @@ export function verifyCheckpointPage(
   for (const entry of rows) {
     if (
       !object(entry) ||
+      !exactKeys(entry, CHECKPOINT_KEYS) ||
       entry.revision !== ++revision ||
       !STAGES.has(entry.stage as string) ||
       !OUTCOMES.has(entry.outcome as string) ||
@@ -63,12 +104,8 @@ export function verifyCheckpointPage(
       typeof entry.chain_sha256 !== "string" ||
       !SHA256.test(entry.chain_sha256) ||
       (chain !== null && entry.previous_sha256 !== chain) ||
-      !Array.isArray(entry.reason_codes) ||
-      entry.reason_codes.length < 1 ||
-      entry.reason_codes.length > 20 ||
-      entry.reason_codes.some(
-        (code: unknown) => typeof code !== "string" || !/^[a-z][a-z0-9_]{1,39}$/.test(code),
-      ) ||
+      (chain === null && entry.previous_sha256 !== "0".repeat(64)) ||
+      !validReasons(entry.reason_codes) ||
       !isoTime(entry.recorded_at) ||
       (entry.score !== null &&
         (!Number.isSafeInteger(entry.score) ||
@@ -101,11 +138,25 @@ export function verifyTimelinePage(
   for (const entry of rows) {
     if (
       !object(entry) ||
+      !exactKeys(entry, TIMELINE_KEYS) ||
       typeof entry.event_id !== "string" ||
       !UUID.test(entry.event_id) ||
       typeof entry.actor_id !== "string" ||
       !UUID.test(entry.actor_id) ||
       !TIMELINE_KINDS.has(entry.event_kind as string) ||
+      (entry.reference_uri !== null &&
+        (typeof entry.reference_uri !== "string" ||
+          entry.reference_uri.length > 2048 ||
+          !HTTPS_REFERENCE.test(entry.reference_uri))) ||
+      (entry.document_sha256 !== null &&
+        (typeof entry.document_sha256 !== "string" || !SHA256.test(entry.document_sha256))) ||
+      !object(entry.details) ||
+      !exactKeys(entry.details, ["summary", "reasonCodes"]) ||
+      typeof entry.details.summary !== "string" ||
+      entry.details.summary.length < 8 ||
+      entry.details.summary.length > 2000 ||
+      [...entry.details.summary].some((char: string) => char.charCodeAt(0) < 32) ||
+      !validReasons(entry.details.reasonCodes) ||
       !isoTime(entry.recorded_at) ||
       (cursor !== null &&
         (entry.recorded_at as string) <= cursor.afterTime &&

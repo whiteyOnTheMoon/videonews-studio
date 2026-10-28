@@ -52,12 +52,21 @@ test("timeline export rejects reordered, repeated and mismatched cursors", () =>
     event_id: EVENT_A,
     actor_id: ACTOR,
     event_kind: "decision",
+    reference_uri: "https://news.example.org/article",
+    document_sha256: DIGEST_A,
+    details: {
+      summary: "The editor blocked the unverified claim.",
+      reasonCodes: ["unverified_claim"],
+    },
     recorded_at: "2026-10-26T12:00:00.000Z",
   };
   const second = {
     event_id: EVENT_B,
     actor_id: ACTOR,
     event_kind: "script_revision",
+    reference_uri: null,
+    document_sha256: DIGEST_B,
+    details: { summary: "The draft is held for human review.", reasonCodes: ["review_required"] },
     recorded_at: "2026-10-26T12:00:00.000Z",
   };
   const last = { afterTime: second.recorded_at, afterId: second.event_id };
@@ -90,4 +99,47 @@ test("timeline export rejects reordered, repeated and mismatched cursors", () =>
     }),
     null,
   );
+});
+
+test("checkpoint export rejects missing fields, altered genesis and unknown payloads", () => {
+  const row = checkpoint(1, ZERO, DIGEST_A);
+  for (const forged of [
+    { ...row, previous_sha256: DIGEST_B },
+    { ...row, artifact_sha256: undefined },
+    { ...row, reason_codes: ["invalid_reason", "bad!"] },
+    { ...row, secret: "not_in_sql_projection" },
+  ]) {
+    assert.equal(verifyCheckpointPage([forged], { revision: 0, chain: null }, 1), null);
+  }
+  assert.equal(verifyCheckpointPage([row], { revision: 1, chain: null }, 1), null);
+  assert.equal(verifyCheckpointPage([row], { revision: 0, chain: DIGEST_A }, 1), null);
+});
+
+test("timeline export refuses rows without full audit content or with unexpected fields", () => {
+  const row = {
+    event_id: EVENT_A,
+    actor_id: ACTOR,
+    event_kind: "claim_rejected",
+    reference_uri: "https://news.example.org/story",
+    document_sha256: DIGEST_A,
+    details: {
+      summary: "This claim is not supported by the independent evidence.",
+      reasonCodes: ["claim_not_supported"],
+    },
+    recorded_at: "2026-10-26T12:00:00.000Z",
+  };
+  const cursor = { afterTime: row.recorded_at, afterId: row.event_id };
+  assert.deepEqual(verifyTimelinePage([row], null, cursor), cursor);
+  for (const tampered of [
+    { ...row, details: undefined },
+    { ...row, details: {} },
+    { ...row, details: { summary: "Missing a reason code", reasonCodes: [] } },
+    { ...row, details: { ...row.details, secret: "unreviewed" } },
+    { ...row, reference_uri: "https://news.example.org/story?token=secret" },
+    { ...row, document_sha256: "bad" },
+    { ...row, actor_id: "wrong" },
+    { ...row, unrelated: "not_from_db" },
+  ]) {
+    assert.equal(verifyTimelinePage([tampered], null, cursor), null);
+  }
 });
