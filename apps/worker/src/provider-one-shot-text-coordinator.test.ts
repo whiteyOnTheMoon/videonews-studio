@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { dormantProviderBudgetBridge } from "./provider-budget-worker-bridge.js";
