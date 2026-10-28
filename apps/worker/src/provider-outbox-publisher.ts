@@ -73,7 +73,11 @@ function admittedRow(raw: unknown): SealedOutboxRow {
   return row as SealedOutboxRow;
 }
 
-function verifiedQueueJob(job: ProviderOutboxJob | null | undefined, id: string, data: unknown): void {
+function verifiedQueueJob(
+  job: ProviderOutboxJob | null | undefined,
+  id: string,
+  data: unknown,
+): void {
   if (
     !job ||
     job.id !== id ||
