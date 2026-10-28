@@ -112,6 +112,8 @@ test("Docker Compose resolves an isolated, default-off service without starting 
         "-f",
         "deploy/compose.provider-outbox.yaml",
         "--profile",
+        "data",
+        "--profile",
         "provider-outbox",
         "config",
         "--format",
