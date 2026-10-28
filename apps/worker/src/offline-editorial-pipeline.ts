@@ -197,8 +197,16 @@ export function attestEditorialEventMetadata(event: NewsEvent): void {
 
 /** Shared Unicode whole-word/phrase comparison for every offline ranker. */
 export function matchesEditorialPhrase(title: string, term: string): boolean {
-  const words = title.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu) ?? [];
-  const expected = term.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu) ?? [];
+  const words =
+    title
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
+  const expected =
+    term
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
   return (
     expected.length > 0 &&
     words.some((_, index) => expected.every((word, offset) => words[index + offset] === word))
