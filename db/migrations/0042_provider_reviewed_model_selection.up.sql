@@ -1,6 +1,4 @@
--- P1-09 #227/#230: change model selection from synthetic static
--- IDs to a database-backed, personally reviewed provider-price catalog.
--- Applies only after 0041. No transport or paid-request activation.
+-- P1-09 #227/#230: database-reviewed model selection. No activation.
 BEGIN;
 GRANT SELECT ON vns.provider_live_named_price_reviews
   TO vns_provider_config_executor;
@@ -59,38 +57,20 @@ BEGIN
        OR p_tag IS NOT NULL THEN
       RAISE EXCEPTION 'invalid model mutation' USING ERRCODE='22023';
     END IF;
-    -- Selection requires an immutable, personally reviewed, unexpired
-    -- pricing snapshot for THIS provider and model. No arbitrary model IDs,
-    -- unreviewed rows, stale prices or revoked price reviewers.
-    v_allowed := p_model ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}
-    IF NOT COALESCE(v_allowed,false) THEN
-      RAISE EXCEPTION 'model not allowlisted' USING ERRCODE='22023';
-    END IF;
-    UPDATE vns.ai_provider_settings
-       SET selected_model=p_model,updated_at=clock_timestamp()
-     WHERE provider=p_provider;
-  END IF;
-
-  -- Fixed, truthful attribution: the current shared admin session
-  -- does not identify a specific human; do not fabricate user identity.
-  INSERT INTO vns.ai_provider_config_events(provider,action,database_login)
-    VALUES(p_provider,p_action,session_user);
-END;
-$mutate$;
+    -- A model may only be selected with an unexpired named price review.
+    v_allowed := p_model ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$'
       AND EXISTS (
         SELECT 1
-          FROM vns.provider_live_price_snapshots AS price
-          JOIN vns.provider_live_named_price_reviews AS review
-            ON review.kind='model_price' AND review.snapshot_id=price.id
-          JOIN vns.editor_accounts AS actor
-            ON actor.id=review.editor_id
-         WHERE price.provider=p_provider AND price.model=p_model
-           AND price.currency='USD'
-           AND price.expires_at>clock_timestamp()
-           AND price.reviewed_at<=clock_timestamp()
-           AND price.reviewed_at>=clock_timestamp()-interval '7 days'
-           AND actor.role='admin' AND actor.active=true
-           AND actor.auth_version=review.editor_auth_version
+        FROM vns.provider_live_price_snapshots AS price
+        JOIN vns.provider_live_named_price_reviews AS review
+          ON review.kind='model_price' AND review.snapshot_id=price.id
+        JOIN vns.editor_accounts AS actor ON actor.id=review.editor_id
+        WHERE price.provider=p_provider AND price.model=p_model
+          AND price.currency='USD' AND price.expires_at>clock_timestamp()
+          AND price.reviewed_at<=clock_timestamp()
+          AND price.reviewed_at>=clock_timestamp()-interval '7 days'
+          AND actor.role='admin' AND actor.active=true
+          AND actor.auth_version=review.editor_auth_version
       );
     IF NOT COALESCE(v_allowed,false) THEN
       RAISE EXCEPTION 'model not allowlisted' USING ERRCODE='22023';
