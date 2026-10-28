@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Job } from "bullmq";
 import type { dormantOneShotTextCoordinator } from "./provider-one-shot-text-coordinator.js";
-import { createDormantProviderJobProcessor } from "./provider-job-processor.js";
+import { createDormantProviderJobProcessor, createSqlNamedProviderJobVerifier } from "./provider-job-processor.js";
 
 const jobId = "a4310001-0000-4000-8000-000000000001";
 const request = {
@@ -101,4 +101,38 @@ test("coordinator failures are never retried locally", async () => {
     /budget review required/,
   );
   assert.equal(calls, 1);
+});
+
+test("SQL verifier binds all immutable request fields and prompt digest", async () => {
+  const calls: unknown[][] = [];
+  const db = {
+    async query(sql: string, params: unknown[]) {
+      assert.match(sql, /verify_provider_named_job_authorization/);
+      calls.push(params);
+      return { rows: [{ authorized: true }] };
+    },
+  };
+  const verified = await createSqlNamedProviderJobVerifier(db as never)(
+    request as never,
+    "a".repeat(64),
+  );
+  assert.equal(verified, true);
+  assert.deepEqual(calls, [[
+    request.jobId, request.requestId, request.provider, request.model,
+    request.priceSnapshotId, "a".repeat(64), request.maxInputTokens,
+    request.maxOutputTokens,
+  ]]);
+});
+
+test("SQL false, uncertain confirmation and database outage fail closed", async () => {
+  for (const result of [[], [{ authorized: null }], [{ authorized: false }], [{ authorized: true }, { authorized: true }]]) {
+    const verify = createSqlNamedProviderJobVerifier({
+      async query() { return { rows: result }; },
+    } as never);
+    assert.equal(await verify(request as never, "a".repeat(64)), false);
+  }
+  const verify = createSqlNamedProviderJobVerifier({
+    async query() { throw Error("sensitive connection details"); },
+  } as never);
+  await assert.rejects(verify(request as never, "a".repeat(64)), /authorization unavailable/);
 });
