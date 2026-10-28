@@ -1,4 +1,13 @@
-> **Neueste Betreiberentscheidung 27.10.2026 (Vorrang vor historischen IONOS-Angaben):** Für VideoNews Studio werden vorerst **keine Backups erstellt**, Kostenbudget dafür **0 €**. Das Risiko eines dauerhaften Datenverlusts im experimentellen Betrieb ist ausdrücklich akzeptiert. Keine Sicherung, kein Restore und keine produktive Wiederherstellbarkeit werden dadurch als nachgewiesen betrachtet. Keine Backup-Dienste aktivieren oder IONOS konfigurieren. Siehe [verbindliche P1-Entscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).\n\n# P2-02 — IONOS backup and Beszel acceptance update (2026-10-27)
+> **Aktualisierung 28.10.2026:** Der Betreiber bestätigt erneut regelmäßige
+> IONOS-Backups und das bestehende funktionierende Beszel-Monitoring.
+> Die frühere Entscheidung vom 27.10.2026 zum backupfreien experimentellen
+> Betrieb ist damit historisch und wird im
+> [P1-Entscheidungsregister](P1_OPERATOR_DECISIONS_2026-10-27.md)
+> weiterhin nachvollziehbar geführt. Keine zusätzlichen Dienste aktivieren
+> oder IONOS/Beszel verändern. Technische Wiederherstellbarkeit und
+> P2-spezifische Alarmzustellung bleiben separat zu verifizieren.
+
+# P2-02 — IONOS backup and Beszel acceptance update (2026-10-27)
 
 **Status: OPERATOR REPORTED / NOT YET INDEPENDENTLY VERIFIED.**
 On 2026-10-27 the operator reported that **IONOS now performs regular backups** and that **Beszel works correctly**. This supersedes the historical preference to operate without backups. It does **not** prove that the existing backups include the complete VideoNews Studio recovery set or that P2-02-specific alerts have been delivered.
@@ -22,7 +31,7 @@ Provider information to review, not a claim about this installation:
 | IONOS product type and protected server | Backup package/image/snapshot or other, correct VPS identification                                                                                        | Unknown           |
 | Schedule and last successful execution  | Actual success record and exact timestamp; no assumptions from toggle or subscription                                                                     | Unknown           |
 | Covered data                            | Includes `videonews-studio_postgres_data` and `videonews-studio_redis_data` under /var/lib/docker and any media/audit/configuration needed for recovery   | Unknown           |
-| Database consistency                    | PostgreSQL 17 and Redis 7 AOF/BullMQ backup method and correctness under live writes; crash-consistent storage copies may need application-level recovery | Unknown           |
+| Database consistency                    | PostgreSQL 17 and Redis 8.4.8 AOF/BullMQ backup method and correctness under live writes; crash-consistent storage copies may need application-level recovery | Unknown           |
 | Off-VPS access and retention            | Independently accessible recovery copy, age, storage location, retention and immutable/isolated access controls                                           | Unknown           |
 | Recovery access and confidentiality     | Separate authorized recovery identities, encryption status, key custody, availability on total VPS loss                                                   | Unknown           |
 | Full restore rehearsal                  | Recovery of PostgreSQL globals/ACLs/schema/data and Redis AOF/queue in isolated, **nonproduction** recovery target                                        | Not performed     |
@@ -46,6 +55,8 @@ Provider information to review, not a claim about this installation:
 
 ## Latest known VPS context
 
-Operator read-only inspection reported PostgreSQL and Redis both healthy, volumes `videonews-studio_postgres_data` and `videonews-studio_redis_data`, 23 GB free on root (81% used), and no active P2-02 separated feed containers. The local VPS source commit was `3728a97589051fe0b028aa8ad07cf1aead0195b2`, behind GitHub `main`. These observations are **not** a verified inventory of what IONOS backs up.
+**Updated operator read-only report (28 October 2026):** The VPS working tree was clean on `main` at `24d3a8859afb81e2e7b7aea474c4d86a9f3e201a`, matching GitHub `main` at the time of inspection. PostgreSQL 17, Redis 8.4.8, API and web were reported healthy; the base worker was running without a reported health status. Separate P2-02 producer/consumer services were not listed. Later code merges on GitHub do not establish a VPS deployment. These observations are **not** evidence of what IONOS backs up.
+
+**Historical read-only report (27 October 2026):** PostgreSQL and Redis healthy, volumes `videonews-studio_postgres_data` and `videonews-studio_redis_data`, 23 GB free on root (81% used), no active P2-02 separated feed containers. The then-local VPS source commit was `3728a97589051fe0b028aa8ad07cf1aead0195b2`, behind GitHub `main`.
 
 **Release decision:** software/CI work may continue, but P2-02 production acceptance remains blocked until actual coverage, independent recovery and feed-specific alert delivery are witnessed. No provider invoice, restore, server change or recurring task was created by this update.

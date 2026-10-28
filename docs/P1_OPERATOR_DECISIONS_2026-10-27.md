@@ -1,5 +1,15 @@
 # Phase 1 — binding operator decisions (27 October 2026)
 
+> **Later operator status, 28 October 2026:** The operator subsequently
+> reconfirmed that IONOS backups are in place and the existing Beszel
+> monitoring works for VideoNews Studio. This supersedes the **backup-free
+> operating preference** recorded below, which remains preserved as a
+> historical 27 October risk decision. No new backup service, IONOS setting,
+> paid subscription or duplicate monitor is authorized by this update.
+> Backup **coverage, isolated recovery and feed-specific alert delivery**
+> have not been independently demonstrated; do not mark those tests passed.
+> See [the P2-02 verification record](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+
 ## P1-02: GitHub governance without paid branch protection
 
 The operator explicitly chooses **no paid GitHub branch protection or plan upgrade**. The existing repository remains in its present visibility state; do not change visibility or subscription to enable protection. This is an **accepted, documented governance exception**, not an assertion of technical enforcement.
