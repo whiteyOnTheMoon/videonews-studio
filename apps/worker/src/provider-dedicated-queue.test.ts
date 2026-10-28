@@ -70,12 +70,13 @@ test("worker construction requires explicit opt-in and never creates a Redis con
       throw new Error("No provider calls allowed");
     },
   };
-  assert.throws(() => createDormantProviderQueueWorker(config, coordinator), /disabled/);
+  assert.throws(() => createDormantProviderQueueWorker(config, coordinator, async () => false), /disabled/);
   assert.throws(
     () =>
       createDormantProviderQueueWorker(
         { ...config, username: "vns_worker" as never },
         coordinator,
+        async () => false,
         true,
       ),
     /disabled/,
