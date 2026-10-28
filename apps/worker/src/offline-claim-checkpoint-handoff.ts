@@ -5,10 +5,7 @@ import {
   type EditorialDraft,
   type NewsEvent,
 } from "./offline-editorial-pipeline.js";
-import {
-  gateOfflineClaimEvidence,
-  type IndependentClaimReview,
-} from "./offline-evidence-gate.js";
+import { gateOfflineClaimEvidence, type IndependentClaimReview } from "./offline-evidence-gate.js";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -53,10 +50,7 @@ export function prepareOfflineClaimCheckpoint(
     !Array.isArray(reviews) ||
     reviews.length > 30 ||
     reviews.some(
-      (review) =>
-        !review ||
-        !Array.isArray(review.evidence) ||
-        review.evidence.length > 20,
+      (review) => !review || !Array.isArray(review.evidence) || review.evidence.length > 20,
     )
   ) {
     throw new Error("Offline claim checkpoint input invalid");
@@ -64,10 +58,7 @@ export function prepareOfflineClaimCheckpoint(
   attestEditorialEventMetadata(event);
   const result = gateOfflineClaimEvidence(event, draft, reviews, now, maxAgeHours);
   const reasonCodes = [...new Set([...result.reasons, AUTH_REASON])].sort();
-  if (
-    reasonCodes.length > 20 ||
-    reasonCodes.some((reason) => !REASON.test(reason))
-  ) {
+  if (reasonCodes.length > 20 || reasonCodes.some((reason) => !REASON.test(reason))) {
     throw new Error("Offline claim checkpoint reasons invalid");
   }
 
@@ -115,7 +106,12 @@ export function prepareOfflineClaimCheckpoint(
             sourceUrl: proof.sourceUrl,
             checkedAt: proof.checkedAt,
           }))
-          .sort((a: IndependentClaimReview["evidence"][number], b: IndependentClaimReview["evidence"][number]) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+          .sort(
+            (
+              a: IndependentClaimReview["evidence"][number],
+              b: IndependentClaimReview["evidence"][number],
+            ) => JSON.stringify(a).localeCompare(JSON.stringify(b)),
+          ),
       }))
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
     reasonCodes,
