@@ -57,10 +57,12 @@ export function createDormantProviderJobProcessor(
   verify: NamedProviderJobVerifier,
   enabled = false,
 ): (job: Job) => Promise<ProviderJobResult> {
-  if (enabled !== true ||
+  if (
+    enabled !== true ||
     !coordinator ||
     typeof coordinator.run !== "function" ||
-    typeof verify !== "function") {
+    typeof verify !== "function"
+  ) {
     throw new Error("Provider job processor disabled");
   }
   return async (job: Job) => {
