@@ -8,6 +8,7 @@ import { editorProxyConfig } from "../../lib/editor-proxy";
 import ResearchJobs from "./research-jobs";
 import AiProviders from "./ai-providers";
 import AiPriceFxReview from "./ai-price-fx-review";
+import AiProviderJobs from "./ai-provider-jobs";
 import { aiProviderReadOnlyProxyConfig } from "../../lib/admin-ai-providers-proxy";
 import { priceReviewProxyConfig } from "../../lib/admin-price-fx-review-proxy";
 import { sourceAdminProxyConfig } from "../../lib/admin-news-sources-proxy";
@@ -49,6 +50,7 @@ export default async function AdminPage() {
         writeEnabled={process.env.VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"}
       />
       <AiPriceFxReview enabled={priceReviewProxyConfig(process.env) !== null} />
+      <AiProviderJobs enabled={process.env.VNS_WEB_AI_PROVIDER_JOBS_ENABLED === "true"} />
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
