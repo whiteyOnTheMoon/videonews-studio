@@ -47,6 +47,19 @@ test("OpenAI missing, aborted, contradictory, unbounded and non-text usage fails
     { ...openaiFixture, model: "different" },
     { ...openaiFixture, id: "short" },
     { ...openaiFixture, output: [{ type: "function_call" }] },
+    {
+      ...openaiFixture,
+      output: [{ type: "message", content: [{ type: "output_audio", data: "x" }] }],
+    },
+    {
+      ...openaiFixture,
+      output: [{ type: "message", content: [{ type: "output_image", data: "x" }] }],
+    },
+    {
+      ...openaiFixture,
+      output: [{ type: "message", content: [{ type: "output_text", text: 5 }] }],
+    },
+    { ...openaiFixture, output: null },
     { ...openaiFixture, usage: null },
     { ...openaiFixture, usage: { ...openaiFixture.usage, total_tokens: 139 } },
     { ...openaiFixture, usage: { ...openaiFixture.usage, input_tokens: -1 } },
@@ -78,6 +91,24 @@ test("Gemini blocks incomplete, non-text, tool, malformed usage and mismatched m
     { ...geminiFixture, candidates: [{ finishReason: "MAX_TOKENS" }] },
     { ...geminiFixture, candidates: [{ finishReason: "SAFETY" }] },
     { ...geminiFixture, promptFeedback: { blockReason: "SAFETY" } },
+    {
+      ...geminiFixture,
+      candidates: [
+        { finishReason: "STOP", content: { parts: [{ inlineData: { mimeType: "audio/wav" } }] } },
+      ],
+    },
+    {
+      ...geminiFixture,
+      candidates: [
+        { finishReason: "STOP", content: { parts: [{ functionCall: { name: "unsafe" } }] } },
+      ],
+    },
+    {
+      ...geminiFixture,
+      candidates: [
+        { finishReason: "STOP", content: { parts: [{ text: "text", inlineData: "hidden" }] } },
+      ],
+    },
     { ...geminiFixture, usageMetadata: undefined },
     { ...geminiFixture, usageMetadata: { ...geminiFixture.usageMetadata, totalTokenCount: 112 } },
     {

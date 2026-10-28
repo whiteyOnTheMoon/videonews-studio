@@ -113,9 +113,20 @@ export function extractNativeTextUsage(
     if (cached > input || reasoning > output || input + output !== total) invalid();
     // Even a completed response can include tool calls, whose vendor pricing
     // is not represented by the text-only price snapshot.
-    if (Array.isArray(row.output)) {
-      for (const item of row.output) {
-        if (!["message", "reasoning"].includes(object(item).type as string)) invalid();
+    if (!Array.isArray(row.output) || row.output.length > 32) invalid();
+    for (const item of row.output) {
+      const part = object(item);
+      if (!["message", "reasoning"].includes(part.type as string)) invalid();
+      if (part.type === "message" && part.content !== undefined) {
+        if (!Array.isArray(part.content) || part.content.length > 32) invalid();
+        for (const chunk of part.content) {
+          const content = object(chunk);
+          if (
+            !["output_text", "refusal"].includes(content.type as string) ||
+            (content.type === "output_text" && typeof content.text !== "string")
+          )
+            invalid();
+        }
       }
     }
   } else if (provider === "google_gemini") {
@@ -129,6 +140,24 @@ export function extractNativeTextUsage(
       !candidates.every((candidate) => object(candidate).finishReason === "STOP")
     ) {
       invalid();
+    }
+    for (const candidate of candidates) {
+      const content = object(candidate).content;
+      if (content === undefined) continue;
+      const parts = object(content).parts;
+      if (!Array.isArray(parts) || parts.length > 32) invalid();
+      for (const item of parts) {
+        const part = object(item);
+        if (
+          typeof part.text !== "string" ||
+          Object.keys(part).some(
+            (name) => !["text", "thought", "thoughtSignature"].includes(name),
+          ) ||
+          (part.thought !== undefined && typeof part.thought !== "boolean") ||
+          (part.thoughtSignature !== undefined && typeof part.thoughtSignature !== "string")
+        )
+          invalid();
+      }
     }
     if (row.promptFeedback !== undefined) {
       const blocked = object(row.promptFeedback).blockReason;
