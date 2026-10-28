@@ -155,7 +155,7 @@ test("all unknown, key-bearing or incomplete upstream data fail closed", async (
     payload({ ciphertext: "sensitive" }),
     payload({ active: true }),
     payload({ selectedModel: "gpt-unknown" }),
-    payload({ selectedModel: "gemini-3.8-flash-tts" }),
+    payload({ selectedModel: "invalid/model" }),
     { providers: [payload().providers[0], payload().providers[0]] },
     { providers: [] },
     { providers: [payload().providers[0]] },
