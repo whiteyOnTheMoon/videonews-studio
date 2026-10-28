@@ -63,7 +63,7 @@ DECLARE
   fx vns.provider_live_fx_snapshots%ROWTYPE;
   amount numeric;
   exposure numeric;
-  current_time timestamptz := clock_timestamp();
+  v_checked_at timestamptz := clock_timestamp();
 BEGIN
   SELECT * INTO STRICT policy FROM vns.provider_live_eur_policy
     WHERE singleton FOR UPDATE;
@@ -75,9 +75,9 @@ BEGIN
     WHERE id=policy.active_fx_snapshot_id;
   -- An independently reviewed *upper-bound* conversion must be current.
   -- No automatic fallback to previous rates or market guesses.
-  IF fx.reviewed_at > current_time
-    OR fx.reviewed_at < current_time - interval '24 hours'
-    OR fx.expires_at <= current_time THEN
+  IF fx.reviewed_at > v_checked_at
+    OR fx.reviewed_at < v_checked_at - interval '24 hours'
+    OR fx.expires_at <= v_checked_at THEN
     RAISE EXCEPTION 'EUR FX ceiling unavailable' USING ERRCODE='42501';
   END IF;
   amount := ceil(NEW.reserved_micro_usd::numeric
@@ -112,7 +112,7 @@ DECLARE
   fx vns.provider_live_fx_snapshots%ROWTYPE;
   admission vns.provider_live_eur_admissions%ROWTYPE;
   total numeric;
-  current_time timestamptz := clock_timestamp();
+  v_checked_at timestamptz := clock_timestamp();
 BEGIN
   SELECT * INTO STRICT policy FROM vns.provider_live_eur_policy
     WHERE singleton FOR UPDATE;
@@ -126,9 +126,9 @@ BEGIN
     WHERE reservation_id=NEW.reservation_id;
   -- Rate rotation does not silently reprice outstanding reservations.
   -- Review/reconciliation is required before a later dispatch.
-  IF fx.reviewed_at > current_time
-    OR fx.reviewed_at < current_time - interval '24 hours'
-    OR fx.expires_at <= current_time
+  IF fx.reviewed_at > v_checked_at
+    OR fx.reviewed_at < v_checked_at - interval '24 hours'
+    OR fx.expires_at <= v_checked_at
     OR admission.fx_snapshot_id <> fx.id THEN
     RAISE EXCEPTION 'EUR dispatch FX unavailable' USING ERRCODE='42501';
   END IF;
