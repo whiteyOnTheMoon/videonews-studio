@@ -276,8 +276,13 @@ test("credential callback omission is an uncertain outcome and must halt", async
   const events: string[] = [];
   const coordinator = dormantOneShotTextCoordinator(
     fixtureBridge(events),
-    { send: async () => { events.push("send"); return openaiFixture; } },
-    { withCredential: async () => openaiFixture },
+    {
+      send: async () => {
+        events.push("send");
+        return openaiFixture;
+      },
+    },
+    { withCredential: async <T>() => undefined as T },
     true,
   );
   await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
