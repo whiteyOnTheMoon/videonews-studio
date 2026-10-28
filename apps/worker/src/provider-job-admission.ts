@@ -23,7 +23,7 @@ export function admitProviderQueueJob(job: Pick<Job, "name" | "data" | "opts" | 
   const opts = job.opts;
   // A claimed external request can incur charges even when BullMQ sees a
   // transient error; no queue-level replay or delayed retry is acceptable.
-  if (!opts || opts.attempts !== 1 || opts.repeat || opts.jobId !== job.id) reject();
+  if (!opts || opts.attempts !== 1 || Object.hasOwn(opts, "repeat") || opts.jobId !== job.id) reject();
   const data: unknown = job.data;
   if (!data || typeof data !== "object" || Array.isArray(data)) reject();
   const payload = data as Record<string, unknown>;
