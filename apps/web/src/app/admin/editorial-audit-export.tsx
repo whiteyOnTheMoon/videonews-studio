@@ -42,6 +42,17 @@ export function validEditorialExportBatch(value: unknown, kind: Ledger): value i
   return Number.isFinite(time) && new Date(time).toISOString() === cursor.afterTime;
 }
 
+/** End-of-export must acknowledge the exact previously consumed position. */
+export function validEditorialExportTerminator(
+  kind: Ledger,
+  batch: Batch,
+  expectedRevision: number,
+): boolean {
+  return kind === "checkpoints"
+    ? batch.events.length === 0 && batch.nextRevision === expectedRevision
+    : kind === "timeline" && batch.events.length === 0 && batch.cursor === null;
+}
+
 /** Pagination stops on complete empty page or refuses to create a truncated export. */
 export default function EditorialAuditExport({ enabled }: { enabled: boolean }) {
   const [kind, setKind] = useState<Ledger>("checkpoints");
@@ -88,10 +99,7 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
         if (rows.length === 0) {
           // Even an empty terminator must acknowledge exactly the expected
           // final position. Otherwise refuse the allegedly complete file.
-          if (
-            (kind === "checkpoints" && raw.nextRevision !== nextRevision) ||
-            (kind === "timeline" && raw.cursor !== null)
-          ) {
+          if (!validEditorialExportTerminator(kind, raw, nextRevision)) {
             throw new Error("Audit export terminator mismatch");
           }
           completed = true;
