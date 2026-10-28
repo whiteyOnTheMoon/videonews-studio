@@ -265,6 +265,25 @@ export function groupConservativeEventCandidates(
   articles: readonly NormalizedArticle[],
 ): readonly NewsEvent[] {
   if (articles.length > 100) throw new Error("Event candidate batch exceeded");
+  // Never trust caller-supplied hashes: forged fingerprints can merge unrelated
+  // headlines and forged IDs can impersonate a different source/URL.
+  const verified = normalizeFeedArticles(
+    articles.map((article) => ({
+      sourceId: article.sourceId,
+      url: article.url,
+      headline: article.headline,
+      publishedAt: article.publishedAt,
+      reviewStatus: "candidate" as const,
+    })),
+  );
+  for (let index = 0; index < articles.length; index++) {
+    if (
+      articles[index]!.id !== verified[index]!.id ||
+      articles[index]!.titleFingerprint !== verified[index]!.titleFingerprint
+    ) {
+      throw new Error("Event candidate identity mismatch");
+    }
+  }
   const ids = new Set<string>();
   for (const article of articles) {
     if (

@@ -152,3 +152,30 @@ test("distinct and time-separated stories remain separate, independent of input 
   const historic = { ...repeated[1]!, publishedAt: "2026-10-01T12:00:00.000Z" };
   assert.equal(groupConservativeEventCandidates([repeated[0]!, historic]).length, 2);
 });
+
+test("candidate grouping rejects forged identities and headline fingerprints", () => {
+  const articles = normalizeFeedArticles([
+    item(
+      "news_one",
+      "https://one.example.org/news/bridge",
+      "City council approves new river bridge project today",
+    ),
+    item(
+      "news_two",
+      "https://two.example.org/news/road",
+      "City council approves new highway road project today",
+    ),
+  ]);
+  const [first, second] = articles;
+  assert.ok(first && second);
+  for (const tampered of [
+    { ...second, titleFingerprint: first.titleFingerprint },
+    { ...second, id: "f".repeat(64) },
+    { ...second, sourceId: first.sourceId },
+    { ...second, headline: first.headline },
+    { ...second, publishedAt: "2026-10-26" },
+  ]) {
+    assert.throws(() => groupConservativeEventCandidates([first, tampered]));
+  }
+  assert.equal(groupConservativeEventCandidates(articles).length, 2);
+});
