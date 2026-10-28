@@ -134,6 +134,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0036_provider_usage_evidence.test.sql"
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.up.sql"
   sql < "$root/db/tests/0037_provider_live_budget_ledger.test.sql"
+  sql < "$root/db/migrations/0038_provider_worker_budget_guard.up.sql"
+  sql < "$root/db/tests/0038_provider_worker_budget_guard.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -296,6 +298,7 @@ for iteration in 1 2; do
     rm -rf -- "$live_work"
     echo "PASS: two independent SQL sessions admit exactly one $0.0003 reservation"
   fi
+  sql < "$root/db/migrations/0038_provider_worker_budget_guard.down.sql"
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
   sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
@@ -338,4 +341,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0037 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0038 migrations, source authority, leases and budgets twice"
