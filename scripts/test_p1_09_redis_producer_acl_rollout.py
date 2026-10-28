@@ -57,7 +57,12 @@ class RedisProducerAclTests(unittest.TestCase):
             self.assertEqual(stat.S_IMODE((private / rollout.MERGED).stat().st_mode), 0o600)
             with self.assertRaises(FileExistsError):
                 rollout.prepare()
-            rollout.install_file()
+            # On the VPS the invoking shell always uses umask 077.
+            old_umask = os.umask(0o077)
+            try:
+                rollout.install_file()
+            finally:
+                os.umask(old_umask)
             rollout.installed()
             self.assertEqual((secrets / "redis_acl").read_text("ascii"), merged)
             self.assertEqual((private / rollout.BACKUP).read_text("ascii"), old)
@@ -66,6 +71,55 @@ class RedisProducerAclTests(unittest.TestCase):
             with self.assertRaises((FileExistsError, ValueError)):
                 rollout.install_file()
             self.assertIn("user vns_research on", (secrets / "redis_acl").read_text("ascii"))
+
+    def test_repair_only_exact_already_installed_acl_with_umask_077(self):
+        with self.fixture() as (secrets, private, original, password):
+            rollout.prepare()
+            merged = (private / rollout.MERGED).read_bytes()
+            # Synthetic crash after successful atomic rename, before mode check.
+            (private / rollout.BACKUP).write_bytes(original.encode("ascii"))
+            os.chmod(private / rollout.BACKUP, 0o600)
+            (secrets / "redis_acl").write_bytes(merged)
+            os.chmod(secrets / "redis_acl", 0o600)
+            with self.assertRaises(PermissionError):
+                rollout.installed()
+            old_umask = os.umask(0o077)
+            try:
+                rollout.repair_installed_mode()
+            finally:
+                os.umask(old_umask)
+            rollout.installed()
+            self.assertEqual(stat.S_IMODE((secrets / "redis_acl").stat().st_mode), 0o644)
+            self.assertEqual((secrets / "redis_acl").read_bytes(), merged)
+            self.assertEqual((private / rollout.BACKUP).read_text("ascii"), original)
+            with self.assertRaises(PermissionError):
+                rollout.repair_installed_mode()
+
+    def test_repair_rejects_tampered_or_ambiguous_state(self):
+        with self.fixture() as (secrets, private, original, password):
+            rollout.prepare()
+            merged = (private / rollout.MERGED).read_bytes()
+            (private / rollout.BACKUP).write_bytes(original.encode("ascii"))
+            os.chmod(private / rollout.BACKUP, 0o600)
+            (secrets / "redis_acl").write_bytes(merged)
+            os.chmod(secrets / "redis_acl", 0o600)
+            (secrets / rollout.TEMP).write_bytes(b"stale-ambiguous")
+            with self.assertRaises(FileExistsError):
+                rollout.repair_installed_mode()
+            (secrets / rollout.TEMP).unlink()
+            (secrets / "redis_acl").write_bytes(merged + b"# altered\\n")
+            with self.assertRaises(RuntimeError):
+                rollout.repair_installed_mode()
+            os.chmod(secrets / "redis_acl", 0o644)
+            with self.assertRaises(PermissionError):
+                rollout.repair_installed_mode()
+
+    def test_repair_gate_rejects_missing_operator_approval(self):
+        with patch.object(rollout.os, "geteuid", return_value=1000), patch.object(
+            rollout, "command", side_effect=["main", "", "a" * 40]
+        ), patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(RuntimeError):
+                rollout.operator(repairing=True)
 
     def test_reject_changed_original_after_prepare(self):
         with self.fixture() as (secrets, private, old, password):
