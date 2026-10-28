@@ -41,16 +41,24 @@ function identity(kind: "usage" | "secret") {
 }
 
 test("any disabled, non-readonly or unauthorized preflight fails before reading secrets", async () => {
-  let reads = 0, created = 0;
-  const read = () => { reads++; return "A".repeat(48); };
+  let reads = 0,
+    created = 0;
+  const read = () => {
+    reads++;
+    return "A".repeat(48);
+  };
   const factory = () => {
     created++;
     throw Error("should not create DB");
   };
   const negative = [
     {},
-    ...Object.keys(ENV).filter((k) => k !== "VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED" &&
-      k !== "VNS_P1_PROVIDER_CANARY_ENABLED").map((k) => ({ ...ENV, [k]: undefined })),
+    ...Object.keys(ENV)
+      .filter(
+        (k) =>
+          k !== "VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED" && k !== "VNS_P1_PROVIDER_CANARY_ENABLED",
+      )
+      .map((k) => ({ ...ENV, [k]: undefined })),
     { ...ENV, VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED: "true" },
     { ...ENV, VNS_P1_PROVIDER_CANARY_ENABLED: "true" },
     { ...ENV, VNS_P1_PROVIDER_DB_HOST: "evil.invalid" },
@@ -59,10 +67,7 @@ test("any disabled, non-readonly or unauthorized preflight fails before reading 
   ];
   for (const env of negative) {
     assert.throws(() => readProviderWorkerPreflightAdmission(env), /unavailable/);
-    await assert.rejects(
-      runProviderWorkerReadOnlyPreflight(env, read, factory),
-      /unavailable/,
-    );
+    await assert.rejects(runProviderWorkerReadOnlyPreflight(env, read, factory), /unavailable/);
   }
   assert.equal(reads, 0);
   assert.equal(created, 0);
@@ -111,7 +116,10 @@ test("preflight refuses shared passwords without opening a database connection",
     runProviderWorkerReadOnlyPreflight(
       ENV,
       () => "A".repeat(48),
-      () => { created++; throw Error("unexpected"); },
+      () => {
+        created++;
+        throw Error("unexpected");
+      },
     ),
     /unavailable/,
   );
@@ -123,14 +131,17 @@ test("any failed identity query still closes both connections and sanitizes erro
   await assert.rejects(
     runProviderWorkerReadOnlyPreflight(
       ENV,
-      (path) => path === PROVIDER_WORKER_PREFLIGHT_FILES.usage ? "A".repeat(48) : "B".repeat(48),
-      (kind) => ({
-        async query() {
-          if (kind === "secret") throw Error("DATABASE_PASSWORD_LEAK");
-          return { rows: [identity(kind)] };
-        },
-        async end() { closed.push(kind); },
-      }) as unknown as Pick<Pool, "query" | "end">,
+      (path) => (path === PROVIDER_WORKER_PREFLIGHT_FILES.usage ? "A".repeat(48) : "B".repeat(48)),
+      (kind) =>
+        ({
+          async query() {
+            if (kind === "secret") throw Error("DATABASE_PASSWORD_LEAK");
+            return { rows: [identity(kind)] };
+          },
+          async end() {
+            closed.push(kind);
+          },
+        }) as unknown as Pick<Pool, "query" | "end">,
     ),
     (error: Error) => error.message === "Provider worker preflight unavailable",
   );
@@ -144,13 +155,22 @@ test("optional Compose preflight is isolated, offline, read-only and never launc
   );
   assert.match(overlay, /profiles: \[provider-preflight\]/);
   assert.match(overlay, /--read-only/);
-  assert.match(overlay, /VNS_P1_PROVIDER_PREFLIGHT_ENABLED: "\$\{VNS_P1_PROVIDER_PREFLIGHT_ENABLED:-false\}"/);
-  assert.match(overlay, /VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK: "\$\{VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK:-false\}"/);
+  assert.match(
+    overlay,
+    /VNS_P1_PROVIDER_PREFLIGHT_ENABLED: "\$\{VNS_P1_PROVIDER_PREFLIGHT_ENABLED:-false\}"/,
+  );
+  assert.match(
+    overlay,
+    /VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK: "\$\{VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK:-false\}"/,
+  );
   assert.match(overlay, /VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED: "false"/);
   assert.match(overlay, /VNS_P1_PROVIDER_CANARY_ENABLED: "false"/);
   assert.match(overlay, /networks: \[backend\]/);
   assert.match(overlay, /read_only: true/);
   assert.match(overlay, /create_host_path: false/g);
-  assert.doesNotMatch(overlay, /^\s+ports:|network_mode: host|api\.openai\.com|generativelanguage/m);
+  assert.doesNotMatch(
+    overlay,
+    /^\s+ports:|network_mode: host|api\.openai\.com|generativelanguage/m,
+  );
   assert.doesNotMatch(overlay, /provider-master-key|pg_provider_admin_password/);
 });
