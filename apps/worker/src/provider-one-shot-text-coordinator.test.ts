@@ -81,7 +81,7 @@ test("coordinator defaults off and cannot reach a credential or transport", () =
             return openaiFixture;
           },
         },
-        { withCredential: async (_p, cb) => cb(KEY) },
+        { withCredential: async (_reservationId, _p, cb) => cb(KEY) },
       ),
     /Provider text coordinator disabled/,
   );
@@ -102,9 +102,10 @@ test("committed claim is always prior to reading a key and sending one request",
       },
     },
     {
-      withCredential: async (provider, callback) => {
+      withCredential: async (reservationId, provider, callback) => {
         events.push("credential");
         assert.equal(provider, "openai");
+        assert.equal(reservationId, ID);
         return callback(KEY);
       },
     },
@@ -140,7 +141,7 @@ test("invalid input never reserves, claims, reads keys or touches network", asyn
       },
     },
     {
-      withCredential: async (_provider, callback) => {
+      withCredential: async (_reservationId, _provider, callback) => {
         events.push("key");
         return callback(KEY);
       },
@@ -172,7 +173,7 @@ test("uncertain SQL claim must never read credentials or attempt a send", async 
       },
     },
     {
-      withCredential: async (_provider, callback) => {
+      withCredential: async (_reservationId, _provider, callback) => {
         events.push("credential");
         return callback(KEY);
       },
@@ -197,7 +198,7 @@ test("missing SQL projection freezes budget and denies dispatch", async () => {
       },
     },
     {
-      withCredential: async (_provider, callback) => {
+      withCredential: async (_reservationId, _provider, callback) => {
         events.push("credential");
         return callback(KEY);
       },
@@ -223,7 +224,7 @@ test("key retrieval or unknown transport result halts forever after one claim", 
         },
       },
       {
-        withCredential: async (_provider, callback) => {
+        withCredential: async (_reservationId, _provider, callback) => {
           events.push("credential");
           if (cause === "credential") throw Error("private key read failed");
           return callback(KEY);
@@ -257,7 +258,7 @@ test("credential callback may call the transport at most once per SQL claim", as
       },
     },
     {
-      withCredential: async (_provider, callback) => {
+      withCredential: async (_reservationId, _provider, callback) => {
         await callback(KEY);
         return callback(KEY);
       },
