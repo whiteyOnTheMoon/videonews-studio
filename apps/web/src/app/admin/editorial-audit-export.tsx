@@ -17,7 +17,8 @@ export function validEditorialExportBatch(value: unknown, kind: Ledger): value i
     !Array.isArray(body.events) ||
     body.events.length > 100 ||
     !body.events.every((row) => !!row && typeof row === "object" && !Array.isArray(row))
-  ) return false;
+  )
+    return false;
   if (kind === "checkpoints") {
     return (
       Object.keys(body).sort().join(",") === "events,nextRevision" &&
@@ -26,18 +27,17 @@ export function validEditorialExportBatch(value: unknown, kind: Ledger): value i
       (body.nextRevision as number) <= 10000
     );
   }
-  if (kind !== "timeline" || Object.keys(body).sort().join(",") !== "cursor,events")
-    return false;
+  if (kind !== "timeline" || Object.keys(body).sort().join(",") !== "cursor,events") return false;
   if (body.cursor === null) return true;
-  if (!body.cursor || typeof body.cursor !== "object" || Array.isArray(body.cursor))
-    return false;
+  if (!body.cursor || typeof body.cursor !== "object" || Array.isArray(body.cursor)) return false;
   const cursor = body.cursor as Record<string, unknown>;
   if (
     Object.keys(cursor).sort().join(",") !== "afterId,afterTime" ||
     typeof cursor.afterId !== "string" ||
     !UUID.test(cursor.afterId) ||
     typeof cursor.afterTime !== "string"
-  ) return false;
+  )
+    return false;
   const time = Date.parse(cursor.afterTime);
   return Number.isFinite(time) && new Date(time).toISOString() === cursor.afterTime;
 }
