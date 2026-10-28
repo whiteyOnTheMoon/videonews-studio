@@ -59,7 +59,13 @@ test("shared admin cookie, wrong origin and non-admin role cannot submit", async
   }) as typeof fetch;
   assert.equal((await dormantProviderJobSubmissionProxy(request(), null, fetcher)).status, 404);
   assert.equal(
-    (await dormantProviderJobSubmissionProxy(request(body(), "https://evil.invalid"), CONFIG, fetcher)).status,
+    (
+      await dormantProviderJobSubmissionProxy(
+        request(body(), "https://evil.invalid"),
+        CONFIG,
+        fetcher,
+      )
+    ).status,
     403,
   );
   assert.equal(
@@ -86,7 +92,10 @@ test("named session forwards exact pending job and returns bounded sanitized rec
     assert.equal(new Headers(init?.headers).get("Cookie"), COOKIE);
     assert.equal(new Headers(init?.headers).get("Origin"), ORIGIN);
     assert.deepEqual(JSON.parse(String(init?.body)), body());
-    return Response.json({ accepted: true, active: false, enqueued: false, jobId: JOB }, { status: 202 });
+    return Response.json(
+      { accepted: true, active: false, enqueued: false, jobId: JOB },
+      { status: 202 },
+    );
   }) as typeof fetch;
   const response = await dormantProviderJobSubmissionProxy(request(), CONFIG, fetcher);
   assert.equal(response.status, 202);
@@ -101,7 +110,10 @@ test("named session forwards exact pending job and returns bounded sanitized rec
 test("invalid upstream receipt, redirect, oversized and corrupt body fail closed", async () => {
   for (const upstream of [
     Response.json({ accepted: true, enqueued: true, active: false, jobId: JOB }, { status: 202 }),
-    Response.json({ accepted: true, enqueued: false, active: false, jobId: "not-uuid" }, { status: 202 }),
+    Response.json(
+      { accepted: true, enqueued: false, active: false, jobId: "not-uuid" },
+      { status: 202 },
+    ),
     new Response("postgres-private-password", { status: 503 }),
     new Response("redirect", { status: 302, headers: { location: "https://evil.invalid" } }),
   ]) {
@@ -122,11 +134,18 @@ test("invalid upstream receipt, redirect, oversized and corrupt body fail closed
     throw Error("should not forward");
   }) as typeof fetch;
   assert.equal(
-    (await dormantProviderJobSubmissionProxy(request({ ...body(), enable: true }), CONFIG, fetcher)).status,
+    (await dormantProviderJobSubmissionProxy(request({ ...body(), enable: true }), CONFIG, fetcher))
+      .status,
     400,
   );
   assert.equal(
-    (await dormantProviderJobSubmissionProxy(request({ ...body(), prompt: "x".repeat(32769) }), CONFIG, fetcher)).status,
+    (
+      await dormantProviderJobSubmissionProxy(
+        request({ ...body(), prompt: "x".repeat(32769) }),
+        CONFIG,
+        fetcher,
+      )
+    ).status,
     400,
   );
   assert.equal(forwarded, 0);
