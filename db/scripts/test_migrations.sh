@@ -149,8 +149,6 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0043_provider_worker_logins.test.sql"
   sql < "$root/db/migrations/0044_named_provider_job_authorization.up.sql"
   sql < "$root/db/tests/0044_named_provider_job_authorization.test.sql"
-  sql < "$root/db/migrations/0045_atomic_named_provider_budget_gate.up.sql"
-  sql < "$root/db/tests/0045_atomic_named_provider_budget_gate.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -390,6 +388,8 @@ for iteration in 1 2; do
     rm -rf -- "$eur_work"
     echo "PASS: independent SQL sessions cannot exceed 300 micro-EUR"
   fi
+  sql < "$root/db/migrations/0045_atomic_named_provider_budget_gate.up.sql"
+  sql < "$root/db/tests/0045_atomic_named_provider_budget_gate.test.sql"
   sql < "$root/db/migrations/0045_atomic_named_provider_budget_gate.down.sql"
   sql < "$root/db/migrations/0044_named_provider_job_authorization.down.sql"
   sql < "$root/db/migrations/0043_claimed_provider_secret_scope.down.sql"
