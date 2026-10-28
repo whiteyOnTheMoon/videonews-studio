@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 import { QUEUE_PREFIX } from "./queue.js";
-import { createDormantProviderJobProcessor, type NamedProviderJobVerifier } from "./provider-job-processor.js";
+import {
+  createDormantProviderJobProcessor,
+  type NamedProviderJobVerifier,
+} from "./provider-job-processor.js";
 import type { dormantOneShotTextCoordinator } from "./provider-one-shot-text-coordinator.js";
 
 /**
