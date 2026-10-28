@@ -27,6 +27,11 @@ instance defaults the additional EUR gate to **disabled and 0 EUR**.
   reprice an unclaimed reservation: it blocks that claim.
 - All concurrent admissions serialize using a locked EUR policy row; the
   existing USD policy row also serializes request reservations.
+- If the migration is installed over historical SQL reservations **without**
+  corresponding EUR admission evidence, every new reservation and claim
+  fails closed. Existing USD-only history is NOT retroactively treated as
+  zero EUR and cannot be ignored. A separately reviewed recovery/migration
+  plan is required.
 - The runtime usage writer cannot edit prices, rates, policy or evidence.
   Trigger logic executes as the dedicated NOLOGIN role. Rollback removes
   the EUR gate only through the ordered down migration.
@@ -53,8 +58,9 @@ billing reconciliation and audited recovery behavior.
 and ACL boundaries, expired FX, idempotent reservation, cap exhaustion
 while the USD cap has spare headroom, claim uniqueness, FX rotation,
 expired-quote dispatch denial and immutable evidence. A separate
-PostgreSQL 17 two-session race starts two 300 micro-EUR requests under a
-300 micro-EUR global cap; exactly one may persist. The entire 0001–0040
+PostgreSQL 17 two-session race starts two 300 micro-EUR requests with
+**exactly 300 micro-EUR headroom** after prior synthetic reservations;
+exactly one may persist. The entire 0001–0040
 migration sequence is applied and rolled back twice in isolated CI.
 
 The **last reported VPS schema version was 0018**. Never apply 0040
