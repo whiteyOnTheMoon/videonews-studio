@@ -8,9 +8,15 @@ test("official published vendor price references are accepted without retrieving
     ["openai", "https://platform.openai.com/docs/pricing"],
     ["openai", "https://openai.com/api/"],
     ["google_gemini", "https://ai.google.dev/gemini-api/docs/pricing"],
-    ["eur_usd", "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html"],
+    [
+      "eur_usd",
+      "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
+    ],
     ["eur_usd", "https://data.ecb.europa.eu/methodology/exchange-rates"],
-    ["eur_usd", "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?lastNObservations=2"],
+    [
+      "eur_usd",
+      "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?lastNObservations=2",
+    ],
   ] as const) {
     assert.equal(officialPriceReviewSource(provider, source), true, source);
   }
@@ -43,10 +49,7 @@ test("cross-provider pricing, social mirrors, sibling domains and spoofed hostna
   }
   assert.equal(officialPriceReviewSource("openai", null), false);
   assert.equal(officialPriceReviewSource("openai", "https://openai.com/api".repeat(60)), false);
-  assert.equal(
-    officialPriceReviewSource("unauthorized" as never, "https://openai.com/api"),
-    false,
-  );
+  assert.equal(officialPriceReviewSource("unauthorized" as never, "https://openai.com/api"), false);
 });
 
 test("source references are provenance only, not a live-price or FX determination", () => {
