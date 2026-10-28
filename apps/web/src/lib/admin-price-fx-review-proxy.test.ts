@@ -77,7 +77,7 @@ test("BFF requires named admin, exact origin, framing and no shared cookie", asy
   let upstreamWrites = 0;
   const fetcher = (async (url: RequestInfo | URL) => {
     if (String(url).endsWith("/editor/me")) {
-      return Response.json({ role: "editor" });
+      return Response.json({ username: "ci_editor", role: "editor" });
     }
     upstreamWrites++;
     throw new Error("must not send");
@@ -131,7 +131,7 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
   ]) {
     const fetcher = (async (url: RequestInfo | URL) =>
       String(url).endsWith("/editor/me")
-        ? Response.json({ role: "admin" })
+        ? Response.json({ username: "ci_admin", role: "admin" })
         : upstream) as typeof fetch;
     const response = await dormantPriceReviewProxy(request(), CFG, fetcher);
     assert.equal(response.status, 503);
@@ -142,7 +142,7 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
 test("malformed review data or forbidden framing cannot create a review", async () => {
   let writes = 0;
   const fetcher = (async (url: RequestInfo | URL) => {
-    if (String(url).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (String(url).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     writes++;
     return Response.json({ reviewed: true, active: false, reviewId: UUID });
   }) as typeof fetch;
