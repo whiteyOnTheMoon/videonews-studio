@@ -17,26 +17,40 @@ function object(value: unknown): value is Record<string, unknown> {
 
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return (
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
+    Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
   );
 }
 const CHECKPOINT_KEYS = [
-  "revision", "stage", "outcome", "actor_id", "artifact_sha256",
-  "reason_codes", "score", "previous_sha256", "chain_sha256", "recorded_at",
+  "revision",
+  "stage",
+  "outcome",
+  "actor_id",
+  "artifact_sha256",
+  "reason_codes",
+  "score",
+  "previous_sha256",
+  "chain_sha256",
+  "recorded_at",
 ] as const;
 const TIMELINE_KEYS = [
-  "event_id", "event_kind", "actor_id", "reference_uri",
-  "document_sha256", "details", "recorded_at",
+  "event_id",
+  "event_kind",
+  "actor_id",
+  "reference_uri",
+  "document_sha256",
+  "details",
+  "recorded_at",
 ] as const;
 const REASON = /^[a-z][a-z0-9_]{1,39}$/;
 const HTTPS_REFERENCE = /^https:\/\/[a-z0-9.-]+(?::443)?\/[a-zA-Z0-9/._~-]*$/;
 
 function validReasons(value: unknown): boolean {
-  return Array.isArray(value) &&
+  return (
+    Array.isArray(value) &&
     value.length >= 1 &&
     value.length <= 20 &&
-    value.every((code: unknown) => typeof code === "string" && REASON.test(code));
+    value.every((code: unknown) => typeof code === "string" && REASON.test(code))
+  );
 }
 
 function isoTime(value: unknown): value is string {
@@ -135,8 +149,7 @@ export function verifyTimelinePage(
           entry.reference_uri.length > 2048 ||
           !HTTPS_REFERENCE.test(entry.reference_uri))) ||
       (entry.document_sha256 !== null &&
-        (typeof entry.document_sha256 !== "string" ||
-          !SHA256.test(entry.document_sha256))) ||
+        (typeof entry.document_sha256 !== "string" || !SHA256.test(entry.document_sha256))) ||
       !object(entry.details) ||
       !exactKeys(entry.details, ["summary", "reasonCodes"]) ||
       typeof entry.details.summary !== "string" ||
