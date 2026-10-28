@@ -1,0 +1,47 @@
+name: P1-09 Redis 8.4.8 production Compose guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/compose.redis84-production.yaml"
+      - "compose.yaml"
+      - "deploy/compose.worker.yaml"
+      - "scripts/check_redis84_production_compose.py"
+      - "scripts/test_redis84_production_compose.py"
+      - ".github/workflows/p1-09-redis84-production.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  redis84-production-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify offline adversarial guard tests
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s scripts -p 'test_redis84_production_compose.py' -v
+      - name: Validate actual Compose merge without starting containers
+        run: |
+          mkdir -p secrets
+          printf 'synthetic-ci-only\n' > secrets/postgres_password
+          printf 'user default off\n' > secrets/redis_acl
+          printf 'synthetic-ci-only\n' > secrets/redis_password
+          chmod 600 secrets/postgres_password secrets/redis_password
+          chmod 644 secrets/redis_acl
+          docker compose \
+            -f compose.yaml \
+            -f deploy/compose.worker.yaml \
+            --profile data --profile worker \
+            config --format json > /tmp/vns-p109-base.json
+          docker compose \
+            -f compose.yaml \
+            -f deploy/compose.worker.yaml \
+            -f deploy/compose.redis84-production.yaml \
+            --profile data --profile worker \
+            config --format json > /tmp/vns-p109-production.json
+          python3 scripts/check_redis84_production_compose.py \
+            /tmp/vns-p109-base.json /tmp/vns-p109-production.json
