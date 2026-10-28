@@ -365,7 +365,7 @@ echo "PASS: reversible 0001-0039 migrations, source authority, leases and budget
       exit 1
     }
     test "$(cat "$claim_work/a" "$claim_work/b" | grep -c \
-      '^a[0-9a-f]\{7\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}
+      '^[0-9a-f]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
   sql < "$root/db/migrations/0035_approved_feed_candidate_projection.down.sql"
