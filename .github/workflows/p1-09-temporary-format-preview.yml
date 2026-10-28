@@ -1,0 +1,40 @@
+# Temporary read-only format preview for P1-09 PR review. Deleted before merge.
+name: P1-09 temporary formatting preview
+on:
+  pull_request:
+    paths:
+      - "apps/api/src/named-price-fx-review*"
+      - "apps/api/src/named-provider-runtime.ts"
+      - "apps/web/src/app/admin/ai-price-fx-review.tsx"
+      - "apps/web/src/lib/admin-price-fx-review-proxy*"
+      - ".github/workflows/p1-09-temporary-format-preview.yml"
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Format six changed modules and print reviewed output
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/api/src/named-price-fx-review.test.ts
+            apps/api/src/named-price-fx-review.ts
+            apps/api/src/named-provider-runtime.ts
+            apps/web/src/app/admin/ai-price-fx-review.tsx
+            apps/web/src/lib/admin-price-fx-review-proxy.test.ts
+            apps/web/src/lib/admin-price-fx-review-proxy.ts
+          )
+          npx prettier --write "${files[@]}"
+          for file in "${files[@]}"; do
+            printf '===VNS_FMT_BEGIN:%s===\n' "$file"
+            base64 -w0 "$file"
+            printf '\n===VNS_FMT_END:%s===\n' "$file"
+          done
