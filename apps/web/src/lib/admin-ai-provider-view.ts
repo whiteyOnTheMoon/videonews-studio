@@ -11,10 +11,7 @@ export type AdminAiProviderView = {
   active: false;
 };
 
-const allowedModels: Record<AdminAiProvider, readonly string[]> = {
-  openai: ["gpt-6-luna", "gpt-6.1-sol"],
-  google_gemini: ["gemini-3.8-flash-tts"],
-};
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 export function parseAdminAiProviders(body: unknown): AdminAiProviderView[] | null {
   if (body === null || typeof body !== "object" || Array.isArray(body)) return null;
@@ -33,7 +30,7 @@ export function parseAdminAiProviders(body: unknown): AdminAiProviderView[] | nu
       ) ||
       (row.provider !== "openai" && row.provider !== "google_gemini") ||
       typeof row.selectedModel !== "string" ||
-      !allowedModels[row.provider].includes(row.selectedModel) ||
+      !MODEL_ID.test(row.selectedModel) ||
       typeof row.configured !== "boolean" ||
       row.active !== false ||
       seen.has(row.provider)
