@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { dormantProviderBudgetBridge } from "./provider-budget-worker-bridge.js";
@@ -29,7 +30,8 @@ function fixtureBridge(
   let claimed = false;
   let projections = 0;
   const bridge = {
-    async reserve() {
+    async reserve(_request: unknown, digest: string) {
+      assert.match(digest, /^[0-9a-f]{64}$/);
       events.push("reserve");
       return ID;
     },
