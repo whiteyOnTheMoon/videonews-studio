@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   reconcileRecordedProviderFixture,
   type BudgetReplayRequest,
@@ -64,7 +65,8 @@ export function dormantOneShotTextCoordinator(
       };
       // No reservation, SQL claim, secret read or vendor call for bad inputs.
       verifyNativeTextSend(textRequest);
-      const reservationId = await bridge.reserve(request);
+      const promptSha256 = createHash("sha256").update(prompt, "utf8").digest("hex");
+      const reservationId = await bridge.reserve(request, promptSha256);
       try {
         await bridge.projection(request, reservationId);
       } catch {
