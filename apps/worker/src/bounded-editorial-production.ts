@@ -343,7 +343,7 @@ export function independentlyReviewMockScript(
       !section ||
       typeof section.narration !== "string" ||
       !Array.isArray(section.claimIds) ||
-      !section.claimIds.every((id) => typeof id === "string")
+      !section.claimIds.every((id: unknown) => typeof id === "string")
     ) {
       reasons.push("script_sections_invalid");
       continue;
