@@ -127,6 +127,9 @@ function req(
 function response() {
   const record = { status: 0, output: "" };
   return Object.assign(record, {
+    setHeader(_name: string, _value: string) {
+      return this;
+    },
     writeHead(status: number) {
       record.status = status;
     },
