@@ -167,5 +167,8 @@ test("SQL false, uncertain confirmation and database outage fail closed", async 
       throw Error("sensitive connection details");
     },
   } as never);
-  await assert.rejects(verify(request as never, "a".repeat(64)), /authorization unavailable/);
+  await assert.rejects(
+    verify(request as never, "a".repeat(64)),
+    /authorization unavailable/,
+  );
 });
