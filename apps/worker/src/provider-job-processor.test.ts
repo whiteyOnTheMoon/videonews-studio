@@ -33,7 +33,7 @@ test("processor remains disabled unless deliberately composed", () => {
         run: async () => {
           throw Error("never");
         },
-      }),
+      }, async () => true),
     /disabled/,
   );
 });
@@ -46,7 +46,7 @@ test("first attempt reaches injected SQL coordinator exactly once", async () => 
       return { reservationId: jobId, costMicroUsd: "5", reconciled: true as const };
     },
   } as unknown as Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">;
-  const result = await createDormantProviderJobProcessor(coordinator, true)(job());
+  const result = await createDormantProviderJobProcessor(coordinator, async () => true, true)(job());
   assert.equal(result.reconciled, true);
   assert.deepEqual(calls, [[request, "Verified facts."]]);
 });
@@ -59,7 +59,7 @@ test("replayed, stalled and malformed messages are denied before coordinator", a
       throw Error("not allowed");
     },
   } as unknown as Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">;
-  const process = createDormantProviderJobProcessor(coordinator, true);
+  const process = createDormantProviderJobProcessor(coordinator, async () => true, true);
   for (const value of [
     job({ attemptsMade: 1 }),
     job({ attemptsMade: -1 }),
@@ -74,6 +74,20 @@ test("replayed, stalled and malformed messages are denied before coordinator", a
   assert.equal(calls, 0);
 });
 
+test("denied or unavailable SQL authority never reaches the coordinator", async () => {
+  let invoked = 0;
+  const coordinator = { async run() { invoked++; throw Error("unreachable"); } };
+  await assert.rejects(
+    createDormantProviderJobProcessor(coordinator, async () => false, true)(job()),
+    /authorization denied/,
+  );
+  await assert.rejects(
+    createDormantProviderJobProcessor(coordinator, async () => { throw Error("sql down"); }, true)(job()),
+    /authorization unavailable/,
+  );
+  assert.equal(invoked, 0);
+});
+
 test("coordinator failures are never retried locally", async () => {
   let calls = 0;
   const coordinator = {
@@ -83,7 +97,7 @@ test("coordinator failures are never retried locally", async () => {
     },
   } as unknown as Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">;
   await assert.rejects(
-    createDormantProviderJobProcessor(coordinator, true)(job()),
+    createDormantProviderJobProcessor(coordinator, async () => true, true)(job()),
     /budget review required/,
   );
   assert.equal(calls, 1);
