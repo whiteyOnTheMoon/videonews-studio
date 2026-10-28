@@ -138,7 +138,9 @@ export default function AiProviderEditForm({
           onChange={(event) => setModel(event.target.value)}
           disabled={busy}
         />
-        <p>Nur Modelle mit gültiger, persönlich geprüfter Preisversion werden serverseitig zugelassen.</p>
+        <p>
+          Nur Modelle mit gültiger, persönlich geprüfter Preisversion werden serverseitig zugelassen.
+        </p>
         <button type="submit" disabled={busy}>
           Modell speichern
         </button>
