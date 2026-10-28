@@ -1,5 +1,5 @@
 import {
-  replayProviderBudgetFixture,
+  reconcileRecordedProviderFixture,
   type BudgetReplayRequest,
   type dormantProviderBudgetBridge,
 } from "./provider-budget-worker-bridge.js";
@@ -21,5 +21,5 @@ export async function processOneShotRecordedFixture(
   // This is irreversible. If the process exits after claim, the SQL record
   // remains and a retry must refuse to simulate a second paid request.
   await bridge.claim(reservationId);
-  return replayProviderBudgetFixture(bridge, request, recordedFixture);
+  return reconcileRecordedProviderFixture(bridge, request, recordedFixture, reservationId);
 }
