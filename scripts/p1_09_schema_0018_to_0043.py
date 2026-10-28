@@ -198,7 +198,7 @@ def apply(container: str, versions: list[str]) -> None:
         if path.is_symlink() or not path.is_file():
             raise RuntimeError(FAIL)
         content = path.read_text(encoding="utf-8")
-        if not content.startswith("--") or "BEGIN;" not in content or "COMMIT;" not in content:
+        if "BEGIN;" not in content or "COMMIT;" not in content:
             raise RuntimeError(FAIL)
         query(container, content, readonly=False, timeout=140)
         if ledger(container) != versions[:index + 1]:
@@ -216,9 +216,9 @@ def main(args: list[str]) -> None:
     versions = filenames()
     if args == ["--status"]:
         current = ledger(container)
-        if current not in (versions[:18], versions):
+        if not 18 <= len(current) <= 43 or current != versions[:len(current)]:
             raise RuntimeError(FAIL)
-        print("PASS: detected schema " + str(len(current)).zfill(4))
+        print("PASS: detected exact prefix through " + current[-1])
     elif args == ["--preflight"]:
         check_0018_baseline(container, versions, ci)
         print("PASS: exact schema 0018, disabled provider, safe migration prerequisites")
