@@ -121,10 +121,15 @@ test("same pool, wrong login and inherited opposite role are refused", async () 
 test("database errors, absent or extra records never permit the second principal", async () => {
   let secretReads = 0;
   const failing = {
-    async query() { throw new Error("private-postgresql-password"); },
+    async query() {
+      throw new Error("private-postgresql-password");
+    },
   } as unknown as Pick<Pool, "query">;
   const secret = {
-    async query() { secretReads++; return { rows: [evidence("secret")] }; },
+    async query() {
+      secretReads++;
+      return { rows: [evidence("secret")] };
+    },
   } as unknown as Pick<Pool, "query">;
   await assert.rejects(
     attestSeparatedProviderWorkerDatabases(failing, secret),
@@ -133,12 +138,12 @@ test("database errors, absent or extra records never permit the second principal
   assert.equal(secretReads, 0);
   for (const rows of [[], [evidence("usage"), evidence("usage")]]) {
     const invalid = {
-      async query() { return { rows }; },
+      async query() {
+        return { rows };
+      },
     } as unknown as Pick<Pool, "query">;
     await assert.rejects(
-      attestProviderWorkerDatabaseRole(
-        invalid, "usage", PROVIDER_WORKER_DB_IDENTITIES.usage,
-      ),
+      attestProviderWorkerDatabaseRole(invalid, "usage", PROVIDER_WORKER_DB_IDENTITIES.usage),
       /database admission denied/,
     );
   }
@@ -147,11 +152,17 @@ test("database errors, absent or extra records never permit the second principal
 test("runtime assembly may attest write-capable sessions only when explicitly requested", async () => {
   const writer = db("usage", { read_only: false });
   await attestProviderWorkerDatabaseRole(
-    writer.connection, "usage", PROVIDER_WORKER_DB_IDENTITIES.usage, false,
+    writer.connection,
+    "usage",
+    PROVIDER_WORKER_DB_IDENTITIES.usage,
+    false,
   );
   await assert.rejects(
     attestProviderWorkerDatabaseRole(
-      writer.connection, "usage", PROVIDER_WORKER_DB_IDENTITIES.usage, true,
+      writer.connection,
+      "usage",
+      PROVIDER_WORKER_DB_IDENTITIES.usage,
+      true,
     ),
     /database admission denied/,
   );
