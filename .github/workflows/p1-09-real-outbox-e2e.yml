@@ -1,0 +1,38 @@
+name: P1-09 real PostgreSQL Redis sealed outbox (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/p1-09-real-outbox-e2e.yml"
+      - "db/scripts/test_provider_outbox_real_e2e.sh"
+      - "scripts/ci_provider_outbox_real_e2e.mjs"
+      - "db/migrations/0044_named_provider_job_authorization.up.sql"
+      - "db/migrations/0045_atomic_named_provider_budget_gate.up.sql"
+      - "db/migrations/0046_provider_named_sealed_outbox.up.sql"
+      - "db/migrations/0047_named_provider_job_submission.up.sql"
+      - "db/migrations/0048_provider_outbox_delivery_receipt.up.sql"
+      - "apps/worker/src/provider-outbox-publisher.ts"
+      - "packages/shared/src/provider-encrypted-prompt.ts"
+permissions:
+  contents: read
+concurrency:
+  group: p1-09-real-outbox-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  provider-postgres-redis-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned dependencies and compile dormant publisher
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Exercise real disposable PostgreSQL 17, Redis 7, restricted SCRAM and Redis ACL
+        run: bash db/scripts/test_provider_outbox_real_e2e.sh
