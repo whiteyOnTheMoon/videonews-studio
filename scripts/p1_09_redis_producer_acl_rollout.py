@@ -73,7 +73,7 @@ def operator(*, approving: bool = False) -> None:
 def private_fd(path: Path) -> int:
     fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     info = os.fstat(fd)
-    if (info.st_uid != 1000 or not stat.S_ISDIR(info.st_mode)
+    if (info.st_uid != os.geteuid() or not stat.S_ISDIR(info.st_mode)
             or stat.S_IMODE(info.st_mode) != 0o700):
         os.close(fd)
         raise PermissionError(FAIL)
@@ -86,7 +86,7 @@ def file_read(fd: int, name: str, *, mode: int, max_size: int = 8192) -> bytes:
         info = os.fstat(handle)
         if (
             not stat.S_ISREG(info.st_mode)
-            or info.st_uid != 1000
+            or info.st_uid != os.geteuid()
             or info.st_nlink != 1
             or stat.S_IMODE(info.st_mode) != mode
             or info.st_size <= 0
@@ -140,8 +140,8 @@ def baseline(current: bytes) -> list[str]:
 
 def desired(private: int, current: bytes) -> bytes:
     baseline(current)
-    password = secure_read(private, REDIS_FILE, 1000)
-    candidate = secure_read(private, ACL_CANDIDATE, 1000)
+    password = secure_read(private, REDIS_FILE, os.geteuid())
+    candidate = secure_read(private, ACL_CANDIDATE, os.geteuid())
     if len(password) < 41 or not password.endswith(b"\n"):
         raise ValueError(FAIL)
     token = password[:-1].decode("ascii")
