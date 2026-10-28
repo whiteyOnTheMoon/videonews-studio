@@ -58,10 +58,6 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
-      - name: Temporary format diff
-        if: failure()
-        run: |
-          npx prettier apps/worker/src/provider-encrypted-prompt.ts | diff -u apps/worker/src/provider-encrypted-prompt.ts - || true
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
