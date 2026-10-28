@@ -27,7 +27,15 @@ function job(patch: Record<string, unknown> = {}): Job {
 }
 
 test("processor remains disabled unless deliberately composed", () => {
-  assert.throws(() => createDormantProviderJobProcessor({ run: async () => { throw Error("never"); } }), /disabled/);
+  assert.throws(
+    () =>
+      createDormantProviderJobProcessor({
+        run: async () => {
+          throw Error("never");
+        },
+      }),
+    /disabled/,
+  );
 });
 
 test("first attempt reaches injected SQL coordinator exactly once", async () => {
@@ -74,6 +82,9 @@ test("coordinator failures are never retried locally", async () => {
       throw Error("Provider budget review required");
     },
   } as unknown as Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">;
-  await assert.rejects(createDormantProviderJobProcessor(coordinator, true)(job()), /budget review required/);
+  await assert.rejects(
+    createDormantProviderJobProcessor(coordinator, true)(job()),
+    /budget review required/,
+  );
   assert.equal(calls, 1);
 });
