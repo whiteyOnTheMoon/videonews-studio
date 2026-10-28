@@ -8,10 +8,16 @@ import { admitProviderQueueJob } from "./provider-job-admission.js";
  * authenticated producer, budget policy and operator rollout are approved.
  * This factory creates no Redis worker, provider transport or network access.
  */
+type ProviderJobResult = Readonly<{
+  reservationId: string;
+  costMicroUsd: string;
+  reconciled: true;
+}>;
+
 export function createDormantProviderJobProcessor(
   coordinator: Pick<ReturnType<typeof dormantOneShotTextCoordinator>, "run">,
   enabled = false,
-): (job: Job) => Promise<Readonly<{ reservationId: string; costMicroUsd: string; reconciled: true }>> {
+): (job: Job) => Promise<ProviderJobResult> {
   if (enabled !== true || !coordinator || typeof coordinator.run !== "function") {
     throw new Error("Provider job processor disabled");
   }
