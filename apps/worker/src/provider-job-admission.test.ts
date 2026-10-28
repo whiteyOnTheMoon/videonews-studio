@@ -16,10 +16,14 @@ const data = {
   },
   prompt: "Verified editorial information.",
 };
-const job = (patch: Record<string,unknown> = {}) => ({
-  id: jobId, name: "provider-text", opts: { attempts: 1, jobId }, data,
-  ...patch,
-}) as unknown as Pick<Job,"id"|"name"|"data"|"opts">;
+const job = (patch: Record<string, unknown> = {}) =>
+  ({
+    id: jobId,
+    name: "provider-text",
+    opts: { attempts: 1, jobId },
+    data,
+    ...patch,
+  }) as unknown as Pick<Job, "id" | "name" | "data" | "opts">;
 
 test("canonical single-attempt job is admitted without granting dispatch", () => {
   const admitted = admitProviderQueueJob(job());
@@ -31,21 +35,33 @@ test("canonical single-attempt job is admitted without granting dispatch", () =>
 
 test("other queues, unknown fields and mismatched job identity fail closed", () => {
   for (const value of [
-    job({name:"probe"}),
-    job({id:"invalid"}),
-    job({data:{...data, metadata:"untrusted"}}),
-    job({data:{...data,request:{...data.request,jobId:"a4310003-0000-4000-8000-000000000003"}}}),
-    job({data:{...data,request:{...data.request,model:"https://invalid.example"}}}),
-    job({data:{...data,request:{...data.request,provider:"other"}}}),
-    job({data:{...data,prompt:""}}),
-    job({data:{...data,prompt:"☃".repeat(11000)}}),
-  ]) assert.throws(()=>admitProviderQueueJob(value),/admission denied/);
+    job({ name: "probe" }),
+    job({ id: "invalid" }),
+    job({ data: { ...data, metadata: "untrusted" } }),
+    job({
+      data: {
+        ...data,
+        request: { ...data.request, jobId: "a4310003-0000-4000-8000-000000000003" },
+      },
+    }),
+    job({ data: { ...data, request: { ...data.request, model: "https://invalid.example" } } }),
+    job({ data: { ...data, request: { ...data.request, provider: "other" } } }),
+    job({ data: { ...data, prompt: "" } }),
+    job({ data: { ...data, prompt: "☃".repeat(11000) } }),
+  ]) {
+    assert.throws(() => admitProviderQueueJob(value), /admission denied/);
+  }
 });
 
 test("BullMQ retry/repeat paths and missing explicit one-attempt contract fail closed", () => {
   for (const opts of [
-    {}, {attempts:2,jobId}, {attempts:0,jobId},
-    {attempts:1,jobId:"other"}, {attempts:1},
-    {attempts:1,jobId,repeat:{every:1000}},
-  ]) assert.throws(()=>admitProviderQueueJob(job({opts})),/admission denied/);
+    {},
+    { attempts: 2, jobId },
+    { attempts: 0, jobId },
+    { attempts: 1, jobId: "other" },
+    { attempts: 1 },
+    { attempts: 1, jobId, repeat: { every: 1000 } },
+  ]) {
+    assert.throws(() => admitProviderQueueJob(job({ opts })), /admission denied/);
+  }
 });
