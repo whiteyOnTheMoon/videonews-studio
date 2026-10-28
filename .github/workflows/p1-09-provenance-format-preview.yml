@@ -1,0 +1,40 @@
+# Temporary formatting review; removed from PR before merge.
+name: P1-09 temporary pricing provenance formatting
+on:
+  pull_request:
+    paths:
+      - "packages/shared/src/provider-pricing-provenance*"
+      - "apps/api/src/named-price-fx-review.test.ts"
+      - "apps/web/src/lib/admin-price-fx-review-proxy.test.ts"
+      - "docs/P1-09_OFFICIAL_PRICE_FX_PROVENANCE.md"
+      - ".github/workflows/p1-09-provenance-format-preview.yml"
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Format and print canonical sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            apps/api/src/named-price-fx-review.test.ts
+            apps/web/src/lib/admin-price-fx-review-proxy.test.ts
+            docs/P1-09_OFFICIAL_PRICE_FX_PROVENANCE.md
+            packages/shared/src/provider-pricing-provenance.test.ts
+            packages/shared/src/provider-pricing-provenance.ts
+          )
+          npx prettier --write "${files[@]}"
+          for file in "${files[@]}"; do
+            printf '===VNS_320_FMT_BEGIN:%s===\n' "$file"
+            base64 -w0 "$file"
+            printf '\n===VNS_320_FMT_END:%s===\n' "$file"
+          done
