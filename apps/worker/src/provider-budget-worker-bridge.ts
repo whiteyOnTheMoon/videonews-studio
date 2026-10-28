@@ -258,6 +258,18 @@ export async function replayProviderBudgetFixture(
 ): Promise<Readonly<{ reservationId: string; costMicroUsd: string; reconciled: true }>> {
   requireReservationRequest(input);
   const reservationId = await bridge.reserve(input);
+  return reconcileRecordedProviderFixture(bridge, input, response, reservationId);
+}
+
+/** Reconcile the SAME already-reserved request after a one-shot dispatch claim. */
+export async function reconcileRecordedProviderFixture(
+  bridge: ReturnType<typeof dormantProviderBudgetBridge>,
+  input: BudgetReplayRequest,
+  response: unknown,
+  reservationId: string,
+): Promise<Readonly<{ reservationId: string; costMicroUsd: string; reconciled: true }>> {
+  requireReservationRequest(input);
+  if (!UUID.test(reservationId)) throw new Error("Provider budget reservation unavailable");
 
   // Any uncertainty after reservation must trigger a durable project-wide
   // stop; a failed halt is itself a hard failure, never proof of safety.
