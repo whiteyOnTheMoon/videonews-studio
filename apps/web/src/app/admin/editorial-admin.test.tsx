@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import EditorialProfiles, { parseEditorialProfileSnapshot } from "./editorial-profiles";
-import EditorialAuditExport, { validEditorialExportBatch } from "./editorial-audit-export";
+import EditorialAuditExport, {
+  validEditorialExportBatch,
+  validEditorialExportTerminator,
+} from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
 
@@ -93,4 +96,26 @@ test("Story audit entry shows no form by default and no publishing controls", ()
   assert.match(enabled, /Abgelehnte Aussage/);
   assert.match(enabled, /Story-Ereignis speichern/);
   assert.doesNotMatch(enabled, /Jetzt veröffentlichen/);
+});
+
+test("audit export terminator never accepts changed checkpoint cursor or nonempty timeline cursor", () => {
+  const emptyCheckpoint = { events: [], nextRevision: 4 };
+  assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 4), true);
+  assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 3), false);
+  assert.equal(validEditorialExportTerminator("checkpoints", { events: [{}], nextRevision: 4 }, 4), false);
+  assert.equal(validEditorialExportTerminator("timeline", { events: [], cursor: null }, 0), true);
+  assert.equal(
+    validEditorialExportTerminator(
+      "timeline",
+      {
+        events: [],
+        cursor: {
+          afterTime: "2026-10-26T12:00:00.000Z",
+          afterId: "ca310001-1111-4111-8111-111111111111",
+        },
+      },
+      0,
+    ),
+    false,
+  );
 });
