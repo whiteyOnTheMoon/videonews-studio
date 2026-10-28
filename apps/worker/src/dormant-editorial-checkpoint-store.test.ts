@@ -103,7 +103,64 @@ test("bounded cursor export validates every record and masks rejected data", asy
     },
   } as unknown as Pool;
   const store = new DormantEditorialCheckpointStore(pool, enabled);
-  assert.equal((await store.export(event, 0, 10))[0]?.revision, 1);
-  await assert.rejects(store.export(event, 1, 10), /unavailable/);
+  const page = await store.export(event, 0, 10);
+  assert.equal(page[0]?.revision, 1);
+  assert.equal(Object.isFrozen(page[0]?.reason_codes), true);
+  await assert.rejects(store.export(event, 1, 10), /invalid/);
   await assert.rejects(store.export(event, -1, 10), /invalid/);
+  await assert.rejects(store.export(event, 0, 10, "a".repeat(64)), /invalid/);
+  await assert.rejects(store.export(event, 1, 10, "not_a_digest"), /invalid/);
+});
+
+test("worker export validates genesis, exact revisions and linked page digests", async () => {
+  const first = {
+    revision: 1,
+    stage: "ranking",
+    outcome: "candidate",
+    actor_id: actor,
+    artifact_sha256: "a".repeat(64),
+    reason_codes: ["metadata_candidate_only"],
+    score: 42,
+    previous_sha256: "0".repeat(64),
+    chain_sha256: "b".repeat(64),
+    recorded_at: new Date("2026-10-26T12:00:00.000Z"),
+  };
+  const second = {
+    ...first,
+    revision: 2,
+    stage: "quality",
+    outcome: "needs_review",
+    previous_sha256: first.chain_sha256,
+    chain_sha256: "c".repeat(64),
+  };
+  let records: unknown[] = [first, second];
+  const pool = {
+    async query() {
+      return { rows: records };
+    },
+  } as unknown as Pool;
+  const store = new DormantEditorialCheckpointStore(pool, enabled);
+  assert.deepEqual(
+    (await store.export(event, 0, 10)).map((row) => row.revision),
+    [1, 2],
+  );
+  records = [second];
+  assert.equal((await store.export(event, 1, 10, first.chain_sha256))[0]?.revision, 2);
+  for (const corrupted of [
+    { ...first, previous_sha256: "f".repeat(64) },
+    { ...first, revision: 2 },
+    { ...first, stage: "published" },
+    { ...first, outcome: "approved" },
+    { ...first, score: 1001 },
+    { ...first, reason_codes: [99] },
+    { ...first, reason_codes: [] },
+    { ...first, actor_id: "invalid" },
+  ]) {
+    records = [corrupted];
+    await assert.rejects(store.export(event, 0, 10), /unavailable/);
+  }
+  records = [first, { ...second, previous_sha256: "f".repeat(64) }];
+  await assert.rejects(store.export(event, 0, 10), /unavailable/);
+  records = [second];
+  await assert.rejects(store.export(event, 1, 10, "f".repeat(64)), /unavailable/);
 });

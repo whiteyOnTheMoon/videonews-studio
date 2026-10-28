@@ -3,6 +3,9 @@ import type { Pool } from "pg";
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const CODE = /^[a-z][a-z0-9_]{1,39}$/;
+const STAGES = ["ranking", "claim_review", "freshness", "script_revision", "quality"] as const;
+const OUTCOMES = ["candidate", "blocked", "needs_review"] as const;
+const GENESIS = "0".repeat(64);
 export type CheckpointStage =
   "ranking" | "claim_review" | "freshness" | "script_revision" | "quality";
 export type CheckpointOutcome = "candidate" | "blocked" | "needs_review";
@@ -79,18 +82,26 @@ export class DormantEditorialCheckpointStore {
     }
   }
 
+  /**
+   * For continuation pages the caller must supply the digest returned by
+   * its previously validated page. This is continuity, not a signed root.
+   */
   async export(
     eventId: string,
     afterRevision: number,
     limit: number,
+    previousChain: string | null = null,
   ): Promise<readonly CheckpointRecord[]> {
     if (
       !UUID.test(eventId) ||
       !Number.isSafeInteger(afterRevision) ||
       afterRevision < 0 ||
+      afterRevision > 10000 ||
       !Number.isSafeInteger(limit) ||
       limit < 1 ||
-      limit > 100
+      limit > 100 ||
+      (afterRevision === 0 && previousChain !== null) ||
+      (afterRevision > 0 && (typeof previousChain !== "string" || !DIGEST.test(previousChain)))
     ) {
       throw new Error("Named editorial checkpoint query invalid");
     }
@@ -102,27 +113,38 @@ export class DormantEditorialCheckpointStore {
       if (!Array.isArray(result.rows) || result.rows.length > limit) {
         throw new Error("Unexpected checkpoint export");
       }
-      let previous = afterRevision;
+      let revision = afterRevision;
+      let chain = previousChain ?? GENESIS;
       for (const row of result.rows) {
         if (
           !Number.isSafeInteger(row.revision) ||
-          row.revision <= previous ||
+          row.revision !== revision + 1 ||
+          !STAGES.includes(row.stage) ||
+          !OUTCOMES.includes(row.outcome) ||
           !UUID.test(row.actor_id) ||
           !DIGEST.test(row.artifact_sha256) ||
           !DIGEST.test(row.previous_sha256) ||
+          row.previous_sha256 !== chain ||
           !DIGEST.test(row.chain_sha256) ||
           !Array.isArray(row.reason_codes) ||
           row.reason_codes.length < 1 ||
           row.reason_codes.length > 20 ||
-          row.reason_codes.some((code) => !CODE.test(code)) ||
+          row.reason_codes.some((code) => typeof code !== "string" || !CODE.test(code)) ||
+          (row.score !== null &&
+            (!Number.isSafeInteger(row.score) || row.score < 0 || row.score > 1000)) ||
           !(row.recorded_at instanceof Date) ||
           !Number.isFinite(row.recorded_at.getTime())
         ) {
           throw new Error("Unexpected checkpoint record");
         }
-        previous = row.revision;
+        revision = row.revision;
+        chain = row.chain_sha256;
       }
-      return Object.freeze(result.rows.map((row) => Object.freeze(row)));
+      return Object.freeze(
+        result.rows.map((row) =>
+          Object.freeze({ ...row, reason_codes: Object.freeze([...row.reason_codes]) }),
+        ),
+      );
     } catch {
       throw new Error("Named editorial checkpoint export unavailable");
     }

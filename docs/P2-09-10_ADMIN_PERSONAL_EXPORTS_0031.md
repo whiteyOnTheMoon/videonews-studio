@@ -79,3 +79,25 @@ Scheduler oder KI-Aufruf freizuschalten. Quellenzuordnung,
 Ranking-Gewichte, Risikokonfiguration und eine verlässlich an den
 laufenden Worker publizierte, versionierte Admin-Konfiguration sind **noch
 nicht** fertiggestellt. Keine VPS-Migration oder produktive Aktivierung.
+
+## P2-10: Worker-Export über dieselbe Hashkette prüfen (Code-only, 28.10.2026)
+
+Der getrennt aktivierbare `DormantEditorialCheckpointStore.export()` prüft
+neben UUID, erlaubten Stages/Outcomes, Gründen, Zeitstempeln und Score auch
+**lückenlose Revisionen** sowie den exakten `previous_sha256`-Übergang.
+Bei der ersten Seite muss die erste Revision mit der Null-Genesis verkettet
+sein. Fortsetzungsseiten verlangen zusätzlich einen `previousChain`-Digest,
+der aus der zuvor geprüften Seite stammen muss; ohne ihn wird ein
+`afterRevision > 0`-Abruf **vor jeder Datenbankabfrage** abgelehnt.
+Der Rückgabewert enthält eine schreibgeschützte Kopie der Gründe.
+Tests manipulieren Reihenfolge, Kettendigest, Revisionen, Stage,
+Outcome und Begründungen.
+
+**Keine externe Echtheitsgarantie:** Die Fortsetzungskette ist nur so
+vertrauenswürdig wie der vom Aufrufer verwahrte Digest und das
+PostgreSQL-Ergebnis. Eine fehlende Schlussseite oder ein unabhängiger
+extern signierter Root-Nachweis werden dadurch nicht ersetzt. Der
+Worker-Adapter bleibt standardmäßig deaktiviert und muss weiterhin
+über einen persönlich authentifizierten, least-privilege PostgreSQL-LOGIN
+und gesonderte Freigabe betrieben werden. Keine produktive Migration,
+kein VPS-Deploy und keine Nachrichtenquellenaktivierung.
