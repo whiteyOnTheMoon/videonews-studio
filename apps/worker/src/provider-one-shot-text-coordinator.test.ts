@@ -244,3 +244,43 @@ test("key retrieval or unknown transport result halts forever after one claim", 
     assert.equal(events.filter((event) => event === "send").length, cause === "credential" ? 0 : 1);
   }
 });
+
+test("credential callback may call the transport at most once per SQL claim", async () => {
+  const events: string[] = [];
+  const bridge = fixtureBridge(events);
+  const coordinator = dormantOneShotTextCoordinator(
+    bridge,
+    {
+      send: async () => {
+        events.push("send");
+        return openaiFixture;
+      },
+    },
+    {
+      withCredential: async (_provider, callback) => {
+        await callback(KEY);
+        return callback(KEY);
+      },
+    },
+    true,
+  );
+  await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+  assert.equal(events.filter((item) => item === "send").length, 1);
+  assert.equal(events.filter((item) => item === "claim").length, 1);
+  assert.equal(events.filter((item) => item === "halt:response_missing").length, 1);
+  await assert.rejects(coordinator.run(request, "Valid text"), /claim unavailable/);
+  assert.equal(events.filter((item) => item === "send").length, 1);
+});
+
+test("credential callback omission is an uncertain outcome and must halt", async () => {
+  const events: string[] = [];
+  const coordinator = dormantOneShotTextCoordinator(
+    fixtureBridge(events),
+    { send: async () => { events.push("send"); return openaiFixture; } },
+    { withCredential: async () => openaiFixture },
+    true,
+  );
+  await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+  assert.equal(events.includes("send"), false);
+  assert.equal(events.filter((item) => item === "halt:response_missing").length, 1);
+});
