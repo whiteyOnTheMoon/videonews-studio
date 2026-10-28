@@ -26,20 +26,20 @@ Provider information to review, not a claim about this installation:
 
 ## Operator review — read-only, no secret disclosures
 
-| Check                                   | Needed evidence (retain privately)                                                                                                                        | Status            |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| IONOS product type and protected server | Backup package/image/snapshot or other, correct VPS identification                                                                                        | Unknown           |
-| Schedule and last successful execution  | Actual success record and exact timestamp; no assumptions from toggle or subscription                                                                     | Unknown           |
-| Covered data                            | Includes `videonews-studio_postgres_data` and `videonews-studio_redis_data` under /var/lib/docker and any media/audit/configuration needed for recovery   | Unknown           |
+| Check                                   | Needed evidence (retain privately)                                                                                                                            | Status            |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| IONOS product type and protected server | Backup package/image/snapshot or other, correct VPS identification                                                                                            | Unknown           |
+| Schedule and last successful execution  | Actual success record and exact timestamp; no assumptions from toggle or subscription                                                                         | Unknown           |
+| Covered data                            | Includes `videonews-studio_postgres_data` and `videonews-studio_redis_data` under /var/lib/docker and any media/audit/configuration needed for recovery       | Unknown           |
 | Database consistency                    | PostgreSQL 17 and Redis 8.4.8 AOF/BullMQ backup method and correctness under live writes; crash-consistent storage copies may need application-level recovery | Unknown           |
-| Off-VPS access and retention            | Independently accessible recovery copy, age, storage location, retention and immutable/isolated access controls                                           | Unknown           |
-| Recovery access and confidentiality     | Separate authorized recovery identities, encryption status, key custody, availability on total VPS loss                                                   | Unknown           |
-| Full restore rehearsal                  | Recovery of PostgreSQL globals/ACLs/schema/data and Redis AOF/queue in isolated, **nonproduction** recovery target                                        | Not performed     |
-| Outbox/BullMQ reconciliation            | No doubled research/work or accidental publication; workers kept disabled throughout restore drill                                                        | Not performed     |
-| RPO/RTO                                 | Measured last restorable recovery point and elapsed restore time with operator-approved objectives                                                        | Not measured      |
-| Beszel shared-host health               | Existing agent/hub and notifications working as reported by operator                                                                                      | Operator reported |
-| Beszel P2-02 feed health                | `feed-consumer` and `feed-producer-continuous` appear once deployed, unhealthy/exited conditions detected and actionable                                  | Not demonstrated  |
-| Beszel notification receipt             | Non-disruptive test alert for intended P2-02 condition received by operator, time and signal recorded                                                     | Not demonstrated  |
+| Off-VPS access and retention            | Independently accessible recovery copy, age, storage location, retention and immutable/isolated access controls                                               | Unknown           |
+| Recovery access and confidentiality     | Separate authorized recovery identities, encryption status, key custody, availability on total VPS loss                                                       | Unknown           |
+| Full restore rehearsal                  | Recovery of PostgreSQL globals/ACLs/schema/data and Redis AOF/queue in isolated, **nonproduction** recovery target                                            | Not performed     |
+| Outbox/BullMQ reconciliation            | No doubled research/work or accidental publication; workers kept disabled throughout restore drill                                                            | Not performed     |
+| RPO/RTO                                 | Measured last restorable recovery point and elapsed restore time with operator-approved objectives                                                            | Not measured      |
+| Beszel shared-host health               | Existing agent/hub and notifications working as reported by operator                                                                                          | Operator reported |
+| Beszel P2-02 feed health                | `feed-consumer` and `feed-producer-continuous` appear once deployed, unhealthy/exited conditions detected and actionable                                      | Not demonstrated  |
+| Beszel notification receipt             | Non-disruptive test alert for intended P2-02 condition received by operator, time and signal recorded                                                         | Not demonstrated  |
 
 **Never** place backup-console credentials, customer IDs, private keys, restore links, notification URLs, database dumps, file lists containing personal data, or IONOS login exports into GitHub issues, CI, chat messages or screenshots. Evidence links in the release checklist should point only to sanitized operator-reviewed summaries.
 
