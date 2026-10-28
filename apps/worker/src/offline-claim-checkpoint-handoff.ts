@@ -110,7 +110,7 @@ export function prepareOfflineClaimCheckpoint(
         reviewedAt: review.reviewedAt,
         decision: review.decision,
         evidence: review.evidence
-          .map((proof) => ({
+          .map((proof: IndependentClaimReview["evidence"][number]) => ({
             articleId: proof.articleId,
             sourceUrl: proof.sourceUrl,
             checkedAt: proof.checkedAt,
