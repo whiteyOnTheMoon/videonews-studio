@@ -26,7 +26,8 @@ const request = (body: unknown = command(), origin = ORIGIN, cookie = COOKIE) =>
   });
 test("read-only by default and exact review grammar", () => {
   assert.equal(priceReviewProxyConfig({}), null);
-  assert.deepEqual(parsePriceReviewBody(command()), command());
+  const valid = command();
+  assert.deepEqual(parsePriceReviewBody(valid), valid);
   for (const invalid of [
     {},
     null,
