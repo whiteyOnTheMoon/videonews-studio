@@ -1,0 +1,7 @@
+BEGIN;
+DROP FUNCTION vns.verify_provider_named_job_authorization(uuid,text,text,text,uuid,text,integer,integer);
+DROP FUNCTION vns.admin_authorize_provider_job_as_editor(uuid,integer,uuid,text,text,text,uuid,text,integer,integer);
+DROP TABLE vns.provider_named_job_outbox;
+DROP TABLE vns.provider_named_job_authorizations;
+DELETE FROM vns.schema_migrations WHERE version='0044_named_provider_job_authorization';
+COMMIT;
