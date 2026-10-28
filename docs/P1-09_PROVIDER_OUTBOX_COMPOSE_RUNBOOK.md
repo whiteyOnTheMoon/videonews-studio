@@ -40,6 +40,47 @@ Files expected in the mounted directory:
 - `provider-outbox-redis-password`: separate Redis ACL user `vns_provider_producer`, restricted to `bull:vns:vns-provider-text:*` and BullMQ-required commands, with no access to other queues.
 - `provider-prompt-key`: 32-byte AES-256-GCM key that must be the **same key** used to seal those pending SQL prompt envelopes, not the provider credential master key. Losing or rotating it without a planned re-encryption makes the pending prompts unrecoverable.
 
+
+## Operator credential-custody helper (not yet run on VPS)
+
+The guarded `scripts/p1_09_provider_outbox_custody.py` provides three
+separate operations. All require the expected operator UID, clean main
+checkout and verified private host directory where applicable.
+
+1. `--stage` creates exactly three independent private runtime files plus
+   `provider-outbox-acl-candidate` (0600). The candidate contains a Redis
+   password **hash**, not plaintext. It never edits `secrets/redis_acl`,
+   the live Redis process or PostgreSQL. Existing files, partial staging,
+   symlinks and loose permissions are refused. Operator authorization is
+   required before staging any real credentials.
+2. `--preflight` makes read-only PostgreSQL inquiries and verifies the exact
+   0001–0048 migration ledger, disabled spending, missing producer LOGIN,
+   restrictive NOLOGIN role, private secret files and hash/candidate match.
+   It refuses to proceed before the 0044–0048 migrations are individually
+   approved and installed. The result is not proof of the running Redis ACL.
+3. `--apply` only when `VNS_P1_OUTBOX_LOGIN_PROVISION_APPROVED` equals
+   `CREATE_OUTBOX_LOGIN_ONLY`: after another preflight, creates just the
+   SCRAM `vns_provider_outbox_login`, inherits only
+   `vns_provider_outbox_reader` with `SET FALSE`, and verifies membership.
+   It does not change the Redis ACL or start a container. This is a
+   production database mutation and requires fresh explicit operator approval.
+
+A successful stage does **not** authorize a database role creation; a
+successful role creation does **not** authorize modifying the running Redis
+ACL; and neither authorizes a producer run or paid AI request. Do not
+attempt to paste, log or send any private files, hashes or role verifiers.
+If provisioning fails after side effects, preserve all files and SQL state
+for read-only diagnosis rather than blindly rerunning, rotating or deleting.
+
+Before installing the Redis ACL candidate, independently examine the
+current active ACL, preserve all unrelated existing users, and review a
+controlled ACL rollout and rollback. A replacement of the whole ACL with
+the candidate alone would deny existing services, so it is prohibited.
+
+The helper's tests use temporary synthetic files and mocked SQL. Live
+PostgreSQL authentication, Redis ACL installation and on-host runtime
+start are separate pending operator acceptance checks.
+
 ## Preflight and verification (not yet an operator command)
 
 1. Check clean, release-pinned `main`, reviewed CI and image digest.
