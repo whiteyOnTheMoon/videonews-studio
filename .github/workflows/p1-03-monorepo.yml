@@ -58,6 +58,12 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Temporary outbox Prettier diff
+        if: failure()
+        run: |
+          for f in apps/worker/src/provider-outbox-once.ts apps/worker/src/provider-outbox-publisher.ts apps/worker/src/provider-outbox-publisher.test.ts; do
+            npx prettier "$f" | diff -u "$f" - || true
+          done
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
