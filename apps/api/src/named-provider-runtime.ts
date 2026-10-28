@@ -5,7 +5,10 @@ import type { AdminAuth } from "./auth.js";
 import type { EditorAuth } from "./editor-auth.js";
 import { NamedAdminProviderConfiguration } from "./named-admin-provider-configuration.js";
 import { withProviderMasterKey, withProviderPromptKey } from "./provider-master-key-file.js";
-import { NamedProviderJobSubmissionHttp, PostgresNamedProviderJobStore } from "./named-provider-job-submission.js";
+import {
+  NamedProviderJobSubmissionHttp,
+  PostgresNamedProviderJobStore,
+} from "./named-provider-job-submission.js";
 import { PostgresNamedProviderConfigStore } from "./postgres-named-provider-config-store.js";
 import { PostgresProviderMutationLimiter } from "./postgres-provider-mutation-limiter.js";
 import { NamedPriceFxReviewHttp, PostgresNamedPriceReviewStore } from "./named-price-fx-review.js";
@@ -85,8 +88,11 @@ export async function namedProviderRuntimeFromEnv(
   withKey: typeof withProviderMasterKey = withProviderMasterKey,
 ): Promise<NamedProviderRequestRuntime | undefined> {
   if ([undefined, "false"].includes(env.VNS_PROVIDER_ADMIN_WRITE_ENABLED)) {
-    if (env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true" ||
-        env.VNS_PROVIDER_JOB_SUBMISSION_ENABLED === "true") throw new Error(UNAVAILABLE);
+    if (
+      env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true" ||
+      env.VNS_PROVIDER_JOB_SUBMISSION_ENABLED === "true"
+    )
+      throw new Error(UNAVAILABLE);
     return undefined;
   }
   if (
