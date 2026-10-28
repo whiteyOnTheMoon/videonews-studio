@@ -123,7 +123,11 @@ export async function namedProviderRuntimeFromEnv(
       if (key.length !== 32) throw new Error(UNAVAILABLE);
     });
     return new NamedProviderRequestRuntime(
-      editor, auth, pool, withKey, env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true",
+      editor,
+      auth,
+      pool,
+      withKey,
+      env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true",
     );
   } catch {
     await pool.end().catch(() => undefined);

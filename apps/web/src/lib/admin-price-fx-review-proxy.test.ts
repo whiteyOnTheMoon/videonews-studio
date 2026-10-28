@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dormantPriceReviewProxy, parsePriceReviewBody, priceReviewProxyConfig } from "./admin-price-fx-review-proxy";
+import {
+  dormantPriceReviewProxy,
+  parsePriceReviewBody,
+  priceReviewProxyConfig,
+} from "./admin-price-fx-review-proxy";
 
 const ORIGIN = "https://studio.ap-pixels.com";
 const CFG = { origin: ORIGIN, api: "http://api:4000" };
@@ -23,13 +27,16 @@ test("read-only by default and exact review grammar", () => {
   assert.equal(priceReviewProxyConfig({}), null);
   assert.deepEqual(parsePriceReviewBody(command()), command());
   for (const invalid of [
-    {}, null, { ...command(), action: "enable" },
+    {},
+    null,
+    { ...command(), action: "enable" },
     { ...command(), apiKey: "forbidden" },
     { ...command(), enabled: true },
     { ...command(), microEurPerMicroUsdNanos: 1000000000 },
     { ...command(), microEurPerMicroUsdNanos: "-1" },
     { ...command(), sourceReference: "http://not-allowed.invalid/path" },
-  ]) assert.equal(parsePriceReviewBody(invalid), null);
+  ])
+    assert.equal(parsePriceReviewBody(invalid), null);
 });
 
 test("BFF requires named admin, exact origin, framing and no shared cookie", async () => {
@@ -42,8 +49,21 @@ test("BFF requires named admin, exact origin, framing and no shared cookie", asy
     throw new Error("must not send");
   }) as typeof fetch;
   assert.equal((await dormantPriceReviewProxy(request(), null, fetcher)).status, 404);
-  assert.equal((await dormantPriceReviewProxy(request(command(), "https://forged.invalid"), CFG, fetcher)).status, 403);
-  assert.equal((await dormantPriceReviewProxy(request(command(), ORIGIN, "__Host-vns_session=" + "b".repeat(64)), CFG, fetcher)).status, 401);
+  assert.equal(
+    (await dormantPriceReviewProxy(request(command(), "https://forged.invalid"), CFG, fetcher))
+      .status,
+    403,
+  );
+  assert.equal(
+    (
+      await dormantPriceReviewProxy(
+        request(command(), ORIGIN, "__Host-vns_session=" + "b".repeat(64)),
+        CFG,
+        fetcher,
+      )
+    ).status,
+    401,
+  );
   assert.equal((await dormantPriceReviewProxy(request(), CFG, fetcher)).status, 403);
   assert.equal(upstreamWrites, 0);
 });
@@ -93,11 +113,16 @@ test("malformed review data or forbidden framing cannot create a review", async 
     return Response.json({ reviewed: true, active: false, reviewId: UUID });
   }) as typeof fetch;
   const invalid = await dormantPriceReviewProxy(
-    request({ ...command(), enable: true }), CFG, fetcher);
+    request({ ...command(), enable: true }),
+    CFG,
+    fetcher,
+  );
   assert.equal(invalid.status, 400);
   const tooLarge = await dormantPriceReviewProxy(
     request({ ...command(), sourceReference: "https://example.org/" + "x".repeat(1100) }),
-    CFG, fetcher);
+    CFG,
+    fetcher,
+  );
   assert.equal(tooLarge.status, 400);
   const original = request();
   const headers = new Headers(original.headers);

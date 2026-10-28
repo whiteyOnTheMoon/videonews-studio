@@ -31,7 +31,9 @@ export type NamedPriceReviewCommand =
     }>;
 
 function exactKeys(value: Record<string, unknown>, keys: string[]): boolean {
-  return Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+  return (
+    Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
+  );
 }
 function integer(value: unknown, max: bigint): value is string {
   return typeof value === "string" && UINT.test(value) && BigInt(value) <= max;
@@ -96,12 +98,7 @@ export function parseNamedPriceReview(input: unknown): NamedPriceReviewCommand |
   }
   if (
     row.action === "review_fx" &&
-    exactKeys(row, [
-      "action",
-      "microEurPerMicroUsdNanos",
-      "expiresAt",
-      "sourceReference",
-    ]) &&
+    exactKeys(row, ["action", "microEurPerMicroUsdNanos", "expiresAt", "sourceReference"]) &&
     integer(row.microEurPerMicroUsdNanos, 10_000_000_000n) &&
     BigInt(row.microEurPerMicroUsdNanos) > 0n
   ) {

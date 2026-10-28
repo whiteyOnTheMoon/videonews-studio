@@ -25,7 +25,9 @@ function reply(status: number, body: object): Response {
   });
 }
 function keys(row: Record<string, unknown>, expected: string[]): boolean {
-  return Object.keys(row).length === expected.length && expected.every((x) => Object.hasOwn(row, x));
+  return (
+    Object.keys(row).length === expected.length && expected.every((x) => Object.hasOwn(row, x))
+  );
 }
 function integer(v: unknown, max: bigint): v is string {
   return typeof v === "string" && UINT.test(v) && BigInt(v) <= max;
@@ -34,40 +36,72 @@ function source(v: unknown): v is string {
   if (typeof v !== "string" || v.length < 12 || v.length > 512) return false;
   try {
     const url = new URL(v);
-    return url.protocol === "https:" && url.username === "" && url.password === "" &&
-      url.hash === "" && url.pathname !== "/" && !/[\s@]/.test(v);
-  } catch { return false; }
+    return (
+      url.protocol === "https:" &&
+      url.username === "" &&
+      url.password === "" &&
+      url.hash === "" &&
+      url.pathname !== "/" &&
+      !/[\s@]/.test(v)
+    );
+  } catch {
+    return false;
+  }
 }
 function date(v: unknown): v is string {
-  return typeof v === "string" && DATE.test(v) &&
-    Number.isFinite(Date.parse(v)) && new Date(v).toISOString().startsWith(v.slice(0, 19));
+  return (
+    typeof v === "string" &&
+    DATE.test(v) &&
+    Number.isFinite(Date.parse(v)) &&
+    new Date(v).toISOString().startsWith(v.slice(0, 19))
+  );
 }
 
 export function parsePriceReviewBody(input: unknown): Record<string, unknown> | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const row = input as Record<string, unknown>;
   if (!date(row.expiresAt) || !source(row.sourceReference)) return null;
-  if (row.action === "review_fx" &&
-    keys(row, ["action","microEurPerMicroUsdNanos","expiresAt","sourceReference"]) &&
+  if (
+    row.action === "review_fx" &&
+    keys(row, ["action", "microEurPerMicroUsdNanos", "expiresAt", "sourceReference"]) &&
     integer(row.microEurPerMicroUsdNanos, 10_000_000_000n) &&
-    BigInt(row.microEurPerMicroUsdNanos) > 0n) return row;
-  if (row.action === "review_price" &&
-    keys(row, ["action","provider","model","priceVersion",
-      "inputMicroUsdPerMillion","cachedMicroUsdPerMillion",
-      "outputMicroUsdPerMillion","expiresAt","sourceReference"]) &&
+    BigInt(row.microEurPerMicroUsdNanos) > 0n
+  )
+    return row;
+  if (
+    row.action === "review_price" &&
+    keys(row, [
+      "action",
+      "provider",
+      "model",
+      "priceVersion",
+      "inputMicroUsdPerMillion",
+      "cachedMicroUsdPerMillion",
+      "outputMicroUsdPerMillion",
+      "expiresAt",
+      "sourceReference",
+    ]) &&
     (row.provider === "openai" || row.provider === "google_gemini") &&
-    typeof row.model === "string" && MODEL.test(row.model) &&
-    typeof row.priceVersion === "string" && VERSION.test(row.priceVersion) &&
+    typeof row.model === "string" &&
+    MODEL.test(row.model) &&
+    typeof row.priceVersion === "string" &&
+    VERSION.test(row.priceVersion) &&
     integer(row.inputMicroUsdPerMillion, 1_000_000_000_000n) &&
     integer(row.cachedMicroUsdPerMillion, 1_000_000_000_000n) &&
     integer(row.outputMicroUsdPerMillion, 1_000_000_000_000n) &&
     BigInt(row.cachedMicroUsdPerMillion) <= BigInt(row.inputMicroUsdPerMillion) &&
-    BigInt(row.inputMicroUsdPerMillion) + BigInt(row.outputMicroUsdPerMillion) > 0n) return row;
+    BigInt(row.inputMicroUsdPerMillion) + BigInt(row.outputMicroUsdPerMillion) > 0n
+  )
+    return row;
   return null;
 }
 async function limitedBody(request: Request): Promise<unknown> {
-  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
-      request.headers.has("content-encoding")) return null;
+  if (
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !==
+      "application/json" ||
+    request.headers.has("content-encoding")
+  )
+    return null;
   const declared = request.headers.get("content-length");
   if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > 1024)) {
     return null;
@@ -93,9 +127,12 @@ async function limitedBody(request: Request): Promise<unknown> {
     }
     try {
       return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
-    } finally { bytes.fill(0); }
-  } catch { return null; }
-  finally {
+    } finally {
+      bytes.fill(0);
+    }
+  } catch {
+    return null;
+  } finally {
     for (const chunk of chunks) chunk.fill(0);
     await reader.cancel().catch(() => undefined);
   }
@@ -119,8 +156,7 @@ export async function dormantPriceReviewProxy(
     if (profile.status === 401) return reply(401, { error: "unauthorized" });
     if (profile.status !== 200) return reply(503, { error: "temporarily_unavailable" });
     const role: unknown = await profile.json();
-    if (!role || typeof role !== "object" ||
-      !("role" in role) || role.role !== "admin") {
+    if (!role || typeof role !== "object" || !("role" in role) || role.role !== "admin") {
       return reply(403, { error: "forbidden" });
     }
     const payload = parsePriceReviewBody(await limitedBody(request));
@@ -149,9 +185,16 @@ export async function dormantPriceReviewProxy(
       return reply(503, { error: "temporarily_unavailable" });
     }
     const result = data as Record<string, unknown>;
-    if (Object.keys(result).length !== 3 || result.reviewed !== true ||
-      result.active !== false || typeof result.reviewId !== "string" ||
-      !UUID.test(result.reviewId)) return reply(503, { error: "temporarily_unavailable" });
+    if (
+      Object.keys(result).length !== 3 ||
+      result.reviewed !== true ||
+      result.active !== false ||
+      typeof result.reviewId !== "string" ||
+      !UUID.test(result.reviewId)
+    )
+      return reply(503, { error: "temporarily_unavailable" });
     return reply(200, { reviewed: true, active: false, reviewId: result.reviewId });
-  } catch { return reply(503, { error: "temporarily_unavailable" }); }
+  } catch {
+    return reply(503, { error: "temporarily_unavailable" });
+  }
 }

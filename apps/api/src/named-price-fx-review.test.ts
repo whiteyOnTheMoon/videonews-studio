@@ -37,10 +37,16 @@ test("price FX commands are exact, decimal and contain no activation, secrets or
   assert.deepEqual(parseNamedPriceReview(validPrice), validPrice);
   assert.deepEqual(parseNamedPriceReview(validFx), validFx);
   for (const invalid of [
-    null, [], {}, { ...price(), action: "enable" },
-    { ...price(), apiKey: "secret" }, { ...fx(), budget: 100 },
-    { ...price(), provider: "injected" }, { ...price(), model: "evil/model" },
-    { ...price(), priceVersion: "short" }, { ...price(), inputMicroUsdPerMillion: 1 },
+    null,
+    [],
+    {},
+    { ...price(), action: "enable" },
+    { ...price(), apiKey: "secret" },
+    { ...fx(), budget: 100 },
+    { ...price(), provider: "injected" },
+    { ...price(), model: "evil/model" },
+    { ...price(), priceVersion: "short" },
+    { ...price(), inputMicroUsdPerMillion: 1 },
     { ...price(), cachedMicroUsdPerMillion: "2000000" },
     { ...price(), inputMicroUsdPerMillion: "0", outputMicroUsdPerMillion: "0" },
     { ...price(), sourceReference: "http://example.org/prices" },
@@ -50,7 +56,8 @@ test("price FX commands are exact, decimal and contain no activation, secrets or
     { ...fx(), microEurPerMicroUsdNanos: "10000000001" },
     { ...fx(), microEurPerMicroUsdNanos: "1.05" },
     { ...fx(), enabled: true },
-  ]) assert.equal(parseNamedPriceReview(invalid), null);
+  ])
+    assert.equal(parseNamedPriceReview(invalid), null);
 });
 
 test("named price store uses parameterized SQL and sanitized return", async () => {
@@ -67,19 +74,29 @@ test("named price store uses parameterized SQL and sanitized return", async () =
   assert.match(calls[0]!.sql, /admin_review_live_provider_price_as_editor/);
   assert.match(calls[1]!.sql, /admin_review_live_provider_fx_as_editor/);
   assert.deepEqual(calls[0]!.params.slice(0, 5), [
-    ID, 0, "openai", "some-verified-model", "reviewed_version_0001",
+    ID,
+    0,
+    "openai",
+    "some-verified-model",
+    "reviewed_version_0001",
   ]);
   assert.deepEqual(calls[1]!.params.slice(0, 3), [ID, 0, "1150000000"]);
-  await assert.rejects(store.record(price() as never, {
-    ...identity, role: "editor",
-  }), /unavailable/);
+  await assert.rejects(
+    store.record(price() as never, {
+      ...identity,
+      role: "editor",
+    }),
+    /unavailable/,
+  );
   assert.equal(calls.length, 2);
 });
 
 test("named price store suppresses SQL credentials and unexpected receipts", async () => {
-  const pool = { async query() { throw new Error("secret-admin-db-password"); } } as unknown as Pick<
-    Pool, "query"
-  >;
+  const pool = {
+    async query() {
+      throw new Error("secret-admin-db-password");
+    },
+  } as unknown as Pick<Pool, "query">;
   await assert.rejects(
     new PostgresNamedPriceReviewStore(pool).record(fx() as never, identity),
     (e: Error) => e.message === "Named price review unavailable",
@@ -98,9 +115,15 @@ function response() {
     code: 0,
     body: "",
     headers: {} as Record<string, string>,
-    setHeader(key: string, value: string) { this.headers[key] = value; },
-    writeHead(code: number) { this.code = code; },
-    end(value: string) { this.body = value; },
+    setHeader(key: string, value: string) {
+      this.headers[key] = value;
+    },
+    writeHead(code: number) {
+      this.code = code;
+    },
+    end(value: string) {
+      this.body = value;
+    },
   };
   return res;
 }
@@ -110,10 +133,20 @@ test("named review HTTP checks session, Origin and shared admission before datab
   let writes = 0;
   let authenticated = false;
   const handler = new NamedPriceFxReviewHttp(
-    { authenticatedAdminIdentity: async () => authenticated ? identity : null },
+    { authenticatedAdminIdentity: async () => (authenticated ? identity : null) },
     { originAllowed: (req) => req.headers.origin === "https://studio.example.invalid" },
-    { record: async () => { writes++; return RECEIPT; } },
-    { allow: async () => { admissions++; return true; } },
+    {
+      record: async () => {
+        writes++;
+        return RECEIPT;
+      },
+    },
+    {
+      allow: async () => {
+        admissions++;
+        return true;
+      },
+    },
   );
   const unauthorized = response();
   await handler.handle(request(), unauthorized as unknown as ServerResponse);
@@ -121,7 +154,10 @@ test("named review HTTP checks session, Origin and shared admission before datab
   assert.equal(admissions, 0);
   authenticated = true;
   const forbidden = response();
-  await handler.handle(request(fx(), "https://forged.invalid"), forbidden as unknown as ServerResponse);
+  await handler.handle(
+    request(fx(), "https://forged.invalid"),
+    forbidden as unknown as ServerResponse,
+  );
   assert.equal(forbidden.code, 403);
   assert.equal(admissions, 0);
   const bad = response();
@@ -139,11 +175,21 @@ test("named review HTTP checks session, Origin and shared admission before datab
 
 test("denied or failing admission cannot persist reviewed prices", async () => {
   let writes = 0;
-  for (const allow of [async () => false, async () => { throw new Error("private-secret"); }]) {
+  for (const allow of [
+    async () => false,
+    async () => {
+      throw new Error("private-secret");
+    },
+  ]) {
     const handler = new NamedPriceFxReviewHttp(
       { authenticatedAdminIdentity: async () => identity },
       { originAllowed: () => true },
-      { record: async () => { writes++; return RECEIPT; } },
+      {
+        record: async () => {
+          writes++;
+          return RECEIPT;
+        },
+      },
       { allow },
     );
     const res = response();
