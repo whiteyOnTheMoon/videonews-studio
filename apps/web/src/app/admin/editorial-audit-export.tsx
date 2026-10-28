@@ -10,14 +10,36 @@ interface Batch {
   cursor?: { afterTime: string; afterId: string } | null;
   nextRevision?: number;
 }
-export function validEditorialExportBatch(value: unknown): value is Batch {
+export function validEditorialExportBatch(value: unknown, kind: Ledger): value is Batch {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const body = value as Record<string, unknown>;
-  return (
-    Array.isArray(body.events) &&
-    body.events.length <= 100 &&
-    body.events.every((row) => !!row && typeof row === "object" && !Array.isArray(row))
-  );
+  if (
+    !Array.isArray(body.events) ||
+    body.events.length > 100 ||
+    !body.events.every((row) => !!row && typeof row === "object" && !Array.isArray(row))
+  ) return false;
+  if (kind === "checkpoints") {
+    return (
+      Object.keys(body).sort().join(",") === "events,nextRevision" &&
+      Number.isSafeInteger(body.nextRevision) &&
+      (body.nextRevision as number) >= 0 &&
+      (body.nextRevision as number) <= 10000
+    );
+  }
+  if (kind !== "timeline" || Object.keys(body).sort().join(",") !== "cursor,events")
+    return false;
+  if (body.cursor === null) return true;
+  if (!body.cursor || typeof body.cursor !== "object" || Array.isArray(body.cursor))
+    return false;
+  const cursor = body.cursor as Record<string, unknown>;
+  if (
+    Object.keys(cursor).sort().join(",") !== "afterId,afterTime" ||
+    typeof cursor.afterId !== "string" ||
+    !UUID.test(cursor.afterId) ||
+    typeof cursor.afterTime !== "string"
+  ) return false;
+  const time = Date.parse(cursor.afterTime);
+  return Number.isFinite(time) && new Date(time).toISOString() === cursor.afterTime;
 }
 
 /** Pagination stops on complete empty page or refuses to create a truncated export. */
@@ -60,10 +82,18 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
         });
         if (response.status !== 200) throw new Error("Editorial audit export unavailable");
         const raw: unknown = await response.json();
-        if (!validEditorialExportBatch(raw)) throw new Error("Audit page format invalid");
+        if (!validEditorialExportBatch(raw, kind)) throw new Error("Audit page format invalid");
         const rows = raw.events;
         collected.push(...rows);
         if (rows.length === 0) {
+          // Even an empty terminator must acknowledge exactly the expected
+          // final position. Otherwise refuse the allegedly complete file.
+          if (
+            (kind === "checkpoints" && raw.nextRevision !== nextRevision) ||
+            (kind === "timeline" && raw.cursor !== null)
+          ) {
+            throw new Error("Audit export terminator mismatch");
+          }
           completed = true;
           break;
         }
