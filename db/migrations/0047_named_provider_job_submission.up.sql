@@ -17,6 +17,8 @@ AS $create$
 DECLARE
  v_job_id uuid;
 BEGIN
+ -- Personal identity must be current even for a repeated request ID.
+ PERFORM vns.admin_assert_live_price_reviewer(p_editor_id,p_auth_version);
  IF p_idempotency_key IS NULL
     OR p_idempotency_key !~ '^[A-Za-z0-9_-]{24,80}$' THEN
   RAISE EXCEPTION 'Provider job submission invalid' USING ERRCODE='22023';
