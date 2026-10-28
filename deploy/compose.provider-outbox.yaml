@@ -1,0 +1,44 @@
+# P1-09 / #230: EXPLICIT operator-only, single-pass provider SQL->Redis producer.
+# Not part of default Compose startup. Never schedules, processes or sends AI requests.
+# The approved digest must identify the reviewed release worker build.
+services:
+  provider-outbox-once:
+    profiles: [provider-outbox]
+    image: "${VNS_PROVIDER_OUTBOX_WORKER_IMAGE:?Pinned reviewed GHCR worker image required}"
+    init: true
+    restart: "no"
+    read_only: true
+    user: "1000:1000"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 32
+    mem_limit: 160m
+    memswap_limit: 160m
+    cpus: 0.25
+    stop_grace_period: 10s
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=8m
+    entrypoint: ["node", "apps/worker/dist/provider-outbox-once.js", "--once"]
+    environment:
+      NODE_ENV: production
+      VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED: "${VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED:-false}"
+      VNS_PROVIDER_OUTBOX_OPERATOR_ACK: "${VNS_PROVIDER_OUTBOX_OPERATOR_ACK:-false}"
+      VNS_PROVIDER_OUTBOX_QUEUE_NAME: vns-provider-text
+      VNS_PROVIDER_OUTBOX_PG_USER: vns_provider_outbox_login
+      VNS_PROVIDER_OUTBOX_REDIS_USER: vns_provider_producer
+      VNS_PROVIDER_OUTBOX_DB_NAME: videonews
+      VNS_PROVIDER_OUTBOX_KEY_FILE: /run/secrets/vns/provider-prompt-key
+      VNS_PROVIDER_OUTBOX_PG_PASSWORD_FILE: /run/secrets/vns/provider-outbox-db-password
+      VNS_PROVIDER_OUTBOX_REDIS_PASSWORD_FILE: /run/secrets/vns/provider-outbox-redis-password
+      VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED: "false"
+      VNS_P1_PROVIDER_CANARY_ENABLED: "false"
+    volumes:
+      - type: bind
+        source: "${VNS_PROVIDER_OUTBOX_SECRET_HOST_DIR:?Private producer secret directory required}"
+        target: /run/secrets/vns
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [backend]
