@@ -182,7 +182,12 @@ test("recorded native usage is committed atomically after a SQL-authorized reser
 test("missing usage persists a durable halt without recording a false zero", async () => {
   const { db, events } = mockDatabase();
   await assert.rejects(
-    replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, null, FIXTURE_DIGEST),
+    replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        null,
+        FIXTURE_DIGEST,
+      ),
     /Provider budget review required/,
   );
   assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -197,7 +202,12 @@ test("incomplete and contradictory usage halt before a receipt exists", async ()
   ]) {
     const { db, events } = mockDatabase();
     await assert.rejects(
-      replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, response, FIXTURE_DIGEST),
+      replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        response,
+        FIXTURE_DIGEST,
+      ),
       /Provider budget review required/,
     );
     assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -208,7 +218,12 @@ test("over-reservation cost and token exhaustion halt rather than undercount", a
   for (const override of [{ reserved_micro_usd: "161" }, { max_input_tokens: "99" }]) {
     const { db, events } = mockDatabase({ projectionOverride: override });
     await assert.rejects(
-      replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture, FIXTURE_DIGEST),
+      replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        openaiFixture,
+        FIXTURE_DIGEST,
+      ),
       /Provider budget review required/,
     );
     assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -223,7 +238,12 @@ test("over-reservation cost and token exhaustion halt rather than undercount", a
     },
   };
   await assert.rejects(
-    replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, native, FIXTURE_DIGEST),
+    replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        native,
+        FIXTURE_DIGEST,
+      ),
     /Provider budget review required/,
   );
   assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -239,7 +259,12 @@ test("forged SQL price projection always fails closed and halts", async () => {
   ]) {
     const { db, events } = mockDatabase({ projectionOverride: patch });
     await assert.rejects(
-      replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture, FIXTURE_DIGEST),
+      replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        openaiFixture,
+        FIXTURE_DIGEST,
+      ),
       /Provider budget review required/,
     );
     assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -250,7 +275,12 @@ test("database outages and uncertain settle roll back before durable halt", asyn
   for (const failure of ["record", "settle"] as const) {
     const { db, events } = mockDatabase({ failure });
     await assert.rejects(
-      replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture, FIXTURE_DIGEST),
+      replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        openaiFixture,
+        FIXTURE_DIGEST,
+      ),
       /Provider budget review required/,
     );
     const expectedSequence = [
@@ -271,7 +301,12 @@ test("database outages and uncertain settle roll back before durable halt", asyn
 test("SQL-reported halt commits the incident and is never accepted as settlement", async () => {
   const { db, events } = mockDatabase({ settlement: "halted" });
   await assert.rejects(
-    replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture, FIXTURE_DIGEST),
+    replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        openaiFixture,
+        FIXTURE_DIGEST,
+      ),
     /Provider budget review required/,
   );
   assert.deepEqual(events.slice(-3), ["settle", "COMMIT", "release"]);
@@ -281,7 +316,12 @@ test("SQL-reported halt commits the incident and is never accepted as settlement
 test("failed emergency halt is a hard error without leaking DB credentials", async () => {
   const { db } = mockDatabase({ failure: "halt" });
   await assert.rejects(
-    replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, null, FIXTURE_DIGEST),
+    replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        null,
+        FIXTURE_DIGEST,
+      ),
     (error: Error) =>
       error.message === "Provider emergency halt unavailable" &&
       !error.message.includes("db-password"),
@@ -291,7 +331,12 @@ test("failed emergency halt is a hard error without leaking DB credentials", asy
 test("reserve failure cannot continue into a receipt", async () => {
   const { db, events } = mockDatabase({ failure: "reserve" });
   await assert.rejects(
-    replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture, FIXTURE_DIGEST),
+    replayProviderBudgetFixture(
+        dormantProviderBudgetBridge(db, true),
+        request,
+        openaiFixture,
+        FIXTURE_DIGEST,
+      ),
     /Provider budget reservation unavailable/,
   );
   assert.deepEqual(events, ["reserve"]);
