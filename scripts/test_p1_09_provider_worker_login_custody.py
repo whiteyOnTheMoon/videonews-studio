@@ -108,14 +108,26 @@ class WorkerLoginCustodyTests(unittest.TestCase):
         ), patch.object(custody, "read_passwords", return_value=["A" * 48, "B" * 48]), patch.object(
             custody, "owner_sql", side_effect=lambda statement, read_only=True:
                 (sql.append((statement, read_only)),
-                 fields if "current_user" in statement else "\n".join(versions))[1]
+                 fields if "current_user" in statement else (
+                    "t" if "has_function_privilege" in statement else "\n".join(versions)))[1]
         ):
             custody.preflight()
-            self.assertEqual(len(sql), 2)
+            self.assertEqual(len(sql), 3)
             self.assertTrue(all(only_read for _, only_read in sql))
         with patch.object(custody, "check_operator"), patch.object(
             custody, "expected_versions", return_value=versions
         ), patch.object(custody, "owner_sql", return_value=fields.replace("|2|0|", "|1|0|", 1)):
+            with self.assertRaises(RuntimeError):
+                custody.preflight()
+        def insufficient_acl(statement, read_only=True):
+            if "current_user" in statement:
+                return fields
+            if "has_function_privilege" in statement:
+                return "f"
+            return "\n".join(versions)
+        with patch.object(custody, "check_operator"), patch.object(
+            custody, "expected_versions", return_value=versions
+        ), patch.object(custody, "owner_sql", side_effect=insufficient_acl):
             with self.assertRaises(RuntimeError):
                 custody.preflight()
 
