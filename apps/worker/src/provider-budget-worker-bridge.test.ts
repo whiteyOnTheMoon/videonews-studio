@@ -183,11 +183,11 @@ test("missing usage persists a durable halt without recording a false zero", asy
   const { db, events } = mockDatabase();
   await assert.rejects(
     replayProviderBudgetFixture(
-        dormantProviderBudgetBridge(db, true),
-        request,
-        null,
-        FIXTURE_DIGEST,
-      ),
+      dormantProviderBudgetBridge(db, true),
+      request,
+      null,
+      FIXTURE_DIGEST,
+    ),
     /Provider budget review required/,
   );
   assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -239,11 +239,11 @@ test("over-reservation cost and token exhaustion halt rather than undercount", a
   };
   await assert.rejects(
     replayProviderBudgetFixture(
-        dormantProviderBudgetBridge(db, true),
-        request,
-        native,
-        FIXTURE_DIGEST,
-      ),
+      dormantProviderBudgetBridge(db, true),
+      request,
+      native,
+      FIXTURE_DIGEST,
+    ),
     /Provider budget review required/,
   );
   assert.deepEqual(events, ["reserve", "projection", "halt"]);
@@ -302,11 +302,11 @@ test("SQL-reported halt commits the incident and is never accepted as settlement
   const { db, events } = mockDatabase({ settlement: "halted" });
   await assert.rejects(
     replayProviderBudgetFixture(
-        dormantProviderBudgetBridge(db, true),
-        request,
-        openaiFixture,
-        FIXTURE_DIGEST,
-      ),
+      dormantProviderBudgetBridge(db, true),
+      request,
+      openaiFixture,
+      FIXTURE_DIGEST,
+    ),
     /Provider budget review required/,
   );
   assert.deepEqual(events.slice(-3), ["settle", "COMMIT", "release"]);
@@ -317,11 +317,11 @@ test("failed emergency halt is a hard error without leaking DB credentials", asy
   const { db } = mockDatabase({ failure: "halt" });
   await assert.rejects(
     replayProviderBudgetFixture(
-        dormantProviderBudgetBridge(db, true),
-        request,
-        null,
-        FIXTURE_DIGEST,
-      ),
+      dormantProviderBudgetBridge(db, true),
+      request,
+      null,
+      FIXTURE_DIGEST,
+    ),
     (error: Error) =>
       error.message === "Provider emergency halt unavailable" &&
       !error.message.includes("db-password"),
@@ -332,11 +332,11 @@ test("reserve failure cannot continue into a receipt", async () => {
   const { db, events } = mockDatabase({ failure: "reserve" });
   await assert.rejects(
     replayProviderBudgetFixture(
-        dormantProviderBudgetBridge(db, true),
-        request,
-        openaiFixture,
-        FIXTURE_DIGEST,
-      ),
+      dormantProviderBudgetBridge(db, true),
+      request,
+      openaiFixture,
+      FIXTURE_DIGEST,
+    ),
     /Provider budget reservation unavailable/,
   );
   assert.deepEqual(events, ["reserve"]);
