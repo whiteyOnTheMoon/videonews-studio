@@ -9,6 +9,7 @@ import { isAbsolute, join, resolve } from "node:path";
  */
 export const PROVIDER_MASTER_KEY_DIRECTORY = "/run/secrets/vns";
 export const PROVIDER_MASTER_KEY_FILENAME = "provider-master-key";
+export const PROVIDER_PROMPT_KEY_FILENAME = "provider-prompt-key";
 
 const UNAVAILABLE = "Provider master key unavailable";
 
@@ -24,9 +25,10 @@ function privateOwner(stats: { uid: number; mode: number }): boolean {
  * The callback MUST NOT retain the supplied Buffer or export secret bytes.
  * Future runtime wiring requires an independently approved deployment.
  */
-export async function withProviderMasterKey<T>(
+async function withPrivateProviderKey<T>(
   operation: (masterKey: Buffer) => T | Promise<T>,
-  trustedDirectory = PROVIDER_MASTER_KEY_DIRECTORY,
+  trustedDirectory: string,
+  filename: string,
 ): Promise<T> {
   let opened: Awaited<ReturnType<typeof open>> | undefined;
   let key: Buffer | undefined;
@@ -44,7 +46,7 @@ export async function withProviderMasterKey<T>(
       throw new Error(UNAVAILABLE);
     }
 
-    const secretPath = join(trustedDirectory, PROVIDER_MASTER_KEY_FILENAME);
+    const secretPath = join(trustedDirectory, filename);
     opened = await open(
       secretPath,
       constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
@@ -75,4 +77,19 @@ export async function withProviderMasterKey<T>(
     if (opened) await opened.close().catch(() => undefined);
     key?.fill(0);
   }
+}
+
+/** Independently provisioned AES-GCM key: never reuse provider API-key KEK. */
+export function withProviderMasterKey<T>(
+  operation: (masterKey: Buffer) => T | Promise<T>,
+  trustedDirectory = PROVIDER_MASTER_KEY_DIRECTORY,
+): Promise<T> {
+  return withPrivateProviderKey(operation, trustedDirectory, PROVIDER_MASTER_KEY_FILENAME);
+}
+
+export function withProviderPromptKey<T>(
+  operation: (promptKey: Buffer) => T | Promise<T>,
+  trustedDirectory = PROVIDER_MASTER_KEY_DIRECTORY,
+): Promise<T> {
+  return withPrivateProviderKey(operation, trustedDirectory, PROVIDER_PROMPT_KEY_FILENAME);
 }
