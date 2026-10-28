@@ -37,7 +37,8 @@ test("offline metadata pipeline produces explainable unpublished report", () => 
   assert.equal(groups.length, 1);
   const ranked = rankOfflineEvents(groups, profile, new Date("2026-10-26T13:00:00.000Z"));
   assert.equal(ranked.length, 1);
-  assert.match(ranked[0]!.reasons.join(" "), /independent_sources:2/);
+  assert.ok(ranked[0]!.reasons.includes("distinct_source_ids:2"));
+  assert.ok(ranked[0]!.reasons.includes("independent_verification_required"));
   const draft = buildOfflineDraft(ranked[0]!, profile);
   assert.equal(draft.format, "briefing");
   assert.equal(draft.claims[0]!.status, "uncertain");
@@ -203,4 +204,54 @@ test("self-labelled verified claims never pass the independent offline review ga
   const report = exportOfflineEditorialReport(event, profile, forged);
   assert.equal(report.approvedForPublication, false);
   assert.ok(report.decisions.includes("independent_review_not_attested"));
+});
+
+test("ranking validates source/hash integrity and refuses a forged display headline", () => {
+  const articles = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/a"),
+    item("news_two", "https://two.example.org/news/b"),
+  ]);
+  const event = groupExactHeadlineEvents(articles)[0]!;
+  const at = new Date("2026-10-26T13:00:00.000Z");
+  const forgeries = [
+    { ...event, headline: "Unrelated science headline" },
+    { ...event, articles: [{ ...articles[0]!, id: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, sourceId: "another_feed" }, articles[1]!] },
+  ];
+  for (const bad of forgeries) {
+    assert.throws(() => rankOfflineEvents([bad], profile, at), /Ranking candidate/);
+  }
+  assert.throws(() => rankOfflineEvents([event, event], profile, at));
+});
+
+test("ranking uses full Unicode word boundaries for terms and blocklists", () => {
+  const articles = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/award", "Science award for public research"),
+    item("news_two", "https://two.example.org/news/award", "Science award for public research"),
+  ]);
+  const event = groupExactHeadlineEvents(articles);
+  const now = new Date("2026-10-26T13:00:00.000Z");
+  assert.equal(rankOfflineEvents(event, { ...profile, blockedTerms: ["war"] }, now).length, 1);
+  assert.equal(
+    rankOfflineEvents(event, { ...profile, blockedTerms: ["science award"] }, now).length,
+    0,
+  );
+  const ranked = rankOfflineEvents(event, { ...profile, keywords: ["war", "science award"] }, now);
+  assert.deepEqual(
+    ranked[0]!.reasons.filter((reason) => reason.startsWith("keyword_matches:")),
+    ["keyword_matches:1"],
+  );
+});
+
+test("fresh headlines cannot revive a stale article within a metadata candidate", () => {
+  const articles = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/a"),
+    {
+      ...item("news_two", "https://two.example.org/news/b"),
+      publishedAt: "2026-10-01T12:00:00.000Z",
+    },
+  ]);
+  const event = groupExactHeadlineEvents(articles);
+  assert.equal(rankOfflineEvents(event, profile, new Date("2026-10-26T13:00:00.000Z")).length, 0);
 });
