@@ -28,7 +28,8 @@ const fx = () => ({
   action: "review_fx",
   microEurPerMicroUsdNanos: "1150000000",
   expiresAt: later(),
-  sourceReference: "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
+  sourceReference:
+    "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
 });
 
 test("price FX commands are exact, decimal and contain no activation, secrets or endpoints", () => {
@@ -55,7 +56,10 @@ test("price FX commands are exact, decimal and contain no activation, secrets or
     { ...price(), sourceReference: "https://developers.openai.com.evil.invalid/api/docs/pricing" },
     { ...price(), sourceReference: "https://developers.openai.com@evil.invalid/api/docs/pricing" },
     { ...fx(), sourceReference: "https://developers.openai.com/api/docs/pricing" },
-    { ...fx(), sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A" },
+    {
+      ...fx(),
+      sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A",
+    },
     { ...price(), sourceReference: "https://name:pass@example.org/rates" },
     { ...price(), expiresAt: "yesterday" },
     { ...fx(), microEurPerMicroUsdNanos: "0" },
