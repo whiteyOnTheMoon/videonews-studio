@@ -54,7 +54,10 @@ test("timeline export rejects reordered, repeated and mismatched cursors", () =>
     event_kind: "decision",
     reference_uri: "https://news.example.org/article",
     document_sha256: DIGEST_A,
-    details: { summary: "The editor blocked the unverified claim.", reasonCodes: ["unverified_claim"] },
+    details: {
+      summary: "The editor blocked the unverified claim.",
+      reasonCodes: ["unverified_claim"],
+    },
     recorded_at: "2026-10-26T12:00:00.000Z",
   };
   const second = {
