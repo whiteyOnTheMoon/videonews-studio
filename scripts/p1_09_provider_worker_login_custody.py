@@ -184,6 +184,34 @@ SELECT current_user || '|' || current_database() || '|' ||
 """
 
 
+ACL_STATE_SQL = """
+SELECT
+ has_function_privilege('vns_provider_usage_writer',
+   'vns.reserve_provider_live_budget(uuid,text,text,text,uuid,bigint,bigint)',
+   'EXECUTE')
+ AND has_function_privilege('vns_provider_usage_writer',
+   'vns.claim_provider_live_dispatch(uuid)', 'EXECUTE')
+ AND has_function_privilege('vns_provider_usage_writer',
+   'vns.record_provider_usage_evidence(uuid,text,text,text,text,text,bigint,bigint,bigint,bigint)',
+   'EXECUTE')
+ AND has_function_privilege('vns_provider_secret_reader',
+   'vns.claimed_provider_sealed_key(uuid,text)', 'EXECUTE')
+ AND NOT has_function_privilege('vns_provider_usage_writer',
+   'vns.claimed_provider_sealed_key(uuid,text)', 'EXECUTE')
+ AND NOT has_function_privilege('vns_provider_secret_reader',
+   'vns.reserve_provider_live_budget(uuid,text,text,text,uuid,bigint,bigint)',
+   'EXECUTE')
+ AND NOT has_table_privilege('vns_provider_usage_writer',
+   'vns.ai_provider_sealed_credentials', 'SELECT')
+ AND NOT has_table_privilege('vns_provider_secret_reader',
+   'vns.ai_provider_sealed_credentials', 'SELECT')
+ AND NOT has_table_privilege('vns_provider_usage_writer',
+   'vns.provider_live_budget_policy', 'UPDATE')
+ AND NOT has_table_privilege('vns_provider_secret_reader',
+   'vns.provider_live_budget_policy', 'UPDATE');
+"""
+
+
 def expected_versions() -> list[str]:
     paths = sorted((ROOT / "db" / "migrations").glob("*.up.sql"))
     names = [p.name.removesuffix(".up.sql") for p in paths]
@@ -210,6 +238,8 @@ def preflight() -> None:
         raise RuntimeError(FAIL)
     versions = owner_sql("SELECT version FROM vns.schema_migrations ORDER BY version;")
     if versions.splitlines() != expected_versions():
+        raise RuntimeError(FAIL)
+    if owner_sql(ACL_STATE_SQL) != "t":
         raise RuntimeError(FAIL)
     read_passwords()
 
