@@ -28,21 +28,37 @@ export function parseNamedProviderJob(input: unknown): NamedProviderJobCommand |
   const row = input as Record<string, unknown>;
   if (
     Object.keys(row).length !== 8 ||
-    !["idempotencyKey","requestId","provider","model","priceSnapshotId","prompt",
-      "maxInputTokens","maxOutputTokens"].every((key) => Object.hasOwn(row, key)) ||
-    typeof row.idempotencyKey !== "string" || !TOKEN_KEY.test(row.idempotencyKey) ||
-    typeof row.requestId !== "string" || !REQUEST.test(row.requestId) ||
+    ![
+      "idempotencyKey",
+      "requestId",
+      "provider",
+      "model",
+      "priceSnapshotId",
+      "prompt",
+      "maxInputTokens",
+      "maxOutputTokens",
+    ].every((key) => Object.hasOwn(row, key)) ||
+    typeof row.idempotencyKey !== "string" ||
+    !TOKEN_KEY.test(row.idempotencyKey) ||
+    typeof row.requestId !== "string" ||
+    !REQUEST.test(row.requestId) ||
     (row.provider !== "openai" && row.provider !== "google_gemini") ||
-    typeof row.model !== "string" || !MODEL.test(row.model) ||
-    typeof row.priceSnapshotId !== "string" || !UUID.test(row.priceSnapshotId) ||
-    typeof row.prompt !== "string" || !row.prompt.trim() ||
-    Buffer.byteLength(row.prompt,"utf8") > 32768 ||
+    typeof row.model !== "string" ||
+    !MODEL.test(row.model) ||
+    typeof row.priceSnapshotId !== "string" ||
+    !UUID.test(row.priceSnapshotId) ||
+    typeof row.prompt !== "string" ||
+    !row.prompt.trim() ||
+    Buffer.byteLength(row.prompt, "utf8") > 32768 ||
     !Number.isSafeInteger(row.maxInputTokens) ||
-    (row.maxInputTokens as number) < 1 || (row.maxInputTokens as number) > 32768 ||
+    (row.maxInputTokens as number) < 1 ||
+    (row.maxInputTokens as number) > 32768 ||
     !Number.isSafeInteger(row.maxOutputTokens) ||
-    (row.maxOutputTokens as number) < 16 || (row.maxOutputTokens as number) > 4096 ||
-    Buffer.byteLength(row.prompt,"utf8") > (row.maxInputTokens as number)
-  ) return null;
+    (row.maxOutputTokens as number) < 16 ||
+    (row.maxOutputTokens as number) > 4096 ||
+    Buffer.byteLength(row.prompt, "utf8") > (row.maxInputTokens as number)
+  )
+    return null;
   return row as NamedProviderJobCommand;
 }
 
@@ -50,10 +66,16 @@ async function readJobBody(request: IncomingMessage): Promise<unknown> {
   if (
     request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() !== "application/json" ||
     request.headers["content-encoding"] !== undefined
-  ) return null;
+  )
+    return null;
   const declared = request.headers["content-length"];
-  if (declared === undefined || Array.isArray(declared) ||
-      !/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > LIMIT) return null;
+  if (
+    declared === undefined ||
+    Array.isArray(declared) ||
+    !/^(0|[1-9][0-9]*)$/.test(declared) ||
+    Number(declared) > LIMIT
+  )
+    return null;
   const chunks: Buffer[] = [];
   let length = 0;
   try {
@@ -80,12 +102,21 @@ async function readJobBody(request: IncomingMessage): Promise<unknown> {
 export class PostgresNamedProviderJobStore {
   constructor(private readonly db: Pick<Pool, "query">) {}
 
-  async create(command: NamedProviderJobCommand, identity: EditorIdentity, key: Buffer): Promise<string> {
+  async create(
+    command: NamedProviderJobCommand,
+    identity: EditorIdentity,
+    key: Buffer,
+  ): Promise<string> {
     const approved = parseNamedProviderJob(command);
-    if (!approved || identity?.role !== "admin" ||
-        typeof identity.id !== "string" || !UUID.test(identity.id) ||
-        !Number.isSafeInteger(identity.authVersion) || identity.authVersion < 0 ||
-        identity.authVersion > 2147483647) {
+    if (
+      !approved ||
+      identity?.role !== "admin" ||
+      typeof identity.id !== "string" ||
+      !UUID.test(identity.id) ||
+      !Number.isSafeInteger(identity.authVersion) ||
+      identity.authVersion < 0 ||
+      identity.authVersion > 2147483647
+    ) {
       throw new Error("Named provider job unavailable");
     }
     const sealed: EncryptedProviderPrompt = sealProviderPrompt(approved.prompt, key);
@@ -95,10 +126,21 @@ export class PostgresNamedProviderJobStore {
           "$1::uuid,$2::integer,$3::text,$4::text,$5::text,$6::text," +
           "$7::uuid,$8::text,$9::integer,$10::integer," +
           "$11::text,$12::text,$13::text)::text AS id",
-        [identity.id, identity.authVersion, approved.idempotencyKey,
-         approved.requestId, approved.provider, approved.model,
-         approved.priceSnapshotId, sealed.sha256, approved.maxInputTokens,
-         approved.maxOutputTokens, sealed.iv, sealed.tag, sealed.ciphertext],
+        [
+          identity.id,
+          identity.authVersion,
+          approved.idempotencyKey,
+          approved.requestId,
+          approved.provider,
+          approved.model,
+          approved.priceSnapshotId,
+          sealed.sha256,
+          approved.maxInputTokens,
+          approved.maxOutputTokens,
+          sealed.iv,
+          sealed.tag,
+          sealed.ciphertext,
+        ],
       );
       const id = response.rows[0]?.id;
       if (response.rows.length !== 1 || typeof id !== "string" || !UUID.test(id)) {
