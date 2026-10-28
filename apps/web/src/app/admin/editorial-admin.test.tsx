@@ -48,13 +48,30 @@ test("audit export is disabled by default and never renders a file control", () 
   assert.match(enabled, /disabled/);
 });
 
-test("audit export envelope never accepts oversized or malformed rows", () => {
-  assert.equal(validEditorialExportBatch({ events: [], nextRevision: 0 }), true);
-  assert.equal(
-    validEditorialExportBatch({ events: Array.from({ length: 101 }, () => ({})) }),
-    false,
-  );
-  assert.equal(validEditorialExportBatch({ events: ["forged string"] }), false);
+test("audit export envelope rejects missing or forged page metadata", () => {
+  const checkpoint = { events: [], nextRevision: 0 };
+  const timeline = { events: [], cursor: null };
+  assert.equal(validEditorialExportBatch(checkpoint, "checkpoints"), true);
+  assert.equal(validEditorialExportBatch(timeline, "timeline"), true);
+  for (const bad of [
+    { events: [], nextRevision: 0, leakedSecret: "forbidden" },
+    { events: [], nextRevision: -1 },
+    { events: [], nextRevision: 1.5 },
+    { events: [], cursor: null },
+    { events: ["forged string"], nextRevision: 0 },
+    { events: Array.from({ length: 101 }, () => ({})), nextRevision: 0 },
+  ]) {
+    assert.equal(validEditorialExportBatch(bad, "checkpoints"), false);
+  }
+  for (const bad of [
+    { events: [] },
+    { events: [], cursor: {} },
+    { events: [], cursor: null, extra: "unreviewed" },
+    { events: [], cursor: { afterTime: "not-a-time", afterId: "invalid" } },
+    { events: Array.from({ length: 101 }, () => ({})), cursor: null },
+  ]) {
+    assert.equal(validEditorialExportBatch(bad, "timeline"), false);
+  }
 });
 
 test("checkpoint entry is hidden until feature opt-in and never publishes", () => {
