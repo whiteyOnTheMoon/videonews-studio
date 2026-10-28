@@ -159,6 +159,53 @@ export function groupExactHeadlineEvents(
 }
 
 /**
+ * A conservative shared boundary for both ranking strategies and offline QA.
+ * Titles, article identities and fingerprints are re-derived from the same
+ * canonical feed metadata. This does not authenticate the publisher or facts.
+ */
+export function attestEditorialEventMetadata(event: NewsEvent): void {
+  if (
+    !event ||
+    typeof event.headline !== "string" ||
+    !Array.isArray(event.articles) ||
+    event.articles.length < 1 ||
+    event.articles.length > 100
+  ) {
+    throw new Error("Editorial event metadata invalid");
+  }
+  const articles: readonly NormalizedArticle[] = event.articles;
+  const normalized = normalizeFeedArticles(
+    articles.map((article) => ({
+      sourceId: article.sourceId,
+      url: article.url,
+      headline: article.headline,
+      publishedAt: article.publishedAt,
+      reviewStatus: "candidate" as const,
+    })),
+  );
+  if (
+    normalized.some(
+      (article, index) =>
+        article.id !== articles[index]!.id ||
+        article.titleFingerprint !== articles[index]!.titleFingerprint,
+    ) ||
+    !normalized.some((article) => article.headline === event.headline)
+  ) {
+    throw new Error("Editorial event metadata mismatch");
+  }
+}
+
+/** Shared Unicode whole-word/phrase comparison for every offline ranker. */
+export function matchesEditorialPhrase(title: string, term: string): boolean {
+  const words = title.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu) ?? [];
+  const expected = term.normalize("NFKC").toLocaleLowerCase("en").match(/[\p{L}\p{N}]+/gu) ?? [];
+  return (
+    expected.length > 0 &&
+    words.some((_, index) => expected.every((word, offset) => words[index + offset] === word))
+  );
+}
+
+/**
  * Preliminary metadata ranking only. A source ID is not publisher
  * independence, and a normalized title is not verified news evidence.
  */
@@ -176,19 +223,6 @@ export function rankOfflineEvents(
   ) {
     throw new Error("Ranking input invalid");
   }
-  const phraseTokens = (value: string): readonly string[] =>
-    value
-      .normalize("NFKC")
-      .toLocaleLowerCase("en")
-      .match(/[\p{L}\p{N}]+/gu) ?? [];
-  const matchesPhrase = (title: string, term: string): boolean => {
-    const words = phraseTokens(title);
-    const expected = phraseTokens(term);
-    return (
-      expected.length > 0 &&
-      words.some((_, index) => expected.every((word, offset) => words[index + offset] === word))
-    );
-  };
   const blocked = [...profile.blockedTerms];
   const keywords = [...profile.keywords];
   const seenEvents = new Set<string>();
@@ -207,30 +241,9 @@ export function rankOfflineEvents(
       }
       seenEvents.add(event.id);
       const articles: readonly NormalizedArticle[] = event.articles;
-      // Standalone ranking may be called with forged, caller-constructed event
-      // metadata: verify both immutable article hashes and the display headline
-      // before allowing that headline to decide blocklist/keyword results.
-      const normalized = normalizeFeedArticles(
-        articles.map((article) => ({
-          sourceId: article.sourceId,
-          url: article.url,
-          headline: article.headline,
-          publishedAt: article.publishedAt,
-          reviewStatus: "candidate" as const,
-        })),
-      );
-      if (
-        normalized.some(
-          (article, i) =>
-            article.id !== articles[i]!.id ||
-            article.titleFingerprint !== articles[i]!.titleFingerprint,
-        ) ||
-        !normalized.some((article) => article.headline === event.headline)
-      ) {
-        throw new Error("Ranking candidate metadata mismatch");
-      }
+      attestEditorialEventMetadata(event);
       const title = event.headline;
-      if (blocked.some((term) => matchesPhrase(title, term))) return [];
+      if (blocked.some((term) => matchesEditorialPhrase(title, term))) return [];
       const distinctSources = new Set(articles.map((article) => article.sourceId));
       // Historical field name is retained for stored profile compatibility;
       // the threshold counts source IDs, not independent publishers/evidence.
@@ -246,7 +259,7 @@ export function rankOfflineEvents(
         return [];
       }
       const ageHours = (now.getTime() - Math.max(...times)) / 3600000;
-      const matches = keywords.filter((term) => matchesPhrase(title, term)).length;
+      const matches = keywords.filter((term) => matchesEditorialPhrase(title, term)).length;
       return [
         {
           ...event,
