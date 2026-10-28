@@ -7,22 +7,23 @@
  */
 export type ReviewSourceKind = "openai" | "google_gemini" | "eur_usd";
 
-const OFFICIAL_DOCUMENTS: Readonly<Record<ReviewSourceKind, ReadonlyArray<readonly [string, string]>>> =
-  Object.freeze({
-    openai: [
-      ["developers.openai.com", "/api/docs/pricing"],
-      ["platform.openai.com", "/docs/pricing"],
-      ["openai.com", "/api/pricing"],
-      ["openai.com", "/api"],
-    ],
-    google_gemini: [["ai.google.dev", "/gemini-api/docs/pricing"]],
-    eur_usd: [
-      ["www.ecb.europa.eu", "/stats/policy_and_exchange_rates/euro_reference_exchange_rates/"],
-      ["data.ecb.europa.eu", "/key-figures/ecb-interest-rates-and-exchange-rates/exchange-rates"],
-      ["data.ecb.europa.eu", "/methodology/exchange-rates"],
-      ["data-api.ecb.europa.eu", "/service/data/EXR/D.USD.EUR.SP00.A"],
-    ],
-  });
+const OFFICIAL_DOCUMENTS: Readonly<
+  Record<ReviewSourceKind, ReadonlyArray<readonly [string, string]>>
+> = Object.freeze({
+  openai: [
+    ["developers.openai.com", "/api/docs/pricing"],
+    ["platform.openai.com", "/docs/pricing"],
+    ["openai.com", "/api/pricing"],
+    ["openai.com", "/api"],
+  ],
+  google_gemini: [["ai.google.dev", "/gemini-api/docs/pricing"]],
+  eur_usd: [
+    ["www.ecb.europa.eu", "/stats/policy_and_exchange_rates/euro_reference_exchange_rates/"],
+    ["data.ecb.europa.eu", "/key-figures/ecb-interest-rates-and-exchange-rates/exchange-rates"],
+    ["data.ecb.europa.eu", "/methodology/exchange-rates"],
+    ["data-api.ecb.europa.eu", "/service/data/EXR/D.USD.EUR.SP00.A"],
+  ],
+});
 
 export function officialPriceReviewSource(kind: ReviewSourceKind, value: unknown): boolean {
   if (
