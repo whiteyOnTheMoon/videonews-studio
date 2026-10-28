@@ -246,16 +246,18 @@ test("database outages and uncertain settle roll back before durable halt", asyn
       replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture),
       /Provider budget review required/,
     );
-    assert.deepEqual(events, [
+    const expectedSequence = [
       "reserve",
       "projection",
       "connect",
       "BEGIN",
-      failure,
+      "record",
+      ...(failure === "settle" ? ["settle"] : []),
       "ROLLBACK",
       "release",
       "halt",
-    ]);
+    ];
+    assert.deepEqual(events, expectedSequence);
   }
 });
 
