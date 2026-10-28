@@ -107,11 +107,19 @@ BEGIN
  EXECUTE 'RESET ROLE';
  IF NOT blocked THEN RAISE EXCEPTION 'Key read before claim succeeded'; END IF;
 END $before_claim$;
-SET LOCAL ROLE vns_provider_usage_writer;
-SELECT vns.claim_provider_live_dispatch(id) FROM vns.provider_live_reservations
- WHERE job_id IN ('a4300002-0000-4000-8000-000000000002',
-                  'a4300003-0000-4000-8000-000000000003');
-RESET ROLE;
+DO $claims$
+DECLARE rid uuid;
+BEGIN
+ -- Owner finds fixtures; only the SQL function runs as the usage writer.
+ FOR rid IN SELECT id FROM vns.provider_live_reservations
+   WHERE job_id IN ('a4300002-0000-4000-8000-000000000002',
+                    'a4300003-0000-4000-8000-000000000003')
+ LOOP
+   EXECUTE 'SET LOCAL ROLE vns_provider_usage_writer';
+   PERFORM vns.claim_provider_live_dispatch(rid);
+   EXECUTE 'RESET ROLE';
+ END LOOP;
+END $claims$;
 
 DO $negative$
 DECLARE rid uuid; blocked boolean:=false;
