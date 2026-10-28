@@ -116,10 +116,7 @@ function verifyProjection(input: BudgetReplayRequest, id: string, raw: unknown) 
   return Object.freeze(row as unknown as VerifiedProjection);
 }
 
-export function dormantProviderBudgetBridge(
-  db: Pick<Pool, "query" | "connect">,
-  enabled = false,
-) {
+export function dormantProviderBudgetBridge(db: Pick<Pool, "query" | "connect">, enabled = false) {
   if (enabled !== true) throw new Error("Provider budget worker bridge disabled");
   return {
     async reserve(input: BudgetReplayRequest): Promise<string> {

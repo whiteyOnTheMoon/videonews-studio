@@ -39,11 +39,13 @@ function projection(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function mockDatabase(options: {
-  projectionOverride?: Record<string, unknown>;
-  settlement?: "settled" | "halted";
-  failure?: "reserve" | "projection" | "record" | "settle" | "halt";
-} = {}) {
+function mockDatabase(
+  options: {
+    projectionOverride?: Record<string, unknown>;
+    settlement?: "settled" | "halted";
+    failure?: "reserve" | "projection" | "record" | "settle" | "halt";
+  } = {},
+) {
   const events: string[] = [];
   let inTransaction = false;
   const query = async (sql: string, params: unknown[] = []) => {
@@ -195,10 +197,7 @@ test("incomplete and contradictory usage halt before a receipt exists", async ()
 });
 
 test("over-reservation cost and token exhaustion halt rather than undercount", async () => {
-  for (const override of [
-    { reserved_micro_usd: "161" },
-    { max_input_tokens: "99" },
-  ]) {
+  for (const override of [{ reserved_micro_usd: "161" }, { max_input_tokens: "99" }]) {
     const { db, events } = mockDatabase({ projectionOverride: override });
     await assert.rejects(
       replayProviderBudgetFixture(dormantProviderBudgetBridge(db, true), request, openaiFixture),
