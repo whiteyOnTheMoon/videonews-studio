@@ -32,8 +32,10 @@ const fx = () => ({
 });
 
 test("price FX commands are exact, decimal and contain no activation, secrets or endpoints", () => {
-  assert.deepEqual(parseNamedPriceReview(price()), price());
-  assert.deepEqual(parseNamedPriceReview(fx()), fx());
+  const validPrice = price();
+  const validFx = fx();
+  assert.deepEqual(parseNamedPriceReview(validPrice), validPrice);
+  assert.deepEqual(parseNamedPriceReview(validFx), validFx);
   for (const invalid of [
     null, [], {}, { ...price(), action: "enable" },
     { ...price(), apiKey: "secret" }, { ...fx(), budget: 100 },
