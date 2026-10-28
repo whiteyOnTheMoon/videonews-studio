@@ -28,11 +28,7 @@ export function makeKeyCommand(provider: unknown, apiKey: unknown): ProviderEdit
 }
 
 export function makeModelCommand(provider: unknown, model: unknown): ProviderEditCommand | null {
-  if (
-    !knownProvider(provider) ||
-    typeof model !== "string" ||
-    !MODEL_ID.test(model)
-  ) {
+  if (!knownProvider(provider) || typeof model !== "string" || !MODEL_ID.test(model)) {
     return null;
   }
   return { action: "set_model", provider, model };
