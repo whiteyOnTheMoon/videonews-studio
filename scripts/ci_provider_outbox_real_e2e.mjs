@@ -54,6 +54,12 @@ const model = "ci_real_outbox_model_48";
 let priceId;
 
 async function seedConfig() {
+  // Disposable CI superuser is explicitly enrolled under the lifecycle
+  // trigger before creating a synthetic personal admin. Never do on VPS.
+  await admin.query(
+    "INSERT INTO vns.editor_operator_registry(login_role,operator_id,operator_label,active) VALUES('postgres',$1::uuid,'CI isolated operator',true)",
+    [randomUUID()],
+  );
   await admin.query(
     `INSERT INTO vns.editor_accounts(id,username,display_name,role,password_hash,active,auth_version)
       VALUES($1,'ci_outbox_real_48','CI Real Outbox','admin',$2,true,0)`,
