@@ -8,7 +8,7 @@ verifizierte Modell-/Preisversion, FX-Obergrenze und deren Aktivierung.
 
 Eine formal gültige HTTPS-Adresse kann auf beliebige oder gefälschte
 Preistabellen verweisen. Die persönliche Prüfung darf deshalb nur
-Referenzen mit dem *genauen* offiziell dokumentierten Quellen-Host
+Referenzen mit dem _genauen_ offiziell dokumentierten Quellen-Host
 annehmen. Der neue, von Web-BFF und API gemeinsam verwendete
 `officialPriceReviewSource`-Vertrag ist in
 `packages/shared/src/provider-pricing-provenance.ts` definiert.
