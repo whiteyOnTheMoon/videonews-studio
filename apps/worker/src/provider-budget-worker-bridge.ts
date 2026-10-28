@@ -9,7 +9,7 @@ import type { NativeProvider } from "./provider-native-usage.js";
  * constructed; the currently deployed worker never imports this module.
  * Explicit opt-in is required even for isolated test fixtures.
  */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const REQUEST = /^[A-Za-z0-9_-]{12,80}$/;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const VERSION = /^[A-Za-z0-9_-]{12,80}$/;
