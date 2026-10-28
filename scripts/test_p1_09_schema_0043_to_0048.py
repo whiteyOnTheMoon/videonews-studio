@@ -107,6 +107,25 @@ class Schema0048UpgradeTests(unittest.TestCase):
                 upgrade.apply("ci", versions)
         self.assertEqual(len(current), 45)
 
+    def test_final_acl_boolean_text_matches_real_postgres_output(self):
+        versions = upgrade.expected_versions()
+        expected = "0|0|0|2|0|0|true|true|false"
+        with patch.object(upgrade, "ledger", return_value=versions), patch.object(
+            upgrade, "query", return_value=expected
+        ):
+            upgrade.final_check("ci", versions)
+        for unsafe in [
+            "0|0|0|2|0|0|true|true|true",
+            "0|0|0|1|0|0|true|true|false",
+            "0|0|1|2|0|0|true|true|false",
+            "0|0|0|2|0|0|false|true|false",
+        ]:
+            with patch.object(upgrade, "ledger", return_value=versions), patch.object(
+                upgrade, "query", return_value=unsafe
+            ):
+                with self.assertRaises(RuntimeError):
+                    upgrade.final_check("ci", versions)
+
     def test_failed_sql_is_redacted(self):
         fake = subprocess.CompletedProcess(
             args=["psql"], returncode=1, stdout="SECRET SQL", stderr="SCRAM verifier"
