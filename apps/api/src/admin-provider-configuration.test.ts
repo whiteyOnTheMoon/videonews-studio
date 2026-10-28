@@ -177,7 +177,7 @@ test("key rotation passes only sealed data to an audited storage boundary", asyn
   assert.notDeepEqual(changes[0]?.sealedKey, changes[1]?.sealedKey);
 });
 
-test("remove key and model selection require exact allowlisted actions", async () => {
+test("remove key and model selection require exact syntactic contracts", async () => {
   const { store, changes } = createFixtureStore();
   const config = new AdminProviderConfiguration(auth, store, MASTER_KEY);
   for (const body of [
@@ -194,7 +194,7 @@ test("remove key and model selection require exact allowlisted actions", async (
   ]);
 });
 
-test("invalid provider actions, forbidden model and key-bearing GET data fail closed", async () => {
+test("invalid provider actions, malformed model and key-bearing GET data fail closed", async () => {
   const { store, changes } = createFixtureStore();
   const config = new AdminProviderConfiguration(auth, store, MASTER_KEY);
   for (const body of [
@@ -205,9 +205,10 @@ test("invalid provider actions, forbidden model and key-bearing GET data fail cl
     { action: "set_key", provider: "other", apiKey: EXAMPLE_KEY },
     { action: "set_key", provider: "openai", apiKey: "short" },
     { action: "set_key", provider: "openai", apiKey: EXAMPLE_KEY, extra: true },
-    { action: "set_model", provider: "openai", model: "gemini-3.8-flash-tts" },
-    { action: "set_model", provider: "google_gemini", model: "gpt-6.1-sol" },
+    { action: "set_model", provider: "openai", model: "invalid model" },
+    { action: "set_model", provider: "google_gemini", model: "bad/model" },
     { action: "set_model", provider: "openai", model: "https://bad.example" },
+    { action: "set_model", provider: "openai", model: "x".repeat(81) },
     { action: "set_model", provider: "openai", model: "gpt-6.1-sol", apiKey: EXAMPLE_KEY },
   ]) {
     assert.equal(parseProviderAdminCommand(body), null);
