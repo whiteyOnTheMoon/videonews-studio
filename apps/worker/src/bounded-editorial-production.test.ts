@@ -153,7 +153,15 @@ test("all three configured formats stay offline with explicit revision and limit
 
 test("independent structural QA never certifies factual or legal clearance", () => {
   const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
-  const report = independentlyReviewMockScript(event, script, claims, policy, provenance, now, limits);
+  const report = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+  );
   assert.equal(report.acceptedForHumanReview, true);
   assert.equal(report.approvedForPublication, false);
   assert.equal(report.digest.length, 64);
@@ -175,13 +183,29 @@ test("QA catches missing references, changed evidence and verbatim headline text
       },
     ],
   };
-  const report = independentlyReviewMockScript(event, forged, claims, policy, provenance, now, limits);
+  const report = independentlyReviewMockScript(
+    event,
+    forged,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+  );
   assert.equal(report.acceptedForHumanReview, false);
   assert.ok(report.reasons.includes("unknown_claim_reference"));
   assert.ok(report.reasons.includes("source_text_similarity_risk"));
   assert.ok(report.reasons.includes("unrepresented_claim"));
   const disputed = [{ ...claims[0]!, status: "disputed" as const }];
-  const blocked = independentlyReviewMockScript(event, script, disputed, policy, provenance, now, limits);
+  const blocked = independentlyReviewMockScript(
+    event,
+    script,
+    disputed,
+    policy,
+    provenance,
+    now,
+    limits,
+  );
   assert.equal(blocked.acceptedForHumanReview, false);
   assert.ok(blocked.reasons.includes("claim_disputed_or_rejected"));
 });
@@ -193,7 +217,15 @@ test("independent QA denies unknown or syndicated provenance rather than inferri
   assert.ok(missing.reasons.includes("source_provenance_missing"));
   assert.ok(missing.reasons.includes("source_rights_missing"));
   const syndicated = provenance.map((source) => ({ ...source, publisherGroup: "single_group" }));
-  const result = independentlyReviewMockScript(event, script, claims, policy, syndicated, now, limits);
+  const result = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    syndicated,
+    now,
+    limits,
+  );
   assert.equal(result.acceptedForHumanReview, false);
   assert.ok(result.reasons.includes("publisher_groups_insufficient"));
 });
@@ -252,15 +284,10 @@ test("independent QA rejects modified narration, breached limits and forged revi
   assert.ok(forgedRevision.reasons.includes("script_revision_out_of_bounds"));
   assert.equal(forgedRevision.acceptedForHumanReview, false);
 
-  const stricter = independentlyReviewMockScript(
-    event,
-    script,
-    claims,
-    policy,
-    provenance,
-    now,
-    { ...limits, maxMicroUsd: 1 },
-  );
+  const stricter = independentlyReviewMockScript(event, script, claims, policy, provenance, now, {
+    ...limits,
+    maxMicroUsd: 1,
+  });
   assert.ok(stricter.reasons.includes("script_budget_exceeded"));
   assert.throws(() =>
     independentlyReviewMockScript(event, script, claims, policy, provenance, now, {
