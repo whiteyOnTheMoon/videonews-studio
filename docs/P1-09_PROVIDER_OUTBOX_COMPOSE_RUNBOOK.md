@@ -21,13 +21,13 @@ The entrypoint is exactly `provider-outbox-once.js --once`, capped at five
 items per run by the existing worker implementation. No AI/usage worker is
 started. The embedded provider live/canary flags are hard-disabled.
 
-Required operator-supplied settings before a *separately authorized* run:
+Required operator-supplied settings before a _separately authorized_ run:
 
-| Variable | Intended value |
-| --- | --- |
-| `VNS_PROVIDER_OUTBOX_WORKER_IMAGE` | Reviewed GHCR worker manifest `@sha256:<64 hex>` |
+| Variable                               | Intended value                                             |
+| -------------------------------------- | ---------------------------------------------------------- |
+| `VNS_PROVIDER_OUTBOX_WORKER_IMAGE`     | Reviewed GHCR worker manifest `@sha256:<64 hex>`           |
 | `VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED` | `false` until an individually approved one-shot invocation |
-| `VNS_PROVIDER_OUTBOX_OPERATOR_ACK` | `false` until the same approval |
+| `VNS_PROVIDER_OUTBOX_OPERATOR_ACK`     | `false` until the same approval                            |
 
 The Compose file fixes identity, DB, queue and paths, including a
 non-overridable source directory `./secrets/vns-outbox`. The producer must
@@ -57,7 +57,6 @@ Files expected in the mounted directory:
 - `provider-outbox-db-password`: dedicated SCRAM login `vns_provider_outbox_login`, inheriting only the `vns_provider_outbox_reader` NOLOGIN role from migration 0048.
 - `provider-outbox-redis-password`: separate Redis ACL user `vns_provider_producer`, restricted to `bull:vns:vns-provider-text:*` and BullMQ-required commands, with no access to other queues.
 - `provider-prompt-key`: 32-byte AES-256-GCM key that must be the **same key** used to seal those pending SQL prompt envelopes, not the provider credential master key. Losing or rotating it without a planned re-encryption makes the pending prompts unrecoverable.
-
 
 ## Operator credential-custody helper (not yet run on VPS)
 
@@ -106,7 +105,7 @@ start are separate pending operator acceptance checks.
    reapply an already installed migration.
 3. Confirm live PostgreSQL SCRAM role, membership, direct table access denial,
    no provider budget/dispatch activation, and the expected authorized SQL
-   functions. Confirm Redis *running* ACL (not merely on-disk ACL file) and
+   functions. Confirm Redis _running_ ACL (not merely on-disk ACL file) and
    the private mounted-file owner/modes. Never alter the existing Redis ACL
    file or provider roles without a separate approved, rollback-safe plan.
 4. Examine whether any pending SQL job contains sensitive prompt data before

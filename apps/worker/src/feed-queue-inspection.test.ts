@@ -66,3 +66,55 @@ test("invalid Redis responses and missing pending jobs are rejected", async () =
       error instanceof Error && error.message === "Feed queue inspection unavailable",
   );
 });
+
+test("missing, forged or unbounded Redis counters fail closed before listing jobs", async () => {
+  const valid = { waiting: 1, active: 0, delayed: 0, failed: 0, completed: 0 };
+  let listed = 0;
+  for (const response of [
+    { ...valid, failed: undefined },
+    { ...valid, active: "0" },
+    { ...valid, failed: -1 },
+    { ...valid, completed: Infinity },
+    { ...valid, waiting: 1.5 },
+    { ...valid, waiting: 1_000_001 },
+    null,
+  ]) {
+    await assert.rejects(
+      inspectFeedQueue({
+        async getJobCounts() {
+          return response;
+        },
+        async getJobs() {
+          listed++;
+          return [{ timestamp: 1000 }];
+        },
+        async isPaused() {
+          return false;
+        },
+      } as unknown as Port),
+      /Feed queue inspection unavailable/,
+    );
+  }
+  assert.equal(listed, 0);
+});
+
+test("a partial pending-job list cannot hide an older stale job", async () => {
+  let checks = 0;
+  await assert.rejects(
+    inspectFeedQueue({
+      async getJobCounts() {
+        return { waiting: 2, active: 0, delayed: 0, failed: 0, completed: 0 };
+      },
+      async getJobs() {
+        checks++;
+        // The only visible job is fresh; the other could already be stale.
+        return [{ timestamp: Date.parse("2026-10-28T17:00:00.000Z") }];
+      },
+      async isPaused() {
+        return false;
+      },
+    } as unknown as Port),
+    /Feed queue inspection unavailable/,
+  );
+  assert.equal(checks, 1);
+});

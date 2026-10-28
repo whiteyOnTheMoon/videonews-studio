@@ -109,8 +109,17 @@ async function seedJob(label) {
       `SELECT vns.admin_create_sealed_provider_job_as_editor(
         $1::uuid,0,$2,$3,'openai',$4,$5::uuid,
         $6,100,32,$7,$8,$9)::text AS job_id`,
-      [editor, attempt, requestId, model, priceId,
-        sealed.sha256, sealed.iv, sealed.tag, sealed.ciphertext],
+      [
+        editor,
+        attempt,
+        requestId,
+        model,
+        priceId,
+        sealed.sha256,
+        sealed.iv,
+        sealed.tag,
+        sealed.ciphertext,
+      ],
     );
     assert.equal(result.rows.length, 1);
     await connection.query("COMMIT");
@@ -144,9 +153,13 @@ async function main() {
       has_table_privilege(session_user,'vns.provider_named_job_sealed_prompts','SELECT') AS raw_read,
       has_function_privilege(session_user,'vns.read_authorized_provider_outbox(integer)','EXECUTE') AS scoped_read`,
   );
-  assert.deepEqual(ident.rows, [{
-    login: "vns_provider_outbox_login", raw_read: false, scoped_read: true,
-  }]);
+  assert.deepEqual(ident.rows, [
+    {
+      login: "vns_provider_outbox_login",
+      raw_read: false,
+      scoped_read: true,
+    },
+  ]);
   await assert.rejects(
     sql.query("SELECT ciphertext_base64 FROM vns.provider_named_job_sealed_prompts LIMIT 1"),
     (err) => err.code === "42501",
@@ -184,8 +197,9 @@ async function main() {
   assert.equal((await queue.getJob(replay.id))?.data.prompt, replay.prompt);
   assert.deepEqual(await producer().runOnce(), { verified: 1, acknowledged: 1 });
   assert.equal(await receiptCount(replay.id), 1);
-  const idsAfterRecovery = (await queue.getJobs(["waiting", "paused", "delayed"]))
-    .filter((j) => j.id === replay.id);
+  const idsAfterRecovery = (await queue.getJobs(["waiting", "paused", "delayed"])).filter(
+    (j) => j.id === replay.id,
+  );
   assert.equal(idsAfterRecovery.length, 1);
 
   // Forged/colliding Redis job must never be silently confirmed.
@@ -206,12 +220,21 @@ async function main() {
     (err) => err.code === "42501",
   );
   assert.equal(await receiptCount(first.id), 1);
-  console.info(JSON.stringify({
-    event: "isolated_provider_sql_redis_e2e",
-    status: "pass",
-    scenarios: ["personal SQL job", "SCRAM role", "Redis ACL", "publish",
-      "crash-recovery", "collision", "receipt immutability"],
-  }));
+  console.info(
+    JSON.stringify({
+      event: "isolated_provider_sql_redis_e2e",
+      status: "pass",
+      scenarios: [
+        "personal SQL job",
+        "SCRAM role",
+        "Redis ACL",
+        "publish",
+        "crash-recovery",
+        "collision",
+        "receipt immutability",
+      ],
+    }),
+  );
 }
 try {
   await main();
