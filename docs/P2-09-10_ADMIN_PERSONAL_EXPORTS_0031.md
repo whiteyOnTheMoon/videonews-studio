@@ -58,3 +58,24 @@ Story-/Claim-/Lizenzzuordnung fehlen weiter. Die Formulierung
 inhaltliche Vollständigkeit aller Produktionsbelege unabhängig nachgewiesen
 wurde. Kein VPS-Rollout, kein persönlicher SQL-LOGIN, keine echten Feeds und
 keine Veröffentlichung werden durch diese Änderung aktiviert.
+
+## P2-09: identische Begriffsregeln in Admin, API und Ranking (28.10.2026)
+
+Der Admin-Profiler, der persönlich authentifizierte API-Pfad und der
+Offline-Ranking-Worker prüfen nun dieselbe begrenzte Schlüsselwort-/
+Sperrlisten-Semantik: höchstens je 30 Einträge, zulässige Unicode-Buchstaben,
+Zahlen, Leerzeichen oder Bindestriche, Länge 2–50 und mindestens ein
+tatsächliches Wort. Bei einem normalisierten Unicode-Wortvergleich
+(z. B. `Science`/`science` oder `science-news`/`science news`) wird die
+Eingabe als doppelter Begriff erkannt und abgewiesen. Derselbe Begriff darf
+nicht gleichzeitig Keyword und Sperrbegriff sein. Diese Regeln verhindern,
+dass doppelt vergebene Keywords die Offline-Relevanzpunkte künstlich erhöhen
+oder UI-/API-/Worker-Validierung auseinanderlaufen.
+
+Die bestehende siebenfeldrige Profilstruktur bleibt unverändert; es werden
+keine neuen Model- oder Providerlisten eingebaut. Die Datenbank speichert
+weiterhin nur persönlich revisionsgesicherte Profile, ohne damit einen
+Scheduler oder KI-Aufruf freizuschalten. Quellenzuordnung,
+Ranking-Gewichte, Risikokonfiguration und eine verlässlich an den
+laufenden Worker publizierte, versionierte Admin-Konfiguration sind **noch
+nicht** fertiggestellt. Keine VPS-Migration oder produktive Aktivierung.

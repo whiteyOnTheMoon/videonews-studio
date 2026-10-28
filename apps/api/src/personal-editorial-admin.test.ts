@@ -138,6 +138,11 @@ test("strict profile settings reject injected keys, bogus budgets and duplicate 
     [{ ...profile, maximumArticleAgeHours: 0 }],
     [{ ...profile, keywords: ["s"] }],
     [{ ...profile, language: "javascript:evil" }],
+    [{ ...profile, keywords: ["science", "Science"] }],
+    [{ ...profile, keywords: ["science-news", "science news"] }],
+    [{ ...profile, keywords: ["--"] }],
+    [{ ...profile, blockedTerms: ["SCIENCE"] }],
+    [{ ...profile, keywords: Array.from({ length: 31 }, (_, i) => "topic" + i) }],
     [profile, profile],
   ]) {
     assert.equal(validateNamedEditorialProfiles(bad), null);

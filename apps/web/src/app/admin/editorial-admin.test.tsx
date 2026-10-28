@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import EditorialProfiles, { parseEditorialProfileSnapshot } from "./editorial-profiles";
+import EditorialProfiles, {
+  parseEditorialProfileSnapshot,
+  validEditorialProfileTerms,
+} from "./editorial-profiles";
 import EditorialAuditExport, {
   validEditorialExportBatch,
   validEditorialExportTerminator,
@@ -37,6 +40,11 @@ test("only structurally valid and unique profile revisions enter the Admin UI", 
     { revision: 1, profiles: [profile, profile] },
     { revision: 1, profiles: [{ ...profile, sourceToken: "private" }] },
     { revision: 1, profiles: [{ ...profile, language: "bad locale" }] },
+    { revision: 1, profiles: [{ ...profile, keywords: ["science", "SCIENCE"] }] },
+    { revision: 1, profiles: [{ ...profile, keywords: ["science news", "science-news"] }] },
+    { revision: 1, profiles: [{ ...profile, keywords: ["--"] }] },
+    { revision: 1, profiles: [{ ...profile, blockedTerms: ["SCIENCE"] }] },
+    { revision: 1, profiles: [{ ...profile, keywords: Array(31).fill("science") }] },
   ]) {
     assert.equal(parseEditorialProfileSnapshot(candidate), null);
   }
@@ -121,4 +129,14 @@ test("audit export terminator never accepts changed checkpoint cursor or nonempt
     ),
     false,
   );
+});
+
+test("Admin profile editor rejects tokenless and duplicated terms before saving", () => {
+  assert.equal(validEditorialProfileTerms(["science", "space research"], ["sponsored"]), true);
+  assert.equal(validEditorialProfileTerms(["science", "SCIENCE"], []), false);
+  assert.equal(validEditorialProfileTerms(["science-news", "science news"], []), false);
+  assert.equal(validEditorialProfileTerms(["--"], []), false);
+  assert.equal(validEditorialProfileTerms(["science"], ["Science"]), false);
+  assert.equal(validEditorialProfileTerms(["news"], ["token\\value"]), false);
+  assert.equal(validEditorialProfileTerms(Array(31).fill("news"), []), false);
 });

@@ -45,6 +45,19 @@ function revision(value: unknown): number | null {
   const n = Number(value);
   return Number.isSafeInteger(n) ? n : null;
 }
+/**
+ * The worker scores a normalized whole-word/phrase match, not raw text.
+ * Duplicate equivalent terms would otherwise inflate relevance scoring.
+ */
+function editorialTermKey(term: unknown): string | null {
+  if (typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term)) return null;
+  const words = term
+    .normalize("NFKC")
+    .toLocaleLowerCase("en")
+    .match(/[\p{L}\p{N}]+/gu);
+  return words?.length ? words.join(" ") : null;
+}
+
 export function validateNamedEditorialProfiles(
   value: unknown,
 ): readonly EditorialProfileInput[] | null {
@@ -76,16 +89,11 @@ export function validateNamedEditorialProfiles(
       return null;
     }
     const terms = [...raw.keywords, ...raw.blockedTerms] as unknown[];
-    if (
-      terms.some(
-        (term) =>
-          typeof term !== "string" ||
-          term.length < 2 ||
-          term.length > 50 ||
-          !/^[\p{L}\p{N} -]+$/u.test(term),
-      )
-    ) {
-      return null;
+    const uniqueTerms = new Set<string>();
+    for (const term of terms) {
+      const key = editorialTermKey(term);
+      if (!key || uniqueTerms.has(key)) return null;
+      uniqueTerms.add(key);
     }
     ids.add(raw.id);
     result.push(raw as unknown as EditorialProfileInput);

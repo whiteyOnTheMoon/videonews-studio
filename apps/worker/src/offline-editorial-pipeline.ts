@@ -70,10 +70,18 @@ export function validateEditorialProfile(value: EditorialProfile): EditorialProf
   ) {
     throw new Error("Editorial profile invalid");
   }
+  const seenTerms = new Set<string>();
   for (const entry of [...value.keywords, ...value.blockedTerms]) {
     if (typeof entry !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(entry)) {
       throw new Error("Editorial profile term invalid");
     }
+    const words = entry
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu);
+    const key = words?.join(" ");
+    if (!key || seenTerms.has(key)) throw new Error("Editorial profile term ambiguous");
+    seenTerms.add(key);
   }
   return value;
 }

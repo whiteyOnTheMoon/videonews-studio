@@ -20,6 +20,26 @@ const LOCALE = /^[a-z]{2}(?:-[A-Z]{2})?$/;
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+/** Mirror the worker's Unicode whole-word matching, not raw string equality. */
+export function validEditorialProfileTerms(
+  keywords: readonly unknown[],
+  blockedTerms: readonly unknown[],
+): boolean {
+  if (keywords.length > 30 || blockedTerms.length > 30) return false;
+  const seen = new Set<string>();
+  for (const term of [...keywords, ...blockedTerms]) {
+    if (typeof term !== "string" || !/^[\p{L}\p{N} -]{2,50}$/u.test(term)) return false;
+    const tokens = term
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+/gu);
+    const key = tokens?.join(" ");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+  }
+  return true;
+}
+
 export function parseEditorialProfileSnapshot(value: unknown): EditorialProfileSnapshot | null {
   if (
     !object(value) ||
@@ -43,9 +63,7 @@ export function parseEditorialProfileSnapshot(value: unknown): EditorialProfileS
       !LOCALE.test(raw.language) ||
       !Array.isArray(raw.keywords) ||
       !Array.isArray(raw.blockedTerms) ||
-      ![...raw.keywords, ...raw.blockedTerms].every(
-        (term) => typeof term === "string" && term.length >= 2 && term.length <= 50,
-      ) ||
+      !validEditorialProfileTerms(raw.keywords, raw.blockedTerms) ||
       !Number.isSafeInteger(raw.minIndependentSources) ||
       (raw.minIndependentSources as number) < 1 ||
       (raw.minIndependentSources as number) > 5 ||
@@ -165,11 +183,7 @@ export default function EditorialProfiles({ enabled }: { enabled: boolean }) {
     if (!snapshot || !ID.test(draft.id) || !LOCALE.test(draft.language)) return;
     const keywords = terms(draft.keywords);
     const blockedTerms = terms(draft.blockedTerms);
-    if (
-      keywords.length > 30 ||
-      blockedTerms.length > 30 ||
-      [...keywords, ...blockedTerms].some((term) => term.length < 2 || term.length > 50)
-    ) {
+    if (!validEditorialProfileTerms(keywords, blockedTerms)) {
       setError("Schlüsselwörter und Sperrbegriffe bitte prüfen.");
       return;
     }
