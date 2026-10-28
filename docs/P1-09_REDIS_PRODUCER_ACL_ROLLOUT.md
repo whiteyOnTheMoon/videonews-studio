@@ -1,6 +1,7 @@
 # P1-09 – Additive Redis ACL for the existing production Redis 7
 
 **Operator-reported current production facts (2026-10-28):**
+
 - PostgreSQL 48/48, dedicated `vns_provider_outbox_login` installed.
 - 32-byte prompt key independently stored in both API and producer directories,
   byte-for-byte verified without symlinks or hardlinks.
@@ -27,7 +28,7 @@ It never runs Redis commands or restarts a container.
    producer entries and an unsafe producer candidate.
 4. `--install-file`: requires an **independent explicit operator-approved**
    environment guard `VNS_P109_REDIS_ACL_FILE_INSTALL_APPROVED=
-   INSTALL_PRODUCER_ACL_FILE_ONLY` and a full, exact `main` SHA pin in
+INSTALL_PRODUCER_ACL_FILE_ONLY` and a full, exact `main` SHA pin in
    `VNS_P109_REDIS_ACL_EXPECTED_SHA`. Preserve the previous ACL in the
    private 0600 `redis-acl-before-producer` file, fsync a new 0644
    host file and atomically replace `secrets/redis_acl`. If the old file
@@ -56,7 +57,7 @@ candidate. The cases are intentionally different:
 - Existing host file still `0644` and equals the original: no installation
   occurred; any newly created backup/temporary file needs separate manual
   review, and the original install command must not be blindly repeated.
-- Existing host file `0600`, exactly equals the *fully installed* merged
+- Existing host file `0600`, exactly equals the _fully installed_ merged
   candidate; original saved backup and baseline hash match; no pending temp:
   only then may a separately SHA- and operator-approved
   `--repair-installed-mode` correct the already-installed host inode to
@@ -81,7 +82,7 @@ The existing `vns_worker` user is denied Redis administrative commands
 or `ACL SAVE`. The baseline `default` Redis user is disabled.
 
 Docker Compose mounts the host `secrets/redis_acl` as a read-only secret.
-The file installation uses an *atomic rename*: the already-running Redis
+The file installation uses an _atomic rename_: the already-running Redis
 container may still hold the **old inode**. Its effective ACL does not
 change until the container is recreated. Never infer runtime ACL status
 from the host file, and never attempt `docker kill`/`docker restart` or
