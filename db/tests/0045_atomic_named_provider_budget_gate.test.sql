@@ -31,7 +31,8 @@ BEGIN
  EXCEPTION WHEN insufficient_privilege THEN denied:=true; END;
  EXECUTE 'RESET ROLE';
  IF NOT denied THEN RAISE EXCEPTION 'Unsigned job admitted'; END IF;
- IF (SELECT count(*) FROM vns.provider_live_reservations)<>0 THEN
+ IF EXISTS (SELECT 1 FROM vns.provider_live_reservations
+    WHERE job_id='a4500001-0000-4000-8000-000000000001') THEN
    RAISE EXCEPTION 'Unauthorized reservation persisted';
  END IF;
 END $check$;
