@@ -35,8 +35,34 @@ test("read-only by default and exact review grammar", () => {
     { ...command(), microEurPerMicroUsdNanos: 1000000000 },
     { ...command(), microEurPerMicroUsdNanos: "-1" },
     { ...command(), sourceReference: "http://not-allowed.invalid/path" },
+    { ...command(), sourceReference: "https://example.org/verified-source" },
+    { ...command(), sourceReference: "https://developers.openai.com/api/docs/pricing" },
+    { ...command(), sourceReference: "https://www.ecb.europa.eu.evil.invalid/stats/policy_and_exchange_rates/euro_reference_exchange_rates/" },
+    { ...command(), sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A" },
   ])
     assert.equal(parsePriceReviewBody(invalid), null);
+});
+
+test("model price review requires matching official provider documentation", () => {
+  const valid = {
+    action: "review_price",
+    provider: "google_gemini",
+    model: "operator-selected-model",
+    priceVersion: "verified_version_0041",
+    inputMicroUsdPerMillion: "1000000",
+    cachedMicroUsdPerMillion: "100000",
+    outputMicroUsdPerMillion: "3000000",
+    expiresAt: later(),
+    sourceReference: "https://ai.google.dev/gemini-api/docs/pricing",
+  };
+  assert.deepEqual(parsePriceReviewBody(valid), valid);
+  assert.equal(
+    parsePriceReviewBody({
+      ...valid,
+      sourceReference: "https://developers.openai.com/api/docs/pricing",
+    }),
+    null,
+  );
 });
 
 test("BFF requires named admin, exact origin, framing and no shared cookie", async () => {
