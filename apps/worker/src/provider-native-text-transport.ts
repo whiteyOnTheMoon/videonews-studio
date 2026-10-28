@@ -24,6 +24,10 @@ export type NativeTextSend = Readonly<{
 export function verifyNativeTextSend(value: NativeTextSend): void {
   if (
     !value ||
+    Object.keys(value).length !== 5 ||
+    !["provider", "model", "prompt", "maxInputTokens", "maxOutputTokens"].every(
+      (key) => Object.hasOwn(value, key),
+    ) ||
     (value.provider !== "openai" && value.provider !== "google_gemini") ||
     typeof value.model !== "string" ||
     !MODEL.test(value.model) ||
