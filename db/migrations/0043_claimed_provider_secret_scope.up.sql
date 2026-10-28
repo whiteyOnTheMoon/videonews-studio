@@ -36,6 +36,8 @@ GRANT SELECT ON vns.provider_live_budget_policy,
 GRANT SELECT(id,role,active,auth_version) ON vns.editor_accounts
  TO vns_provider_secret_executor;
 GRANT SELECT ON vns.provider_live_credential_reads TO vns_audit_reader;
+GRANT UPDATE(singleton) ON vns.provider_live_budget_policy,
+ vns.provider_live_eur_policy TO vns_provider_secret_executor;
 
 CREATE FUNCTION vns.claimed_provider_sealed_key(
  p_reservation_id uuid,p_provider text
