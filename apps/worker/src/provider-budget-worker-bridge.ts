@@ -12,6 +12,7 @@ import type { NativeProvider } from "./provider-native-usage.js";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const REQUEST = /^[A-Za-z0-9_-]{12,80}$/;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
+const DIGEST = /^[0-9a-f]{64}$/;
 const VERSION = /^[A-Za-z0-9_-]{12,80}$/;
 const MONEY = /^(0|[1-9][0-9]{0,14})$/;
 const MAX_RATE = 1_000_000_000_000n;
@@ -119,21 +120,25 @@ function verifyProjection(input: BudgetReplayRequest, id: string, raw: unknown) 
 export function dormantProviderBudgetBridge(db: Pick<Pool, "query" | "connect">, enabled = false) {
   if (enabled !== true) throw new Error("Provider budget worker bridge disabled");
   return {
-    async reserve(input: BudgetReplayRequest): Promise<string> {
+    async reserve(input: BudgetReplayRequest, promptSha256: string): Promise<string> {
+      if (typeof promptSha256 !== "string" || !DIGEST.test(promptSha256)) {
+        throw new Error("Provider budget request invalid");
+      }
       requireReservationRequest(input);
       try {
         const result = await db.query<{ id: string }>(
-          "SELECT vns.reserve_provider_live_budget(" +
+          "SELECT vns.reserve_authorized_provider_live_budget(" +
             "$1::uuid,$2::text,$3::text,$4::text,$5::uuid," +
-            "$6::bigint,$7::bigint)::text AS id",
+            "$6::integer,$7::integer,$8::text)::text AS id",
           [
             input.jobId,
             input.provider,
             input.model,
             input.requestId,
             input.priceSnapshotId,
-            String(input.maxInputTokens),
-            String(input.maxOutputTokens),
+            input.maxInputTokens,
+            input.maxOutputTokens,
+            promptSha256,
           ],
         );
         const id = result.rows[0]?.id;
@@ -255,9 +260,10 @@ export async function replayProviderBudgetFixture(
   bridge: ReturnType<typeof dormantProviderBudgetBridge>,
   input: BudgetReplayRequest,
   response: unknown,
+  promptSha256: string,
 ): Promise<Readonly<{ reservationId: string; costMicroUsd: string; reconciled: true }>> {
   requireReservationRequest(input);
-  const reservationId = await bridge.reserve(input);
+  const reservationId = await bridge.reserve(input, promptSha256);
   return reconcileRecordedProviderFixture(bridge, input, response, reservationId);
 }
 
