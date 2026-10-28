@@ -9,10 +9,7 @@ import type { AiProvider } from "./provider-credential-crypto.js";
 // Dormant CI-only adapter. Do NOT import in the running API entrypoint.
 // A future Pool must use a dedicated LOGIN that is separately granted
 // vns_provider_config_writer (currently NOLOGIN / NO members).
-const MODELS: Record<AiProvider, readonly string[]> = {
-  openai: ["gpt-6-luna", "gpt-6.1-sol"],
-  google_gemini: ["gemini-3.8-flash-tts"],
-};
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 function validateProvider(provider: unknown): provider is AiProvider {
   return provider === "openai" || provider === "google_gemini";
@@ -67,7 +64,7 @@ export function providerMutationArguments(
     if (
       change.sealedKey !== undefined ||
       typeof change.selectedModel !== "string" ||
-      !MODELS[change.provider].includes(change.selectedModel)
+      !MODEL_ID.test(change.selectedModel)
     ) {
       throw new Error("Invalid provider mutation");
     }
