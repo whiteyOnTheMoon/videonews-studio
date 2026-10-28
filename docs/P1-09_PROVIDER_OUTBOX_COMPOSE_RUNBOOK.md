@@ -21,11 +21,13 @@ Required operator-supplied settings before a *separately authorized* run:
 | Variable | Intended value |
 | --- | --- |
 | `VNS_PROVIDER_OUTBOX_WORKER_IMAGE` | Reviewed GHCR worker manifest `@sha256:<64 hex>` |
-| `VNS_PROVIDER_OUTBOX_SECRET_HOST_DIR` | Existing owner-1000 private directory containing exactly provisioned secrets |
 | `VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED` | `false` until an individually approved one-shot invocation |
 | `VNS_PROVIDER_OUTBOX_OPERATOR_ACK` | `false` until the same approval |
 
-The Compose file fixes identity, DB, queue and paths. The private host
+The Compose file fixes identity, DB, queue and paths, including a
+non-overridable source directory `./secrets/vns-outbox`. The producer must
+**never** mount `./secrets/vns`, which can contain the unrelated
+`provider-master-key` used to seal vendor API credentials. The private host
 directory must be UID 1000, mode 0700, non-symlink, with three distinct
 private files. The implementation requires both password files to be
 owner-readable regular files of mode 0400 or 0600, with unique 40–256-character
@@ -33,6 +35,17 @@ ASCII credentials (trailing newline permitted), and a 32-byte **binary**
 `provider-prompt-key`. All mounted paths are read-only, and Compose refuses
 creating an absent host directory. Do not paste credentials or cryptographic
 key material into Git, chat, logs, or issue comments.
+
+The custody helper stages these files **only** under
+`./secrets/vns-outbox`, never in the API's `./secrets/vns` directory.
+The host directory must be created privately by the operator before staging
+and must not be a symlink. The separate API prompt-sealing path currently
+expects `./secrets/vns/provider-prompt-key`. A later independently approved
+key-distribution procedure must place the **same 32 bytes** in that API path
+without revealing the key, overwriting an existing file, introducing a
+symlink/hardlink, or exposing the provider master key to the producer.
+Neither this PR nor the staging helper performs that API key distribution;
+do not enable admin job submission until the match is verified.
 
 Files expected in the mounted directory:
 
