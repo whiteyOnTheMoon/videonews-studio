@@ -1,0 +1,32 @@
+name: P2 temporary formatter diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  format-diff:
+    if: github.event.pull_request.head.ref == 'fix/p2-02-queue-snapshot-fail-closed-20261028'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Show exact formatter results for four tracked baseline files
+        run: |
+          npx prettier --write \
+            docs/P1-09_PROVIDER_OUTBOX_COMPOSE_RUNBOOK.md \
+            docs/P1-09_REDIS_PRODUCER_ACL_ROLLOUT.md \
+            scripts/ci_provider_outbox_real_e2e.mjs \
+            scripts/test_p1_09_provider_outbox_compose.mjs
+          node -e "const fs=require('fs');for(const p of process.argv.slice(1)) console.log('VNS_FORMAT_START '+p+' '+fs.readFileSync(p).toString('base64')+' VNS_FORMAT_END')" \
+            docs/P1-09_PROVIDER_OUTBOX_COMPOSE_RUNBOOK.md \
+            docs/P1-09_REDIS_PRODUCER_ACL_ROLLOUT.md \
+            scripts/ci_provider_outbox_real_e2e.mjs \
+            scripts/test_p1_09_provider_outbox_compose.mjs
