@@ -15,6 +15,7 @@ export type TrustedProviderCredentialScope = Readonly<{
   // keep it scoped to this one operation. The database/KEK implementation
   // and its security review are NOT part of this dormant worker module.
   withCredential<T>(
+    reservationId: string,
     provider: NativeProvider,
     operation: (secret: string) => Promise<T>,
   ): Promise<T>;
@@ -75,7 +76,7 @@ export function dormantOneShotTextCoordinator(
       let raw: unknown;
       let attempted = false;
       try {
-        raw = await credentials.withCredential(request.provider, (key) => {
+        raw = await credentials.withCredential(reservationId, request.provider, (key) => {
           // Even a buggy secret-custody callback may never perform two
           // possible paid requests for the same irreversible SQL claim.
           if (attempted) throw new Error("Provider dispatch already attempted");
