@@ -81,8 +81,7 @@ BEGIN
   RAISE EXCEPTION 'Provider outbox acknowledgement unavailable' USING ERRCODE='22023';
  END IF;
  PERFORM 1 FROM vns.provider_named_job_outbox
-   WHERE job_id=p_job_id AND queue_name='vns-provider-text'
-   FOR UPDATE;
+   WHERE job_id=p_job_id AND queue_name='vns-provider-text';
  IF NOT FOUND THEN
   RAISE EXCEPTION 'Provider outbox acknowledgement unavailable' USING ERRCODE='42501';
  END IF;
