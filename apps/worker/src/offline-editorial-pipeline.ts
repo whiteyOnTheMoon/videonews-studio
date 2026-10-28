@@ -172,7 +172,7 @@ export function rankOfflineEvents(
     value
       .normalize("NFKC")
       .toLocaleLowerCase("en")
-      .match(/[\\p{L}\\p{N}]+/gu) ?? [];
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
   const matchesPhrase = (title: string, term: string): boolean => {
     const words = phraseTokens(title);
     const expected = phraseTokens(term);
