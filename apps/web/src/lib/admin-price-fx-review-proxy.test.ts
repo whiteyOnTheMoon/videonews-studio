@@ -142,7 +142,8 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
 test("malformed review data or forbidden framing cannot create a review", async () => {
   let writes = 0;
   const fetcher = (async (url: RequestInfo | URL) => {
-    if (String(url).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
+    if (String(url).endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
     writes++;
     return Response.json({ reviewed: true, active: false, reviewId: UUID });
   }) as typeof fetch;
