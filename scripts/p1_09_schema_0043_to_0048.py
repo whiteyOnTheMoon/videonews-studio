@@ -192,6 +192,8 @@ SELECT
     'vns.provider_named_job_sealed_prompts','SELECT');
 """)
     if results != "0|0|0|2|0|0|t|t|f":
+        if ci_fixture():
+            print("CI-only synthetic 0048 non-secret final flags: " + results)
         raise RuntimeError(FAIL)
 
 
