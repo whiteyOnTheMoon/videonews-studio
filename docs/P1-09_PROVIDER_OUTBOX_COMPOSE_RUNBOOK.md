@@ -7,6 +7,11 @@ performed by this package.
 
 ## Exact execution boundary
 
+When resolving this overlay, both the `data` and `provider-outbox` profiles
+must be selected because the PostgreSQL and Redis dependencies belong to
+`data`. Configuration inspection never starts those dependencies; any later
+operator-approved run must use `--no-deps` and must not recreate them.
+
 The opt-in `provider-outbox-once` service is defined only by
 `deploy/compose.provider-outbox.yaml` and requires an explicitly reviewed,
 digest-pinned worker image (`VNS_PROVIDER_OUTBOX_WORKER_IMAGE`).
