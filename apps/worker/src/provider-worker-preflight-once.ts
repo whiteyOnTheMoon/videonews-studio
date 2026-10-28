@@ -39,10 +39,9 @@ function privatePassword(path: string): string {
       stats.size < 40 ||
       stats.size > 257 ||
       (stats.mode & 0o077) !== 0 ||
-      (typeof process.getuid === "function" &&
-        stats.uid !== process.getuid() &&
-        stats.uid !== 0)
-    ) throw new Error(FAIL);
+      (typeof process.getuid === "function" && stats.uid !== process.getuid() && stats.uid !== 0)
+    )
+      throw new Error(FAIL);
     const result = readFileSync(fd, "utf8").trimEnd();
     if (!PASSWORD.test(result)) throw new Error(FAIL);
     return result;
@@ -88,8 +87,12 @@ export async function runProviderWorkerReadOnlyPreflight(
   try {
     const usagePassword = readPassword(PROVIDER_WORKER_PREFLIGHT_FILES.usage);
     const secretPassword = readPassword(PROVIDER_WORKER_PREFLIGHT_FILES.secret);
-    if (!PASSWORD.test(usagePassword) || !PASSWORD.test(secretPassword) ||
-        usagePassword === secretPassword) throw new Error(FAIL);
+    if (
+      !PASSWORD.test(usagePassword) ||
+      !PASSWORD.test(secretPassword) ||
+      usagePassword === secretPassword
+    )
+      throw new Error(FAIL);
     usageDb = createDb("usage", usagePassword);
     secretDb = createDb("secret", secretPassword);
     await attestSeparatedProviderWorkerDatabases(usageDb, secretDb, true);
