@@ -16,3 +16,6 @@ export function createHealth(service: ServiceName, date: Date = new Date()): Ser
 
 export { officialPriceReviewSource } from "./provider-pricing-provenance.js";
 export type { ReviewSourceKind } from "./provider-pricing-provenance.js";
+
+export { sealProviderPrompt, openProviderPrompt } from "./provider-encrypted-prompt.js";
+export type { EncryptedProviderPrompt } from "./provider-encrypted-prompt.js";

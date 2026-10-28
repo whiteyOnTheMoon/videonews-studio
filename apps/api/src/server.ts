@@ -63,7 +63,7 @@ export function createApiServer(
     // Default OFF: production index.ts never passes providerConfig.
     // Future opt-in must provide audited DB role, session, KEK and rate limiting.
     if (
-      request.url === "/admin/ai-provider-pricing" &&
+      (request.url === "/admin/ai-provider-pricing" || request.url === "/admin/ai-provider-jobs") &&
       options.auth &&
       options.providerConfig instanceof NamedProviderRequestRuntime
     ) {
