@@ -1,4 +1,10 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 /**
  * Application-encrypted prompt envelope for durable PostgreSQL outbox storage.
@@ -29,7 +35,10 @@ function keyBytes(key: Buffer): Buffer {
 function parseB64(value: unknown, exactLength?: number): Buffer {
   if (typeof value !== "string" || !B64.test(value)) denied();
   const bytes = Buffer.from(value, "base64");
-  if (bytes.toString("base64") !== value || (exactLength !== undefined && bytes.length !== exactLength)) {
+  if (
+    bytes.toString("base64") !== value ||
+    (exactLength !== undefined && bytes.length !== exactLength)
+  ) {
     denied();
   }
   return bytes;
@@ -59,10 +68,17 @@ export function sealProviderPrompt(prompt: string, key: Buffer): EncryptedProvid
 
 export function openProviderPrompt(envelope: EncryptedProviderPrompt, key: Buffer): string {
   keyBytes(key);
-  if (!envelope || typeof envelope !== "object" || Array.isArray(envelope) ||
-      Object.keys(envelope).length !== 5 ||
-      envelope.version !== 1 || typeof envelope.sha256 !== "string" ||
-      !SHA.test(envelope.sha256)) denied();
+  if (
+    !envelope ||
+    typeof envelope !== "object" ||
+    Array.isArray(envelope) ||
+    Object.keys(envelope).length !== 5 ||
+    envelope.version !== 1 ||
+    typeof envelope.sha256 !== "string" ||
+    !SHA.test(envelope.sha256)
+  ) {
+    denied();
+  }
   try {
     const iv = parseB64(envelope.iv, 12);
     const tag = parseB64(envelope.tag, 16);
