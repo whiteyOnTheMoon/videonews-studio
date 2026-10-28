@@ -1,4 +1,16 @@
-> **Neueste Betreiberentscheidung 27.10.2026 (Vorrang vor historischen IONOS-Angaben):** Für VideoNews Studio werden vorerst **keine Backups erstellt**, Kostenbudget dafür **0 €**. Das Risiko eines dauerhaften Datenverlusts im experimentellen Betrieb ist ausdrücklich akzeptiert. Keine Sicherung, kein Restore und keine produktive Wiederherstellbarkeit werden dadurch als nachgewiesen betrachtet. Keine Backup-Dienste aktivieren oder IONOS konfigurieren. Siehe [verbindliche P1-Entscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).\n\n> **Betreiberentscheidungen vom 27.10.2026:** Kein kostenpflichtiger GitHub-Branchschutz (#2 ist als manuelle Governance-Ausnahme akzeptiert); das bestehende Beszel gilt als ausreichendes allgemeines P1-Monitoring (#229, kein separater P1-Alarmtest). Für neue P2-Feed-Dienste bleiben anwendungsbezogene Betriebsbeobachtung und technische Integrationsabnahme nötig. Frühere Passagen, die die Entscheidung zu kostenpflichtigem Schutz oder generelles Beszel erneut als P1-Sperre behandeln, sind insoweit überholt. Siehe [P1-Betreiberentscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md).
+> **Betreiberstand 28.10.2026:** Der Betreiber bestätigt bestehende regelmäßige
+> IONOS-Backups und funktionierendes Beszel-Monitoring. Diese spätere Bestätigung
+> ersetzt die historische Entscheidung vom 27.10.2026, vorerst ohne Backups
+> zu arbeiten. Kein neuer Backup-Dienst, kein IONOS-Umbau und keine zusätzliche
+> allgemeine Monitoring-Infrastruktur sind beauftragt. Ein unabhängiger
+> Restore-Nachweis und P2-spezifische Feed-Alarme sind dadurch **nicht**
+> geprüft. Siehe [historische P1-Entscheidungen](P1_OPERATOR_DECISIONS_2026-10-27.md)
+> und [P2-02-Nachweise](P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md).
+>
+> **Unverändert:** Kein kostenpflichtiger GitHub-Branchschutz; dies ist als
+> manuelle Governance-Ausnahme akzeptiert. Beszel genügt als allgemeines
+> P1-Monitoring. Neue P2-Feed-Dienste brauchen eigene technische Abnahme,
+> wenn sie aktiviert werden.
 
 # Phase 2 — Offline acceptance and rollout preparation
 
