@@ -140,7 +140,6 @@ END $counts$;
 -- using a newer and potentially less conservative rate.
 UPDATE vns.provider_live_eur_policy
  SET active_fx_snapshot_id='a4000000-0000-4000-8000-000000000004';
-SET LOCAL ROLE vns_provider_usage_writer;
 DO $rotation$
 DECLARE b uuid; blocked boolean:=false;
 BEGIN
@@ -151,11 +150,9 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN blocked:=true; END;
   IF NOT blocked THEN RAISE EXCEPTION 'Rotated FX silently repriced claim'; END IF;
 END $rotation$;
-RESET ROLE;
 
 UPDATE vns.provider_live_eur_policy
  SET active_fx_snapshot_id='a4000000-0000-4000-8000-000000000003';
-SET LOCAL ROLE vns_provider_usage_writer;
 DO $expired_claim$
 DECLARE b uuid; blocked boolean:=false;
 BEGIN
@@ -166,7 +163,6 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN blocked:=true; END;
   IF NOT blocked THEN RAISE EXCEPTION 'Expired FX accepted dispatch'; END IF;
 END $expired_claim$;
-RESET ROLE;
 
 DO $immutability$
 DECLARE denied boolean:=false;
