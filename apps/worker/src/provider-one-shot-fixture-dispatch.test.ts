@@ -120,7 +120,7 @@ test("invalid or missing vendor-shaped response after claim halts permanently", 
       processOneShotRecordedFixture(bridge, request, response),
       /Provider budget review required/,
     );
-    assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "projection", "BEGIN"]);
+    assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "projection", "halt"]);
     assert.equal(events.at(-1), "halt");
     assert.equal(events.includes("record"), false);
     await assert.rejects(
