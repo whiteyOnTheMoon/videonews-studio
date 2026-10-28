@@ -136,6 +136,8 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0037_provider_live_budget_ledger.test.sql"
   sql < "$root/db/migrations/0038_provider_worker_budget_guard.up.sql"
   sql < "$root/db/tests/0038_provider_worker_budget_guard.test.sql"
+  sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.up.sql"
+  sql < "$root/db/tests/0039_provider_one_shot_dispatch_claim.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
@@ -298,6 +300,39 @@ for iteration in 1 2; do
     rm -rf -- "$live_work"
     echo "PASS: two independent SQL sessions admit exactly one $0.0003 reservation"
   fi
+  if [[ "$iteration" -eq 1 ]]; then
+    # Real SQL sessions compete for exactly one irreversible claim.
+    sql < "$root/db/tests/0039_provider_dispatch_claim_concurrency.setup.sql"
+    claim_work="$(mktemp -d /tmp/vns-provider-claim-ci-XXXXXXXX)"
+    for label in a b; do
+      docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+        -U postgres -d vns_schema_test -c \
+        "SET ROLE vns_provider_usage_writer;
+         SELECT coalesce(vns.claim_provider_live_dispatch(
+           'a3910003-0000-4000-8000-000000000003')::text,'denied')" \
+        > "$claim_work/$label" 2>&1 &
+      if [[ "$label" = a ]]; then claim_pid_a=$!; else claim_pid_b=$!; fi
+    done
+    wait "$claim_pid_a" && wait "$claim_pid_b"
+    claim_denied="$(cat "$claim_work/a" "$claim_work/b" | grep -cx 'denied' || true)"
+    claim_issued="$(cat "$claim_work/a" "$claim_work/b" |
+      grep -Ec '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$' || true)"
+    test "$claim_denied" = 1 && test "$claim_issued" = 1 || {
+      echo "FAIL: two-session one-shot dispatch was not unique" >&2
+      rm -rf -- "$claim_work"
+      exit 1
+    }
+    test "$(docker exec "$name" psql -X -q -t -A -v ON_ERROR_STOP=1 \
+      -U postgres -d vns_schema_test -c \
+      'SELECT count(*) FROM vns.provider_live_dispatch_claims')" = 1 || {
+      echo "FAIL: more than one dispatch claim persisted" >&2
+      rm -rf -- "$claim_work"
+      exit 1
+    }
+    rm -rf -- "$claim_work"
+    echo "PASS: two independent SQL sessions issue exactly one provider dispatch claim"
+  fi
+  sql < "$root/db/migrations/0039_provider_one_shot_dispatch_claim.down.sql"
   sql < "$root/db/migrations/0038_provider_worker_budget_guard.down.sql"
   sql < "$root/db/migrations/0037_provider_live_budget_ledger.down.sql"
   sql < "$root/db/migrations/0036_provider_usage_evidence.down.sql"
@@ -341,4 +376,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0038 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0039 migrations, source authority, leases and budgets twice"

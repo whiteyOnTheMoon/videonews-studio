@@ -146,6 +146,28 @@ export function dormantProviderBudgetBridge(db: Pick<Pool, "query" | "connect">,
       }
     },
 
+    /**
+     * Irreversible one-shot SQL claim. A duplicate or uncertain retry fails;
+     * no adapter may send a second request for the same reservation.
+     * This module deliberately contains no provider transport.
+     */
+    async claim(id: string): Promise<string> {
+      if (!UUID.test(id)) throw new Error("Provider dispatch claim unavailable");
+      try {
+        const result = await db.query<{ id: string | null }>(
+          "SELECT vns.claim_provider_live_dispatch($1::uuid)::text AS id",
+          [id],
+        );
+        const claimed = result.rows[0]?.id;
+        if (result.rows.length !== 1 || !claimed || !UUID.test(claimed)) {
+          throw new Error("Dispatch was already claimed");
+        }
+        return claimed;
+      } catch {
+        throw new Error("Provider dispatch claim unavailable");
+      }
+    },
+
     async projection(input: BudgetReplayRequest, id: string) {
       requireReservationRequest(input);
       if (!UUID.test(id)) throw new Error("Provider budget projection unavailable");
