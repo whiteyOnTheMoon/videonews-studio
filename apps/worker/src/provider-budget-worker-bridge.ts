@@ -1,4 +1,4 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import { quoteNativeTextUsage } from "./provider-priced-usage.js";
 import type { ProviderUsageAdmission } from "./provider-usage-admission.js";
 import { providerUsageEvidenceStore } from "./provider-usage-evidence-store.js";
@@ -186,7 +186,7 @@ export function dormantProviderBudgetBridge(
       usage: ProviderUsageAdmission,
     ): Promise<"settled" | "halted"> {
       if (!UUID.test(id)) throw new Error("Provider budget settlement unavailable");
-      let connection: Awaited<ReturnType<typeof db.connect>> | undefined;
+      let connection: PoolClient | undefined;
       let inTransaction = false;
       try {
         connection = await db.connect();
