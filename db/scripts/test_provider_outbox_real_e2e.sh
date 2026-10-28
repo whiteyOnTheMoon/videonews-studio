@@ -50,7 +50,7 @@ test "$(echo 'SELECT count(*) FROM vns.schema_migrations' | \
 printf "CREATE ROLE vns_provider_outbox_login LOGIN INHERIT PASSWORD '%s';\nGRANT vns_provider_outbox_reader TO vns_provider_outbox_login;\n" \
   "$writer_password" | sql >/dev/null
 docker exec "$redis" redis-cli ACL SETUSER vns_provider_producer reset on \
-  ">$redis_password" '~bull:vns:vns-provider-text:*' '+@all' '-@dangerous' >/dev/null
+  ">$redis_password" '~bull:vns:vns-provider-text:*' '+@all' '-@dangerous' '+info' '+acl|whoami' >/dev/null
 docker exec "$redis" redis-cli ACL SETUSER default off >/dev/null
 VNS_E2E_PG_SUPER_PASSWORD="$pg_password" \
 VNS_E2E_PG_PRODUCER_PASSWORD="$writer_password" \
