@@ -44,7 +44,7 @@ export function verifyProviderOutboxCompose(source) {
   assert.equal(mount.type, "bind");
   assert.equal(
     mount.source,
-    "${VNS_PROVIDER_OUTBOX_SECRET_HOST_DIR:?Private producer secret directory required}",
+    "./secrets/vns-outbox",
   );
   assert.equal(mount.target, "/run/secrets/vns");
   assert.equal(mount.read_only, true);
@@ -124,7 +124,6 @@ test("Docker Compose resolves an isolated, default-off service without starting 
           ...process.env,
           VNS_PROVIDER_OUTBOX_WORKER_IMAGE:
             "ghcr.io/whiteyonthemoon/videonews-studio-worker@sha256:" + dummyDigest,
-          VNS_PROVIDER_OUTBOX_SECRET_HOST_DIR: "/ci/nonexistent/private-secrets",
           VNS_PROVIDER_OUTBOX_OPERATOR_ACK: "false",
           VNS_PROVIDER_OUTBOX_PRODUCER_ENABLED: "false",
         },
@@ -141,6 +140,7 @@ test("Docker Compose resolves an isolated, default-off service without starting 
   assert.equal(service.restart, "no");
   assert.deepEqual(Object.keys(service.networks), ["backend"]);
   assert.equal(service.volumes[0].read_only, true);
+  assert.match(service.volumes[0].source, /secrets\\/vns-outbox$/);
   assert.notEqual(service.volumes[0].bind?.create_host_path, true);
   assert.match(service.image, /@sha256:[a-f0-9]{64}$/);
 });
