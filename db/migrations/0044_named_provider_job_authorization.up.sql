@@ -44,8 +44,8 @@ GRANT SELECT,INSERT ON vns.provider_named_job_authorizations
  TO vns_provider_config_executor;
 GRANT SELECT,INSERT ON vns.provider_named_job_outbox
  TO vns_provider_config_executor;
-GRANT SELECT ON vns.provider_named_job_authorizations
- TO vns_provider_usage_executor;
+GRANT SELECT ON vns.provider_named_job_authorizations,
+ vns.provider_named_job_outbox TO vns_provider_usage_executor;
 GRANT SELECT(id,kind,max_attempts) ON vns.jobs
  TO vns_provider_usage_executor;
 GRANT SELECT(id,role,active,auth_version) ON vns.editor_accounts
