@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   normalizeFeedArticles,
+  validateEditorialProfile,
   groupExactHeadlineEvents,
   groupConservativeEventCandidates,
   rankOfflineEvents,
@@ -254,4 +255,20 @@ test("fresh headlines cannot revive a stale article within a metadata candidate"
   ]);
   const event = groupExactHeadlineEvents(articles);
   assert.equal(rankOfflineEvents(event, profile, new Date("2026-10-26T13:00:00.000Z")).length, 0);
+});
+
+test("ranking profiles reject duplicate or contradictory normalized terms", () => {
+  assert.deepEqual(validateEditorialProfile(profile), profile);
+  for (const invalid of [
+    { ...profile, keywords: ["science", "SCIENCE"] },
+    { ...profile, keywords: ["science news", "science-news"] },
+    { ...profile, keywords: ["--"] },
+    { ...profile, blockedTerms: ["Science"] },
+    { ...profile, keywords: Array.from({ length: 31 }, (_, i) => "topic" + i) },
+  ]) {
+    assert.throws(() => validateEditorialProfile(invalid));
+    assert.throws(() =>
+      rankOfflineEvents([], invalid, new Date("2026-10-26T13:00:00.000Z")),
+    );
+  }
 });
