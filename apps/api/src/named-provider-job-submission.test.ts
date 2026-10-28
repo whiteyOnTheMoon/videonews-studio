@@ -109,12 +109,15 @@ function req(payload: unknown = valid(), origin = "https://studio.example.invali
   }) as unknown as IncomingMessage;
 }
 function response() {
-  return {
-    status: 0,
-    output: "",
-    writeHead(status: number) { this.status = status; },
-    end(body: string) { this.output = body; },
-  } as unknown as ServerResponse & { status: number; output: string };
+  const record = { status: 0, output: "" };
+  return Object.assign(record, {
+    writeHead(status: number) {
+      record.status = status;
+    },
+    end(body: string) {
+      record.output = body;
+    },
+  }) as unknown as ServerResponse & { status: number; output: string };
 }
 
 function scenario(role: "admin" | "editor" | null = "admin", admit = true) {
