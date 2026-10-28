@@ -74,11 +74,12 @@ def owner_sql(sql: str, *, read_only: bool = True) -> str:
     ], payload=sql)
 
 
-def secret_directory() -> int:
+def secret_directory(expected_uid: int = 1000) -> int:
     fd = os.open(SECRET_DIR, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     info = os.fstat(fd)
     if (
-        info.st_uid != os.geteuid()
+        os.geteuid() != expected_uid
+        or info.st_uid != expected_uid
         or not stat.S_ISDIR(info.st_mode)
         or stat.S_IMODE(info.st_mode) != 0o700
     ):
@@ -87,8 +88,8 @@ def secret_directory() -> int:
     return fd
 
 
-def read_passwords() -> list[str]:
-    directory = secret_directory()
+def read_passwords(expected_uid: int = 1000) -> list[str]:
+    directory = secret_directory(expected_uid)
     try:
         values = []
         for _, _, name in SERVICES:
@@ -99,7 +100,7 @@ def read_passwords() -> list[str]:
                 info = os.fstat(fd)
                 if (
                     not stat.S_ISREG(info.st_mode)
-                    or info.st_uid != os.geteuid()
+                    or info.st_uid != expected_uid
                     or info.st_nlink != 1
                     or stat.S_IMODE(info.st_mode) != 0o600
                     or not 41 <= info.st_size <= 129
@@ -118,14 +119,14 @@ def read_passwords() -> list[str]:
         os.close(directory)
 
 
-def stage() -> None:
-    if os.geteuid() != 1000:
+def stage(expected_uid: int = 1000) -> None:
+    if os.geteuid() != expected_uid:
         raise PermissionError(FAIL)
     if checked_command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise RuntimeError(FAIL)
     if checked_command(["git", "-C", str(ROOT), "status", "--porcelain"]):
         raise RuntimeError(FAIL)
-    directory = secret_directory()
+    directory = secret_directory(expected_uid)
     created = []
     old_umask = os.umask(0o077)
     try:
