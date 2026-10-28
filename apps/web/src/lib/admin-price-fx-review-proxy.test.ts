@@ -15,7 +15,8 @@ const command = () => ({
   action: "review_fx",
   microEurPerMicroUsdNanos: "1150000000",
   expiresAt: later(),
-  sourceReference: "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
+  sourceReference:
+    "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
 });
 const request = (body: unknown = command(), origin = ORIGIN, cookie = COOKIE) =>
   new Request(ORIGIN + "/api/admin/ai-provider-pricing", {
@@ -37,8 +38,15 @@ test("read-only by default and exact review grammar", () => {
     { ...command(), sourceReference: "http://not-allowed.invalid/path" },
     { ...command(), sourceReference: "https://example.org/verified-source" },
     { ...command(), sourceReference: "https://developers.openai.com/api/docs/pricing" },
-    { ...command(), sourceReference: "https://www.ecb.europa.eu.evil.invalid/stats/policy_and_exchange_rates/euro_reference_exchange_rates/" },
-    { ...command(), sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A" },
+    {
+      ...command(),
+      sourceReference:
+        "https://www.ecb.europa.eu.evil.invalid/stats/policy_and_exchange_rates/euro_reference_exchange_rates/",
+    },
+    {
+      ...command(),
+      sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A",
+    },
   ])
     assert.equal(parsePriceReviewBody(invalid), null);
 });
