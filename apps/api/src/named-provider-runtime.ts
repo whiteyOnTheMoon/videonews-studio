@@ -7,6 +7,8 @@ import { NamedAdminProviderConfiguration } from "./named-admin-provider-configur
 import { withProviderMasterKey } from "./provider-master-key-file.js";
 import { PostgresNamedProviderConfigStore } from "./postgres-named-provider-config-store.js";
 import { PostgresProviderMutationLimiter } from "./postgres-provider-mutation-limiter.js";
+import { NamedPriceFxReviewHttp, PostgresNamedPriceReviewStore } from "./named-price-fx-review.js";
+import { respond } from "./admin-provider-configuration.js";
 
 const WRITER_PASSWORD_FILE = "/run/secrets/pg_provider_admin_password";
 const UNAVAILABLE = "Named provider runtime unavailable";
@@ -22,9 +24,22 @@ export class NamedProviderRequestRuntime {
     private readonly auth: AdminAuth,
     private readonly pool: Pool,
     private readonly withKey: typeof withProviderMasterKey = withProviderMasterKey,
+    private readonly pricingEnabled = false,
   ) {}
 
   async handle(request: IncomingMessage, response: ServerResponse): Promise<boolean> {
+    if (request.url === "/admin/ai-provider-pricing") {
+      if (!this.pricingEnabled) {
+        respond(response, 404, { error: "not_found" });
+        return true;
+      }
+      return new NamedPriceFxReviewHttp(
+        this.editor,
+        this.auth,
+        new PostgresNamedPriceReviewStore(this.pool),
+        new PostgresProviderMutationLimiter(this.pool),
+      ).handle(request, response);
+    }
     return this.withKey(async (key) => {
       const handler = new NamedAdminProviderConfiguration(
         this.editor,
@@ -56,10 +71,12 @@ export async function namedProviderRuntimeFromEnv(
   withKey: typeof withProviderMasterKey = withProviderMasterKey,
 ): Promise<NamedProviderRequestRuntime | undefined> {
   if ([undefined, "false"].includes(env.VNS_PROVIDER_ADMIN_WRITE_ENABLED)) {
+    if (env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true") throw new Error(UNAVAILABLE);
     return undefined;
   }
   if (
     env.VNS_PROVIDER_ADMIN_WRITE_ENABLED !== "true" ||
+    ![undefined, "false", "true"].includes(env.VNS_PROVIDER_PRICE_REVIEW_ENABLED) ||
     env.VNS_EDITOR_AUTH_ENABLED !== "true" ||
     env.VNS_ADMIN_AUTH_ENABLED !== "true" ||
     !editor ||
@@ -105,7 +122,13 @@ export async function namedProviderRuntimeFromEnv(
     await withKey(async (key) => {
       if (key.length !== 32) throw new Error(UNAVAILABLE);
     });
-    return new NamedProviderRequestRuntime(editor, auth, pool, withKey);
+    return new NamedProviderRequestRuntime(
+      editor,
+      auth,
+      pool,
+      withKey,
+      env.VNS_PROVIDER_PRICE_REVIEW_ENABLED === "true",
+    );
   } catch {
     await pool.end().catch(() => undefined);
     throw new Error(UNAVAILABLE);
