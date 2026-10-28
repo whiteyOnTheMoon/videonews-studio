@@ -25,8 +25,8 @@ export function verifyNativeTextSend(value: NativeTextSend): void {
   if (
     !value ||
     Object.keys(value).length !== 5 ||
-    !["provider", "model", "prompt", "maxInputTokens", "maxOutputTokens"].every(
-      (key) => Object.hasOwn(value, key),
+    !["provider", "model", "prompt", "maxInputTokens", "maxOutputTokens"].every((key) =>
+      Object.hasOwn(value, key),
     ) ||
     (value.provider !== "openai" && value.provider !== "google_gemini") ||
     typeof value.model !== "string" ||
@@ -48,7 +48,10 @@ export function verifyNativeTextSend(value: NativeTextSend): void {
 }
 
 async function boundedJson(response: Response): Promise<unknown> {
-  if (!response.ok || !/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get("content-type") ?? "")) {
+  if (
+    !response.ok ||
+    !/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get("content-type") ?? "")
+  ) {
     throw new Error("Provider response unavailable");
   }
   const size = response.headers.get("content-length");

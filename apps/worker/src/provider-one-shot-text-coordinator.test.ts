@@ -75,7 +75,12 @@ test("coordinator defaults off and cannot reach a credential or transport", () =
     () =>
       dormantOneShotTextCoordinator(
         fixtureBridge(events),
-        { send: async () => { events.push("send"); return openaiFixture; } },
+        {
+          send: async () => {
+            events.push("send");
+            return openaiFixture;
+          },
+        },
         { withCredential: async (_p, cb) => cb(KEY) },
       ),
     /Provider text coordinator disabled/,
@@ -116,7 +121,10 @@ test("committed claim is always prior to reading a key and sending one request",
     "projection",
     "settle",
   ]);
-  await assert.rejects(coordinator.run(request, "Only facts verified from sources."), /claim unavailable/);
+  await assert.rejects(
+    coordinator.run(request, "Only facts verified from sources."),
+    /claim unavailable/,
+  );
   assert.equal(events.filter((event) => event === "send").length, 1);
   assert.equal(events.filter((event) => event === "credential").length, 1);
 });
@@ -125,8 +133,18 @@ test("invalid input never reserves, claims, reads keys or touches network", asyn
   const events: string[] = [];
   const coordinator = dormantOneShotTextCoordinator(
     fixtureBridge(events),
-    { send: async () => { events.push("send"); return openaiFixture; } },
-    { withCredential: async (_provider, callback) => { events.push("key"); return callback(KEY); } },
+    {
+      send: async () => {
+        events.push("send");
+        return openaiFixture;
+      },
+    },
+    {
+      withCredential: async (_provider, callback) => {
+        events.push("key");
+        return callback(KEY);
+      },
+    },
     true,
   );
   for (const prompt of ["", "A".repeat(40000)]) {
@@ -147,11 +165,24 @@ test("uncertain SQL claim must never read credentials or attempt a send", async 
   const events: string[] = [];
   const coordinator = dormantOneShotTextCoordinator(
     fixtureBridge(events, { claimError: true }),
-    { send: async () => { events.push("send"); return openaiFixture; } },
-    { withCredential: async (_provider, callback) => { events.push("credential"); return callback(KEY); } },
+    {
+      send: async () => {
+        events.push("send");
+        return openaiFixture;
+      },
+    },
+    {
+      withCredential: async (_provider, callback) => {
+        events.push("credential");
+        return callback(KEY);
+      },
+    },
     true,
   );
-  await assert.rejects(coordinator.run(request, "Valid text"), /Provider dispatch claim unavailable/);
+  await assert.rejects(
+    coordinator.run(request, "Valid text"),
+    /Provider dispatch claim unavailable/,
+  );
   assert.deepEqual(events, ["reserve", "projection", "claim"]);
 });
 
@@ -159,8 +190,18 @@ test("missing SQL projection freezes budget and denies dispatch", async () => {
   const events: string[] = [];
   const coordinator = dormantOneShotTextCoordinator(
     fixtureBridge(events, { preProjectionFail: true }),
-    { send: async () => { events.push("send"); return openaiFixture; } },
-    { withCredential: async (_provider, callback) => { events.push("credential"); return callback(KEY); } },
+    {
+      send: async () => {
+        events.push("send");
+        return openaiFixture;
+      },
+    },
+    {
+      withCredential: async (_provider, callback) => {
+        events.push("credential");
+        return callback(KEY);
+      },
+    },
     true,
   );
   await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
@@ -192,7 +233,8 @@ test("key retrieval or unknown transport result halts forever after one claim", 
     );
     await assert.rejects(
       coordinator.run(request, "Valid text"),
-      (e: Error) => e.message === "Provider budget review required" && !e.message.includes("secret"),
+      (e: Error) =>
+        e.message === "Provider budget review required" && !e.message.includes("secret"),
     );
     assert.equal(events.filter((event) => event === "claim").length, 1);
     assert.equal(events.filter((event) => event.startsWith("halt:")).length, 1);

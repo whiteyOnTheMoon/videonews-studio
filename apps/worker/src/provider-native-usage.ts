@@ -124,7 +124,8 @@ export function extractNativeTextUsage(
           if (
             !["output_text", "refusal"].includes(content.type as string) ||
             (content.type === "output_text" && typeof content.text !== "string")
-          ) invalid();
+          )
+            invalid();
         }
       }
     }
@@ -149,10 +150,13 @@ export function extractNativeTextUsage(
         const part = object(item);
         if (
           typeof part.text !== "string" ||
-          Object.keys(part).some((name) => !["text", "thought", "thoughtSignature"].includes(name)) ||
+          Object.keys(part).some(
+            (name) => !["text", "thought", "thoughtSignature"].includes(name),
+          ) ||
           (part.thought !== undefined && typeof part.thought !== "boolean") ||
           (part.thoughtSignature !== undefined && typeof part.thoughtSignature !== "string")
-        ) invalid();
+        )
+          invalid();
       }
     }
     if (row.promptFeedback !== undefined) {

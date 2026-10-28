@@ -67,7 +67,11 @@ test("Gemini sends exactly one fixed-origin, no-query-key text request", async (
     return Response.json(geminiFixture);
   }) as typeof fetch;
   const transport = dormantNativeTextTransport(true, fetcher);
-  const request = { ...textRequest, provider: "google_gemini" as const, model: "operator-chosen-gemini" };
+  const request = {
+    ...textRequest,
+    provider: "google_gemini" as const,
+    model: "operator-chosen-gemini",
+  };
   const response = await transport.send(request, KEY);
   assert.deepEqual(response, geminiFixture);
   assert.equal(calls.length, 1);
@@ -114,10 +118,7 @@ test("malformed model, prompt, budget or keys cannot reach HTTP", async () => {
     { ...textRequest, endpoint: "https://evil.invalid" },
   ];
   for (const raw of invalid) {
-    await assert.rejects(
-      transport.send(raw as never, KEY),
-      /Provider text request invalid/,
-    );
+    await assert.rejects(transport.send(raw as never, KEY), /Provider text request invalid/);
   }
   await assert.rejects(transport.send(textRequest, "short"), /Provider credential unavailable/);
   await assert.rejects(
@@ -156,8 +157,7 @@ test("HTTP failure, redirect, wrong content type and unexpected native usage fai
     await assert.rejects(
       transport.send(textRequest, KEY),
       (error: Error) =>
-        error.message === "Provider response unavailable" &&
-        !error.message.includes("secret"),
+        error.message === "Provider response unavailable" && !error.message.includes("secret"),
     );
   }
   assert.equal(count, failures.length);
