@@ -19,7 +19,12 @@ const KEY = "ci-only-never-a-real-vendor-key-123456";
 
 function fixtureBridge(
   events: string[],
-  options: { preProjectionFail?: boolean; claimError?: boolean; settleError?: boolean } = {},
+  options: {
+    preProjectionFail?: boolean;
+    claimError?: boolean;
+    claimResult?: string;
+    settleError?: boolean;
+  } = {},
 ) {
   let claimed = false;
   let projections = 0;
@@ -52,7 +57,7 @@ function fixtureBridge(
       events.push("claim");
       if (claimed || options.claimError) throw Error("Provider dispatch claim unavailable");
       claimed = true;
-      return CLAIM;
+      return options.claimResult ?? CLAIM;
     },
     async halt(_id: string, fault: string) {
       assert.equal(_id, ID);
@@ -124,7 +129,7 @@ test("committed claim is always prior to reading a key and sending one request",
   ]);
   await assert.rejects(
     coordinator.run(request, "Only facts verified from sources."),
-    /claim unavailable/,
+    /Provider budget review required/,
   );
   assert.equal(events.filter((event) => event === "send").length, 1);
   assert.equal(events.filter((event) => event === "credential").length, 1);
@@ -180,11 +185,32 @@ test("uncertain SQL claim must never read credentials or attempt a send", async 
     },
     true,
   );
-  await assert.rejects(
-    coordinator.run(request, "Valid text"),
-    /Provider dispatch claim unavailable/,
-  );
-  assert.deepEqual(events, ["reserve", "projection", "claim"]);
+  await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+  assert.deepEqual(events, ["reserve", "projection", "claim", "halt:settlement_unconfirmed"]);
+});
+
+test("malformed or missing SQL claim receipt cannot access keys or network", async () => {
+  for (const claimResult of ["", "invalid-claim", "A".repeat(36)]) {
+    const events: string[] = [];
+    const coordinator = dormantOneShotTextCoordinator(
+      fixtureBridge(events, { claimResult }),
+      {
+        send: async () => {
+          events.push("send");
+          return openaiFixture;
+        },
+      },
+      {
+        withCredential: async (_reservationId, _provider, callback) => {
+          events.push("credential");
+          return callback(KEY);
+        },
+      },
+      true,
+    );
+    await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+    assert.deepEqual(events, ["reserve", "projection", "claim", "halt:settlement_unconfirmed"]);
+  }
 });
 
 test("missing SQL projection freezes budget and denies dispatch", async () => {
@@ -241,7 +267,7 @@ test("key retrieval or unknown transport result halts forever after one claim", 
     assert.equal(events.filter((event) => event.startsWith("halt:")).length, 1);
     assert.ok(!events.includes("settle"));
     if (cause === "credential") assert.ok(!events.includes("send"));
-    await assert.rejects(coordinator.run(request, "Valid text"), /claim unavailable/);
+    await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
     assert.equal(events.filter((event) => event === "send").length, cause === "credential" ? 0 : 1);
   }
 });
@@ -269,7 +295,7 @@ test("credential callback may call the transport at most once per SQL claim", as
   assert.equal(events.filter((item) => item === "send").length, 1);
   assert.equal(events.filter((item) => item === "claim").length, 1);
   assert.equal(events.filter((item) => item === "halt:response_missing").length, 1);
-  await assert.rejects(coordinator.run(request, "Valid text"), /claim unavailable/);
+  await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
   assert.equal(events.filter((item) => item === "send").length, 1);
 });
 

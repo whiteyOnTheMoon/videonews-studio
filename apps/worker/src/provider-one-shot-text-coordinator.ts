@@ -71,8 +71,21 @@ export function dormantOneShotTextCoordinator(
         await bridge.halt(reservationId, "settlement_unconfirmed");
         throw new Error("Provider budget review required");
       }
-      // Once committed, claim cannot be repeated even after worker failure.
-      await bridge.claim(reservationId);
+      // A lost or malformed SQL claim acknowledgement is an uncertain
+      // budget outcome. Fail closed before accessing any credential or
+      // sending HTTP; never retry a possibly committed one-shot claim.
+      try {
+        const claimId = await bridge.claim(reservationId);
+        if (
+          typeof claimId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(claimId)
+        ) {
+          throw new Error("Unconfirmed dispatch claim");
+        }
+      } catch {
+        await bridge.halt(reservationId, "settlement_unconfirmed");
+        throw new Error("Provider budget review required");
+      }
       let raw: unknown;
       let attempted = false;
       try {

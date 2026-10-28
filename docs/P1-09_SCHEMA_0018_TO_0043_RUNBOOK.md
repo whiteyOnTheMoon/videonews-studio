@@ -6,7 +6,7 @@ um die verbleibenden PostgreSQL-Migrationen `0019–0043`. Das Upgrade ist
 
 Die bereits vom Betreiber bestätigten IONOS-Backups und das funktionierende
 Beszel-Monitoring sind akzeptierte Voraussetzungen; sie werden nicht erneut
-als offene Features behandelt. Vor einem *realen* Datenbankeingriff bleibt
+als offene Features behandelt. Vor einem _realen_ Datenbankeingriff bleibt
 ein aktueller wiederherstellbarer Sicherungsstand organisatorisch wichtig.
 
 ## Umfang und Sicherheitsgrenzen

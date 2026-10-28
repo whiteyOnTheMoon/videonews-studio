@@ -6,13 +6,13 @@ Status: vorbereitet, **noch nicht auf dem VPS ausgeführt**. Bezieht sich auf
 
 ## Ergebnis
 
-`scripts/p1_09_provider_worker_login_custody.py` stellt zwei *verschiedene*
+`scripts/p1_09_provider_worker_login_custody.py` stellt zwei _verschiedene_
 PostgreSQL-Logins mit SCRAM-SHA-256-Passwörtern bereit:
 
-| Login | Geerbte NOLOGIN-Rolle | Zweck |
-|---|---|---|
-| `vns_provider_usage_login` | `vns_provider_usage_writer` | Einmalige Reservierung, Budget-Claim, Nutzungsbeleg und Abrechnung |
-| `vns_provider_secret_login` | `vns_provider_secret_reader` | Einmalig verschlüsselten Schlüsselumschlag nach SQL-Claim lesen |
+| Login                       | Geerbte NOLOGIN-Rolle        | Zweck                                                              |
+| --------------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| `vns_provider_usage_login`  | `vns_provider_usage_writer`  | Einmalige Reservierung, Budget-Claim, Nutzungsbeleg und Abrechnung |
+| `vns_provider_secret_login` | `vns_provider_secret_reader` | Einmalig verschlüsselten Schlüsselumschlag nach SQL-Claim lesen    |
 
 Für beide wird `GRANT ... WITH INHERIT TRUE, SET FALSE` benutzt.
 Weder der Datenbank-Superuser noch der Admin-Provider-Writer wird als
