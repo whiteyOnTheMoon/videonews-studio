@@ -88,14 +88,16 @@ test("one and only one recorded response can follow an SQL dispatch claim", asyn
   assert.equal(first.reservationId, reservationId);
   assert.equal(first.costMicroUsd, "162");
   assert.equal(first.reconciled, true);
-  assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "reserve", "projection"]);
+  assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "projection", "BEGIN"]);
   assert.equal(events.filter((event) => event === "claim").length, 1);
+  assert.equal(events.filter((event) => event === "reserve").length, 1);
   assert.equal(events.filter((event) => event === "settle").length, 1);
   await assert.rejects(
     processOneShotRecordedFixture(bridge, request, openaiFixture),
     /Provider dispatch claim unavailable/,
   );
   assert.equal(events.filter((event) => event === "claim").length, 2);
+  assert.equal(events.filter((event) => event === "reserve").length, 2);
   assert.equal(events.filter((event) => event === "record").length, 1);
   assert.equal(events.filter((event) => event === "settle").length, 1);
 });
@@ -118,7 +120,7 @@ test("invalid or missing vendor-shaped response after claim halts permanently", 
       processOneShotRecordedFixture(bridge, request, response),
       /Provider budget review required/,
     );
-    assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "reserve", "projection"]);
+    assert.deepEqual(events.slice(0, 4), ["reserve", "claim", "projection", "BEGIN"]);
     assert.equal(events.at(-1), "halt");
     assert.equal(events.includes("record"), false);
     await assert.rejects(
