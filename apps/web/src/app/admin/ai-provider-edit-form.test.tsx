@@ -86,7 +86,9 @@ test("builders reject unsupported models, activation, malformed and whitespace k
     model: "gpt-6-luna",
   });
   assert.deepEqual(makeModelCommand("google_gemini", "ci_reviewed_model_0042"), {
-    action: "set_model", provider: "google_gemini", model: "ci_reviewed_model_0042",
+    action: "set_model",
+    provider: "google_gemini",
+    model: "ci_reviewed_model_0042",
   });
   assert.equal(makeModelCommand("google_gemini", "bad/model"), null);
   assert.equal(makeModelCommand("openai", "https://bad.example"), null);
