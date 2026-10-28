@@ -315,3 +315,84 @@ test("independent QA fails closed on corrupt sections instead of accepting them"
   assert.equal(review.acceptedForHumanReview, false);
   assert.ok(review.reasons.includes("script_sections_invalid"));
 });
+
+test("weighted ranking uses whole Unicode phrases instead of substring blocklist matches", () => {
+  const headline = "Science award recognizes an important public research project";
+  const normalized = normalizeFeedArticles(
+    articles.map((article) => ({
+      sourceId: article.sourceId,
+      url: article.url,
+      headline,
+      publishedAt: article.publishedAt,
+      reviewStatus: "candidate" as const,
+    })),
+  );
+  const candidate = { ...event, headline, articles: normalized };
+  const withWar = assessEditorialCandidate(
+    candidate,
+    { ...profile, keywords: ["war"] },
+    { ...policy, blockedTerms: ["war"] },
+    provenance,
+    now,
+  );
+  const withoutKeyword = assessEditorialCandidate(
+    candidate,
+    { ...profile, keywords: [] },
+    { ...policy, blockedTerms: [] },
+    provenance,
+    now,
+  );
+  assert.equal(withWar.eligible, true);
+  assert.equal(withWar.score, withoutKeyword.score);
+  assert.equal(
+    assessEditorialCandidate(
+      candidate,
+      profile,
+      { ...policy, blockedTerms: ["SCIENCE-AWARD"] },
+      provenance,
+      now,
+    ).eligible,
+    false,
+  );
+  assert.ok(
+    assessEditorialCandidate(
+      candidate,
+      profile,
+      { ...policy, blockedTerms: ["science award"] },
+      provenance,
+      now,
+    ).reasons.includes("editorial_blocklisted"),
+  );
+});
+
+test("weighted ranking rejects forged normalized article hashes and display headlines", () => {
+  for (const forged of [
+    { ...event, headline: "A fabricated unrelated science study" },
+    { ...event, articles: [{ ...articles[0]!, id: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, sourceId: "foreign_source" }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, url: "https://tampered.example.org/story" }, articles[1]!] },
+  ]) {
+    assert.throws(() => assessEditorialCandidate(forged, profile, policy, provenance, now));
+  }
+});
+
+test("independent QA refuses forged event metadata even if the script itself is intact", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const tampered = {
+    ...event,
+    articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!],
+  };
+  const report = independentlyReviewMockScript(
+    tampered,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+  );
+  assert.equal(report.acceptedForHumanReview, false);
+  assert.equal(report.approvedForPublication, false);
+  assert.ok(report.reasons.includes("event_metadata_mismatch"));
+});
