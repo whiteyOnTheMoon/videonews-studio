@@ -26,7 +26,6 @@ from p1_09_provider_outbox_custody import (
     REDIS_FILE,
     REDIS_USER,
     acl_line,
-    directory_fd,
     secure_read,
 )
 
@@ -169,7 +168,7 @@ def safe_create(fd: int, name: str, content: bytes, mode: int) -> None:
 
 def preflight() -> None:
     operator()
-    private = directory_fd()
+    private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
     try:
         current = file_read(secrets, ACL, mode=0o644)
@@ -184,7 +183,7 @@ def preflight() -> None:
 
 def prepare() -> None:
     preflight()
-    private = directory_fd()
+    private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
     created: list[str] = []
     try:
@@ -206,7 +205,7 @@ def prepare() -> None:
 
 def verify() -> None:
     operator()
-    private = directory_fd()
+    private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
     try:
         current = file_read(secrets, ACL, mode=0o644)
@@ -228,7 +227,7 @@ def verify() -> None:
 def install_file() -> None:
     operator(approving=True)
     verify()
-    private = directory_fd()
+    private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
     try:
         current = file_read(secrets, ACL, mode=0o644)
@@ -257,7 +256,7 @@ def install_file() -> None:
 
 def installed() -> None:
     operator()
-    private = directory_fd()
+    private = private_fd(PRIVATE)
     secrets = private_fd(SECRETS)
     try:
         original = file_read(private, BACKUP, mode=0o600)
