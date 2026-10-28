@@ -113,7 +113,12 @@ export async function runProviderOutboxOnce(env: NodeJS.ProcessEnv = process.env
   try {
     await queue.waitUntilReady();
     return await withSecret(KEY_PATH, 32, async (key) => {
-      const producer = dormantProviderOutboxPublisher(db, queue, async (operation) => operation(key), true);
+      const producer = dormantProviderOutboxPublisher(
+        db,
+        queue,
+        async (operation) => operation(key),
+        true,
+      );
       return producer.runOnce(5);
     });
   } catch {
