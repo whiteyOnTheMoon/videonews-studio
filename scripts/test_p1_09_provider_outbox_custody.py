@@ -100,7 +100,7 @@ class OutboxCustodyTests(unittest.TestCase):
     def test_preflight_requires_exact_schema_and_inactive_budget(self):
         versions = [f"{n:04d}_ci_name" for n in range(1, 49)]
         versions[-1] = "0048_provider_outbox_delivery_receipt"
-        state = "vns|videonews|170006|scram-sha-256|1|0|0|0|0|0|t|t|f"
+        state = "vns|videonews|170006|scram-sha-256|1|0|0|0|0|0|true|true|false"
         calls = []
         def read(sql, read_only=True):
             calls.append(read_only)
@@ -114,9 +114,28 @@ class OutboxCustodyTests(unittest.TestCase):
             self.assertEqual(calls, [True, True])
         with patch.object(custody, "check_operator"), patch.object(
             custody, "expected_versions", return_value=versions
-        ), patch.object(custody, "owner_sql", return_value=state.replace("|0|0|0|t|", "|1|0|0|t|")):
+        ), patch.object(custody, "owner_sql", return_value=state.replace("|0|0|0|true|", "|1|0|0|true|")):
             with self.assertRaises(RuntimeError):
                 custody.preflight()
+
+    def test_postgres_boolean_contract_rejects_legacy_short_form_and_unsafe_privileges(self):
+        versions = [f"{n:04d}_ci_name" for n in range(1, 49)]
+        versions[-1] = "0048_provider_outbox_delivery_receipt"
+        canonical = "vns|videonews|170006|scram-sha-256|1|0|0|0|0|0|true|true|false"
+        for wrong in [
+            canonical.replace("true|true|false", "t|t|f"),
+            canonical.replace("true|true|false", "true|false|false"),
+            canonical.replace("true|true|false", "true|true|true"),
+            canonical.replace("|1|0|0|0|0|0|", "|1|1|0|0|0|0|"),
+        ]:
+            with patch.object(custody, "check_operator"), patch.object(
+                custody, "expected_versions", return_value=versions
+            ), patch.object(
+                custody, "owner_sql",
+                side_effect=lambda sql: wrong if "current_user" in sql else "\\n".join(versions),
+            ):
+                with self.assertRaises(RuntimeError):
+                    custody.preflight()
 
     def test_apply_requires_explicit_approval_and_only_writes_login_sql(self):
         with patch.dict(os.environ, {custody.APPROVAL: ""}), patch.object(
