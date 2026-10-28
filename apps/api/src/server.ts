@@ -62,6 +62,20 @@ export function createApiServer(
 
     // Default OFF: production index.ts never passes providerConfig.
     // Future opt-in must provide audited DB role, session, KEK and rate limiting.
+    if (
+      request.url === "/admin/ai-provider-pricing" &&
+      options.auth &&
+      options.providerConfig instanceof NamedProviderRequestRuntime
+    ) {
+      void options.providerConfig.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded) {
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        }
+      });
+      return;
+    }
+
     if (request.url === "/admin/ai-providers" && options.auth && options.providerConfig) {
       void options.providerConfig.handle(request, response).catch(() => {
         if (!response.headersSent) response.writeHead(503);
