@@ -1,0 +1,10 @@
+services:
+  redis:
+    image: redis:8.4.8-alpine@sha256:d78b2cc0b2433837395263cb86d5ce3830f492201525b0fd148496706fc8fe8c
+    volumes:
+      - type: volume
+        source: redis_p109_restored
+        target: /data
+
+volumes:
+  redis_p109_restored: {}
