@@ -58,6 +58,12 @@ jobs:
         run: npm run lint
       - name: Formatting
         run: npm run format:check
+      - name: Temporary provider jobs format diagnostics
+        if: failure()
+        run: |
+          for f in apps/web/src/lib/admin-provider-job-submission-proxy.ts apps/web/src/lib/admin-provider-job-submission-proxy.test.ts apps/web/src/app/admin/ai-provider-jobs.tsx apps/web/src/app/admin/page.tsx; do
+            npx prettier "$f" | diff -u "$f" - || true
+          done
       - name: Verify P1-01 importer on integrated branch
         run: node --test scripts/import-issues.test.mjs
       - name: Verify P1-02 governance on integrated branch
