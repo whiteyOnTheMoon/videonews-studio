@@ -70,7 +70,9 @@ export default function AiProviderJobs({ enabled }: { enabled: boolean }) {
       ) {
         throw new Error("receipt");
       }
-      setResult("Auftrag ausschließlich als ausstehender SQL-Eintrag gespeichert: " + receipt.jobId);
+      setResult(
+        "Auftrag ausschließlich als ausstehender SQL-Eintrag gespeichert: " + receipt.jobId,
+      );
     } catch {
       setResult("Auftrag nicht bestätigt. Du kannst mit derselben Vorgangskennung erneut prüfen.");
     } finally {
