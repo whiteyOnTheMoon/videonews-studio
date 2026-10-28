@@ -36,7 +36,7 @@ test("OpenAI sends exactly one fixed-origin, stateless, text-only request", asyn
   }) as typeof fetch;
   const transport = dormantNativeTextTransport(true, fetcher);
   const response = await transport.send(textRequest, KEY);
-  assert.equal(response, openaiFixture);
+  assert.deepEqual(response, openaiFixture);
   assert.equal(calls.length, 1);
   assert.equal(calls[0]?.url, "https://api.openai.com/v1/responses");
   const options = calls[0]!.options;
@@ -69,7 +69,7 @@ test("Gemini sends exactly one fixed-origin, no-query-key text request", async (
   const transport = dormantNativeTextTransport(true, fetcher);
   const request = { ...textRequest, provider: "google_gemini" as const, model: "operator-chosen-gemini" };
   const response = await transport.send(request, KEY);
-  assert.equal(response, geminiFixture);
+  assert.deepEqual(response, geminiFixture);
   assert.equal(calls.length, 1);
   assert.equal(
     calls[0]?.url,
@@ -114,11 +114,6 @@ test("malformed model, prompt, budget or keys cannot reach HTTP", async () => {
     { ...textRequest, endpoint: "https://evil.invalid" },
   ];
   for (const raw of invalid) {
-    if ("endpoint" in raw) {
-      // The transport cannot even receive a URL override in its type;
-      // request objects are still restricted to exact fields by the coordinator.
-      continue;
-    }
     await assert.rejects(
       transport.send(raw as never, KEY),
       /Provider text request invalid/,
