@@ -164,4 +164,3 @@ test("worker export validates genesis, exact revisions and linked page digests",
   records = [second];
   await assert.rejects(store.export(event, 1, 10, "f".repeat(64)), /unavailable/);
 });
-
