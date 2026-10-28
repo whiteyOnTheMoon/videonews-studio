@@ -77,7 +77,7 @@ BEGIN
  IF verified IS DISTINCT FROM false THEN
   RAISE EXCEPTION 'Changed prompt digest authorized'; END IF;
 END $positive$;
-UPDATE vns.editor_accounts SET auth_version=1
+UPDATE vns.editor_accounts SET active=false
  WHERE id='a4400001-0000-4000-8000-000000000001';
 DO $revoked$
 DECLARE price_id uuid; verified boolean;
