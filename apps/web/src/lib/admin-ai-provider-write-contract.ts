@@ -12,10 +12,7 @@ export type AdminAiProviderMutation =
   | { action: "remove_key"; provider: AdminAiProvider }
   | { action: "set_model"; provider: AdminAiProvider; model: string };
 
-const models: Record<AdminAiProvider, readonly string[]> = {
-  openai: ["gpt-6-luna", "gpt-6.1-sol"],
-  google_gemini: ["gemini-3.8-flash-tts"],
-};
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 function providerName(value: unknown): value is AdminAiProvider {
   return value === "openai" || value === "google_gemini";
@@ -64,7 +61,7 @@ export function parseAdminAiProviderMutation(payload: unknown): AdminAiProviderM
     input.action === "set_model" &&
     exactKeys(input, ["action", "provider", "model"]) &&
     typeof input.model === "string" &&
-    models[input.provider].includes(input.model)
+    MODEL_ID.test(input.model)
   ) {
     return {
       action: "set_model",
