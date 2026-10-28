@@ -146,6 +146,7 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0042_provider_reviewed_model_selection.test.sql"
   sql < "$root/db/migrations/0043_claimed_provider_secret_scope.up.sql"
   sql < "$root/db/tests/0043_claimed_provider_secret_scope.test.sql"
+  sql < "$root/db/tests/0043_provider_worker_logins.test.sql"
   if [[ "$iteration" -eq 1 ]]; then
     # Two independent SQL sessions compete for five shared admission slots.
     admission_work="$(mktemp -d /tmp/vns-admission-ci-XXXXXXXX)"
