@@ -126,6 +126,7 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
   for (const upstream of [
     Response.json({ reviewed: true, active: true, reviewId: UUID }),
     Response.json({ reviewed: true, active: false, reviewId: "not-uuid" }),
+    Response.json({ reviewed: true, active: false, reviewId: "b4110002-0000-4000-800000000002" }),
     new Response("secret-db-credentials", { status: 503 }),
     new Response("redirect", { status: 302, headers: { location: "https://evil.invalid" } }),
   ]) {
