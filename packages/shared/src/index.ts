@@ -13,3 +13,6 @@ export interface ServiceHealth {
 export function createHealth(service: ServiceName, date: Date = new Date()): ServiceHealth {
   return { service, status: "ok", timestamp: date.toISOString() };
 }
+
+export { officialPriceReviewSource } from "./provider-pricing-provenance.js";
+export type { ReviewSourceKind } from "./provider-pricing-provenance.js";

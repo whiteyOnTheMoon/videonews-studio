@@ -15,7 +15,8 @@ const command = () => ({
   action: "review_fx",
   microEurPerMicroUsdNanos: "1150000000",
   expiresAt: later(),
-  sourceReference: "https://example.org/verified-source",
+  sourceReference:
+    "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
 });
 const request = (body: unknown = command(), origin = ORIGIN, cookie = COOKIE) =>
   new Request(ORIGIN + "/api/admin/ai-provider-pricing", {
@@ -25,7 +26,8 @@ const request = (body: unknown = command(), origin = ORIGIN, cookie = COOKIE) =>
   });
 test("read-only by default and exact review grammar", () => {
   assert.equal(priceReviewProxyConfig({}), null);
-  assert.deepEqual(parsePriceReviewBody(command()), command());
+  const valid = command();
+  assert.deepEqual(parsePriceReviewBody(valid), valid);
   for (const invalid of [
     {},
     null,
@@ -35,15 +37,48 @@ test("read-only by default and exact review grammar", () => {
     { ...command(), microEurPerMicroUsdNanos: 1000000000 },
     { ...command(), microEurPerMicroUsdNanos: "-1" },
     { ...command(), sourceReference: "http://not-allowed.invalid/path" },
+    { ...command(), sourceReference: "https://example.org/verified-source" },
+    { ...command(), sourceReference: "https://developers.openai.com/api/docs/pricing" },
+    {
+      ...command(),
+      sourceReference:
+        "https://www.ecb.europa.eu.evil.invalid/stats/policy_and_exchange_rates/euro_reference_exchange_rates/",
+    },
+    {
+      ...command(),
+      sourceReference: "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A",
+    },
   ])
     assert.equal(parsePriceReviewBody(invalid), null);
+});
+
+test("model price review requires matching official provider documentation", () => {
+  const valid = {
+    action: "review_price",
+    provider: "google_gemini",
+    model: "operator-selected-model",
+    priceVersion: "verified_version_0041",
+    inputMicroUsdPerMillion: "1000000",
+    cachedMicroUsdPerMillion: "100000",
+    outputMicroUsdPerMillion: "3000000",
+    expiresAt: later(),
+    sourceReference: "https://ai.google.dev/gemini-api/docs/pricing",
+  };
+  assert.deepEqual(parsePriceReviewBody(valid), valid);
+  assert.equal(
+    parsePriceReviewBody({
+      ...valid,
+      sourceReference: "https://developers.openai.com/api/docs/pricing",
+    }),
+    null,
+  );
 });
 
 test("BFF requires named admin, exact origin, framing and no shared cookie", async () => {
   let upstreamWrites = 0;
   const fetcher = (async (url: RequestInfo | URL) => {
     if (String(url).endsWith("/editor/me")) {
-      return Response.json({ role: "editor" });
+      return Response.json({ username: "ci_editor", role: "editor" });
     }
     upstreamWrites++;
     throw new Error("must not send");
@@ -92,12 +127,13 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
   for (const upstream of [
     Response.json({ reviewed: true, active: true, reviewId: UUID }),
     Response.json({ reviewed: true, active: false, reviewId: "not-uuid" }),
+    Response.json({ reviewed: true, active: false, reviewId: "b4110002-0000-4000-800000000002" }),
     new Response("secret-db-credentials", { status: 503 }),
     new Response("redirect", { status: 302, headers: { location: "https://evil.invalid" } }),
   ]) {
     const fetcher = (async (url: RequestInfo | URL) =>
       String(url).endsWith("/editor/me")
-        ? Response.json({ role: "admin" })
+        ? Response.json({ username: "ci_admin", role: "admin" })
         : upstream) as typeof fetch;
     const response = await dormantPriceReviewProxy(request(), CFG, fetcher);
     assert.equal(response.status, 503);
@@ -108,7 +144,8 @@ test("incorrect upstream evidence, redirect and SQL errors never appear to brows
 test("malformed review data or forbidden framing cannot create a review", async () => {
   let writes = 0;
   const fetcher = (async (url: RequestInfo | URL) => {
-    if (String(url).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (String(url).endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
     writes++;
     return Response.json({ reviewed: true, active: false, reviewId: UUID });
   }) as typeof fetch;

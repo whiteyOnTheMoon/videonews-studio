@@ -1,3 +1,4 @@
+import { officialPriceReviewSource } from "@vns/shared";
 import type { AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
@@ -5,7 +6,7 @@ const MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const VERSION = /^[A-Za-z0-9_-]{12,80}$/;
 const UINT = /^(0|[1-9][0-9]{0,12})$/;
 const DATE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function priceReviewProxyConfig(
   env: Record<string, string | undefined>,
@@ -32,22 +33,7 @@ function keys(row: Record<string, unknown>, expected: string[]): boolean {
 function integer(v: unknown, max: bigint): v is string {
   return typeof v === "string" && UINT.test(v) && BigInt(v) <= max;
 }
-function source(v: unknown): v is string {
-  if (typeof v !== "string" || v.length < 12 || v.length > 512) return false;
-  try {
-    const url = new URL(v);
-    return (
-      url.protocol === "https:" &&
-      url.username === "" &&
-      url.password === "" &&
-      url.hash === "" &&
-      url.pathname !== "/" &&
-      !/[\s@]/.test(v)
-    );
-  } catch {
-    return false;
-  }
-}
+
 function date(v: unknown): v is string {
   return (
     typeof v === "string" &&
@@ -60,10 +46,11 @@ function date(v: unknown): v is string {
 export function parsePriceReviewBody(input: unknown): Record<string, unknown> | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const row = input as Record<string, unknown>;
-  if (!date(row.expiresAt) || !source(row.sourceReference)) return null;
+  if (!date(row.expiresAt)) return null;
   if (
     row.action === "review_fx" &&
     keys(row, ["action", "microEurPerMicroUsdNanos", "expiresAt", "sourceReference"]) &&
+    officialPriceReviewSource("eur_usd", row.sourceReference) &&
     integer(row.microEurPerMicroUsdNanos, 10_000_000_000n) &&
     BigInt(row.microEurPerMicroUsdNanos) > 0n
   )
@@ -82,6 +69,7 @@ export function parsePriceReviewBody(input: unknown): Record<string, unknown> | 
       "sourceReference",
     ]) &&
     (row.provider === "openai" || row.provider === "google_gemini") &&
+    officialPriceReviewSource(row.provider, row.sourceReference) &&
     typeof row.model === "string" &&
     MODEL.test(row.model) &&
     typeof row.priceVersion === "string" &&
