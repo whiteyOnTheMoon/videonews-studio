@@ -6,7 +6,6 @@ import {
   makeKeyCommand,
   makeModelCommand,
   makeRemoveCommand,
-  PROVIDER_MODEL_CHOICES,
   type ProviderEditCommand,
 } from "./ai-provider-edit-model";
 
@@ -42,7 +41,6 @@ export default function AiProviderEditForm({
     );
   }
 
-  const choices = PROVIDER_MODEL_CHOICES[provider];
   const prefix = `provider-edit-${provider}`;
 
   async function commit(command: ProviderEditCommand) {
@@ -129,18 +127,18 @@ export default function AiProviderEditForm({
       </form>
       <form className="admin-form" onSubmit={changeModel}>
         <label htmlFor={`${prefix}-model`}>Zugelassenes Modell</label>
-        <select
+        <input
           id={`${prefix}-model`}
+          type="text"
           value={model}
+          maxLength={80}
+          required
+          spellCheck={false}
+          autoComplete="off"
           onChange={(event) => setModel(event.target.value)}
           disabled={busy}
-        >
-          {choices.map((choice) => (
-            <option key={choice} value={choice}>
-              {choice}
-            </option>
-          ))}
-        </select>
+        />
+        <p>Nur Modelle mit gültiger, persönlich geprüfter Preisversion werden serverseitig zugelassen.</p>
         <button type="submit" disabled={busy}>
           Modell speichern
         </button>
