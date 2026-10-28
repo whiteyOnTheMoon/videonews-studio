@@ -185,16 +185,8 @@ test("uncertain SQL claim must never read credentials or attempt a send", async 
     },
     true,
   );
-  await assert.rejects(
-    coordinator.run(request, "Valid text"),
-    /Provider budget review required/,
-  );
-  assert.deepEqual(events, [
-    "reserve",
-    "projection",
-    "claim",
-    "halt:settlement_unconfirmed",
-  ]);
+  await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+  assert.deepEqual(events, ["reserve", "projection", "claim", "halt:settlement_unconfirmed"]);
 });
 
 test("malformed or missing SQL claim receipt cannot access keys or network", async () => {
@@ -216,16 +208,8 @@ test("malformed or missing SQL claim receipt cannot access keys or network", asy
       },
       true,
     );
-    await assert.rejects(
-      coordinator.run(request, "Valid text"),
-      /Provider budget review required/,
-    );
-    assert.deepEqual(events, [
-      "reserve",
-      "projection",
-      "claim",
-      "halt:settlement_unconfirmed",
-    ]);
+    await assert.rejects(coordinator.run(request, "Valid text"), /Provider budget review required/);
+    assert.deepEqual(events, ["reserve", "projection", "claim", "halt:settlement_unconfirmed"]);
   }
 });
 
