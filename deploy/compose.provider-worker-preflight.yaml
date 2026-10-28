@@ -1,0 +1,48 @@
+# P1-09: independent SQL-role attestation ONLY. No AI HTTP or budget writes.
+# Optional, never included in normal Compose startup and never deployed here.
+# Requires two separately provisioned, UID-readable, private PG passwords.
+services:
+  provider-worker-preflight:
+    profiles: [provider-preflight]
+    image: vns-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    init: true
+    restart: "no"
+    read_only: true
+    user: "1000:1000"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 32
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.2
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=8m
+    entrypoint: ["node", "apps/worker/dist/provider-worker-preflight-once.js", "--read-only"]
+    environment:
+      NODE_ENV: production
+      VNS_P1_PROVIDER_PREFLIGHT_ENABLED: "${VNS_P1_PROVIDER_PREFLIGHT_ENABLED:-false}"
+      VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK: "${VNS_P1_PROVIDER_PREFLIGHT_OPERATOR_ACK:-false}"
+      VNS_P1_PROVIDER_PREFLIGHT_MODE: read_only
+      VNS_P1_PROVIDER_DB_HOST: postgres
+      VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED: "false"
+      VNS_P1_PROVIDER_CANARY_ENABLED: "false"
+      VNS_P1_PROVIDER_USAGE_PASSWORD_FILE: /run/secrets/vns_provider_usage_db_password
+      VNS_P1_PROVIDER_SECRET_PASSWORD_FILE: /run/secrets/vns_provider_secret_db_password
+    volumes:
+      - type: bind
+        source: ${VNS_P1_PROVIDER_USAGE_PASSWORD_HOST_FILE:?Dedicated usage DB secret not provisioned}
+        target: /run/secrets/vns_provider_usage_db_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P1_PROVIDER_SECRET_PASSWORD_HOST_FILE:?Dedicated secret DB login not provisioned}
+        target: /run/secrets/vns_provider_secret_db_password
+        read_only: true
+        bind: { create_host_path: false }
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
