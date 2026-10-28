@@ -139,7 +139,7 @@ test("Docker Compose resolves an isolated, default-off service without starting 
   assert.equal(service.environment.VNS_P1_PROVIDER_CANARY_ENABLED, "false");
   assert.equal(service.environment.VNS_P1_PROVIDER_LIVE_DISPATCH_ENABLED, "false");
   assert.equal(service.restart, "no");
-  assert.equal(service.networks.length, 1);
+  assert.deepEqual(Object.keys(service.networks), ["backend"]);
   assert.equal(service.volumes[0].read_only, true);
   assert.equal(service.volumes[0].bind.create_host_path, false);
   assert.match(service.image, /@sha256:[a-f0-9]{64}$/);
