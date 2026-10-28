@@ -178,9 +178,7 @@ export function rankOfflineEvents(
     const expected = phraseTokens(term);
     return (
       expected.length > 0 &&
-      words.some((_, index) =>
-        expected.every((word, offset) => words[index + offset] === word),
-      )
+      words.some((_, index) => expected.every((word, offset) => words[index + offset] === word))
     );
   };
   const blocked = [...profile.blockedTerms];
