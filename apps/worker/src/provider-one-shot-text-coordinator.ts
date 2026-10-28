@@ -73,10 +73,16 @@ export function dormantOneShotTextCoordinator(
       // Once committed, claim cannot be repeated even after worker failure.
       await bridge.claim(reservationId);
       let raw: unknown;
+      let attempted = false;
       try {
-        raw = await credentials.withCredential(request.provider, (key) =>
-          transport.send(textRequest, key),
-        );
+        raw = await credentials.withCredential(request.provider, (key) => {
+          // Even a buggy secret-custody callback may never perform two
+          // possible paid requests for the same irreversible SQL claim.
+          if (attempted) throw new Error("Provider dispatch already attempted");
+          attempted = true;
+          return transport.send(textRequest, key);
+        });
+        if (!attempted) throw new Error("Provider transport never attempted");
       } catch {
         await bridge.halt(reservationId, "response_missing");
         throw new Error("Provider budget review required");
