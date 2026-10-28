@@ -36,14 +36,16 @@ export async function withWorkerMasterKey<T>(
   let opened: Awaited<ReturnType<typeof open>> | undefined;
   let key: Buffer | undefined;
   try {
-    if (
-      typeof directory !== "string" ||
-      !isAbsolute(directory) ||
-      resolve(directory) !== directory
-    ) throw Error(FAIL);
+    if (typeof directory !== "string" || !isAbsolute(directory) || resolve(directory) !== directory)
+      throw Error(FAIL);
     const dir = await lstat(directory);
-    if (!dir.isDirectory() || dir.isSymbolicLink() || !privateOwner(dir) ||
-        (dir.mode & 0o777) !== 0o700) throw Error(FAIL);
+    if (
+      !dir.isDirectory() ||
+      dir.isSymbolicLink() ||
+      !privateOwner(dir) ||
+      (dir.mode & 0o777) !== 0o700
+    )
+      throw Error(FAIL);
     opened = await open(
       join(directory, KEY_FILE),
       constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
@@ -55,7 +57,8 @@ export async function withWorkerMasterKey<T>(
       file.nlink !== 1 ||
       file.size !== 32 ||
       ![0o400, 0o600].includes(file.mode & 0o777)
-    ) throw Error(FAIL);
+    )
+      throw Error(FAIL);
     key = await opened.readFile();
     if (key.length !== 32) throw Error(FAIL);
     await opened.close();
@@ -75,7 +78,9 @@ export function unsealWorkerCredential(
   sealed: SealedWorkerCredential,
   masterKey: Buffer,
 ): Buffer {
-  const invalid = () => { throw Error(FAIL); };
+  const invalid = () => {
+    throw Error(FAIL);
+  };
   if (
     !["openai", "google_gemini"].includes(provider) ||
     !Buffer.isBuffer(masterKey) ||
@@ -90,17 +95,15 @@ export function unsealWorkerCredential(
     sealed.ciphertext.length > 512 ||
     !Buffer.isBuffer(sealed.auth_tag) ||
     sealed.auth_tag.length !== 16
-  ) invalid();
+  )
+    invalid();
   try {
     const decipher = createDecipheriv("aes-256-gcm", masterKey, sealed.nonce, {
       authTagLength: 16,
     });
     decipher.setAAD(Buffer.from("vns:ai-provider:v1:" + provider));
     decipher.setAuthTag(sealed.auth_tag);
-    const plaintext = Buffer.concat([
-      decipher.update(sealed.ciphertext),
-      decipher.final(),
-    ]);
+    const plaintext = Buffer.concat([decipher.update(sealed.ciphertext), decipher.final()]);
     if (
       plaintext.length < 12 ||
       plaintext.length > 512 ||
@@ -115,17 +118,14 @@ export function unsealWorkerCredential(
   }
 }
 
-export type WorkerMasterKeyScope = <T>(
-  operation: (key: Buffer) => Promise<T>,
-) => Promise<T>;
+export type WorkerMasterKeyScope = <T>(operation: (key: Buffer) => Promise<T>) => Promise<T>;
 
 export function dormantPostClaimCredentialScope(
   db: Pick<Pool, "query">,
   enabled = false,
   withKey: WorkerMasterKeyScope = withWorkerMasterKey,
 ): TrustedProviderCredentialScope {
-  if (enabled !== true || !db || typeof db.query !== "function" ||
-      typeof withKey !== "function") {
+  if (enabled !== true || !db || typeof db.query !== "function" || typeof withKey !== "function") {
     throw Error("Provider credential scope disabled");
   }
   return Object.freeze({
@@ -138,7 +138,8 @@ export function dormantPostClaimCredentialScope(
         !UUID.test(reservationId) ||
         !["openai", "google_gemini"].includes(provider) ||
         typeof operation !== "function"
-      ) throw Error(FAIL);
+      )
+        throw Error(FAIL);
       let sealed: SealedWorkerCredential | undefined;
       let secretBytes: Buffer | undefined;
       try {
