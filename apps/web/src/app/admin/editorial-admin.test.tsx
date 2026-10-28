@@ -102,7 +102,10 @@ test("audit export terminator never accepts changed checkpoint cursor or nonempt
   const emptyCheckpoint = { events: [], nextRevision: 4 };
   assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 4), true);
   assert.equal(validEditorialExportTerminator("checkpoints", emptyCheckpoint, 3), false);
-  assert.equal(validEditorialExportTerminator("checkpoints", { events: [{}], nextRevision: 4 }, 4), false);
+  assert.equal(
+    validEditorialExportTerminator("checkpoints", { events: [{}], nextRevision: 4 }, 4),
+    false,
+  );
   assert.equal(validEditorialExportTerminator("timeline", { events: [], cursor: null }, 0), true);
   assert.equal(
     validEditorialExportTerminator(
