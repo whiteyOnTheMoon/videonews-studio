@@ -87,6 +87,12 @@ SET revision=1,
  "maximumArticleAgeHours":720,"format":"briefing"}]'::jsonb
 WHERE singleton=true;
 
+INSERT INTO vns.feed_poll_state(source_id,next_eligible_at,lease_token)
+VALUES
+('ci_jpl_syndicated',clock_timestamp()+interval '1 hour',
+ 'fa520000-3333-4333-8333-333333333333'),
+('ci_nasa_syndicated',clock_timestamp()+interval '1 hour',
+ 'fa520000-3333-4333-8333-444444444444');
 INSERT INTO vns.feed_poll_candidates(source_id,article_url,headline,published_at)
 VALUES
 ('ci_jpl_syndicated',
