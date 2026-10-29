@@ -23,7 +23,8 @@
     "feed-producer-continuous": "node dist/feed-producer-continuous.js --continuous",
     "feed-producer-healthcheck": "node dist/feed-producer-healthcheck.js",
     "feed-queue-operations": "node dist/feed-queue-operations.js --inspect",
-    "feed-project-once": "node dist/feed-candidate-project-once.js --once"
+    "feed-project-once": "node dist/feed-candidate-project-once.js --once",
+    "feed-project-continuous": "node dist/feed-project-continuous.js --continuous-project"
   },
   "dependencies": {
     "@vns/shared": "*",
