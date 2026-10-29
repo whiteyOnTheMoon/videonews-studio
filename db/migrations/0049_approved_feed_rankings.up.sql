@@ -23,7 +23,7 @@ CREATE TABLE vns.feed_event_rankings (
 CREATE INDEX feed_event_rankings_display_idx
  ON vns.feed_event_rankings(profile_revision,score DESC,ranked_at DESC);
 REVOKE ALL ON vns.feed_event_rankings FROM PUBLIC;
-GRANT SELECT,INSERT ON vns.feed_event_rankings TO vns_feed_project_executor;
+GRANT SELECT,INSERT,UPDATE ON vns.feed_event_rankings TO vns_feed_project_executor;
 GRANT SELECT ON vns.editorial_profile_registry TO vns_feed_project_executor;
 
 -- Internal metadata-only scorer. The already guarded source projection is
@@ -114,7 +114,12 @@ BEGIN
     ),false
   FROM candidates c
   ORDER BY c.event_id,c.profile_id LIMIT p_limit
-  ON CONFLICT(event_id,profile_id,profile_revision) DO NOTHING;
+  ON CONFLICT(event_id,profile_id,profile_revision) DO UPDATE
+  SET score=EXCLUDED.score,
+      article_count=EXCLUDED.article_count,
+      source_count=EXCLUDED.source_count,
+      reasons=EXCLUDED.reasons,
+      ranked_at=clock_timestamp();
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
@@ -190,7 +195,8 @@ GRANT EXECUTE ON FUNCTION vns.project_approved_feed_candidates(text,integer)
   TO vns_feed_project_client;
 
 -- Named, admin-only read of durable snapshots. No general API/worker SELECT.
-GRANT SELECT ON vns.feed_event_rankings,vns.research_events
+GRANT SELECT ON vns.feed_event_rankings,vns.research_events,
+  vns.research_event_articles,vns.research_articles,vns.admin_source_registry
   TO vns_p2_named_executor;
 CREATE FUNCTION vns.named_ranked_feed_page(p_limit integer)
 RETURNS TABLE(
@@ -219,6 +225,20 @@ BEGIN
   JOIN vns.research_events e ON e.event_id=r.event_id
   JOIN vns.editorial_profile_registry p ON p.singleton=true
     AND p.revision=r.profile_revision
+  WHERE EXISTS (
+    SELECT 1 FROM jsonb_array_elements(p.profiles) prof(value)
+    WHERE prof.value->>'id'=r.profile_id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM vns.research_event_articles ea
+    JOIN vns.research_articles a ON a.article_id=ea.article_id
+    WHERE ea.event_id=r.event_id AND NOT EXISTS (
+      SELECT 1 FROM vns.admin_source_registry s
+      CROSS JOIN LATERAL jsonb_array_elements(s.sources) src(value)
+      WHERE s.singleton=true AND src.value->>'id'=a.source_key
+        AND src.value->>'status'='approved'
+    )
+  )
   ORDER BY r.score DESC,r.ranked_at DESC,r.event_id
   LIMIT p_limit;
 END;
