@@ -38,9 +38,14 @@ Veröffentlichungsrechte oder die Wahrheit eines Claims.
    Überschrift, zwei Domains, gleicher NASA-Ursprung) wird in einem
    zusätzlichen TypeScript-Regressionstest zu **einem** Ereignis
    zusammengefasst und zählt nicht als zwei unabhängige Herausgeber.
-   Das belegt nur die konservative Offline-Gruppierung. **Persistierte**
-   PostgreSQL-Ereignisse mit abweichender Überschrift müssen weiterhin
-   geprüft und nötigenfalls atomar zusammengeführt werden.
+   Zusätzlich verwendet ein echter isolierter PostgreSQL-
+   Migrationstest (`db/tests/0050_cross_site_syndication.test.sql`)
+   die dokumentierten URLs und identische Titel als künstlich eingelieferte
+   Feed-Metadaten, prüft zwei projizierte Artikel, **ein persistiertes
+   Ereignis**, ein Ranking und Replay-Idempotenz. Das testet keine echten
+   Live-Feeds und keine abweichend formulierten Meldungen. Für solche
+   Überschriften ist eine revisionssichere persistierte Ähnlichkeits-
+   Deduplikation noch offen.
    Belege für die realen Publikationen (12.10.2026):
    https://www.jpl.nasa.gov/news/nasas-perseverance-sets-off-world-record-for-total-distance-driven/
    https://science.nasa.gov/blogs/perseverance-mars-rover/2026/10/12/nasas-perseverance-sets-off-world-record-for-total-distance-driven/
