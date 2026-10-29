@@ -471,7 +471,7 @@ test("reviewed event factors separately weight visual suitability, explanatory v
     { ...factors, risk: 3 },
   );
   assert.equal(ranked.eligible, true);
-  assert.equal(ranked.approvedForPublication, undefined);
+  assert.equal(Object.hasOwn(ranked, "approvedForPublication"), false);
   assert.equal(ranked.score - lessVisual.score, 30);
   assert.ok(ranked.score > higherRisk.score);
   assert.equal(
