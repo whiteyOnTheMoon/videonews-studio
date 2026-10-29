@@ -11,6 +11,7 @@ import {
   type WeightedRankingPolicy,
 } from "./bounded-editorial-production.js";
 import {
+  groupExactHeadlineEvents,
   normalizeFeedArticles,
   type EditorialProfile,
   type NewsEvent,
@@ -502,4 +503,44 @@ test("reviewed event factors separately weight visual suitability, explanatory v
       factors,
     ),
   );
+});
+
+test("publicly documented NASA/JPL cross-site syndication is one event, not two publishers", () => {
+  // Real published URL/headline pair (12 Oct 2026); timestamps below are
+  // test-only fixture instants, not independently verified publication times.
+  const headline = "NASA’s Perseverance Sets Off-World Record for Total Distance Driven";
+  const duplicateArticles = normalizeFeedArticles([
+    {
+      sourceId: "nasa_jpl",
+      url: "https://www.jpl.nasa.gov/news/nasas-perseverance-sets-off-world-record-for-total-distance-driven/",
+      headline,
+      publishedAt: "2026-10-12T17:20:00.000Z",
+      reviewStatus: "candidate",
+    },
+    {
+      sourceId: "nasa_science",
+      url: "https://science.nasa.gov/blogs/perseverance-mars-rover/2026/10/12/nasas-perseverance-sets-off-world-record-for-total-distance-driven/",
+      headline,
+      publishedAt: "2026-10-12T17:20:00.000Z",
+      reviewStatus: "candidate",
+    },
+  ]);
+  const grouped = groupExactHeadlineEvents(duplicateArticles);
+  assert.equal(grouped.length, 1);
+  assert.equal(grouped[0]!.articles.length, 2);
+  // Same NASA newsroom origin; separate domains/feeds are not independent proof.
+  const samePublisher: SourceProvenance[] = [
+    { sourceId: "nasa_jpl", publisherGroup: "nasa", rightsApproved: true, quality: 4 },
+    { sourceId: "nasa_science", publisherGroup: "nasa", rightsApproved: true, quality: 4 },
+  ];
+  const result = assessEditorialCandidate(
+    { ...grouped[0]!, id: "b".repeat(64) },
+    { ...profile, maximumArticleAgeHours: 72, keywords: ["Perseverance"] },
+    { ...policy, maxAgeHours: 72 },
+    samePublisher,
+    new Date("2026-10-12T19:20:00.000Z"),
+  );
+  assert.equal(result.eligible, false);
+  assert.ok(result.reasons.includes("publisher_groups_insufficient"));
+  assert.equal(result.publisherGroups, 1);
 });
