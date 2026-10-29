@@ -405,11 +405,12 @@ test("script generation refuses forged event metadata before producing any secti
     { ...event, headline: "Unrelated fabricated science report" },
     { ...event, articles: [{ ...articles[0]!, id: "f".repeat(64) }, articles[1]!] },
     { ...event, articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!] },
-    { ...event, articles: [{ ...articles[0]!, url: "https://forged.example.org/story" }, articles[1]!] },
+    {
+      ...event,
+      articles: [{ ...articles[0]!, url: "https://forged.example.org/story" }, articles[1]!],
+    },
   ]) {
-    assert.throws(() =>
-      generateBoundedMockScript(invalid, profile, claims, scaffold, limits, 1),
-    );
+    assert.throws(() => generateBoundedMockScript(invalid, profile, claims, scaffold, limits, 1));
   }
 });
 
