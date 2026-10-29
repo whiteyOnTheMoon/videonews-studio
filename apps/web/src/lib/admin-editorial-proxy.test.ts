@@ -332,3 +332,78 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
     503,
   );
 });
+
+test("named ranking policy BFF enforces personal editor, origin, exact fields and revision", async () => {
+  const settings = {
+    minimumPublisherGroups: 2, relevanceWeight: 10, freshnessWeight: 20,
+    qualityWeight: 15, explanatoryWeight: 5, visualizabilityWeight: 30,
+    riskWeight: 20, maximumRisk: 3,
+  };
+  const calls: { url: string; body?: string }[] = [];
+  const upstream = (async (url: string | URL | Request, init?: RequestInit) => {
+    const target = String(url);
+    calls.push({ url: target, body: init?.body as string | undefined });
+    if (target.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (target.includes("/admin/editorial-ranking-policy?profileId="))
+      return Response.json({
+        profileId: "science_news", profileRevision: 1, policyRevision: 0,
+        settings: null, productionActive: false,
+      });
+    if (target.endsWith("/admin/editorial-ranking-policy"))
+      return Response.json({ saved: true, policyRevision: 1, productionActive: false });
+    return Response.json({ error: "not_found" }, { status: 404 });
+  }) as typeof fetch;
+  const read = await dormantEditorialAdminProxy(
+    request("/api/admin/editorial-ranking-policy?profileId=science_news"),
+    "ranking-policy", config, upstream,
+  );
+  assert.equal(read.status, 200);
+  assert.deepEqual(await read.json(), {
+    profileId: "science_news", profileRevision: 1, policyRevision: 0,
+    settings: null, productionActive: false,
+  });
+  const saved = await dormantEditorialAdminProxy(
+    request("/api/admin/editorial-ranking-policy", "POST", {
+      profileId: "science_news", expectedRevision: 0, settings,
+    }),
+    "ranking-policy", config, upstream,
+  );
+  assert.equal(saved.status, 200);
+  assert.deepEqual(await saved.json(), {
+    saved: true, policyRevision: 1, productionActive: false,
+  });
+  assert.ok(calls.some((call) =>
+    call.url.endsWith("/admin/editorial-ranking-policy") &&
+    !!call.body && !call.body.includes("reviewerId"),
+  ));
+  const total = calls.length;
+  for (const bad of [
+    { profileId: "science_news", expectedRevision: 0, settings: { ...settings, riskWeight: 101 } },
+    { profileId: "science_news", expectedRevision: 0, settings: { ...settings, token: "forged" } },
+    { profileId: "science_news", expectedRevision: 0, settings, reviewerId: "forged" },
+    { profileId: "science_news", expectedRevision: -1, settings },
+  ]) assert.equal(
+    (await dormantEditorialAdminProxy(
+      request("/api/admin/editorial-ranking-policy", "POST", bad),
+      "ranking-policy", config, upstream,
+    )).status, 400,
+  );
+  for (const url of [
+    "/api/admin/editorial-ranking-policy",
+    "/api/admin/editorial-ranking-policy?profileId=../private",
+    "/api/admin/editorial-ranking-policy?profileId=science_news&actor=forged",
+    "/api/admin/editorial-ranking-policy?profileId=science_news&profileId=another",
+  ]) assert.equal(
+    (await dormantEditorialAdminProxy(request(url), "ranking-policy", config, upstream)).status,
+    400,
+  );
+  assert.equal(
+    (await dormantEditorialAdminProxy(
+      request("/api/admin/editorial-ranking-policy", "POST",
+        { profileId: "science_news", expectedRevision: 0, settings },
+        "https://evil.example"),
+      "ranking-policy", config, upstream,
+    )).status, 403,
+  );
+  assert.equal(calls.length, total);
+});
