@@ -242,7 +242,7 @@ export function generateBoundedMockScript(
       claim.articleIds.length < 1 ||
       claim.articleIds.length > 20 ||
       new Set(claim.articleIds).size !== claim.articleIds.length ||
-      claim.articleIds.some((id) => typeof id !== "string" || !articleIds.has(id)) ||
+      claim.articleIds.some((id: unknown) => typeof id !== "string" || !articleIds.has(id)) ||
       claim.status !== "unverified"
     ) {
       throw new Error("Script claim candidate invalid");
