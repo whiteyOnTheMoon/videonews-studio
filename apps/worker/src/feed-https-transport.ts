@@ -159,6 +159,7 @@ export function createPinnedFeedHttpsTransport(
         source.status !== "approved" ||
         !["rss", "atom", "official_api"].includes(approved.access) ||
         approved.baseUrl !== source.baseUrl ||
+        approved.feedUrl !== source.feedUrl ||
         approved.access !== source.access ||
         approved.intervalMinutes !== source.intervalMinutes ||
         approved.termsUrl !== source.termsUrl ||
@@ -169,7 +170,8 @@ export function createPinnedFeedHttpsTransport(
       ) {
         throw new Error("Feed source not approved");
       }
-      const url = new URL(source.baseUrl);
+      const url = new URL(source.feedUrl ?? source.baseUrl);
+      const scope = new URL(source.baseUrl);
       if (
         url.protocol !== "https:" ||
         url.username ||
@@ -177,8 +179,10 @@ export function createPinnedFeedHttpsTransport(
         url.port ||
         url.search ||
         url.hash ||
-        url.toString() !== source.baseUrl ||
-        !policy.hosts.includes(url.hostname)
+        url.toString() !== (source.feedUrl ?? source.baseUrl) ||
+        !policy.hosts.includes(url.hostname) ||
+        url.hostname !== scope.hostname ||
+        url.pathname.includes("%")
       ) {
         throw new Error("Feed transport URL forbidden");
       }

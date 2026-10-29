@@ -6,6 +6,7 @@ export type SourceStatus = "pending" | "approved" | "blocked";
 export interface EditableNewsSource {
   id: string;
   baseUrl: string;
+  feedUrl?: string;
   access: "rss" | "atom" | "official_api" | "html";
   intervalMinutes: number;
   termsUrl: string;
@@ -86,10 +87,12 @@ export default function NewsSourceEditor({
       setMessage("Bitte Pflichtfelder und Lizenzhinweise vollständig ausfüllen.");
       return;
     }
+    const source = { ...draft };
+    if (!source.feedUrl) delete source.feedUrl;
     void submit({
       action: editing ? "replace_pending" : "create_pending",
       expectedRevision: revision,
-      source: { ...draft },
+      source,
     });
   }
 
@@ -175,7 +178,7 @@ export default function NewsSourceEditor({
           disabled={busy || editing}
           maxLength={41}
         />
-        <label htmlFor="news-source-url">Feed- oder Quellen-URL (HTTPS)</label>
+        <label htmlFor="news-source-url">Artikelbereich (HTTPS, endet auf /)</label>
         <input
           id="news-source-url"
           type="url"
@@ -186,6 +189,20 @@ export default function NewsSourceEditor({
           maxLength={512}
           placeholder="https://quelle.example/news/"
         />
+        <label htmlFor="news-source-feed-url">Exakte RSS-/Atom-Adresse (HTTPS, optional)</label>
+        <input
+          id="news-source-feed-url"
+          type="url"
+          value={draft.feedUrl ?? ""}
+          onChange={(event) => setDraft({ ...draft, feedUrl: event.target.value || undefined })}
+          disabled={busy}
+          maxLength={512}
+          placeholder="https://quelle.example/rss.xml"
+        />
+        <p>
+          Ohne separate Feed-Adresse wird der Artikelbereich selbst abgefragt. Beide URLs müssen auf
+          demselben persönlich freigegebenen Host liegen.
+        </p>
         <label htmlFor="news-source-access">Zugriffsart</label>
         <select
           id="news-source-access"

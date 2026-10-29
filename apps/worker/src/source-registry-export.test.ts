@@ -148,3 +148,29 @@ test("export is not trusted without matching independent policy and monotonic re
   }
   assert.equal(parseDormantSourceExport(bundle, policy, checkpoint).length, 3);
 });
+
+test("signed reviewed export retains exact RSS endpoint and article allow-scope", () => {
+  const separate = {
+    ...parent,
+    feedUrl: "https://news.example.org/rss.xml",
+  };
+  const snapshot = { revision: 11, sources: [separate, blockedChild] };
+  const bundle = prepareDormantSourceExport(snapshot, grant);
+  const verified = parseDormantSourceExport(bundle, policy, {
+    sourceRevision: 11,
+    hostApprovalRevision: 3,
+  });
+  assert.equal(verified.find((item) => item.id === separate.id)?.feedUrl, separate.feedUrl);
+  assert.equal(
+    approvedSourceForUrl("https://news.example.org/news/current-event", verified)?.id,
+    separate.id,
+  );
+  assert.equal(approvedSourceForUrl("https://news.example.org/rss.xml", verified), null);
+  const forged = { ...bundle, registryJson: bundle.registryJson.replace("rss.xml", "forged.xml") };
+  assert.throws(() =>
+    parseDormantSourceExport(forged, policy, {
+      sourceRevision: 11,
+      hostApprovalRevision: 3,
+    }),
+  );
+});

@@ -11,6 +11,7 @@ import { respond } from "./admin-provider-configuration.js";
 export interface SourceDraft {
   id: string;
   baseUrl: string;
+  feedUrl?: string;
   access: "rss" | "atom" | "official_api" | "html";
   intervalMinutes: number;
   termsUrl: string;
@@ -113,11 +114,16 @@ function dateString(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 export function validateSourceDraft(value: unknown): SourceDraft | null {
-  if (!object(value) || !exact(value, DRAFT_FIELDS)) return null;
+  if (!object(value) || !(exact(value, DRAFT_FIELDS) || exact(value, [...DRAFT_FIELDS, "feedUrl"])))
+    return null;
   if (
     typeof value.id !== "string" ||
     !SOURCE_ID.test(value.id) ||
     !safeUrl(value.baseUrl, true) ||
+    (Object.hasOwn(value, "feedUrl") &&
+      (!safeUrl(value.feedUrl, false) ||
+        new URL(value.feedUrl).hostname !== new URL(value.baseUrl).hostname ||
+        value.feedUrl === value.baseUrl)) ||
     !safeUrl(value.termsUrl, false) ||
     !["rss", "atom", "official_api", "html"].includes(value.access as string) ||
     !Number.isSafeInteger(value.intervalMinutes) ||
@@ -134,6 +140,7 @@ export function validateSourceDraft(value: unknown): SourceDraft | null {
   return {
     id: value.id,
     baseUrl: value.baseUrl,
+    ...(Object.hasOwn(value, "feedUrl") ? { feedUrl: value.feedUrl as string } : {}),
     access: value.access as SourceDraft["access"],
     intervalMinutes: value.intervalMinutes as number,
     termsUrl: value.termsUrl,
@@ -156,9 +163,15 @@ export function validateSourceSnapshot(value: unknown): SourceSnapshot {
   const urls = new Set<string>();
   const sources: ManagedSource[] = [];
   for (const row of value.sources as unknown[]) {
-    if (!object(row) || !exact(row, RECORD_FIELDS)) throw new Error("Source registry unavailable");
+    if (!object(row) || !(exact(row, RECORD_FIELDS) || exact(row, [...RECORD_FIELDS, "feedUrl"])))
+      throw new Error("Source registry unavailable");
     const draft = validateSourceDraft(
-      Object.fromEntries(DRAFT_FIELDS.map((field) => [field, row[field]])),
+      Object.fromEntries(
+        [...DRAFT_FIELDS, ...(Object.hasOwn(row, "feedUrl") ? ["feedUrl"] : [])].map((field) => [
+          field,
+          row[field],
+        ]),
+      ),
     );
     if (
       !draft ||

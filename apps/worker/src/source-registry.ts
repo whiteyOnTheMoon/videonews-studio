@@ -8,6 +8,8 @@ export type SourceReviewStatus = "approved" | "pending" | "blocked";
 export interface RegisteredResearchSource {
   id: string;
   baseUrl: string;
+  /** Optional independently reviewed exact feed endpoint; baseUrl scopes article links. */
+  feedUrl?: string;
   status: SourceReviewStatus;
   access: "rss" | "atom" | "official_api" | "html";
   intervalMinutes: number;
@@ -80,12 +82,16 @@ export function parseReviewedSourceRegistry(
   const scopes = new Set<string>();
   const sources: RegisteredResearchSource[] = [];
   for (const value of raw.sources as unknown[]) {
-    if (!record(value) || !exactFields(value, FIELDS)) {
+    if (
+      !record(value) ||
+      !(exactFields(value, FIELDS) || exactFields(value, [...FIELDS, "feedUrl"]))
+    ) {
       throw new Error("Reviewed source entry invalid");
     }
     const {
       id,
       baseUrl,
+      feedUrl,
       status,
       access,
       intervalMinutes,
@@ -100,6 +106,7 @@ export function parseReviewedSourceRegistry(
       !isPlausiblePublicSourceUrl(baseUrl) ||
       !baseUrl.endsWith("/") ||
       !isPlausiblePublicSourceUrl(termsUrl) ||
+      (feedUrl !== undefined && !isPlausiblePublicSourceUrl(feedUrl)) ||
       !["approved", "pending", "blocked"].includes(status as string) ||
       !["rss", "atom", "official_api", "html"].includes(access as string) ||
       !Number.isSafeInteger(intervalMinutes) ||
@@ -115,6 +122,21 @@ export function parseReviewedSourceRegistry(
       throw new Error("Reviewed source fields invalid");
     }
     const parsed = new URL(baseUrl);
+    const feed = feedUrl === undefined ? parsed : new URL(feedUrl as string);
+    if (
+      feedUrl !== undefined &&
+      (feedUrl === baseUrl ||
+        feed.toString() !== feedUrl ||
+        feed.hostname !== parsed.hostname ||
+        feed.port !== "" ||
+        feed.username !== "" ||
+        feed.password !== "" ||
+        feed.search !== "" ||
+        feed.hash !== "" ||
+        feed.pathname.includes("%"))
+    ) {
+      throw new Error("Reviewed source exact feed endpoint invalid");
+    }
     if (
       parsed.toString() !== baseUrl ||
       parsed.search ||
@@ -131,6 +153,7 @@ export function parseReviewedSourceRegistry(
     sources.push({
       id,
       baseUrl,
+      ...(feedUrl !== undefined ? { feedUrl: feedUrl as string } : {}),
       status: status as SourceReviewStatus,
       access: access as RegisteredResearchSource["access"],
       intervalMinutes: intervalMinutes as number,

@@ -192,3 +192,30 @@ test("topic containing only rejected sources cannot trigger any retrieval", asyn
     /not operator approved/,
   );
 });
+
+test("separate reviewed RSS request endpoint cannot expand article URL scope", () => {
+  const source = {
+    ...entries[0]!,
+    baseUrl: "https://www.example.org/news/",
+    feedUrl: "https://www.example.org/rss.xml",
+  };
+  const checked = parseReviewedSourceRegistry(json([source]), POLICY);
+  assert.equal(checked[0]?.feedUrl, source.feedUrl);
+  assert.equal(approvedSourceForUrl(APPROVED_URL, checked)?.id, source.id);
+  assert.equal(approvedSourceForUrl("https://www.example.org/rss.xml", checked), null);
+  assert.equal(approvedSourceForUrl("https://www.example.org/private/story", checked), null);
+  for (const bad of [
+    "https://evil.example.org/rss.xml",
+    "http://www.example.org/rss.xml",
+    "https://www.example.org/rss.xml?apiKey=private",
+    "https://www.example.org/%2e%2e/private",
+    "https://www.example.org/news/",
+    "https://127.0.0.1/rss.xml",
+  ]) {
+    assert.throws(
+      () => parseReviewedSourceRegistry(json([{ ...source, feedUrl: bad }]), POLICY),
+      /Reviewed source/,
+      bad,
+    );
+  }
+});
