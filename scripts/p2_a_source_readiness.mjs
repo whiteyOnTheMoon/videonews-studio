@@ -18,7 +18,7 @@ function canonicalHttps(value) {
       !url.hostname.endsWith(".local") &&
       !url.hostname.endsWith(".internal") &&
       !url.hostname.endsWith(".localhost") &&
-      !/^(?:[0-9]+\\.){3}[0-9]+$/.test(url.hostname)
+      !/^(?:[0-9]+\.){3}[0-9]+$/.test(url.hostname)
       ? url
       : null;
   } catch {
