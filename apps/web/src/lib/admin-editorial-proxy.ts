@@ -8,8 +8,8 @@ import type { AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
-type EditorialEndpoint = "profiles" | "timeline" | "checkpoints" | "ranked-events" |
-  "ranking-policy";
+type EditorialEndpoint =
+  "profiles" | "timeline" | "checkpoints" | "ranked-events" | "ranking-policy";
 const ENDPOINTS: Record<EditorialEndpoint, string> = {
   profiles: "/admin/editorial-profiles",
   timeline: "/admin/editorial-timeline",
@@ -48,8 +48,12 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   if (path === "profiles") return keys.length === 0;
   if (path === "ranking-policy") {
     const profileId = url.searchParams.get("profileId");
-    return keys.length === 1 && keys[0] === "profileId" &&
-      !!profileId && /^[a-z][a-z0-9_-]{2,40}$/.test(profileId);
+    return (
+      keys.length === 1 &&
+      keys[0] === "profileId" &&
+      !!profileId &&
+      /^[a-z][a-z0-9_-]{2,40}$/.test(profileId)
+    );
   }
   if (path === "ranked-events")
     return (
@@ -147,7 +151,8 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
         !Number.isSafeInteger(input.expectedRevision) ||
         (input.expectedRevision as number) < 0 ||
         !validRankingPolicySettings(input.settings)
-      ) return null;
+      )
+        return null;
     } else if (endpoint === "checkpoints") {
       if (
         Object.keys(input).sort().join(",") !==
@@ -208,8 +213,10 @@ export async function dormantEditorialAdminProxy(
   if (!(endpoint in ENDPOINTS)) return reply(404, { error: "not_found" });
   if (
     request.method !== "GET" &&
-    !(["profiles", "ranking-policy", "checkpoints", "timeline"].includes(endpoint) &&
-      request.method === "POST")
+    !(
+      ["profiles", "ranking-policy", "checkpoints", "timeline"].includes(endpoint) &&
+      request.method === "POST"
+    )
   ) {
     return reply(405, { error: "method_not_allowed" });
   }
@@ -259,8 +266,7 @@ export async function dormantEditorialAdminProxy(
         }
         return reply(200, value);
       }
-      if (!validRankingPolicyCommit(value))
-        return reply(503, { error: "temporarily_unavailable" });
+      if (!validRankingPolicyCommit(value)) return reply(503, { error: "temporarily_unavailable" });
       return reply(200, value);
     }
     if (endpoint === "ranked-events") {
