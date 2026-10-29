@@ -101,6 +101,40 @@ export function validateNamedEditorialProfiles(
   return result;
 }
 
+export interface NamedRankingPolicySettings {
+  minimumPublisherGroups: number;
+  relevanceWeight: number;
+  freshnessWeight: number;
+  qualityWeight: number;
+  explanatoryWeight: number;
+  visualizabilityWeight: number;
+  riskWeight: number;
+  maximumRisk: number;
+}
+const RANKING_SETTINGS_KEYS = [
+  "minimumPublisherGroups",
+  "relevanceWeight",
+  "freshnessWeight",
+  "qualityWeight",
+  "explanatoryWeight",
+  "visualizabilityWeight",
+  "riskWeight",
+  "maximumRisk",
+] as const;
+export function validateNamedRankingPolicySettings(raw: unknown): NamedRankingPolicySettings | null {
+  if (
+    !object(raw) ||
+    Object.keys(raw).sort().join(",") !== [...RANKING_SETTINGS_KEYS].sort().join(",")
+  ) return null;
+  for (const key of RANKING_SETTINGS_KEYS) {
+    const n = raw[key];
+    const low = key === "minimumPublisherGroups" ? 2 : 0;
+    const high = key === "minimumPublisherGroups" || key === "maximumRisk" ? 5 : 100;
+    if (!Number.isSafeInteger(n) || (n as number) < low || (n as number) > high) return null;
+  }
+  return raw as unknown as NamedRankingPolicySettings;
+}
+
 const CHECKPOINT_STAGES = [
   "ranking",
   "claim_review",
@@ -256,6 +290,7 @@ export class DormantPersonalEditorialAdmin {
         "/admin/editorial-timeline",
         "/admin/editorial-checkpoints",
         "/admin/editorial-ranked-events",
+        "/admin/editorial-ranking-policy",
       ].includes(path)
     )
       return false;
@@ -296,9 +331,17 @@ export class DormantPersonalEditorialAdmin {
           !Object.hasOwn(command, "profiles") ||
           revision(command.expectedRevision) === null ||
           !validateNamedEditorialProfiles(command.profiles)
-        : path === "/admin/editorial-checkpoints"
-          ? uri.search !== "" || !validateNamedCheckpointWrite(command)
-          : uri.search !== "" || !validateNamedTimelineWrite(command))
+        : path === "/admin/editorial-ranking-policy"
+          ? uri.search !== "" ||
+            !object(command) ||
+            Object.keys(command).sort().join(",") !==
+              "expectedRevision,profileId,settings" ||
+            !PROFILE_ID.test(command.profileId as string) ||
+            revision(command.expectedRevision) === null ||
+            !validateNamedRankingPolicySettings(command.settings)
+          : path === "/admin/editorial-checkpoints"
+            ? uri.search !== "" || !validateNamedCheckpointWrite(command)
+            : uri.search !== "" || !validateNamedTimelineWrite(command))
     ) {
       respond(res, 400, { error: "invalid_request" });
       return true;
@@ -350,6 +393,55 @@ export class DormantPersonalEditorialAdmin {
               revision: expectedRevision + 1,
               productionActive: false,
             });
+        }
+      } else if (path === "/admin/editorial-ranking-policy") {
+        if (req.method === "GET") {
+          if (
+            [...uri.searchParams.keys()].length !== 1 ||
+            !PROFILE_ID.test(uri.searchParams.get("profileId") ?? "")
+          ) {
+            respond(res, 400, { error: "invalid_request" });
+            return true;
+          }
+          const rows = await session.query<{
+            profile_revision: string | number;
+            policy_revision: string | number;
+            settings: unknown;
+          }>("SELECT * FROM vns.named_ranking_policy_read($1::text)", [
+            uri.searchParams.get("profileId"),
+          ]);
+          const item = rows.rows[0];
+          if (
+            rows.rows.length !== 1 ||
+            !item ||
+            revision(item.profile_revision) === null ||
+            revision(item.policy_revision) === null ||
+            (item.settings !== null && !validateNamedRankingPolicySettings(item.settings)) ||
+            (revision(item.policy_revision) === 0) !== (item.settings === null)
+          ) throw new Error("Named ranking policy read invalid");
+          respond(res, 200, {
+            profileId: uri.searchParams.get("profileId"),
+            profileRevision: revision(item.profile_revision),
+            policyRevision: revision(item.policy_revision),
+            settings: item.settings,
+            productionActive: false,
+          });
+        } else {
+          const input = command as Record<string, unknown>;
+          const expected = revision(input.expectedRevision)!;
+          const settings = validateNamedRankingPolicySettings(input.settings)!;
+          const result = await session.query<{ saved: boolean }>(
+            "SELECT vns.named_ranking_policy_commit($1::text,$2::bigint,$3::jsonb) AS saved",
+            [input.profileId, expected, JSON.stringify(settings)],
+          );
+          if (result.rows.length !== 1 || typeof result.rows[0]?.saved !== "boolean")
+            throw new Error("Named ranking policy commit invalid");
+          if (!result.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
+          else respond(res, 200, {
+            saved: true,
+            policyRevision: expected + 1,
+            productionActive: false,
+          });
         }
       } else if (path === "/admin/editorial-ranked-events") {
         // Read-only SQL projection. The DB, not the API, chooses which
