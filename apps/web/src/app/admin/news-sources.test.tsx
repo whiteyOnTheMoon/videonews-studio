@@ -46,3 +46,21 @@ test("UI snapshot parser rejects extra sensitive fields, duplicates and forged a
   ];
   for (const candidate of examples) assert.equal(parseSourceViewSnapshot(candidate), null);
 });
+
+test("source UI retains a separate reviewed feed URL but rejects cross-host or concealed endpoints", () => {
+  const safe = { ...source, feedUrl: "https://example.org/rss.xml" };
+  assert.deepEqual(parseSourceViewSnapshot({ revision: 1, sources: [safe] }), {
+    revision: 1,
+    sources: [safe],
+  });
+  for (const feedUrl of [
+    "https://attacker.example/rss.xml",
+    "https://example.org/rss.xml?token=private",
+    "https://example.org/news/",
+  ]) {
+    assert.equal(
+      parseSourceViewSnapshot({ revision: 1, sources: [{ ...safe, feedUrl }] }),
+      null,
+    );
+  }
+});
