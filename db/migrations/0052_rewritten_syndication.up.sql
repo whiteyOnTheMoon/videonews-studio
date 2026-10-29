@@ -100,7 +100,7 @@ BEGIN
       -- Conservative rewritten-syndication match. Every existing member
       -- must be similar and within +/-48 hours; ambiguous candidates
       -- stay separate instead of silently merging different stories.
-      SELECT count(*)::integer,min(v.event_id)
+      SELECT count(*)::integer,min(v.event_id::text)::uuid
         INTO matching_count,event_key
       FROM (
         SELECT e.event_id
