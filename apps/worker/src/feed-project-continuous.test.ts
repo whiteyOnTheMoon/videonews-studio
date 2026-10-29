@@ -37,7 +37,10 @@ test("continuous projection requires an independent opt-in, 3–5 unique sources
     { VNS_P2_FEED_PROJECTION_SOURCE_IDS: "news_alpha,news_beta" },
     { VNS_P2_FEED_PROJECTION_SOURCE_IDS: "news_alpha,news_beta,news_alpha" },
     { VNS_P2_FEED_PROJECTION_SOURCE_IDS: "news_alpha, news_beta,news_gamma" },
-    { VNS_P2_FEED_PROJECTION_SOURCE_IDS: "news_alpha,news_beta,news_gamma,news_delta,news_epsilon,news_zeta" },
+    {
+      VNS_P2_FEED_PROJECTION_SOURCE_IDS:
+        "news_alpha,news_beta,news_gamma,news_delta,news_epsilon,news_zeta",
+    },
     { VNS_P2_FEED_PROJECTION_SOURCE_IDS: "news_alpha;bad,news_beta,news_gamma" },
     { VNS_P2_FEED_PROJECTION_SOURCE_ID: "unreviewed_feed" },
     { VNS_P2_FEED_PROJECTION_INTERVAL_MINUTES: "1" },
@@ -86,7 +89,9 @@ test("a failed approved-source projection halts before touching later sources", 
         seen.push(env.VNS_P2_FEED_PROJECTION_SOURCE_ID!);
         if (seen.length === 2) throw Error("DB rights revoked");
       },
-      async () => { pauses++; },
+      async () => {
+        pauses++;
+      },
     ),
     /DB rights revoked/,
   );
@@ -98,7 +103,9 @@ test("abort before startup or after first source stops further DB calls", async 
   const stopped = new AbortController();
   stopped.abort();
   let calls = 0;
-  await runContinuousProjection(valid, stopped.signal, async () => { calls++; });
+  await runContinuousProjection(valid, stopped.signal, async () => {
+    calls++;
+  });
   assert.equal(calls, 0);
   const controller = new AbortController();
   await runContinuousProjection(valid, controller.signal, async () => {
