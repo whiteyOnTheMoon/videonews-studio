@@ -218,3 +218,29 @@ test("DNS and HTTPS exceptions are redacted and never retried automatically", as
     assert.ok(called <= 2);
   }
 });
+
+test("explicit source-reviewed RSS endpoint differs from article URL prefix without widening permissions", async () => {
+  const record = {
+    ...SOURCE,
+    baseUrl: ROOT + "news/",
+    feedUrl: ROOT + "rss.xml",
+  };
+  const sources = parseReviewedSourceRegistry(
+    JSON.stringify({ version: 1, sources: [record] }),
+    POLICY,
+  );
+  const state = deps();
+  const transport = createPinnedFeedHttpsTransport(sources, POLICY, state.values);
+  const result = await transport.request(sources[0]!, { etag: null, lastModified: null });
+  assert.equal(result.status, 200);
+  assert.equal(state.calls[0]?.url.toString(), record.feedUrl);
+  assert.equal(state.calls[0]?.ip, "1.1.1.1");
+  await assert.rejects(
+    transport.request({ ...sources[0]!, feedUrl: ROOT + "private.xml" }, {
+      etag: null,
+      lastModified: null,
+    }),
+    /not approved/,
+  );
+  assert.equal(state.calls.length, 1);
+});
