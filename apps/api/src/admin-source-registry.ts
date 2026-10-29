@@ -114,7 +114,8 @@ function dateString(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 export function validateSourceDraft(value: unknown): SourceDraft | null {
-  if (!object(value) || !(exact(value, DRAFT_FIELDS) || exact(value, [...DRAFT_FIELDS, "feedUrl"]))) return null;
+  if (!object(value) || !(exact(value, DRAFT_FIELDS) || exact(value, [...DRAFT_FIELDS, "feedUrl"])))
+    return null;
   if (
     typeof value.id !== "string" ||
     !SOURCE_ID.test(value.id) ||
@@ -165,7 +166,12 @@ export function validateSourceSnapshot(value: unknown): SourceSnapshot {
     if (!object(row) || !(exact(row, RECORD_FIELDS) || exact(row, [...RECORD_FIELDS, "feedUrl"])))
       throw new Error("Source registry unavailable");
     const draft = validateSourceDraft(
-      Object.fromEntries([...DRAFT_FIELDS, ...(Object.hasOwn(row, "feedUrl") ? ["feedUrl"] : [])].map((field) => [field, row[field]])),
+      Object.fromEntries(
+        [...DRAFT_FIELDS, ...(Object.hasOwn(row, "feedUrl") ? ["feedUrl"] : [])].map((field) => [
+          field,
+          row[field],
+        ]),
+      ),
     );
     if (
       !draft ||
