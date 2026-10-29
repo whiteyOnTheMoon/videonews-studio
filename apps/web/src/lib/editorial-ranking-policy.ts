@@ -51,9 +51,12 @@ export function validRankingPolicySnapshot(value: unknown): value is RankingPoli
     !Number.isSafeInteger(value.policyRevision) ||
     (value.policyRevision as number) < 0 ||
     value.productionActive !== false
-  ) return false;
-  return (value.policyRevision === 0 && value.settings === null) ||
-    ((value.policyRevision as number) > 0 && validRankingPolicySettings(value.settings));
+  )
+    return false;
+  return (
+    (value.policyRevision === 0 && value.settings === null) ||
+    ((value.policyRevision as number) > 0 && validRankingPolicySettings(value.settings))
+  );
 }
 export function validRankingPolicyCommit(value: unknown): value is {
   saved: true;
