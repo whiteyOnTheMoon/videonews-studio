@@ -103,9 +103,10 @@ BEGIN
  IF NOT denied THEN RAISE EXCEPTION 'Inactive editor read accepted'; END IF;
 END $reject$;
 RESET SESSION AUTHORIZATION;
--- Auth version changes invalidate already enrolled login.
-UPDATE vns.editor_accounts SET auth_version=auth_version+1
-WHERE id='fa540001-1111-4111-8111-111111111111';
+-- A now-mismatched personal registry epoch invalidates the existing login.
+-- Real account rotations use the editor lifecycle path, never direct edits.
+UPDATE vns.editor_db_principals SET auth_version=1
+WHERE login_role='editor_ci_ranking_named';
 SET SESSION AUTHORIZATION editor_ci_ranking_named;
 DO $revoked$
 DECLARE denied boolean:=false;
