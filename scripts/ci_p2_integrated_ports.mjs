@@ -24,6 +24,11 @@ import {
 import { gateOfflineClaimEvidence } from "../apps/worker/dist/offline-evidence-gate.js";
 import { assessEditorialCandidate } from "../apps/worker/dist/bounded-editorial-production.js";
 import { attestFeedDatabaseIdentity } from "../apps/worker/dist/feed-runtime-admission.js";
+import {
+  projectApprovedSource,
+  readProjectionAdmission,
+} from "../apps/worker/dist/feed-candidate-project-once.js";
+import { runContinuousProjection } from "../apps/worker/dist/feed-project-continuous.js";
 import { attestSourcePublisherIdentity } from "../apps/worker/dist/feed-source-publish-once.js";
 import { publishApprovedAdminSourceFile } from "../apps/worker/dist/postgres-admin-source-publisher.js";
 import { acceptDormantSourceFile } from "../apps/worker/dist/source-export-files.js";
@@ -161,6 +166,15 @@ test(
       database: "vns_p2_ci",
       user: "vns_source_export_login_ciunit",
       password: process.env.VNS_P2_CI_EXPORT_PASSWORD,
+      max: 1,
+      connectionTimeoutMillis: 5000,
+    });
+    const projectorSql = new Pool({
+      host: "127.0.0.1",
+      port: 5432,
+      database: "vns_p2_ci",
+      user: "vns_feed_project_login_ciunit",
+      password: process.env.VNS_P2_CI_PROJECT_PASSWORD,
       max: 1,
       connectionTimeoutMillis: 5000,
     });
@@ -362,19 +376,107 @@ test(
       );
       assert.equal(assessment.eligible, false);
       assert.ok(assessment.reasons.includes("publisher_groups_insufficient"));
-      for (const source of sourceIds) {
-        const projected = await dba.query(
-          "SELECT vns.project_feed_candidates($1::text,10) AS count",
-          [source],
-        );
-        assert.equal(projected.rows[0].count, 1);
-      }
+      // Actual isolated PostgreSQL writer -> new atomic ranking -> named
+      // SQL reader, under distinct socket-authenticated least-privilege logins.
+      // Only the fixture DBA loads a synthetic profile / personal login.
+      await dba.query(
+        `UPDATE vns.editorial_profile_registry
+          SET revision=1,profiles=$1::jsonb WHERE singleton=true`,
+        [JSON.stringify([profile])],
+      );
+      await dba.query(
+        `CREATE ROLE editor_ci_fullchain LOGIN INHERIT PASSWORD 'ci_only_fullchain_disposable_reader'`,
+      );
+      await dba.query(`GRANT vns_p2_named_client TO editor_ci_fullchain`);
+      await dba.query(
+        `INSERT INTO vns.editor_db_principals(login_role,editor_id,auth_version,active)
+         VALUES('editor_ci_fullchain',$1::uuid,0,true)`,
+        ["ca340001-1111-4111-8111-111111111111"],
+      );
+      const projectorBase = {
+        VNS_P2_FEED_PROJECTION_ENABLED: "true",
+        VNS_P2_FEED_PROJECTION_OPERATOR_ACK: "true",
+        VNS_P2_FEED_PROJECTION_CONTINUOUS_ENABLED: "true",
+        VNS_P2_FEED_PROJECTION_CONTINUOUS_OPERATOR_ACK: "true",
+        VNS_P2_FEED_PROJECTION_MODE: "continuous",
+        VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP: "false",
+        VNS_P2_FEED_PROJECTION_DB_HOST: "127.0.0.1",
+        VNS_P2_FEED_PROJECTION_DB_USER: "vns_feed_project_login_ciunit",
+        VNS_P2_FEED_PROJECTION_DB_PASSWORD_FILE: "/run/secrets/vns_feed_project_db_password",
+        VNS_P2_FEED_PROJECTION_SOURCE_IDS: sourceIds.join(","),
+        VNS_P2_FEED_PROJECTION_LIMIT: "10",
+        VNS_P2_FEED_PROJECTION_INTERVAL_MINUTES: "15",
+      };
+      const stopper = new AbortController();
+      let cycles = 0;
+      await runContinuousProjection(
+        projectorBase,
+        stopper.signal,
+        async (single) => {
+          const projected = await projectApprovedSource(
+            projectorSql,
+            readProjectionAdmission(single),
+          );
+          assert.equal(projected, 1);
+          cycles++;
+        },
+        async (duration) => {
+          assert.equal(duration, 900000);
+          stopper.abort();
+        },
+      );
+      assert.equal(cycles, 3);
       const projection = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.research_event_articles",
       );
       assert.equal(projection.rows[0].count, 3);
-      const second = await dba.query("SELECT vns.project_feed_candidates('rss_feed',10) AS count");
-      assert.equal(second.rows[0].count, 0);
+      const ranks = await dba.query(
+        `SELECT profile_id,profile_revision,score,article_count,source_count,
+                reasons,approved_for_publication
+         FROM vns.feed_event_rankings`,
+      );
+      assert.equal(ranks.rows.length, 1);
+      assert.equal(ranks.rows[0].profile_id, "science_news");
+      assert.equal(Number(ranks.rows[0].profile_revision), 1);
+      assert.equal(ranks.rows[0].article_count, 3);
+      assert.equal(ranks.rows[0].source_count, 3);
+      assert.equal(ranks.rows[0].approved_for_publication, false);
+      assert.ok(ranks.rows[0].reasons.includes("independent_verification_required"));
+      const reader = new Pool({
+        host: "127.0.0.1",
+        port: 5432,
+        database: "vns_p2_ci",
+        user: "editor_ci_fullchain",
+        password: "ci_only_fullchain_disposable_reader",
+        max: 1,
+      });
+      try {
+        const viewed = await reader.query(
+          "SELECT * FROM vns.named_ranked_feed_page($1::integer)",
+          [25],
+        );
+        assert.equal(viewed.rows.length, 1);
+        assert.equal(viewed.rows[0].source_count, 3);
+        assert.equal(viewed.rows[0].approved_for_publication, false);
+      } finally {
+        await reader.end();
+      }
+      // Retried projectors should keep one durable event/profile revision.
+      for (const source of sourceIds) {
+        const projected = await projectApprovedSource(
+          projectorSql,
+          readProjectionAdmission({
+            ...projectorBase,
+            VNS_P2_FEED_PROJECTION_MODE: "single_pass",
+            VNS_P2_FEED_PROJECTION_SOURCE_ID: source,
+          }),
+        );
+        assert.equal(projected, 0);
+      }
+      const durable = await dba.query(
+        "SELECT count(*)::integer AS count FROM vns.feed_event_rankings",
+      );
+      assert.equal(durable.rows[0].count, 1);
       const stillCandidate = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.feed_poll_candidates WHERE review_status = 'candidate'",
       );
@@ -386,6 +488,7 @@ test(
       await workerConnection.quit().catch(() => undefined);
       await sql.end().catch(() => undefined);
       await exportSql.end().catch(() => undefined);
+      await projectorSql.end().catch(() => undefined);
       await dba.end().catch(() => undefined);
       await rm(sourceStateRoot, { recursive: true, force: true });
     }
