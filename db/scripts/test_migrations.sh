@@ -462,4 +462,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0050 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0052 migrations, source authority, leases and budgets twice"
