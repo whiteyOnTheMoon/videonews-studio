@@ -39,7 +39,10 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   const keys = [...url.searchParams.keys()];
   if (keys.length !== new Set(keys).size) return false;
   if (path === "profiles") return keys.length === 0;
-  if (path === "ranked-events") return keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50);
+  if (path === "ranked-events")
+    return (
+      keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50)
+    );
   if (path === "checkpoints") {
     const eventId = url.searchParams.get("eventId");
     return (
@@ -234,7 +237,8 @@ export async function dormantEditorialAdminProxy(
         !Array.isArray(value.candidates) ||
         value.candidates.length > 50 ||
         !value.candidates.every(isRankedFeedCandidate)
-      ) return reply(503, { error: "temporarily_unavailable" });
+      )
+        return reply(503, { error: "temporarily_unavailable" });
       return reply(200, { candidates: value.candidates, metadataOnly: true });
     }
     if (endpoint === "profiles" && request.method === "GET") {
