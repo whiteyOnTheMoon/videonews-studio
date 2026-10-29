@@ -202,3 +202,26 @@ test("malformed JSON, unexpected key material, redirects or activation fail clos
         })) as typeof fetch;
   assert.equal((await dormantSourceAdminProxy(req("GET"), CFG, fetcher)).status, 503);
 });
+
+test("admin proxy accepts an exact same-host RSS endpoint, never a forged cross-host feed", () => {
+  const allowed = {
+    action: "create_pending",
+    expectedRevision: 0,
+    source: { ...source, feedUrl: "https://example.org/rss.xml" },
+  };
+  assert.deepEqual(parseSourceAdminProxyCommand(allowed), allowed);
+  for (const feedUrl of [
+    "https://attacker.org/rss.xml",
+    "https://example.org/rss.xml?secret=1",
+    "http://example.org/rss.xml",
+    "https://example.org/news/",
+  ]) {
+    assert.equal(
+      parseSourceAdminProxyCommand({
+        ...allowed,
+        source: { ...allowed.source, feedUrl },
+      }),
+      null,
+    );
+  }
+});
