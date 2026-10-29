@@ -82,7 +82,10 @@ export function parseReviewedSourceRegistry(
   const scopes = new Set<string>();
   const sources: RegisteredResearchSource[] = [];
   for (const value of raw.sources as unknown[]) {
-    if (!record(value) || !(exactFields(value, FIELDS) || exactFields(value, [...FIELDS, "feedUrl"]))) {
+    if (
+      !record(value) ||
+      !(exactFields(value, FIELDS) || exactFields(value, [...FIELDS, "feedUrl"]))
+    ) {
       throw new Error("Reviewed source entry invalid");
     }
     const {
@@ -122,11 +125,15 @@ export function parseReviewedSourceRegistry(
     const feed = feedUrl === undefined ? parsed : new URL(feedUrl as string);
     if (
       feedUrl !== undefined &&
-      (feedUrl === baseUrl || feed.toString() !== feedUrl ||
-       feed.hostname !== parsed.hostname || feed.port !== "" ||
-       feed.username !== "" || feed.password !== "" ||
-       feed.search !== "" || feed.hash !== "" ||
-       feed.pathname.includes("%"))
+      (feedUrl === baseUrl ||
+        feed.toString() !== feedUrl ||
+        feed.hostname !== parsed.hostname ||
+        feed.port !== "" ||
+        feed.username !== "" ||
+        feed.password !== "" ||
+        feed.search !== "" ||
+        feed.hash !== "" ||
+        feed.pathname.includes("%"))
     ) {
       throw new Error("Reviewed source exact feed endpoint invalid");
     }
