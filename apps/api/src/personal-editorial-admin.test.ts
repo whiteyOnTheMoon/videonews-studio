@@ -7,6 +7,7 @@ import {
   validateNamedEditorialProfiles,
   validateNamedCheckpointWrite,
   validateNamedTimelineWrite,
+  validateNamedRankingPolicySettings,
   type NamedEditorialPgSession,
 } from "./personal-editorial-admin.js";
 
@@ -87,6 +88,20 @@ function setup(mismatch = false, enabled = true) {
             },
           ],
         };
+      }
+      if (sqlText.includes("named_ranking_policy_read")) {
+        return {
+          rows: [
+            {
+              profile_revision: "1",
+              policy_revision: "0",
+              settings: null,
+            },
+          ],
+        };
+      }
+      if (sqlText.includes("named_ranking_policy_commit")) {
+        return { rows: [{ saved: true }] };
       }
       if (sqlText.includes("named_profile_read")) {
         return { rows: [{ revision: "0", profiles: [] }] };
@@ -437,6 +452,124 @@ test("named read-only ranking shows durable candidate metadata only after person
   );
   assert.equal(
     (await serve(setup(true).handler, "/admin/editorial-ranked-events?limit=25")).status,
+    403,
+  );
+});
+
+test("ranking policy review is bounded, attributed and never a publication decision", async () => {
+  const settings = {
+    minimumPublisherGroups: 2,
+    relevanceWeight: 10,
+    freshnessWeight: 20,
+    qualityWeight: 15,
+    explanatoryWeight: 5,
+    visualizabilityWeight: 30,
+    riskWeight: 20,
+    maximumRisk: 3,
+  };
+  assert.deepEqual(validateNamedRankingPolicySettings(settings), settings);
+  const state = setup();
+  const read = await serve(state.handler, "/admin/editorial-ranking-policy?profileId=science_news");
+  assert.equal(read.status, 200);
+  assert.deepEqual(read.json, {
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 0,
+    settings: null,
+    productionActive: false,
+  });
+  const saved = await serve(state.handler, "/admin/editorial-ranking-policy", "POST", {
+    profileId: "science_news",
+    expectedRevision: 0,
+    settings,
+  });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.json, {
+    saved: true,
+    policyRevision: 1,
+    productionActive: false,
+  });
+  assert.ok(state.sql.some((sql) => sql.includes("named_ranking_policy_read")));
+  assert.ok(state.sql.some((sql) => sql.includes("named_ranking_policy_commit")));
+  assert.ok(state.sql.every((sql) => !sql.includes("ci_admin")));
+  assert.equal(state.opened, 2);
+  assert.equal(state.closed, 2);
+});
+
+test("ranking policy rejects forged editor, unbounded risks, unexpected fields and invalid queries", async () => {
+  const settings = {
+    minimumPublisherGroups: 2,
+    relevanceWeight: 10,
+    freshnessWeight: 20,
+    qualityWeight: 15,
+    explanatoryWeight: 5,
+    visualizabilityWeight: 30,
+    riskWeight: 20,
+    maximumRisk: 3,
+  };
+  const state = setup();
+  for (const bogus of [
+    { ...settings, riskWeight: 101 },
+    { ...settings, maximumRisk: 6 },
+    { ...settings, minimumPublisherGroups: 1 },
+    { ...settings, publisherQualityToken: "forged" },
+    { ...settings, explanatoryWeight: "10" },
+  ]) {
+    assert.equal(validateNamedRankingPolicySettings(bogus), null);
+    assert.equal(
+      (
+        await serve(state.handler, "/admin/editorial-ranking-policy", "POST", {
+          profileId: "science_news",
+          expectedRevision: 0,
+          settings: bogus,
+        })
+      ).status,
+      400,
+    );
+  }
+  for (const bad of [
+    "/admin/editorial-ranking-policy",
+    "/admin/editorial-ranking-policy?profileId=science_news&profileId=science_news",
+    "/admin/editorial-ranking-policy?profileId=../secrets",
+  ]) {
+    assert.equal((await serve(state.handler, bad)).status, 400);
+  }
+  assert.equal(
+    (
+      await serve(state.handler, "/admin/editorial-ranking-policy", "POST", {
+        profileId: "science_news",
+        expectedRevision: 0,
+        settings,
+        actorId: ACTOR,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-ranking-policy",
+        "POST",
+        {
+          profileId: "science_news",
+          expectedRevision: 0,
+          settings,
+        },
+        "https://attacker.example",
+      )
+    ).status,
+    403,
+  );
+  assert.equal(state.opened, 3);
+  assert.equal(
+    (
+      await serve(setup(true).handler, "/admin/editorial-ranking-policy", "POST", {
+        profileId: "science_news",
+        expectedRevision: 0,
+        settings,
+      })
+    ).status,
     403,
   );
 });

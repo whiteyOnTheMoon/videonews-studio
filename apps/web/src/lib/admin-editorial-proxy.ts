@@ -1,14 +1,21 @@
 import { isRankedFeedCandidate } from "./editorial-ranked-events";
+import {
+  validRankingPolicyCommit,
+  validRankingPolicySettings,
+  validRankingPolicySnapshot,
+} from "./editorial-ranking-policy";
 import type { AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
-type EditorialEndpoint = "profiles" | "timeline" | "checkpoints" | "ranked-events";
+type EditorialEndpoint =
+  "profiles" | "timeline" | "checkpoints" | "ranked-events" | "ranking-policy";
 const ENDPOINTS: Record<EditorialEndpoint, string> = {
   profiles: "/admin/editorial-profiles",
   timeline: "/admin/editorial-timeline",
   checkpoints: "/admin/editorial-checkpoints",
   "ranked-events": "/admin/editorial-ranked-events",
+  "ranking-policy": "/admin/editorial-ranking-policy",
 };
 
 export function editorialAdminProxyConfig(
@@ -39,6 +46,15 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   const keys = [...url.searchParams.keys()];
   if (keys.length !== new Set(keys).size) return false;
   if (path === "profiles") return keys.length === 0;
+  if (path === "ranking-policy") {
+    const profileId = url.searchParams.get("profileId");
+    return (
+      keys.length === 1 &&
+      keys[0] === "profileId" &&
+      !!profileId &&
+      /^[a-z][a-z0-9_-]{2,40}$/.test(profileId)
+    );
+  }
   if (path === "ranked-events")
     return (
       keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50)
@@ -127,6 +143,16 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
         )
       )
         return null;
+    } else if (endpoint === "ranking-policy") {
+      if (
+        Object.keys(input).sort().join(",") !== "expectedRevision,profileId,settings" ||
+        typeof input.profileId !== "string" ||
+        !/^[a-z][a-z0-9_-]{2,40}$/.test(input.profileId) ||
+        !Number.isSafeInteger(input.expectedRevision) ||
+        (input.expectedRevision as number) < 0 ||
+        !validRankingPolicySettings(input.settings)
+      )
+        return null;
     } else if (endpoint === "checkpoints") {
       if (
         Object.keys(input).sort().join(",") !==
@@ -187,7 +213,10 @@ export async function dormantEditorialAdminProxy(
   if (!(endpoint in ENDPOINTS)) return reply(404, { error: "not_found" });
   if (
     request.method !== "GET" &&
-    !(["profiles", "checkpoints", "timeline"].includes(endpoint) && request.method === "POST")
+    !(
+      ["profiles", "ranking-policy", "checkpoints", "timeline"].includes(endpoint) &&
+      request.method === "POST"
+    )
   ) {
     return reply(405, { error: "method_not_allowed" });
   }
@@ -230,6 +259,16 @@ export async function dormantEditorialAdminProxy(
     if (raw.length > 1048576) return reply(503, { error: "temporarily_unavailable" });
     const value: unknown = JSON.parse(raw);
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
+    if (endpoint === "ranking-policy") {
+      if (request.method === "GET") {
+        if (!validRankingPolicySnapshot(value)) {
+          return reply(503, { error: "temporarily_unavailable" });
+        }
+        return reply(200, value);
+      }
+      if (!validRankingPolicyCommit(value)) return reply(503, { error: "temporarily_unavailable" });
+      return reply(200, value);
+    }
     if (endpoint === "ranked-events") {
       if (
         Object.keys(value).sort().join(",") !== "candidates,metadataOnly" ||
