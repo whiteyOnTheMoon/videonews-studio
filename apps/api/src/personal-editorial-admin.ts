@@ -336,7 +336,8 @@ export class DormantPersonalEditorialAdmin {
             !object(command) ||
             Object.keys(command).sort().join(",") !==
               "expectedRevision,profileId,settings" ||
-            !PROFILE_ID.test(command.profileId as string) ||
+            (typeof command.profileId !== "string" ||
+              !PROFILE_ID.test(command.profileId)) ||
             revision(command.expectedRevision) === null ||
             !validateNamedRankingPolicySettings(command.settings)
           : path === "/admin/editorial-checkpoints"
