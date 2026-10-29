@@ -26,12 +26,16 @@ BEGIN
    RAISE EXCEPTION 'Ranking source approval failed'; END IF;
 END $setup$;
 RESET ROLE;
+SELECT set_config('vns.ci_source_revision',
+  (SELECT revision::text FROM vns.admin_source_registry WHERE singleton=true),true);
+SELECT set_config('vns.ci_host_revision',
+  (SELECT revision::text FROM vns.admin_source_host_approvals WHERE singleton=true),true);
 SET LOCAL ROLE vns_host_approval_writer;
 DO $host$
 DECLARE v_host bigint;v_source bigint;
 BEGIN
- SELECT revision INTO v_host FROM vns.admin_source_host_approvals WHERE singleton=true;
- SELECT revision INTO v_source FROM vns.admin_source_registry WHERE singleton=true;
+ v_host:=current_setting('vns.ci_host_revision')::bigint;
+ v_source:=current_setting('vns.ci_source_revision')::bigint;
  IF NOT vns.admin_change_source_host_approval(v_host,v_source,'grant','ranking.example.org',
   'Independent synthetic ranking scope reviewer.',
   'fa490002-2222-4222-8222-222222222222',0)
@@ -101,12 +105,16 @@ END $deny$;
 RESET ROLE;
 
 -- Revocation must prevent fresh projection, never rewrite prior approval.
+SELECT set_config('vns.ci_source_revision',
+  (SELECT revision::text FROM vns.admin_source_registry WHERE singleton=true),true);
+SELECT set_config('vns.ci_host_revision',
+  (SELECT revision::text FROM vns.admin_source_host_approvals WHERE singleton=true),true);
 SET LOCAL ROLE vns_host_approval_writer;
 DO $revoke$
 DECLARE v_host bigint;v_source bigint;
 BEGIN
- SELECT revision INTO v_host FROM vns.admin_source_host_approvals WHERE singleton=true;
- SELECT revision INTO v_source FROM vns.admin_source_registry WHERE singleton=true;
+ v_host:=current_setting('vns.ci_host_revision')::bigint;
+ v_source:=current_setting('vns.ci_source_revision')::bigint;
  IF NOT vns.admin_change_source_host_approval(v_host,v_source,'revoke','ranking.example.org',
    'Independent synthetic ranking approval revoked.',
    'fa490002-2222-4222-8222-222222222222',0)
