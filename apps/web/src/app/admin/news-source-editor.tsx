@@ -194,16 +194,14 @@ export default function NewsSourceEditor({
           id="news-source-feed-url"
           type="url"
           value={draft.feedUrl ?? ""}
-          onChange={(event) =>
-            setDraft({ ...draft, feedUrl: event.target.value || undefined })
-          }
+          onChange={(event) => setDraft({ ...draft, feedUrl: event.target.value || undefined })}
           disabled={busy}
           maxLength={512}
           placeholder="https://quelle.example/rss.xml"
         />
         <p>
-          Ohne separate Feed-Adresse wird der Artikelbereich selbst abgefragt.
-          Beide URLs müssen auf demselben persönlich freigegebenen Host liegen.
+          Ohne separate Feed-Adresse wird der Artikelbereich selbst abgefragt. Beide URLs müssen auf
+          demselben persönlich freigegebenen Host liegen.
         </p>
         <label htmlFor="news-source-access">Zugriffsart</label>
         <select
