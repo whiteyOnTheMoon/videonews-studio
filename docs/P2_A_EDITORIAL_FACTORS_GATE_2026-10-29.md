@@ -34,10 +34,18 @@ Veröffentlichungsrechte oder die Wahrheit eines Claims.
 4. Noch keine persönlichen NASA/JPL-, NOAA- oder USGS-Freigaben und keine
    produktiven RSS-Tests; die getrennten `feedUrl`/`baseUrl`-Felder
    sind durch PR #358 und Migration 0050 lediglich vorbereitet.
-5. Reale Syndikationsbeispiele (identische Agenturmeldung mit
-   unterschiedlichen Quelllinks und ggf. abweichender Überschrift)
-   sind noch gegen die **persistierte** PostgreSQL-Ereignisprojektion
-   zu prüfen. Die bisherige Projektionslogik gruppiert nach
+5. Ein öffentlich dokumentiertes NASA/JPL-Syndikationspaar (gleiche
+   Überschrift, zwei Domains, gleicher NASA-Ursprung) wird in einem
+   zusätzlichen TypeScript-Regressionstest zu **einem** Ereignis
+   zusammengefasst und zählt nicht als zwei unabhängige Herausgeber.
+   Das belegt nur die konservative Offline-Gruppierung. **Persistierte**
+   PostgreSQL-Ereignisse mit abweichender Überschrift müssen weiterhin
+   geprüft und nötigenfalls atomar zusammengeführt werden.
+   Belege für die realen Publikationen (12.10.2026):
+   https://www.jpl.nasa.gov/news/nasas-perseverance-sets-off-world-record-for-total-distance-driven/
+   https://science.nasa.gov/blogs/perseverance-mars-rover/2026/10/12/nasas-perseverance-sets-off-world-record-for-total-distance-driven/
+   Die fixture-Zeitstempel sind synthetisch; sie behaupten keine exakten
+   RSS-Publikationszeitpunkte. Die bisherige Projektionslogik gruppiert nach
    einem exakten normalisierten Headline-Fingerprint; die konservative
    TypeScript-Ähnlichkeitsgruppierung ersetzt das nicht.
 
