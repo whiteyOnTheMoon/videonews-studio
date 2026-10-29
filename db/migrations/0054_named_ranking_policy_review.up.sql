@@ -58,7 +58,6 @@ DECLARE
   p_revision bigint;
   latest bigint;
   key text;
-  val text;
   item integer;
 BEGIN
   -- PostgreSQL session_user, never an HTTP claim or SET ROLE impersonation.
@@ -89,8 +88,7 @@ BEGIN
        OR (p_settings->>key) !~ '^(0|[1-9][0-9]*)$'
        OR length(p_settings->>key)>3
     THEN RAISE EXCEPTION 'Ranking weight invalid' USING ERRCODE='22023'; END IF;
-    val:=p_settings->>key;
-    item:=val::integer;
+    item:=(p_settings->>key)::integer;
     IF (key='minimumPublisherGroups' AND item NOT BETWEEN 2 AND 5)
        OR (key='maximumRisk' AND item NOT BETWEEN 0 AND 5)
        OR (key NOT IN ('minimumPublisherGroups','maximumRisk')
@@ -105,8 +103,7 @@ BEGIN
   FROM vns.editorial_profile_registry r
   WHERE r.singleton=true AND EXISTS(
     SELECT 1 FROM jsonb_array_elements(r.profiles) p
-    WHERE p.value->>'id'=p_profile)
-;
+    WHERE p.value->>'id'=p_profile);
   IF NOT FOUND THEN RAISE EXCEPTION 'Profile no longer available' USING ERRCODE='22023'; END IF;
   SELECT COALESCE(max(pol.revision),0) INTO latest
     FROM vns.feed_ranking_policy_reviews pol
