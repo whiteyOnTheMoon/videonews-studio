@@ -315,7 +315,8 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
     );
   }
   assert.equal(
-    (await dormantEditorialAdminProxy(request(url, "POST", {}), "ranked-events", config, upstream)).status,
+    (await dormantEditorialAdminProxy(request(url, "POST", {}), "ranked-events", config, upstream))
+      .status,
     405,
   );
   assert.equal(upstreamCalls, 1);
