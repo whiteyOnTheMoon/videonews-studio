@@ -41,11 +41,11 @@ Drei **noch nicht persönlich freigegebene** Vorschläge stehen unter
 `docs/p2-a-official-source-candidates.json`: NASA/JPL, NOAA und USGS.
 Als künftige getrennte Felder kommen insbesondere in Betracht:
 
-| Quelle | Artikelbereich (`baseUrl`) | Exakte Feed-Adresse (`feedUrl`) |
-| --- | --- | --- |
-| NASA/JPL | `https://www.jpl.nasa.gov/news/` | `https://www.jpl.nasa.gov/feeds/news/` |
-| NOAA | `https://www.noaa.gov/` | `https://www.noaa.gov/rss.xml` |
-| USGS | `https://www.usgs.gov/news/` | `https://www.usgs.gov/news/national-news-release/feed` |
+| Quelle   | Artikelbereich (`baseUrl`)       | Exakte Feed-Adresse (`feedUrl`)                        |
+| -------- | -------------------------------- | ------------------------------------------------------ |
+| NASA/JPL | `https://www.jpl.nasa.gov/news/` | `https://www.jpl.nasa.gov/feeds/news/`                 |
+| NOAA     | `https://www.noaa.gov/`          | `https://www.noaa.gov/rss.xml`                         |
+| USGS     | `https://www.usgs.gov/news/`     | `https://www.usgs.gov/news/national-news-release/feed` |
 
 Alle Angaben sind **technische Kandidaten**, keine Live-Konfiguration.
 Pro Quelle sind echte Rückgabewerte, die Rechte am konkreten Artikel,
