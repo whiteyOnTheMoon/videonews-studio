@@ -39,3 +39,37 @@ Die Secret-Datei des DB-Nutzers heißt `editor_<username>.password`; Inhalte sin
 - **Weiterhin offen:** Claims aus unabhängigen realen Quellen prüfen; echte Storyboard-/Skriptgenerierung über freigegebene Anbieter; QA durch separaten Agenten plus reale Reviewer; individuelle Nischen- und Risikoregeln; vollständiger P2-10-Export aller Entscheidungen, abgelehnten Claims, Quellen-Lizenzsnapshots und Änderungen. Der hier erzeugte Checkpoint allein beweist keine Faktenrichtigkeit und bedeutet **keine** veröffentlichbare Redaktion.
 
 IONOS-Backups und Beszel werden wie vom Betreiber bestätigt als vorhanden angenommen; keine erneute Infrastrukturwahl und keine Duplikatdienste. Der eigentliche VPS-Rollout benötigt nach wie vor eine separate Freigabe des konkreten Code-/Compose-/Secret-Änderungssatzes.
+
+## Offline-Claim-Prüfung an persönliche Checkpoints anbinden (28.10.2026)
+
+Der neue explizite Adapter **apps/worker/src/offline-claim-checkpoint-handoff.ts**
+verknüpft die vorhandene P2-05/06-Metadatenprüfung mit dem P2-10-Checkpoint-Store.
+Er berechnet aus konkreter Datenbank-Ereignis-UUID, Artikelidentitäten,
+Claim-Entwurf, Prüfreferenzen, Entscheidungsmetadaten und Prüfzeitpunkt
+einen deterministischen SHA-256-Artefaktdigest. Er schreibt **keine
+Quellen-URLs, Skripttexte, Claims oder Prüfernotizen** in die Checkpoint-Tabelle.
+Unabhängige Prüfgründe bleiben als zulässige, begrenzte Reason-Codes erhalten.
+
+Auch wenn alle angegebenen Quellenmetadaten konsistent sind, erhält der
+Datensatz **nur** outcome=needs_review mit
+independent_reviewer_auth_required. Unzureichende Nachweise erhalten
+outcome=blocked. Eine JSON-Kennung eines angeblichen Prüfers ist
+ausdrücklich **keine** persönliche Authentifizierung. Es gibt
+keinen freigabefähigen Outcome.
+
+Die Funktion **recordOfflineClaimCheckpoint** führt erst nach strenger
+Offline-Prüfung über einen explizit injizierten
+**DormantEditorialCheckpointStore** den bestehenden persönlich autorisierten,
+revisionsgebundenen DB-Befehl **vns.named_append_editorial_checkpoint** aus.
+Das unterscheidet erfolgreiches Speichern, CAS-Konflikte und
+abgewiesene Eingaben. Ein automatischer Feed-Worker oder ein gemeinsames
+API-Pool-Login darf keine menschliche Prüferidentität vortäuschen.
+Der PostgreSQL-session_user und der claim_review-Rollencheck bleiben
+ausschließlich in der Datenbank autoritativ. Zusätzlich ist die Zuordnung
+zwischen Research-Ereignis-UUID und Metadaten-Event unabhängig zu prüfen:
+eine vom Aufrufer übergebene UUID beweist die inhaltliche Zuordnung nicht.
+
+Diese Integration ist **Code-only und default-off**, ohne neue Migration,
+Geheimnisse, Live-Feeds, Providerkosten oder produktiven Mount. Sie belegt
+einen expliziten persönlichen Checkpoint-Handoff, noch keine unabhängige
+Faktenprüfung oder produktive P2-05-/P2-10-Abnahme.
