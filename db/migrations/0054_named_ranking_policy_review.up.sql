@@ -67,7 +67,7 @@ BEGIN
   JOIN vns.editor_accounts a ON a.id=m.editor_id
   WHERE m.login_role=session_user AND m.active=true
     AND a.active=true AND a.role='admin' AND a.auth_version=m.auth_version
-  FOR SHARE OF m,a;
+;
   IF actor IS NULL THEN
     RAISE EXCEPTION 'Named ranking reviewer forbidden' USING ERRCODE='42501';
   END IF;
@@ -106,7 +106,7 @@ BEGIN
   WHERE r.singleton=true AND EXISTS(
     SELECT 1 FROM jsonb_array_elements(r.profiles) p
     WHERE p.value->>'id'=p_profile)
-  FOR SHARE;
+;
   IF NOT FOUND THEN RAISE EXCEPTION 'Profile no longer available' USING ERRCODE='22023'; END IF;
   SELECT COALESCE(max(pol.revision),0) INTO latest
     FROM vns.feed_ranking_policy_reviews pol
