@@ -250,3 +250,31 @@ test("transport failure is sanitized and still consumes the polling interval", a
   assert.equal(JSON.stringify(result).includes("private"), false);
   assert.deepEqual(await poller.poll(at(1)), []);
 });
+
+test("RSS endpoint and article scope are independent, but article links remain scoped", () => {
+  const sourceWithFeed = {
+    ...source("ci_separated", "news/", "approved", "rss"),
+    feedUrl: prefix + "rss.xml",
+  };
+  const approved = parseReviewedSourceRegistry(
+    JSON.stringify({ version: 1, sources: [sourceWithFeed] }),
+    policy,
+  );
+  const body =
+    "<rss><channel><item><title>Reviewed scientific update headline</title>" +
+    "<link>" + prefix + "news/research-story</link>" +
+    "<pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>" +
+    "<item><title>Outside approved article scope should be excluded</title>" +
+    "<link>" + prefix + "private/story</link>" +
+    "<pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>" +
+    "</channel></rss>";
+  const rows = decodeApprovedFeed(approved[0]!, approved, {
+    status: 200,
+    mediaType: "application/rss+xml",
+    body,
+    etag: null,
+    lastModified: null,
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.url, prefix + "news/research-story");
+});
