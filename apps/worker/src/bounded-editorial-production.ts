@@ -24,7 +24,19 @@ export interface WeightedRankingPolicy {
   freshnessWeight: number;
   qualityWeight: number;
   explanatoryWeight: number;
+  /** Optional reviewed metadata factors; when enabled, missing factors block ranking. */
+  visualizabilityWeight?: number;
+  riskWeight?: number;
+  maximumRisk?: number;
   blockedTerms: readonly string[];
+}
+export interface EventEditorialFactors {
+  /** Must be bound by an authenticated caller to the actual candidate event. */
+  eventId: string;
+  revision: number;
+  explanatoryValue: number;
+  visualizability: number;
+  risk: number;
 }
 export interface CandidateAssessment {
   eventId: string;
@@ -41,6 +53,7 @@ export function assessEditorialCandidate(
   policy: WeightedRankingPolicy,
   provenance: readonly SourceProvenance[],
   now: Date,
+  factors?: EventEditorialFactors,
 ): CandidateAssessment {
   validateEditorialProfile(profile);
   if (
@@ -70,6 +83,35 @@ export function assessEditorialCandidate(
   ];
   if (weights.some((weight) => !Number.isSafeInteger(weight) || weight < 0 || weight > 100)) {
     throw new Error("Editorial assessment weights invalid");
+  }
+  const visualWeight = policy.visualizabilityWeight ?? 0;
+  const riskWeight = policy.riskWeight ?? 0;
+  const maximumRisk = policy.maximumRisk ?? 5;
+  if (
+    !Number.isSafeInteger(visualWeight) ||
+    visualWeight < 0 ||
+    visualWeight > 100 ||
+    !Number.isSafeInteger(riskWeight) ||
+    riskWeight < 0 ||
+    riskWeight > 100 ||
+    !Number.isSafeInteger(maximumRisk) ||
+    maximumRisk < 0 ||
+    maximumRisk > 5
+  ) {
+    throw new Error("Editorial risk and visual policy invalid");
+  }
+  if (factors !== undefined &&
+    (typeof factors !== "object" ||
+      factors === null ||
+      Object.keys(factors).sort().join(",") !==
+        "eventId,explanatoryValue,revision,risk,visualizability" ||
+      factors.eventId !== event.id ||
+      !Number.isSafeInteger(factors.revision) ||
+      factors.revision < 1 ||
+      ![factors.explanatoryValue, factors.visualizability, factors.risk].every(
+        (value) => Number.isSafeInteger(value) && value >= 0 && value <= 5,
+      ))) {
+    throw new Error("Editorial factors not bound to candidate");
   }
   if (
     policy.blockedTerms.some(
@@ -115,6 +157,10 @@ export function assessEditorialCandidate(
   ) {
     reasons.push("stale_or_future_article");
   }
+  if ((visualWeight > 0 || riskWeight > 0) && !factors) {
+    reasons.push("reviewed_editorial_factors_missing");
+  }
+  if (factors && factors.risk > maximumRisk) reasons.push("editorial_risk_exceeded");
   const combinedBlocklist = [...profile.blockedTerms, ...policy.blockedTerms];
   if (combinedBlocklist.some((term) => matchesEditorialPhrase(event.headline, term))) {
     reasons.push("editorial_blocklisted");
@@ -126,15 +172,25 @@ export function assessEditorialCandidate(
   const hours = Math.max(0, (now.getTime() - newest) / 3600000);
   const quality = [...sourceIds].reduce((sum, id) => sum + (declared.get(id)?.quality ?? 0), 0);
   const qualityMean = quality / sourceIds.size;
+  // Legacy explanatory weighting uses group breadth until an explicit
+  // event assessment is available. Group count is not independent evidence.
+  const explanation = factors
+    ? (factors.explanatoryValue / 5) * policy.explanatoryWeight
+    : Math.min(groups.size, 5) * policy.explanatoryWeight;
   const score = reasons.length
     ? 0
     : Math.max(
         0,
-        Math.round(
-          keywords * policy.relevanceWeight +
-            Math.max(0, 1 - hours / policy.maxAgeHours) * policy.freshnessWeight +
-            (qualityMean / 5) * policy.qualityWeight +
-            Math.min(groups.size, 5) * policy.explanatoryWeight,
+        Math.min(
+          1000,
+          Math.round(
+            keywords * policy.relevanceWeight +
+              Math.max(0, 1 - hours / policy.maxAgeHours) * policy.freshnessWeight +
+              (qualityMean / 5) * policy.qualityWeight +
+              explanation +
+              ((factors?.visualizability ?? 0) / 5) * visualWeight -
+              ((factors?.risk ?? 0) / 5) * riskWeight,
+          ),
         ),
       );
   return {
