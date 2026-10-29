@@ -198,12 +198,14 @@ GRANT EXECUTE ON FUNCTION vns.project_approved_feed_candidates(text,integer)
 GRANT SELECT ON vns.feed_event_rankings,vns.research_events,
   vns.research_event_articles,vns.research_articles,vns.admin_source_registry
   TO vns_p2_named_executor;
+GRANT EXECUTE ON FUNCTION vns.feed_runtime_source_authorized(jsonb)
+  TO vns_p2_named_executor;
 CREATE FUNCTION vns.named_ranked_feed_page(p_limit integer)
 RETURNS TABLE(
   event_id uuid,profile_id text,profile_revision bigint,headline text,
   score integer,article_count integer,source_count integer,
   reasons jsonb,ranked_at timestamptz,approved_for_publication boolean
-) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog
+) LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog
 AS $body$
 BEGIN
   IF NOT EXISTS (
@@ -236,7 +238,7 @@ BEGIN
       SELECT 1 FROM vns.admin_source_registry s
       CROSS JOIN LATERAL jsonb_array_elements(s.sources) src(value)
       WHERE s.singleton=true AND src.value->>'id'=a.source_key
-        AND src.value->>'status'='approved'
+        AND vns.feed_runtime_source_authorized(src.value)
     )
   )
   ORDER BY r.score DESC,r.ranked_at DESC,r.event_id
