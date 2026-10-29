@@ -1,0 +1,35 @@
+name: P2 Package A temporary formatter diagnostic
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  format:
+    if: github.event.pull_request.head.ref == 'feat/p2-package-a-persisted-ranked-feed-admin-20261029'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Canonical formatting for changed Admin and API files
+        run: |
+          npx prettier --write \
+            apps/api/src/personal-editorial-admin.test.ts \
+            apps/api/src/personal-editorial-admin.ts \
+            apps/web/src/app/admin/editorial-admin.test.tsx \
+            apps/web/src/app/admin/editorial-ranked-events.tsx \
+            apps/web/src/lib/admin-editorial-proxy.test.ts \
+            apps/web/src/lib/admin-editorial-proxy.ts \
+            apps/web/src/lib/editorial-ranked-events.ts
+          node -e "const fs=require('fs');for(const p of process.argv.slice(1)) console.log('VNS_FORMAT_START '+p+' '+fs.readFileSync(p).toString('base64')+' VNS_FORMAT_END')" \
+            apps/api/src/personal-editorial-admin.test.ts \
+            apps/api/src/personal-editorial-admin.ts \
+            apps/web/src/app/admin/editorial-admin.test.tsx \
+            apps/web/src/app/admin/editorial-ranked-events.tsx \
+            apps/web/src/lib/admin-editorial-proxy.test.ts \
+            apps/web/src/lib/admin-editorial-proxy.ts \
+            apps/web/src/lib/editorial-ranked-events.ts
