@@ -45,14 +45,14 @@ DECLARE
  success boolean;
  rejected boolean;
 BEGIN
- SELECT policy_revision,settings INTO rev,payload
- FROM vns.named_ranking_policy_read('science_news');
+ SELECT x.policy_revision,x.settings INTO rev,payload
+ FROM vns.named_ranking_policy_read('science_news') AS x;
  IF rev<>0 OR payload IS NOT NULL
  THEN RAISE EXCEPTION 'No policy must mean no reviewed settings'; END IF;
  success:=vns.named_ranking_policy_commit('science_news',0,settings);
  IF NOT success THEN RAISE EXCEPTION 'Named ranking review insert failed'; END IF;
- SELECT policy_revision,settings INTO rev,payload
- FROM vns.named_ranking_policy_read('science_news');
+ SELECT x.policy_revision,x.settings INTO rev,payload
+ FROM vns.named_ranking_policy_read('science_news') AS x;
  IF rev<>1 OR payload IS DISTINCT FROM settings
  THEN RAISE EXCEPTION 'Review is not personally readable'; END IF;
  IF vns.named_ranking_policy_commit('science_news',0,settings)
