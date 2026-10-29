@@ -1,12 +1,14 @@
+import { isRankedFeedCandidate } from "./editorial-ranked-events";
 import type { AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
-type EditorialEndpoint = "profiles" | "timeline" | "checkpoints";
+type EditorialEndpoint = "profiles" | "timeline" | "checkpoints" | "ranked-events";
 const ENDPOINTS: Record<EditorialEndpoint, string> = {
   profiles: "/admin/editorial-profiles",
   timeline: "/admin/editorial-timeline",
   checkpoints: "/admin/editorial-checkpoints",
+  "ranked-events": "/admin/editorial-ranked-events",
 };
 
 export function editorialAdminProxyConfig(
@@ -37,6 +39,10 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   const keys = [...url.searchParams.keys()];
   if (keys.length !== new Set(keys).size) return false;
   if (path === "profiles") return keys.length === 0;
+  if (path === "ranked-events")
+    return (
+      keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50)
+    );
   if (path === "checkpoints") {
     const eventId = url.searchParams.get("eventId");
     return (
@@ -224,6 +230,17 @@ export async function dormantEditorialAdminProxy(
     if (raw.length > 1048576) return reply(503, { error: "temporarily_unavailable" });
     const value: unknown = JSON.parse(raw);
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
+    if (endpoint === "ranked-events") {
+      if (
+        Object.keys(value).sort().join(",") !== "candidates,metadataOnly" ||
+        value.metadataOnly !== true ||
+        !Array.isArray(value.candidates) ||
+        value.candidates.length > 50 ||
+        !value.candidates.every(isRankedFeedCandidate)
+      )
+        return reply(503, { error: "temporarily_unavailable" });
+      return reply(200, { candidates: value.candidates, metadataOnly: true });
+    }
     if (endpoint === "profiles" && request.method === "GET") {
       if (
         !Number.isSafeInteger(value.revision) ||

@@ -278,3 +278,57 @@ test("P2-10 personal story timeline writes audited events but cannot publish", a
     400,
   );
 });
+
+test("ranked feed BFF is personal, read-only and rejects forged metadata", async () => {
+  const candidate = {
+    eventId,
+    profileId: "science_news",
+    profileRevision: 1,
+    headline: "Synthetic science briefing awaiting reviewer",
+    score: 42,
+    articleCount: 2,
+    sourceCount: 1,
+    reasons: ["metadata_candidate_only", "independent_verification_required"],
+    rankedAt: "2026-10-28T12:00:00.000Z",
+    approvedForPublication: false,
+  };
+  let upstreamCalls = 0;
+  const upstream = (async (resource: string | URL | Request) => {
+    if (String(resource).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    upstreamCalls++;
+    return Response.json({ candidates: [candidate], metadataOnly: true });
+  }) as typeof fetch;
+  const url = "/api/admin/editorial-ranked-events?limit=25";
+  const read = await dormantEditorialAdminProxy(request(url), "ranked-events", config, upstream);
+  assert.equal(read.status, 200);
+  assert.deepEqual(await read.json(), { candidates: [candidate], metadataOnly: true });
+  assert.equal(upstreamCalls, 1);
+  for (const bad of [
+    "/api/admin/editorial-ranked-events",
+    "/api/admin/editorial-ranked-events?limit=100",
+    "/api/admin/editorial-ranked-events?limit=25&actor=forged",
+    "/api/admin/editorial-ranked-events?limit=25&limit=25",
+  ]) {
+    assert.equal(
+      (await dormantEditorialAdminProxy(request(bad), "ranked-events", config, upstream)).status,
+      400,
+    );
+  }
+  assert.equal(
+    (await dormantEditorialAdminProxy(request(url, "POST", {}), "ranked-events", config, upstream))
+      .status,
+    405,
+  );
+  assert.equal(upstreamCalls, 1);
+  const forged = (async (resource: string | URL | Request) => {
+    if (String(resource).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    return Response.json({
+      candidates: [{ ...candidate, approvedForPublication: true, internalSecret: "leaked" }],
+      metadataOnly: true,
+    });
+  }) as typeof fetch;
+  assert.equal(
+    (await dormantEditorialAdminProxy(request(url), "ranked-events", config, forged)).status,
+    503,
+  );
+});

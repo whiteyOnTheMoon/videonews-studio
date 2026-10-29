@@ -20,6 +20,7 @@ import EditorialProfiles from "./editorial-profiles";
 import EditorialAuditExport from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
+import EditorialRankedEvents from "./editorial-ranked-events";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function AdminPage() {
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialRankedEvents enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialTimelineEntry enabled={editorialAdminProxyConfig(process.env) !== null} />

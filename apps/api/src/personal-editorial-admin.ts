@@ -255,11 +255,16 @@ export class DormantPersonalEditorialAdmin {
         "/admin/editorial-profiles",
         "/admin/editorial-timeline",
         "/admin/editorial-checkpoints",
+        "/admin/editorial-ranked-events",
       ].includes(path)
     )
       return false;
     if (!this.enabled) {
       respond(res, 404, { error: "not_found" });
+      return true;
+    }
+    if (path === "/admin/editorial-ranked-events" && req.method !== "GET") {
+      respond(res, 405, { error: "method_not_allowed" });
       return true;
     }
     if (!["GET", "POST"].includes(req.method ?? "")) {
@@ -346,6 +351,72 @@ export class DormantPersonalEditorialAdmin {
               productionActive: false,
             });
         }
+      } else if (path === "/admin/editorial-ranked-events") {
+        // Read-only SQL projection. The DB, not the API, chooses which
+        // personally authenticated actor is permitted to read ranking.
+        const keys = [...uri.searchParams.keys()];
+        const limit = boundedInt(uri.searchParams.get("limit"), 1, 50);
+        if (keys.length !== 1 || keys[0] !== "limit" || limit === null) {
+          respond(res, 400, { error: "invalid_request" });
+          return true;
+        }
+        const ranked = await session.query<{
+          event_id: string;
+          profile_id: string;
+          profile_revision: string | number;
+          headline: string;
+          score: number;
+          article_count: number;
+          source_count: number;
+          reasons: unknown;
+          ranked_at: Date;
+          approved_for_publication: boolean;
+        }>("SELECT * FROM vns.named_ranked_feed_page($1::integer)", [limit]);
+        if (
+          ranked.rows.length > limit ||
+          ranked.rows.some(
+            (row) =>
+              !UUID.test(row.event_id) ||
+              !PROFILE_ID.test(row.profile_id) ||
+              revision(row.profile_revision) === null ||
+              typeof row.headline !== "string" ||
+              row.headline.length < 8 ||
+              row.headline.length > 200 ||
+              !Number.isSafeInteger(row.score) ||
+              row.score < 0 ||
+              row.score > 1000 ||
+              !Number.isSafeInteger(row.article_count) ||
+              row.article_count < 1 ||
+              row.article_count > 100 ||
+              !Number.isSafeInteger(row.source_count) ||
+              row.source_count < 1 ||
+              row.source_count > row.article_count ||
+              !Array.isArray(row.reasons) ||
+              row.reasons.length < 2 ||
+              row.reasons.length > 10 ||
+              row.reasons.some((reason: unknown) => typeof reason !== "string") ||
+              !row.reasons.includes("independent_verification_required") ||
+              !(row.ranked_at instanceof Date) ||
+              !Number.isFinite(row.ranked_at.getTime()) ||
+              row.approved_for_publication !== false,
+          )
+        )
+          throw new Error("Ranked feed page invalid");
+        respond(res, 200, {
+          candidates: ranked.rows.map((row) => ({
+            eventId: row.event_id,
+            profileId: row.profile_id,
+            profileRevision: revision(row.profile_revision),
+            headline: row.headline,
+            score: row.score,
+            articleCount: row.article_count,
+            sourceCount: row.source_count,
+            reasons: row.reasons,
+            rankedAt: row.ranked_at.toISOString(),
+            approvedForPublication: false,
+          })),
+          metadataOnly: true,
+        });
       } else if (path === "/admin/editorial-checkpoints") {
         if (req.method === "POST") {
           const input = validateNamedCheckpointWrite(command);

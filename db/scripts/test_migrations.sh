@@ -396,6 +396,9 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0047_named_provider_job_submission.test.sql"
   sql < "$root/db/migrations/0048_provider_outbox_delivery_receipt.up.sql"
   sql < "$root/db/tests/0048_provider_outbox_delivery_receipt.test.sql"
+  sql < "$root/db/migrations/0049_approved_feed_rankings.up.sql"
+  sql < "$root/db/tests/0049_approved_feed_rankings.test.sql"
+  sql < "$root/db/migrations/0049_approved_feed_rankings.down.sql"
   sql < "$root/db/migrations/0048_provider_outbox_delivery_receipt.down.sql"
   sql < "$root/db/migrations/0047_named_provider_job_submission.down.sql"
   sql < "$root/db/migrations/0046_provider_named_sealed_outbox.down.sql"
@@ -449,4 +452,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0048 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0049 migrations, source authority, leases and budgets twice"
