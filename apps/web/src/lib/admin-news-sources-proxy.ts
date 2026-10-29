@@ -69,7 +69,11 @@ function safeUrl(value: unknown, slash: boolean): value is string {
   }
 }
 function sourceDraft(value: unknown): SourceDraft | null {
-  if (!object(value) || !(exact(value, SOURCE_FIELDS) || exact(value, [...SOURCE_FIELDS, "feedUrl"]))) return null;
+  if (
+    !object(value) ||
+    !(exact(value, SOURCE_FIELDS) || exact(value, [...SOURCE_FIELDS, "feedUrl"]))
+  )
+    return null;
   if (
     typeof value.id !== "string" ||
     !ID.test(value.id) ||
@@ -135,9 +139,18 @@ function parseSnapshot(value: unknown): { revision: number; sources: ManagedSour
   const urls = new Set<string>();
   const sources: ManagedSource[] = [];
   for (const raw of value.sources as unknown[]) {
-    if (!object(raw) || !(exact(raw, SNAPSHOT_FIELDS) || exact(raw, [...SNAPSHOT_FIELDS, "feedUrl"]))) return null;
+    if (
+      !object(raw) ||
+      !(exact(raw, SNAPSHOT_FIELDS) || exact(raw, [...SNAPSHOT_FIELDS, "feedUrl"]))
+    )
+      return null;
     const source = sourceDraft(
-      Object.fromEntries([...SOURCE_FIELDS, ...(Object.hasOwn(raw, "feedUrl") ? ["feedUrl"] : [])].map((field) => [field, raw[field]])),
+      Object.fromEntries(
+        [...SOURCE_FIELDS, ...(Object.hasOwn(raw, "feedUrl") ? ["feedUrl"] : [])].map((field) => [
+          field,
+          raw[field],
+        ]),
+      ),
     );
     if (
       !source ||
