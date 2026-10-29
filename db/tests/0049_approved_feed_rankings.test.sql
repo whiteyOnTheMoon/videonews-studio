@@ -8,18 +8,19 @@ VALUES
  'admin','scrypt$'||repeat('a',32)||'$'||repeat('b',128),true);
 SET LOCAL ROLE vns_source_admin_writer;
 DO $setup$
-DECLARE v_old bigint;
+DECLARE v_old bigint;v_previous jsonb;
  src jsonb := '{"id":"ci_rank_feed","baseUrl":"https://ranking.example.org/feed/",
 "access":"rss","intervalMinutes":60,"termsUrl":"https://ranking.example.org/terms/",
 "usage":"metadata_only","licenseNotes":"Synthetic only.",
 "status":"pending","reviewedAt":"2026-10-26"}'::jsonb;
 BEGIN
- SELECT revision INTO v_old FROM vns.admin_source_registry WHERE singleton=true;
- IF NOT vns.admin_commit_source_registry(v_old,v_old+1,jsonb_build_array(src),'ci_rank_feed',
+ SELECT revision,sources INTO v_old,v_previous FROM vns.admin_source_registry WHERE singleton=true;
+ IF NOT vns.admin_commit_source_registry(
+   v_old,v_old+1,v_previous||jsonb_build_array(src),'ci_rank_feed',
    'create_pending','fa490001-1111-4111-8111-111111111111',0,'2026-10-26T12:00:00Z')
  THEN RAISE EXCEPTION 'Ranking source pending stage failed'; END IF;
  IF NOT vns.admin_commit_source_registry(v_old+1,v_old+2,
-   jsonb_build_array(jsonb_set(src,'{status}','"approved"'::jsonb)),
+   v_previous||jsonb_build_array(jsonb_set(src,'{status}','"approved"'::jsonb)),
    'ci_rank_feed','approve','fa490001-1111-4111-8111-111111111111',0,
    '2026-10-26T12:00:00Z') THEN
    RAISE EXCEPTION 'Ranking source approval failed'; END IF;
