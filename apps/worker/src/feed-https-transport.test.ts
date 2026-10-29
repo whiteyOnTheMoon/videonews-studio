@@ -236,10 +236,13 @@ test("explicit source-reviewed RSS endpoint differs from article URL prefix with
   assert.equal(state.calls[0]?.url.toString(), record.feedUrl);
   assert.equal(state.calls[0]?.ip, "1.1.1.1");
   await assert.rejects(
-    transport.request({ ...sources[0]!, feedUrl: ROOT + "private.xml" }, {
-      etag: null,
-      lastModified: null,
-    }),
+    transport.request(
+      { ...sources[0]!, feedUrl: ROOT + "private.xml" },
+      {
+        etag: null,
+        lastModified: null,
+      },
+    ),
     /not approved/,
   );
   assert.equal(state.calls.length, 1);
