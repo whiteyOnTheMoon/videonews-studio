@@ -111,7 +111,7 @@ test("abort before startup or after first source stops further DB calls", async 
 test("abortable sleep refuses invalid intervals and never leaves aborted work queued", async () => {
   const controller = new AbortController();
   for (const ms of [0, -1, 899999, 3600001, Number.NaN]) {
-    await assert.rejects(sleepUntilNextProjection(ms, controller.signal));
+    assert.throws(() => sleepUntilNextProjection(ms, controller.signal));
   }
   controller.abort();
   await sleepUntilNextProjection(900000, controller.signal);
