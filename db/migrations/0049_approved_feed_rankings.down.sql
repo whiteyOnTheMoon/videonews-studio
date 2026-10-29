@@ -56,5 +56,12 @@ ALTER FUNCTION vns.project_approved_feed_candidates(text,integer)
 DROP FUNCTION vns.named_ranked_feed_page(integer);
 DROP FUNCTION vns.refresh_approved_feed_rankings(text,integer);
 DROP TABLE vns.feed_event_rankings;
+-- Grants on pre-existing objects must also be undone, or the original
+-- NOLOGIN principals cannot be dropped by the reversible migrations.
+REVOKE SELECT ON vns.editorial_profile_registry FROM vns_feed_project_executor;
+REVOKE SELECT ON vns.research_events,vns.research_event_articles,
+  vns.research_articles,vns.admin_source_registry FROM vns_p2_named_executor;
+REVOKE EXECUTE ON FUNCTION vns.feed_runtime_source_authorized(jsonb)
+  FROM vns_p2_named_executor;
 DELETE FROM vns.schema_migrations WHERE version='0049_approved_feed_rankings';
 COMMIT;
