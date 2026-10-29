@@ -1,0 +1,147 @@
+-- P2-03 0052: conservative 48-hour title-similarity syndication.
+-- No trusted publisher/claim verification, no automatic publishing.
+BEGIN;
+-- Unicode tokens obey the same NFKC normalizer as SQL ranking.
+-- Token *sets* prevent repeats from inflating the Jaccard intersection.
+-- At least six shared words and similarity >= 0.8 are required.
+CREATE FUNCTION vns.rank_headlines_overlap(p_left text,p_right text)
+RETURNS boolean LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog
+AS $overlap$
+  WITH sets AS (
+    SELECT ARRAY(
+      SELECT DISTINCT word
+      FROM unnest(string_to_array(vns.rank_nfkc_words(p_left),' ')) AS w(word)
+      WHERE word<>''
+    ) AS a,
+    ARRAY(
+      SELECT DISTINCT word
+      FROM unnest(string_to_array(vns.rank_nfkc_words(p_right),' ')) AS w(word)
+      WHERE word<>''
+    ) AS b
+  ), counts AS (
+    SELECT cardinality(a) AS na, cardinality(b) AS nb,
+      (SELECT count(*)::integer FROM unnest(a) AS w(word)
+       WHERE word=ANY(b)) AS common
+    FROM sets
+  )
+  SELECT COALESCE(na>=6 AND nb>=6 AND common>=6
+    AND common*5 >= (na+nb-common)*4,false) FROM counts;
+$overlap$;
+REVOKE ALL ON FUNCTION vns.rank_headlines_overlap(text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION vns.rank_headlines_overlap(text,text)
+  TO vns_feed_project_executor;
+
+CREATE OR REPLACE FUNCTION vns.project_feed_candidates(p_source text, p_limit integer)
+RETURNS integer
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path=pg_catalog
+AS $body$
+DECLARE
+  candidate record;
+  article uuid;
+  event_key uuid;
+  fingerprint text;
+  added integer := 0;
+  changed integer;
+  matching_count integer;
+BEGIN
+  IF p_source IS NULL OR p_source !~ '^[a-z][a-z0-9_-]{2,40}$'
+    OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
+  THEN
+    RAISE EXCEPTION 'Feed projection request invalid' USING ERRCODE='22023';
+  END IF;
+  -- All source projectors use one short transaction-level advisory lock
+  -- for event grouping. Without serialization, two concurrently ingested
+  -- rewritten headlines could create separate events on different sources.
+  -- This does not authorize or alter the source/host approval gates.
+  PERFORM pg_advisory_xact_lock(721214, 52);
+  -- Never promote undated, noncanonical, or future feed metadata.
+  -- No verification or publishing authority is inferred from an article.
+  FOR candidate IN
+    SELECT feed.source_id,feed.article_url,feed.headline,feed.published_at
+    FROM vns.feed_poll_candidates AS feed
+    LEFT JOIN vns.research_articles AS prior
+      ON prior.canonical_url=feed.article_url
+    LEFT JOIN vns.research_event_articles AS mapped
+      ON mapped.article_id=prior.article_id
+    WHERE feed.source_id=p_source AND feed.review_status='candidate'
+      AND feed.published_at IS NOT NULL
+      AND feed.published_at <= clock_timestamp()
+      AND feed.article_url ~ '^https://[^[:space:]?#]+$'
+      AND mapped.article_id IS NULL
+    ORDER BY feed.article_url LIMIT p_limit
+  LOOP
+    fingerprint := encode(sha256(convert_to(
+      lower(regexp_replace(btrim(candidate.headline),'[[:space:]]+',' ','g')),'UTF8'
+    )),'hex');
+    article := NULL;
+    INSERT INTO vns.research_articles(
+      source_key,canonical_url,headline,headline_sha256,published_at
+    ) VALUES(
+      candidate.source_id,candidate.article_url,candidate.headline,
+      fingerprint,candidate.published_at
+    )
+    ON CONFLICT (canonical_url) DO NOTHING
+    RETURNING article_id INTO article;
+    IF article IS NULL THEN
+      -- Existing canonical URL must match original source, fingerprint and time;
+      -- never relabel evidence or overwrite the original provenance.
+      SELECT article_id INTO article FROM vns.research_articles
+      WHERE canonical_url=candidate.article_url
+        AND source_key=candidate.source_id
+        AND headline_sha256=fingerprint
+        AND published_at=candidate.published_at;
+    END IF;
+    IF article IS NULL THEN CONTINUE; END IF;
+    -- Exact normalized fingerprint is authoritative and idempotent.
+    SELECT event_id INTO event_key FROM vns.research_events
+    WHERE event_fingerprint=fingerprint;
+    IF event_key IS NULL THEN
+      -- Conservative rewritten-syndication match. Every existing member
+      -- must be similar and within +/-48 hours; ambiguous candidates
+      -- stay separate instead of silently merging different stories.
+      SELECT count(*)::integer,min(v.event_id::text)::uuid
+        INTO matching_count,event_key
+      FROM (
+        SELECT e.event_id
+        FROM vns.research_events e
+        WHERE EXISTS(
+          SELECT 1 FROM vns.research_event_articles ea
+          WHERE ea.event_id=e.event_id
+        )
+        AND NOT EXISTS(
+          SELECT 1 FROM vns.research_event_articles ea
+          JOIN vns.research_articles a ON a.article_id=ea.article_id
+          WHERE ea.event_id=e.event_id
+            AND (abs(extract(epoch FROM
+                  (candidate.published_at-a.published_at)))>172800
+                 OR NOT vns.rank_headlines_overlap(candidate.headline,a.headline))
+        )
+        ORDER BY e.event_id LIMIT 2
+      ) v;
+      IF matching_count<>1 THEN event_key:=NULL; END IF;
+    END IF;
+    IF event_key IS NULL THEN
+      INSERT INTO vns.research_events(event_fingerprint,label)
+        VALUES(fingerprint,candidate.headline)
+        ON CONFLICT (event_fingerprint) DO NOTHING
+        RETURNING event_id INTO event_key;
+      IF event_key IS NULL THEN
+        SELECT event_id INTO event_key FROM vns.research_events
+        WHERE event_fingerprint=fingerprint;
+      END IF;
+    END IF;
+    IF event_key IS NULL THEN
+      RAISE EXCEPTION 'Feed projection event not available' USING ERRCODE='23503';
+    END IF;
+    INSERT INTO vns.research_event_articles(event_id,article_id)
+      VALUES(event_key,article)
+      ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS changed = ROW_COUNT;
+    added := added + changed;
+  END LOOP;
+  RETURN added;
+END;
+$body$;
+INSERT INTO vns.schema_migrations(version) VALUES('0052_rewritten_syndication');
+COMMIT;
