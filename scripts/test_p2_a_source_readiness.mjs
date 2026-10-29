@@ -15,17 +15,22 @@ test("three official-source proposals retain pending status, distinct publishers
     readiness.proposals.map((result) => result.id),
     ["nasa_jpl_news", "noaa_news", "usgs_national_news"],
   );
-  assert.ok(readiness.proposals.every((result) =>
-    result.approvedForLive === false &&
-    result.reasons.includes("operator_legal_and_host_review_missing") &&
-    result.reasons.includes("live_feed_response_unverified")
-  ));
-  assert.ok(readiness.proposals.some((result) =>
-    result.reasons.includes("article_scope_outside_feed_base")
-  ));
-  assert.ok(readiness.proposals.some((result) =>
-    result.reasons.includes("feed_url_not_directory")
-  ));
+  assert.ok(
+    readiness.proposals.every(
+      (result) =>
+        result.approvedForLive === false &&
+        result.reasons.includes("operator_legal_and_host_review_missing") &&
+        result.reasons.includes("live_feed_response_unverified"),
+    ),
+  );
+  assert.ok(
+    readiness.proposals.some((result) =>
+      result.reasons.includes("article_scope_outside_feed_base"),
+    ),
+  );
+  assert.ok(
+    readiness.proposals.some((result) => result.reasons.includes("feed_url_not_directory")),
+  );
 });
 
 test("nothing about a document can promote rights, skip publisher independence or admit arbitrary URLs", () => {
@@ -39,7 +44,8 @@ test("nothing about a document can promote rights, skip publisher independence o
   fail({
     ...data,
     proposals: data.proposals.map((p, index) =>
-      index === 1 ? { ...p, publisherGroup: "nasa" } : p),
+      index === 1 ? { ...p, publisherGroup: "nasa" } : p,
+    ),
   });
   for (const bad of [
     "http://www.noaa.gov/rss.xml",
@@ -51,7 +57,7 @@ test("nothing about a document can promote rights, skip publisher independence o
   ]) {
     fail({
       ...data,
-      proposals: data.proposals.map((p, index) => index === 1 ? { ...p, feedUrl: bad } : p),
+      proposals: data.proposals.map((p, index) => (index === 1 ? { ...p, feedUrl: bad } : p)),
     });
   }
 });
