@@ -400,6 +400,7 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0049_approved_feed_rankings.test.sql"
   sql < "$root/db/migrations/0050_reviewed_feed_endpoints.up.sql"
   sql < "$root/db/tests/0050_reviewed_feed_endpoints.test.sql"
+  sql < "$root/db/tests/0050_cross_site_syndication.test.sql"
   sql < "$root/db/migrations/0050_reviewed_feed_endpoints.down.sql"
   sql < "$root/db/migrations/0049_approved_feed_rankings.down.sql"
   sql < "$root/db/migrations/0048_provider_outbox_delivery_receipt.down.sql"
