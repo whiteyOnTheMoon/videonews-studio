@@ -164,12 +164,15 @@ test("P2-04 Admin refuses unverifiable and publishing-enabled ranking snapshots"
     rankedAt: "2026-10-28T12:00:00.000Z",
     approvedForPublication: false,
   };
-  assert.deepEqual(parseRankedCandidatePage({ candidates: [candidate], metadataOnly: true }), [candidate]);
+  assert.deepEqual(parseRankedCandidatePage({ candidates: [candidate], metadataOnly: true }), [
+    candidate,
+  ]);
   for (const bad of [
     { candidates: [{ ...candidate, approvedForPublication: true }], metadataOnly: true },
     { candidates: [{ ...candidate, reasons: ["unverified"] }], metadataOnly: true },
     { candidates: [{ ...candidate, profileRevision: -1 }], metadataOnly: true },
     { candidates: [{ ...candidate, extraApiToken: "private" }], metadataOnly: true },
     { candidates: [candidate], metadataOnly: false },
-  ]) assert.equal(parseRankedCandidatePage(bad), null);
+  ])
+    assert.equal(parseRankedCandidatePage(bad), null);
 });
