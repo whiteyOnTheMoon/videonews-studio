@@ -400,7 +400,8 @@ export class DormantPersonalEditorialAdmin {
               !Number.isFinite(row.ranked_at.getTime()) ||
               row.approved_for_publication !== false,
           )
-        ) throw new Error("Ranked feed page invalid");
+        )
+          throw new Error("Ranked feed page invalid");
         respond(res, 200, {
           candidates: ranked.rows.map((row) => ({
             eventId: row.event_id,
