@@ -64,9 +64,10 @@ test("continuous projected ranking is a separate disabled/no-egress/no-queue 3â€
   ]) {
     assert.equal(service.environment[flag], "${" + flag + ":-false}");
   }
-  assert.deepEqual(service.volumes.map((x) => x.target), [
-    "/run/secrets/vns_feed_project_db_password",
-  ]);
+  assert.deepEqual(
+    service.volumes.map((x) => x.target),
+    ["/run/secrets/vns_feed_project_db_password"],
+  );
   assert.equal(service.volumes[0].read_only, true);
   assert.equal(service.volumes[0].bind.create_host_path, false);
   assert.deepEqual(service.depends_on, { postgres: { condition: "service_healthy" } });
