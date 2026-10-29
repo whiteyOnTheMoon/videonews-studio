@@ -8,11 +8,19 @@ function canonicalHttps(value) {
   if (typeof value !== "string" || !HTTPS.test(value)) return null;
   try {
     const url = new URL(value);
-    return url.toString() === value && !url.username && !url.password &&
-      !url.search && !url.hash && !url.port && url.hostname.includes(".") &&
-      !url.hostname.endsWith(".local") && !url.hostname.endsWith(".internal") &&
+    return url.toString() === value &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      !url.port &&
+      url.hostname.includes(".") &&
+      !url.hostname.endsWith(".local") &&
+      !url.hostname.endsWith(".internal") &&
       !url.hostname.endsWith(".localhost") &&
-      !/^(?:[0-9]+\\.){3}[0-9]+$/.test(url.hostname) ? url : null;
+      !/^(?:[0-9]+\\.){3}[0-9]+$/.test(url.hostname)
+      ? url
+      : null;
   } catch {
     return null;
   }
@@ -25,27 +33,38 @@ function canonicalHttps(value) {
  */
 export function assessOfficialFeedProposals(document) {
   if (
-    !document || typeof document !== "object" || Array.isArray(document) ||
-    document.version !== 1 || document.admission !== "pending_operator_review" ||
+    !document ||
+    typeof document !== "object" ||
+    Array.isArray(document) ||
+    document.version !== 1 ||
+    document.admission !== "pending_operator_review" ||
     !Array.isArray(document.proposals) ||
-    document.proposals.length < 3 || document.proposals.length > 5
-  ) throw new Error("Source proposal input invalid");
+    document.proposals.length < 3 ||
+    document.proposals.length > 5
+  )
+    throw new Error("Source proposal input invalid");
   const ids = new Set();
   const groups = new Set();
   const results = [];
   for (const source of document.proposals) {
     if (
-      !source || typeof source !== "object" || Array.isArray(source) ||
-      typeof source.id !== "string" || !ID.test(source.id) || ids.has(source.id) ||
+      !source ||
+      typeof source !== "object" ||
+      Array.isArray(source) ||
+      typeof source.id !== "string" ||
+      !ID.test(source.id) ||
+      ids.has(source.id) ||
       typeof source.publisherGroup !== "string" ||
       !ID.test(source.publisherGroup) ||
       source.access !== "rss" ||
       source.usage !== "metadata_only" ||
       source.rightsStatus !== "pending" ||
-      typeof source.notes !== "string" || source.notes.length < 30 ||
+      typeof source.notes !== "string" ||
+      source.notes.length < 30 ||
       !canonicalHttps(source.rightsReference) ||
       !canonicalHttps(source.feedReference)
-    ) throw new Error("Unreviewed source record invalid");
+    )
+      throw new Error("Unreviewed source record invalid");
     const feed = canonicalHttps(source.feedUrl);
     const article = canonicalHttps(source.articleScope);
     if (!feed || !article || !article.pathname.endsWith("/")) {
@@ -57,17 +76,15 @@ export function assessOfficialFeedProposals(document) {
     // The current RegisteredResearchSource has only one baseUrl; it is
     // *both* the exact feed request target and the article URL allow-scope.
     if (!feed.pathname.endsWith("/")) reasons.push("feed_url_not_directory");
-    if (
-      feed.hostname !== article.hostname ||
-      !article.pathname.startsWith(feed.pathname)
-    ) reasons.push("article_scope_outside_feed_base");
+    if (feed.hostname !== article.hostname || !article.pathname.startsWith(feed.pathname))
+      reasons.push("article_scope_outside_feed_base");
     reasons.push("operator_legal_and_host_review_missing");
     reasons.push("live_feed_response_unverified");
     results.push({
       id: source.id,
       publisherGroup: source.publisherGroup,
-      compatibleWithCurrentRegistry: reasons.every((x) =>
-        x !== "feed_url_not_directory" && x !== "article_scope_outside_feed_base"
+      compatibleWithCurrentRegistry: reasons.every(
+        (x) => x !== "feed_url_not_directory" && x !== "article_scope_outside_feed_base",
       ),
       reasons,
       approvedForLive: false,
@@ -80,12 +97,15 @@ export function assessOfficialFeedProposals(document) {
     proposals: results,
     approvedForLive: false,
     currentRegistryReady: results.every((item) => item.compatibleWithCurrentRegistry),
-    nextStep: "Implement separately reviewed feedUrl and articleScope with signed registry and SQL authorization, then obtain operator and host approval",
+    nextStep:
+      "Implement separately reviewed feedUrl and articleScope with signed registry and SQL authorization, then obtain operator and host approval",
   };
 }
 
 export function readOfficialFeedProposals() {
-  const path = fileURLToPath(new URL("../docs/p2-a-official-source-candidates.json", import.meta.url));
+  const path = fileURLToPath(
+    new URL("../docs/p2-a-official-source-candidates.json", import.meta.url),
+  );
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
