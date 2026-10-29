@@ -9,7 +9,10 @@ function canonicalHttps(value) {
   try {
     const url = new URL(value);
     return url.toString() === value && !url.username && !url.password &&
-      !url.search && !url.hash && !url.port ? url : null;
+      !url.search && !url.hash && !url.port && url.hostname.includes(".") &&
+      !url.hostname.endsWith(".local") && !url.hostname.endsWith(".internal") &&
+      !url.hostname.endsWith(".localhost") &&
+      !/^(?:[0-9]+\\.){3}[0-9]+$/.test(url.hostname) ? url : null;
   } catch {
     return null;
   }
