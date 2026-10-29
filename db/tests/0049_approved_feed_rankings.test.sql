@@ -104,6 +104,21 @@ BEGIN
 END $deny$;
 RESET ROLE;
 
+-- A distinct personally authenticated PostgreSQL LOGIN can read the
+-- current revision through the named function, with no raw ranking SELECT.
+CREATE ROLE editor_ci_rank_reader LOGIN INHERIT;
+GRANT vns_p2_named_client TO editor_ci_rank_reader;
+INSERT INTO vns.editor_db_principals(login_role,editor_id,auth_version,active)
+VALUES ('editor_ci_rank_reader','fa490001-1111-4111-8111-111111111111',0,true);
+SET SESSION AUTHORIZATION editor_ci_rank_reader;
+DO $named_read$
+DECLARE n integer;
+BEGIN
+ SELECT count(*) INTO n FROM vns.named_ranked_feed_page(25);
+ IF n<>1 THEN RAISE EXCEPTION 'Personal Admin could not read durable approved ranking'; END IF;
+END $named_read$;
+RESET SESSION AUTHORIZATION;
+
 -- Revocation must prevent fresh projection, never rewrite prior approval.
 SELECT set_config('vns.ci_source_revision',
   (SELECT revision::text FROM vns.admin_source_registry WHERE singleton=true),true);
@@ -121,6 +136,14 @@ BEGIN
  THEN RAISE EXCEPTION 'Ranking host revoke failed'; END IF;
 END $revoke$;
 RESET ROLE;
+SET SESSION AUTHORIZATION editor_ci_rank_reader;
+DO $revoked_view$
+DECLARE n integer;
+BEGIN
+ SELECT count(*) INTO n FROM vns.named_ranked_feed_page(25);
+ IF n<>0 THEN RAISE EXCEPTION 'Revoked host still appears in Admin ranking'; END IF;
+END $revoked_view$;
+RESET SESSION AUTHORIZATION;
 SET LOCAL ROLE vns_feed_project_client;
 DO $reject$
 DECLARE blocked boolean:=false;
