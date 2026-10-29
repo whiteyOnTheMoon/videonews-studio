@@ -9,6 +9,9 @@ on:
       - "scripts/ci_p2_separated_ports.mjs"
       - "scripts/ci_p2_projection_ports.mjs"
       - "scripts/test_p2_feed_projection_compose.mjs"
+      - "scripts/p2_a_source_readiness.mjs"
+      - "scripts/test_p2_a_source_readiness.mjs"
+      - "docs/p2-a-official-source-candidates.json"
       - "deploy/compose.feed-projection.yaml"
       - "scripts/test_p2_feed_compose.mjs"
       - "scripts/p2_feed_host_preflight.py"
@@ -71,6 +74,8 @@ jobs:
           npm run lint
       - name: Verify disabled candidate projection service permissions
         run: node --test scripts/test_p2_feed_projection_compose.mjs
+      - name: Check official feed rights are pending and detect real-world scope mismatch
+        run: node --test scripts/test_p2_a_source_readiness.mjs
       - name: Verify disabled signed-source Compose architecture
         run: node --test scripts/test_p2_feed_compose.mjs
       - name: Validate signed feed Docker profiles without starting containers
