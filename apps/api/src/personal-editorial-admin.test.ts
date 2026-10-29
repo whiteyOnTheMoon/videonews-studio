@@ -72,18 +72,20 @@ function setup(mismatch = false, enabled = true) {
       }
       if (sqlText.includes("named_ranked_feed_page")) {
         return {
-          rows: [{
-            event_id: "ca310002-2222-4222-8222-222222222222",
-            profile_id: "science_news",
-            profile_revision: "1",
-            headline: "Synthetic science update awaiting independent review",
-            score: 42,
-            article_count: 2,
-            source_count: 1,
-            reasons: ["metadata_candidate_only", "independent_verification_required"],
-            ranked_at: new Date("2026-10-28T12:00:00.000Z"),
-            approved_for_publication: false,
-          }],
+          rows: [
+            {
+              event_id: "ca310002-2222-4222-8222-222222222222",
+              profile_id: "science_news",
+              profile_revision: "1",
+              headline: "Synthetic science update awaiting independent review",
+              score: 42,
+              article_count: 2,
+              source_count: 1,
+              reasons: ["metadata_candidate_only", "independent_verification_required"],
+              ranked_at: new Date("2026-10-28T12:00:00.000Z"),
+              approved_for_publication: false,
+            },
+          ],
         };
       }
       if (sqlText.includes("named_profile_read")) {
@@ -402,18 +404,20 @@ test("named read-only ranking shows durable candidate metadata only after person
   assert.equal(result.status, 200);
   assert.deepEqual(result.json, {
     metadataOnly: true,
-    candidates: [{
-      eventId: "ca310002-2222-4222-8222-222222222222",
-      profileId: "science_news",
-      profileRevision: 1,
-      headline: "Synthetic science update awaiting independent review",
-      score: 42,
-      articleCount: 2,
-      sourceCount: 1,
-      reasons: ["metadata_candidate_only", "independent_verification_required"],
-      rankedAt: "2026-10-28T12:00:00.000Z",
-      approvedForPublication: false,
-    }],
+    candidates: [
+      {
+        eventId: "ca310002-2222-4222-8222-222222222222",
+        profileId: "science_news",
+        profileRevision: 1,
+        headline: "Synthetic science update awaiting independent review",
+        score: 42,
+        articleCount: 2,
+        sourceCount: 1,
+        reasons: ["metadata_candidate_only", "independent_verification_required"],
+        rankedAt: "2026-10-28T12:00:00.000Z",
+        approvedForPublication: false,
+      },
+    ],
   });
   assert.ok(state.sql.some((sql) => sql.includes("named_ranked_feed_page")));
   assert.equal(state.opened, 1);
@@ -427,6 +431,12 @@ test("named read-only ranking shows durable candidate metadata only after person
   ]) {
     assert.equal((await serve(state.handler, bad)).status, 400);
   }
-  assert.equal((await serve(state.handler, "/admin/editorial-ranked-events?limit=25", "POST", {})).status, 405);
-  assert.equal((await serve(setup(true).handler, "/admin/editorial-ranked-events?limit=25")).status, 403);
+  assert.equal(
+    (await serve(state.handler, "/admin/editorial-ranked-events?limit=25", "POST", {})).status,
+    405,
+  );
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-ranked-events?limit=25")).status,
+    403,
+  );
 });
