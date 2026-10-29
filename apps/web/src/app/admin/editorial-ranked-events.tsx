@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isRankedFeedCandidate } from "../../lib/admin-editorial-proxy";
+import { isRankedFeedCandidate } from "../../lib/editorial-ranked-events";
 
 interface RankedCandidate {
   eventId: string;
