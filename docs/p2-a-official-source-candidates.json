@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "reviewedOn": "2026-10-29",
+  "admission": "pending_operator_review",
+  "purpose": "metadata_only_news_research",
+  "proposals": [
+    {
+      "id": "nasa_jpl_news",
+      "publisher": "NASA Jet Propulsion Laboratory",
+      "publisherGroup": "nasa",
+      "feedUrl": "https://www.jpl.nasa.gov/feeds/news/",
+      "articleScope": "https://www.jpl.nasa.gov/news/",
+      "access": "rss",
+      "rightsReference": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "feedReference": "https://www.jpl.nasa.gov/rss/",
+      "usage": "metadata_only",
+      "attribution": "NASA/JPL",
+      "quality": "unreviewed",
+      "rightsStatus": "pending",
+      "notes": "Official RSS listing and NASA editorial reuse guidance; verify actual feed HTTP format, canonical article hosts, third-party rights, use of NASA logos and no implied endorsement prior to operator approval."
+    },
+    {
+      "id": "noaa_news",
+      "publisher": "National Oceanic and Atmospheric Administration",
+      "publisherGroup": "noaa",
+      "feedUrl": "https://www.noaa.gov/rss.xml",
+      "articleScope": "https://www.noaa.gov/",
+      "access": "rss",
+      "rightsReference": "https://www.noaa.gov/office-education/outreach-communication/faq",
+      "feedReference": "https://www.noaa.gov/rss-feeds",
+      "usage": "metadata_only",
+      "attribution": "NOAA",
+      "quality": "unreviewed",
+      "rightsStatus": "pending",
+      "notes": "NOAA documents RSS and generally public-domain federal content with specific exceptions. Verify per-item attribution and restrictions, current network permissions and canonical links."
+    },
+    {
+      "id": "usgs_national_news",
+      "publisher": "U.S. Geological Survey",
+      "publisherGroup": "usgs",
+      "feedUrl": "https://www.usgs.gov/news/national-news-release/feed",
+      "articleScope": "https://www.usgs.gov/news/",
+      "access": "rss",
+      "rightsReference": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "feedReference": "https://www.usgs.gov/news/news-releases/national-news-releases",
+      "usage": "metadata_only",
+      "attribution": "USGS",
+      "quality": "unreviewed",
+      "rightsStatus": "pending",
+      "notes": "USGS national news listing links to RSS and describes public-domain USGS-authored material with third-party exceptions. Check redirect status, media type, per-item canonical URLs, host scope and reuse limits."
+    }
+  ]
+}
