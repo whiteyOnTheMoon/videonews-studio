@@ -167,8 +167,10 @@ test("signed reviewed export retains exact RSS endpoint and article allow-scope"
   );
   assert.equal(approvedSourceForUrl("https://news.example.org/rss.xml", verified), null);
   const forged = { ...bundle, registryJson: bundle.registryJson.replace("rss.xml", "forged.xml") };
-  assert.throws(() => parseDormantSourceExport(forged, policy, {
-    sourceRevision: 11,
-    hostApprovalRevision: 3,
-  }));
+  assert.throws(() =>
+    parseDormantSourceExport(forged, policy, {
+      sourceRevision: 11,
+      hostApprovalRevision: 3,
+    }),
+  );
 });
