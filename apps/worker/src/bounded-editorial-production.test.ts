@@ -431,3 +431,75 @@ test("script generation refuses orphaned, duplicated and disputed claim referenc
   assert.deepEqual(generated.sections[0]!.claimIds, ["claim_one"]);
   assert.equal(generated.approvedForPublication, false);
 });
+
+
+test("reviewed event factors separately weight visual suitability, explanatory value and risk", () => {
+  const weighted = {
+    ...policy,
+    visualizabilityWeight: 30,
+    riskWeight: 20,
+    maximumRisk: 3,
+  };
+  const withoutFactors = assessEditorialCandidate(event, profile, weighted, provenance, now);
+  assert.equal(withoutFactors.eligible, false);
+  assert.equal(withoutFactors.score, 0);
+  assert.ok(withoutFactors.reasons.includes("reviewed_editorial_factors_missing"));
+
+  const factors = {
+    eventId: event.id,
+    revision: 1,
+    explanatoryValue: 4,
+    visualizability: 5,
+    risk: 1,
+  };
+  const ranked = assessEditorialCandidate(event, profile, weighted, provenance, now, factors);
+  const lessVisual = assessEditorialCandidate(
+    event,
+    profile,
+    weighted,
+    provenance,
+    now,
+    { ...factors, visualizability: 0 },
+  );
+  const higherRisk = assessEditorialCandidate(
+    event,
+    profile,
+    weighted,
+    provenance,
+    now,
+    { ...factors, risk: 3 },
+  );
+  assert.equal(ranked.eligible, true);
+  assert.equal(ranked.approvedForPublication, undefined);
+  assert.equal(ranked.score - lessVisual.score, 30);
+  assert.ok(ranked.score > higherRisk.score);
+  assert.equal(
+    assessEditorialCandidate(event, profile, weighted, provenance, now, {
+      ...factors,
+      risk: 4,
+    }).eligible,
+    false,
+  );
+  assert.throws(() =>
+    assessEditorialCandidate(event, profile, weighted, provenance, now, {
+      ...factors,
+      eventId: "f".repeat(64),
+    }),
+  );
+  assert.throws(() =>
+    assessEditorialCandidate(event, profile, weighted, provenance, now, {
+      ...factors,
+      visualizability: -1,
+    }),
+  );
+  assert.throws(() =>
+    assessEditorialCandidate(
+      event,
+      profile,
+      { ...weighted, riskWeight: 101 },
+      provenance,
+      now,
+      factors,
+    ),
+  );
+});
