@@ -58,9 +58,6 @@ test("source UI retains a separate reviewed feed URL but rejects cross-host or c
     "https://example.org/rss.xml?token=private",
     "https://example.org/news/",
   ]) {
-    assert.equal(
-      parseSourceViewSnapshot({ revision: 1, sources: [{ ...safe, feedUrl }] }),
-      null,
-    );
+    assert.equal(parseSourceViewSnapshot({ revision: 1, sources: [{ ...safe, feedUrl }] }), null);
   }
 });
