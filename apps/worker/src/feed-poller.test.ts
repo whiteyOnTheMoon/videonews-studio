@@ -262,10 +262,14 @@ test("RSS endpoint and article scope are independent, but article links remain s
   );
   const body =
     "<rss><channel><item><title>Reviewed scientific update headline</title>" +
-    "<link>" + prefix + "news/research-story</link>" +
+    "<link>" +
+    prefix +
+    "news/research-story</link>" +
     "<pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>" +
     "<item><title>Outside approved article scope should be excluded</title>" +
-    "<link>" + prefix + "private/story</link>" +
+    "<link>" +
+    prefix +
+    "private/story</link>" +
     "<pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>" +
     "</channel></rss>";
   const rows = decodeApprovedFeed(approved[0]!, approved, {
