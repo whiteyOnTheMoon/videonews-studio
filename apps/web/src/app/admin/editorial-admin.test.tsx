@@ -11,6 +11,7 @@ import EditorialAuditExport, {
 } from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
+import EditorialRankedEvents, { parseRankedCandidatePage } from "./editorial-ranked-events";
 
 const profile = {
   id: "science_news",
@@ -139,4 +140,36 @@ test("Admin profile editor rejects tokenless and duplicated terms before saving"
   assert.equal(validEditorialProfileTerms(["science"], ["Science"]), false);
   assert.equal(validEditorialProfileTerms(["news"], ["token\\value"]), false);
   assert.equal(validEditorialProfileTerms(Array(31).fill("news"), []), false);
+});
+
+test("P2-04 ranked snapshots stay hidden until personal Admin admission", () => {
+  const disabled = renderToStaticMarkup(<EditorialRankedEvents enabled={false} />);
+  assert.match(disabled, /Rankingansicht nicht freigeschaltet/);
+  assert.doesNotMatch(disabled, /<button|<ol/);
+  const enabled = renderToStaticMarkup(<EditorialRankedEvents enabled />);
+  assert.match(enabled, /Lade Ranking/);
+  assert.doesNotMatch(enabled, /<ol/);
+});
+
+test("P2-04 Admin refuses unverifiable and publishing-enabled ranking snapshots", () => {
+  const candidate = {
+    eventId: "ca310002-2222-4222-8222-222222222222",
+    profileId: "science_news",
+    profileRevision: 1,
+    headline: "Synthetic research science candidate not independently verified",
+    score: 23,
+    articleCount: 2,
+    sourceCount: 1,
+    reasons: ["metadata_candidate_only", "independent_verification_required"],
+    rankedAt: "2026-10-28T12:00:00.000Z",
+    approvedForPublication: false,
+  };
+  assert.deepEqual(parseRankedCandidatePage({ candidates: [candidate], metadataOnly: true }), [candidate]);
+  for (const bad of [
+    { candidates: [{ ...candidate, approvedForPublication: true }], metadataOnly: true },
+    { candidates: [{ ...candidate, reasons: ["unverified"] }], metadataOnly: true },
+    { candidates: [{ ...candidate, profileRevision: -1 }], metadataOnly: true },
+    { candidates: [{ ...candidate, extraApiToken: "private" }], metadataOnly: true },
+    { candidates: [candidate], metadataOnly: false },
+  ]) assert.equal(parseRankedCandidatePage(bad), null);
 });
