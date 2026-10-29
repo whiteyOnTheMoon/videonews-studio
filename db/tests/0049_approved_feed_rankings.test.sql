@@ -8,15 +8,17 @@ VALUES
  'admin','scrypt$'||repeat('a',32)||'$'||repeat('b',128),true);
 SET LOCAL ROLE vns_source_admin_writer;
 DO $setup$
-DECLARE src jsonb := '{"id":"ci_rank_feed","baseUrl":"https://ranking.example.org/feed/",
+DECLARE v_old bigint;
+ src jsonb := '{"id":"ci_rank_feed","baseUrl":"https://ranking.example.org/feed/",
 "access":"rss","intervalMinutes":60,"termsUrl":"https://ranking.example.org/terms/",
 "usage":"metadata_only","licenseNotes":"Synthetic only.",
 "status":"pending","reviewedAt":"2026-10-26"}'::jsonb;
 BEGIN
- IF NOT vns.admin_commit_source_registry(0,1,jsonb_build_array(src),'ci_rank_feed',
+ SELECT revision INTO v_old FROM vns.admin_source_registry WHERE singleton=true;
+ IF NOT vns.admin_commit_source_registry(v_old,v_old+1,jsonb_build_array(src),'ci_rank_feed',
    'create_pending','fa490001-1111-4111-8111-111111111111',0,'2026-10-26T12:00:00Z')
  THEN RAISE EXCEPTION 'Ranking source pending stage failed'; END IF;
- IF NOT vns.admin_commit_source_registry(1,2,
+ IF NOT vns.admin_commit_source_registry(v_old+1,v_old+2,
    jsonb_build_array(jsonb_set(src,'{status}','"approved"'::jsonb)),
    'ci_rank_feed','approve','fa490001-1111-4111-8111-111111111111',0,
    '2026-10-26T12:00:00Z') THEN
@@ -25,8 +27,11 @@ END $setup$;
 RESET ROLE;
 SET LOCAL ROLE vns_host_approval_writer;
 DO $host$
+DECLARE v_host bigint;v_source bigint;
 BEGIN
- IF NOT vns.admin_change_source_host_approval(0,2,'grant','ranking.example.org',
+ SELECT revision INTO v_host FROM vns.admin_source_host_approvals WHERE singleton=true;
+ SELECT revision INTO v_source FROM vns.admin_source_registry WHERE singleton=true;
+ IF NOT vns.admin_change_source_host_approval(v_host,v_source,'grant','ranking.example.org',
   'Independent synthetic ranking scope reviewer.',
   'fa490002-2222-4222-8222-222222222222',0)
  THEN RAISE EXCEPTION 'Ranking host grant failed'; END IF;
@@ -97,8 +102,11 @@ RESET ROLE;
 -- Revocation must prevent fresh projection, never rewrite prior approval.
 SET LOCAL ROLE vns_host_approval_writer;
 DO $revoke$
+DECLARE v_host bigint;v_source bigint;
 BEGIN
- IF NOT vns.admin_change_source_host_approval(1,2,'revoke','ranking.example.org',
+ SELECT revision INTO v_host FROM vns.admin_source_host_approvals WHERE singleton=true;
+ SELECT revision INTO v_source FROM vns.admin_source_registry WHERE singleton=true;
+ IF NOT vns.admin_change_source_host_approval(v_host,v_source,'revoke','ranking.example.org',
    'Independent synthetic ranking approval revoked.',
    'fa490002-2222-4222-8222-222222222222',0)
  THEN RAISE EXCEPTION 'Ranking host revoke failed'; END IF;
