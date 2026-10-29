@@ -100,7 +100,8 @@ export function assessEditorialCandidate(
   ) {
     throw new Error("Editorial risk and visual policy invalid");
   }
-  if (factors !== undefined &&
+  if (
+    factors !== undefined &&
     (typeof factors !== "object" ||
       factors === null ||
       Object.keys(factors).sort().join(",") !==
@@ -110,7 +111,8 @@ export function assessEditorialCandidate(
       factors.revision < 1 ||
       ![factors.explanatoryValue, factors.visualizability, factors.risk].every(
         (value) => Number.isSafeInteger(value) && value >= 0 && value <= 5,
-      ))) {
+      ))
+  ) {
     throw new Error("Editorial factors not bound to candidate");
   }
   if (
