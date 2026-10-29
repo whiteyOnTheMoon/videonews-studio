@@ -215,6 +215,10 @@ export function generateBoundedMockScript(
   ) {
     throw new Error("Mock script generation not authorized");
   }
+  // The generator must reject tampered event metadata itself, not rely on
+  // a later QA pass to discover forged source/article identities.
+  attestEditorialEventMetadata(event);
+  const articleIds = new Set(event.articles.map((article) => article.id));
   const text = scaffold[profile.format];
   if (
     typeof text !== "string" ||
@@ -237,7 +241,9 @@ export function generateBoundedMockScript(
       !Array.isArray(claim.articleIds) ||
       claim.articleIds.length < 1 ||
       claim.articleIds.length > 20 ||
-      !["unverified", "disputed", "rejected"].includes(claim.status)
+      new Set(claim.articleIds).size !== claim.articleIds.length ||
+      claim.articleIds.some((id: unknown) => typeof id !== "string" || !articleIds.has(id)) ||
+      claim.status !== "unverified"
     ) {
       throw new Error("Script claim candidate invalid");
     }
