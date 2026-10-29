@@ -27,10 +27,18 @@ function validFeedEndpoint(feedUrl: unknown, baseUrl: unknown): boolean {
   try {
     const feed = new URL(feedUrl);
     const base = new URL(baseUrl);
-    return feed.protocol === "https:" && feed.toString() === feedUrl &&
-      feed.hostname === base.hostname && feed.port === "" &&
-      !feed.username && !feed.password && !feed.search && !feed.hash &&
-      !feed.pathname.includes("%") && feedUrl !== baseUrl;
+    return (
+      feed.protocol === "https:" &&
+      feed.toString() === feedUrl &&
+      feed.hostname === base.hostname &&
+      feed.port === "" &&
+      !feed.username &&
+      !feed.password &&
+      !feed.search &&
+      !feed.hash &&
+      !feed.pathname.includes("%") &&
+      feedUrl !== baseUrl
+    );
   } catch {
     return false;
   }
@@ -63,8 +71,10 @@ export function parseSourceViewSnapshot(value: unknown): SourceViewSnapshot | nu
   for (const entry of value.sources as unknown[]) {
     if (
       !object(entry) ||
-      !(Object.keys(entry).length === FIELDS.length ||
-        Object.keys(entry).length === FIELDS.length + 1) ||
+      !(
+        Object.keys(entry).length === FIELDS.length ||
+        Object.keys(entry).length === FIELDS.length + 1
+      ) ||
       !FIELDS.every((field) => Object.hasOwn(entry, field)) ||
       (Object.keys(entry).length === FIELDS.length + 1 && !Object.hasOwn(entry, "feedUrl")) ||
       (Object.hasOwn(entry, "feedUrl") && !validFeedEndpoint(entry.feedUrl, entry.baseUrl)) ||
