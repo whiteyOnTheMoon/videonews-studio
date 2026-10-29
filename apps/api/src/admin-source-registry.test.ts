@@ -381,3 +381,26 @@ test("store failures and CAS races never expose implementation details", async (
   assert.equal(JSON.stringify(result.data).includes("private"), false);
   assert.equal(f.audits.length, 0);
 });
+
+test("personally reviewed RSS URL differs from article scope only on identical approved host", () => {
+  const candidate = {
+    ...sample,
+    feedUrl: "https://city.example.org/rss.xml",
+  };
+  assert.deepEqual(validateSourceDraft(candidate), candidate);
+  const snapshot = validateSourceSnapshot({
+    revision: 1,
+    sources: [{ ...candidate, status: "pending", reviewedAt: "2026-10-25" }],
+  });
+  assert.equal(snapshot.sources[0]?.feedUrl, candidate.feedUrl);
+  for (const feedUrl of [
+    "https://evil.example.org/rss.xml",
+    "http://city.example.org/rss.xml",
+    "https://city.example.org/rss.xml?key=private",
+    "https://city.example.org/news/",
+    "https://127.0.0.1/rss.xml",
+    "https://city.example.org/%2e%2e/private",
+  ]) {
+    assert.equal(validateSourceDraft({ ...candidate, feedUrl }), null);
+  }
+});
