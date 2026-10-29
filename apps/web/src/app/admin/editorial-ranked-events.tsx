@@ -25,7 +25,8 @@ export function parseRankedCandidatePage(value: unknown): readonly RankedCandida
     !Array.isArray(data.candidates) ||
     data.candidates.length > 25 ||
     !data.candidates.every(isRankedFeedCandidate)
-  ) return null;
+  )
+    return null;
   return data.candidates as RankedCandidate[];
 }
 
@@ -70,9 +71,9 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
     <section className="jobs-section" aria-labelledby="ranked-events-heading">
       <h2 id="ranked-events-heading">Nachrichtenranking (gespeicherte Kandidaten)</h2>
       <p>
-        Nur Metadaten aus einem freigegebenen Projektionslauf; keine bestätigten
-        Fakten, keine unabhängige Quellenprüfung und keine Veröffentlichungsfreigabe.
-        Die Ergebnisse zeigen einen historischen Snapshot, keinen Live-Feed.
+        Nur Metadaten aus einem freigegebenen Projektionslauf; keine bestätigten Fakten, keine
+        unabhängige Quellenprüfung und keine Veröffentlichungsfreigabe. Die Ergebnisse zeigen einen
+        historischen Snapshot, keinen Live-Feed.
       </p>
       {!enabled ? <p role="status">Rankingansicht nicht freigeschaltet.</p> : null}
       {enabled ? (
@@ -87,7 +88,9 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
       {enabled && candidates.length > 0 && !error ? (
         <ol>
           {candidates.map((candidate) => (
-            <li key={candidate.profileId + ":" + candidate.profileRevision + ":" + candidate.eventId}>
+            <li
+              key={candidate.profileId + ":" + candidate.profileRevision + ":" + candidate.eventId}
+            >
               <strong>{candidate.headline}</strong>
               <p>
                 Profil {candidate.profileId} (Revision {candidate.profileRevision}) · Score{" "}
@@ -95,7 +98,9 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
                 {candidate.articleCount} Artikel
               </p>
               <p>Prüfstatus: Kandidat – unabhängige Verifikation erforderlich.</p>
-              <p>Erfasst: <time dateTime={candidate.rankedAt}>{candidate.rankedAt}</time></p>
+              <p>
+                Erfasst: <time dateTime={candidate.rankedAt}>{candidate.rankedAt}</time>
+              </p>
               <p>Gründe: {candidate.reasons.join(", ")}</p>
             </li>
           ))}
