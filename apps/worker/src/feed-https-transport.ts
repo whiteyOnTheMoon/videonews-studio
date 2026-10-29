@@ -179,7 +179,7 @@ export function createPinnedFeedHttpsTransport(
         url.port ||
         url.search ||
         url.hash ||
-        url.toString() !== source.baseUrl ||
+        url.toString() !== (source.feedUrl ?? source.baseUrl) ||
         !policy.hosts.includes(url.hostname) ||
         url.hostname !== scope.hostname ||
         url.pathname.includes("%")
