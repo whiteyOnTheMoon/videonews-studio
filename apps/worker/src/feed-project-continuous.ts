@@ -76,6 +76,7 @@ export function sleepUntilNextProjection(milliseconds: number, signal: AbortSign
       resolve();
     }
     signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) abort();
   });
 }
 
