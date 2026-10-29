@@ -454,22 +454,14 @@ test("reviewed event factors separately weight visual suitability, explanatory v
     risk: 1,
   };
   const ranked = assessEditorialCandidate(event, profile, weighted, provenance, now, factors);
-  const lessVisual = assessEditorialCandidate(
-    event,
-    profile,
-    weighted,
-    provenance,
-    now,
-    { ...factors, visualizability: 0 },
-  );
-  const higherRisk = assessEditorialCandidate(
-    event,
-    profile,
-    weighted,
-    provenance,
-    now,
-    { ...factors, risk: 3 },
-  );
+  const lessVisual = assessEditorialCandidate(event, profile, weighted, provenance, now, {
+    ...factors,
+    visualizability: 0,
+  });
+  const higherRisk = assessEditorialCandidate(event, profile, weighted, provenance, now, {
+    ...factors,
+    risk: 3,
+  });
   assert.equal(ranked.eligible, true);
   assert.equal(Object.hasOwn(ranked, "approvedForPublication"), false);
   assert.equal(ranked.score - lessVisual.score, 30);
