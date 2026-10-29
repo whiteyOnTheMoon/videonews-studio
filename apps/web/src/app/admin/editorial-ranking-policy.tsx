@@ -10,8 +10,18 @@ import {
 } from "../../lib/editorial-ranking-policy";
 
 const PROFILE = /^[a-z][a-z0-9_-]{2,40}$/;
-const WEIGHTS: readonly { key: keyof RankingPolicySettings; label: string; min: number; max: number }[] = [
-  { key: "minimumPublisherGroups", label: "Mindestens verschiedene Herausgebergruppen", min: 2, max: 5 },
+const WEIGHTS: readonly {
+  key: keyof RankingPolicySettings;
+  label: string;
+  min: number;
+  max: number;
+}[] = [
+  {
+    key: "minimumPublisherGroups",
+    label: "Mindestens verschiedene Herausgebergruppen",
+    min: 2,
+    max: 5,
+  },
   { key: "relevanceWeight", label: "Relevanzgewicht", min: 0, max: 100 },
   { key: "freshnessWeight", label: "Aktualitätsgewicht", min: 0, max: 100 },
   { key: "qualityWeight", label: "Herausgeberqualitätsgewicht", min: 0, max: 100 },
@@ -103,17 +113,19 @@ export default function EditorialRankingPolicy({ enabled }: { enabled: boolean }
       });
       if (result.status !== 200) throw new Error("Unconfirmed policy");
       const body: unknown = await result.json();
-      if (!validRankingPolicyCommit(body) ||
-          body.policyRevision !== snapshot.policyRevision + 1)
+      if (!validRankingPolicyCommit(body) || body.policyRevision !== snapshot.policyRevision + 1)
         throw new Error("Unconfirmed policy revision");
       const fresh = await load(snapshot.profileId);
       if (
         fresh.policyRevision !== body.policyRevision ||
         fresh.profileRevision !== snapshot.profileRevision
-      ) throw new Error("Unconfirmed policy state");
+      )
+        throw new Error("Unconfirmed policy state");
       setSnapshot(fresh);
       setSettings(fresh.settings ?? { ...BLANK });
-      setMessage("Gewichtung persönlich und revisionsgesichert gespeichert. Keine Veröffentlichungsfreigabe.");
+      setMessage(
+        "Gewichtung persönlich und revisionsgesichert gespeichert. Keine Veröffentlichungsfreigabe.",
+      );
     } catch {
       setSnapshot(null);
       setError("Änderung nicht bestätigt. Profil und Policy bitte erneut laden.");
@@ -126,8 +138,8 @@ export default function EditorialRankingPolicy({ enabled }: { enabled: boolean }
     <section className="jobs-section" aria-labelledby="ranking-policy-heading">
       <h2 id="ranking-policy-heading">Gewichtetes Nachrichtenranking</h2>
       <p>
-        Persönlich auditierte Profilgewichte. Herausgeber-Provenienz und Ereignisfaktoren
-        müssen zusätzlich unabhängig geprüft werden. Keine Fakten- oder Veröffentlichungsfreigabe.
+        Persönlich auditierte Profilgewichte. Herausgeber-Provenienz und Ereignisfaktoren müssen
+        zusätzlich unabhängig geprüft werden. Keine Fakten- oder Veröffentlichungsfreigabe.
       </p>
       <form onSubmit={(event) => void read(event)}>
         <label htmlFor="ranking-policy-profile">Profil-ID</label>
@@ -168,10 +180,12 @@ export default function EditorialRankingPolicy({ enabled }: { enabled: boolean }
                 step={1}
                 required
                 value={settings[key]}
-                onChange={(event) => setSettings((current) => ({
-                  ...current,
-                  [key]: Number(event.target.value),
-                }))}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    [key]: Number(event.target.value),
+                  }))
+                }
               />
             </label>
           ))}
