@@ -116,6 +116,17 @@ es sich weiterhin um überprüften Code, nicht um einen Live-Nachweis.
   Quellenwiderruf ab.
 - Die reversible Migration wird in beiden Zyklen des bestehenden
   GitHub-Actions-Tests `db/scripts/test_migrations.sh` geprüft.
+- Die erweiterte **echte Redis-/PostgreSQL-Integrationsprüfung**
+  `scripts/ci_p2_integrated_ports.mjs` führt nun drei signierte,
+  synthetische Feed-Quellen über BullMQ und den realen PostgreSQL-Poll-
+  Commit. Anschließend führt sie einen vollständigen Durchlauf des
+  kontinuierlichen Projektors unter dem **dedizierten PostgreSQL-LOGIN**
+  aus. Die Prüfung erwartet genau ein persistiertes Event-Ranking über
+  drei Quellen-IDs, liest es mit einem anderen **persönlich authentifizierten
+  PostgreSQL-LOGIN** per `vns.named_ranked_feed_page` und bestätigt,
+  dass Wiederholungen keine doppelten Ergebnisse erzeugen.
+  HTTPS-Anfragen verwenden ausschließlich lokale Fixtures; die
+  GitHub-Actions-Datenbank und Redis sind wegwerfbar.
 - API-, BFF- und Admin-Tests validieren Rollen, Cursor/Limit,
   Feldintegrität, `approvedForPublication=false` und verweigerte
   Schreibmethoden. Bestehende P2-Integrations-Checks testen
