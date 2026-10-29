@@ -196,33 +196,53 @@ test("P2-04 ranking review UI is hidden until personal Admin activation", () => 
 
 test("review form and BFF strictly reject changed policy shape or forged publishing", () => {
   const settings = {
-    minimumPublisherGroups: 2, relevanceWeight: 10, freshnessWeight: 20,
-    qualityWeight: 15, explanatoryWeight: 5, visualizabilityWeight: 30,
-    riskWeight: 20, maximumRisk: 3,
+    minimumPublisherGroups: 2,
+    relevanceWeight: 10,
+    freshnessWeight: 20,
+    qualityWeight: 15,
+    explanatoryWeight: 5,
+    visualizabilityWeight: 30,
+    riskWeight: 20,
+    maximumRisk: 3,
   };
   const current = {
-    profileId: "science_news", profileRevision: 1, policyRevision: 1,
-    settings, productionActive: false,
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 1,
+    settings,
+    productionActive: false,
   };
   assert.equal(validRankingPolicySettings(settings), true);
   assert.equal(validRankingPolicySnapshot(current), true);
-  assert.equal(validRankingPolicyCommit({
-    saved: true, policyRevision: 2, productionActive: false,
-  }), true);
+  assert.equal(
+    validRankingPolicyCommit({
+      saved: true,
+      policyRevision: 2,
+      productionActive: false,
+    }),
+    true,
+  );
   for (const bad of [
     { ...settings, riskWeight: -1 },
     { ...settings, maximumRisk: 6 },
     { ...settings, minimumPublisherGroups: 1 },
     { ...settings, unsupported: 1 },
-  ]) assert.equal(validRankingPolicySettings(bad), false);
+  ])
+    assert.equal(validRankingPolicySettings(bad), false);
   for (const bad of [
     { ...current, productionActive: true },
     { ...current, profileRevision: -1 },
     { ...current, settings: { ...settings, publisherSecret: "forged" } },
     { ...current, policyRevision: 0 },
     { ...current, settings: null },
-  ]) assert.equal(validRankingPolicySnapshot(bad), false);
-  assert.equal(validRankingPolicyCommit({
-    saved: true, policyRevision: 2, productionActive: true,
-  }), false);
+  ])
+    assert.equal(validRankingPolicySnapshot(bad), false);
+  assert.equal(
+    validRankingPolicyCommit({
+      saved: true,
+      policyRevision: 2,
+      productionActive: true,
+    }),
+    false,
+  );
 });
