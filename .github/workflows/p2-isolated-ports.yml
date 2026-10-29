@@ -94,7 +94,7 @@ jobs:
             --profile feed-observation --profile feed-scheduler \
             --profile feed-producer --profile feed-consumer config --quiet
           docker compose -f compose.yaml -f deploy/compose.feed-projection.yaml \
-            --profile data --profile feed-project config --quiet
+            --profile data --profile feed-project --profile feed-project-continuous config --quiet
       - name: Test read-only host UID and secrets preflight with synthetic filesystem metadata
         run: python3 -m unittest discover -s scripts -p "test_p2_feed_host_preflight.py" -v
       - name: Compile shared and worker contracts

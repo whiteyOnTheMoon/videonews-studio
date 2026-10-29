@@ -45,6 +45,45 @@
    vor der Anzeige auf strikte Typen, Grenzen und
    `approvedForPublication=false` geprüft.
 
+## Separat freigebbarer kontinuierlicher Projektor
+
+Der zusätzliche Worker `apps/worker/src/feed-project-continuous.ts`
+übernimmt die periodische Anbindung von **drei bis fünf** explizit
+benannten Quellen an den bereits vorhandenen, persönlich getrennten
+Projektions-DB-Login. Sein Docker-Profil `feed-project-continuous`
+ist standardmäßig aus; es montiert ausschließlich das dedizierte
+Projektor-Passwort, hat keinen Host-Port, keinen Redis-Login, keine
+Signer-/Feed-Screts und kein öffentliches Netz. Alle Quellen werden
+bei jedem Lauf **erneut** durch den bestehenden `projectApprovedSource`
+identitäts- und SQL-seitig geprüft. Nach Migration 0049 aktualisiert
+dieser eine Aufruf zugleich die dauerhaft gespeicherten Rankings.
+
+Erst eine ausdrückliche separate Freigabe mit folgenden Werten
+ermöglicht die Aktivierung: `VNS_P2_FEED_PROJECTION_ENABLED=true`,
+`VNS_P2_FEED_PROJECTION_OPERATOR_ACK=true`,
+`VNS_P2_FEED_PROJECTION_CONTINUOUS_ENABLED=true`,
+`VNS_P2_FEED_PROJECTION_CONTINUOUS_OPERATOR_ACK=true`;
+`VNS_P2_FEED_PROJECTION_SOURCE_IDS` muss 3–5 verschiedene
+zulässige IDs enthalten, mit `VNS_P2_FEED_PROJECTION_INTERVAL_MINUTES`
+in {15,30,45,60}; der bestehende streng eingeschränkte
+`VNS_P2_FEED_PROJECTION_DB_USER`, das Passwortfile und ein Limit
+von 1–100 sind weiterhin vorgeschrieben. Der Modus ist fest
+`continuous`; ein Bootstrap unbekannter Quellen ist verboten.
+
+Der Prozess arbeitet nacheinander; **ein Fehler beendet den gesamten
+Prozess ohne Auto-Retry**, worauf der Betreiber die Ursache/fehlgeschlagene
+Quelle prüfen und anschließend kontrolliert neu starten muss.
+Während des Intervalls sind keine DB-Verbindungen geöffnet. Ein
+gleichzeitiger One-shot-Lauf mit derselben Quelle ist betrieblich zu
+vermeiden; SQL-Transaktionen, Unique Keys und gespeicherte Profile
+sind gegen Wiederholungen abgesichert.
+
+Damit besteht eine vorbereitete **automatische Verbindung zwischen
+bestätigtem Feed-Commit, geschützter Projektion, persistiertem Ranking
+und Admin-Lesepfad**. Ohne erfolgreich bestätigte reale Quellrechte,
+Secrets, Monitoring des Dienstes und kontrollierten VPS-Start handelt
+es sich weiterhin um überprüften Code, nicht um einen Live-Nachweis.
+
 ## Sicherheits- und Abnahmegrenzen
 
 - Neue Migration und Code sind **nicht** auf dem VPS ausgerollt. Das
