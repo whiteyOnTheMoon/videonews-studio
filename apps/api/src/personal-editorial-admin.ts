@@ -121,11 +121,14 @@ const RANKING_SETTINGS_KEYS = [
   "riskWeight",
   "maximumRisk",
 ] as const;
-export function validateNamedRankingPolicySettings(raw: unknown): NamedRankingPolicySettings | null {
+export function validateNamedRankingPolicySettings(
+  raw: unknown,
+): NamedRankingPolicySettings | null {
   if (
     !object(raw) ||
     Object.keys(raw).sort().join(",") !== [...RANKING_SETTINGS_KEYS].sort().join(",")
-  ) return null;
+  )
+    return null;
   for (const key of RANKING_SETTINGS_KEYS) {
     const n = raw[key];
     const low = key === "minimumPublisherGroups" ? 2 : 0;
@@ -334,10 +337,9 @@ export class DormantPersonalEditorialAdmin {
         : path === "/admin/editorial-ranking-policy"
           ? uri.search !== "" ||
             !object(command) ||
-            Object.keys(command).sort().join(",") !==
-              "expectedRevision,profileId,settings" ||
-            (typeof command.profileId !== "string" ||
-              !PROFILE_ID.test(command.profileId)) ||
+            Object.keys(command).sort().join(",") !== "expectedRevision,profileId,settings" ||
+            typeof command.profileId !== "string" ||
+            !PROFILE_ID.test(command.profileId) ||
             revision(command.expectedRevision) === null ||
             !validateNamedRankingPolicySettings(command.settings)
           : path === "/admin/editorial-checkpoints"
@@ -419,7 +421,8 @@ export class DormantPersonalEditorialAdmin {
             revision(item.policy_revision) === null ||
             (item.settings !== null && !validateNamedRankingPolicySettings(item.settings)) ||
             (revision(item.policy_revision) === 0) !== (item.settings === null)
-          ) throw new Error("Named ranking policy read invalid");
+          )
+            throw new Error("Named ranking policy read invalid");
           respond(res, 200, {
             profileId: uri.searchParams.get("profileId"),
             profileRevision: revision(item.profile_revision),
@@ -438,11 +441,12 @@ export class DormantPersonalEditorialAdmin {
           if (result.rows.length !== 1 || typeof result.rows[0]?.saved !== "boolean")
             throw new Error("Named ranking policy commit invalid");
           if (!result.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
-          else respond(res, 200, {
-            saved: true,
-            policyRevision: expected + 1,
-            productionActive: false,
-          });
+          else
+            respond(res, 200, {
+              saved: true,
+              policyRevision: expected + 1,
+              productionActive: false,
+            });
         }
       } else if (path === "/admin/editorial-ranked-events") {
         // Read-only SQL projection. The DB, not the API, chooses which
