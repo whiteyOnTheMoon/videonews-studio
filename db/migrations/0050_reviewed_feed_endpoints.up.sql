@@ -53,6 +53,7 @@ BEGIN
     v_count:=v_count+1;
     IF jsonb_typeof(v_item) IS DISTINCT FROM 'object'
        OR (SELECT count(*) FROM jsonb_object_keys(v_item)) NOT IN (9,10)
+       OR ((SELECT count(*) FROM jsonb_object_keys(v_item))=10 AND NOT (v_item ? 'feedUrl'))
        OR NOT (v_item ?& ARRAY['id','baseUrl','access','intervalMinutes','termsUrl',
                                 'usage','licenseNotes','status','reviewedAt'])
        OR jsonb_typeof(v_item->'id') IS DISTINCT FROM 'string'
@@ -178,6 +179,7 @@ DECLARE
 BEGIN
   IF p_source IS NULL OR jsonb_typeof(p_source) IS DISTINCT FROM 'object'
     OR (SELECT count(*) FROM jsonb_object_keys(p_source)) NOT IN (9,10)
+    OR ((SELECT count(*) FROM jsonb_object_keys(p_source))=10 AND NOT (p_source ? 'feedUrl'))
     OR NOT (p_source ?& ARRAY['id','baseUrl','access','intervalMinutes',
                              'termsUrl','usage','licenseNotes','status','reviewedAt'])
     OR p_source->>'status' IS DISTINCT FROM 'approved'
