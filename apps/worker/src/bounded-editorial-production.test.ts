@@ -433,7 +433,6 @@ test("script generation refuses orphaned, duplicated and disputed claim referenc
   assert.equal(generated.approvedForPublication, false);
 });
 
-
 test("reviewed event factors separately weight visual suitability, explanatory value and risk", () => {
   const weighted = {
     ...policy,
