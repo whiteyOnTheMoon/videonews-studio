@@ -399,3 +399,34 @@ test("independent QA refuses forged event metadata even if the script itself is 
   assert.equal(report.approvedForPublication, false);
   assert.ok(report.reasons.includes("event_metadata_mismatch"));
 });
+
+test("script generation refuses forged event metadata before producing any sections", () => {
+  for (const invalid of [
+    { ...event, headline: "Unrelated fabricated science report" },
+    { ...event, articles: [{ ...articles[0]!, id: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, titleFingerprint: "f".repeat(64) }, articles[1]!] },
+    { ...event, articles: [{ ...articles[0]!, url: "https://forged.example.org/story" }, articles[1]!] },
+  ]) {
+    assert.throws(() =>
+      generateBoundedMockScript(invalid, profile, claims, scaffold, limits, 1),
+    );
+  }
+});
+
+test("script generation refuses orphaned, duplicated and disputed claim references", () => {
+  for (const invalid of [
+    [{ ...claims[0]!, articleIds: ["unrelated_article_id"] }],
+    [{ ...claims[0]!, articleIds: [articles[0]!.id, articles[0]!.id] }],
+    [{ ...claims[0]!, status: "disputed" as const }],
+    [{ ...claims[0]!, status: "rejected" as const }],
+    [{ ...claims[0]!, articleIds: [] }],
+  ]) {
+    assert.throws(
+      () => generateBoundedMockScript(event, profile, invalid, scaffold, limits, 1),
+      /Script claim candidate invalid/,
+    );
+  }
+  const generated = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  assert.deepEqual(generated.sections[0]!.claimIds, ["claim_one"]);
+  assert.equal(generated.approvedForPublication, false);
+});
