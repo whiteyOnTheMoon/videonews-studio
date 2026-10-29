@@ -96,75 +96,23 @@ BEGIN
         )
       THEN RAISE EXCEPTION 'invalid source hostname' USING ERRCODE='22023'; END IF;
     END LOOP;
-    -- A reviewed exact feed URL may differ in path, never in host.
+    -- Exact feedUrl may differ in path, never in host.
     IF v_item ? 'feedUrl' THEN
       v_url := v_item->>'feedUrl';
       IF jsonb_typeof(v_item->'feedUrl') IS DISTINCT FROM 'string'
         OR length(v_url) NOT BETWEEN 18 AND 512
-        OR v_url !~ '^https://[a-z0-9-]+([.][a-z0-9-]+)+(/[^?#%:@\\]*)? FROM jsonb_array_elements(p_sources) AS entry)<>v_count
-    OR (SELECT count(DISTINCT entry->>'baseUrl') FROM jsonb_array_elements(p_sources) AS entry)<>v_count
-    OR (SELECT count(DISTINCT coalesce(entry->>'feedUrl',entry->>'baseUrl'))
-        FROM jsonb_array_elements(p_sources) AS entry)<>v_count
-  THEN RAISE EXCEPTION 'duplicate source' USING ERRCODE='22023'; END IF;
-
-  SELECT value INTO v_old_target FROM jsonb_array_elements(v_previous) AS value
-    WHERE value->>'id'=p_source_id;
-  SELECT value INTO v_new_target FROM jsonb_array_elements(p_sources) AS value
-    WHERE value->>'id'=p_source_id;
-  v_old_others:=COALESCE(
-    (SELECT jsonb_agg(value ORDER BY value->>'id')
-     FROM jsonb_array_elements(v_previous) AS value WHERE value->>'id'<>p_source_id),
-    '[]'::jsonb);
-  v_new_others:=COALESCE(
-    (SELECT jsonb_agg(value ORDER BY value->>'id')
-     FROM jsonb_array_elements(p_sources) AS value WHERE value->>'id'<>p_source_id),
-    '[]'::jsonb);
-  v_review_date:=to_char(p_recorded_at AT TIME ZONE 'UTC','YYYY-MM-DD');
-
-  IF v_new_target IS NULL OR v_old_others IS DISTINCT FROM v_new_others
-    OR v_new_target->>'reviewedAt' IS DISTINCT FROM v_review_date
-  THEN RAISE EXCEPTION 'source state transition denied' USING ERRCODE='22023'; END IF;
-  IF p_action='create_pending' THEN
-    IF v_old_target IS NOT NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)+1
-       OR v_new_target->>'status'<>'pending'
-    THEN RAISE EXCEPTION 'create transition denied' USING ERRCODE='22023'; END IF;
-  ELSIF p_action='replace_pending' THEN
-    IF v_old_target IS NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)
-       OR v_new_target->>'status'<>'pending'
-    THEN RAISE EXCEPTION 'replace transition denied' USING ERRCODE='22023'; END IF;
-  ELSE
-    IF v_old_target IS NULL OR jsonb_array_length(p_sources)<>jsonb_array_length(v_previous)
-      OR (v_old_target - 'status' - 'reviewedAt') IS DISTINCT FROM
-         (v_new_target - 'status' - 'reviewedAt')
-    THEN RAISE EXCEPTION 'review metadata change denied' USING ERRCODE='22023'; END IF;
-    IF (p_action='approve' AND
-        (v_old_target->>'status'<>'pending' OR v_new_target->>'status'<>'approved'))
-       OR (p_action='block' AND
-        (v_old_target->>'status'='blocked' OR v_new_target->>'status'<>'blocked'))
-       OR (p_action='reopen' AND
-        (v_old_target->>'status'<>'blocked' OR v_new_target->>'status'<>'pending'))
-    THEN RAISE EXCEPTION 'review status transition denied' USING ERRCODE='22023'; END IF;
-  END IF;
-
-  UPDATE vns.admin_source_registry SET revision=p_next,sources=p_sources
-    WHERE singleton=true AND revision=p_expected;
-  IF NOT FOUND THEN RETURN false; END IF;
-  INSERT INTO vns.admin_source_audit
-    (revision,source_id,action,editor_id,editor_username,editor_auth_version,recorded_at)
-    VALUES(p_next,p_source_id,p_action,p_editor_id,v_username,p_auth_version,p_recorded_at);
-  RETURN true;
-END;
-$guard$;
+        OR v_url !~ '^https://[a-z0-9-]+([.][a-z0-9-]+)+(/[^?#%:@\\]*)?$'
         OR v_url ~ '[[:space:][:cntrl:]]'
         OR v_url IS NOT DISTINCT FROM v_item->>'baseUrl'
         OR split_part(split_part(v_url,'https://',2),'/',1)
-          IS DISTINCT FROM
-           split_part(split_part(v_item->>'baseUrl','https://',2),'/',1)
+          IS DISTINCT FROM split_part(split_part(v_item->>'baseUrl','https://',2),'/',1)
       THEN RAISE EXCEPTION 'Feed endpoint scope invalid' USING ERRCODE='22023'; END IF;
     END IF;
   END LOOP;
   IF (SELECT count(DISTINCT entry->>'id') FROM jsonb_array_elements(p_sources) AS entry)<>v_count
     OR (SELECT count(DISTINCT entry->>'baseUrl') FROM jsonb_array_elements(p_sources) AS entry)<>v_count
+    OR (SELECT count(DISTINCT coalesce(entry->>'feedUrl',entry->>'baseUrl'))
+        FROM jsonb_array_elements(p_sources) AS entry)<>v_count
   THEN RAISE EXCEPTION 'duplicate source' USING ERRCODE='22023'; END IF;
 
   SELECT value INTO v_old_target FROM jsonb_array_elements(v_previous) AS value
@@ -235,42 +183,13 @@ BEGIN
     OR p_source->>'status' IS DISTINCT FROM 'approved'
   THEN RETURN false; END IF;
 
-  -- Never let a feed request escape the source's independently granted host.
   IF p_source ? 'feedUrl' THEN
     IF jsonb_typeof(p_source->'feedUrl') IS DISTINCT FROM 'string'
       OR length(p_source->>'feedUrl') NOT BETWEEN 18 AND 512
-      OR p_source->>'feedUrl' !~ '^https://[a-z0-9-]+([.][a-z0-9-]+)+(/[^?#%:@\\]*)? Caller cannot
-  -- gain table access; a concurrent revoke cannot overtake this decision.
-  SELECT revision,sources INTO v_revision,v_sources
-    FROM vns.admin_source_registry WHERE singleton=true FOR SHARE;
-  IF NOT FOUND OR v_revision < 1 THEN RETURN false; END IF;
-  SELECT approved_hosts INTO v_hosts FROM vns.admin_source_host_approvals
-    WHERE singleton=true FOR SHARE;
-  IF NOT FOUND THEN RETURN false; END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM jsonb_array_elements(v_sources) AS entry
-    WHERE entry.value = p_source AND entry.value->>'status' = 'approved'
-  ) THEN RETURN false; END IF;
-
-  v_host := split_part(split_part(p_source->>'baseUrl','https://',2),'/',1);
-  IF v_host IS NULL OR length(v_host) NOT BETWEEN 4 AND 253
-    OR NOT (v_hosts ? v_host)
-  THEN RETURN false; END IF;
-
-  -- Host approval must still apply to the EXACT source snapshot generation.
-  -- Source changes after a grant intentionally stop polling until the distinct
-  -- human host-grant path is exercised again.
-  SELECT action,source_revision INTO v_host_action,v_grant_source_revision
-    FROM vns.admin_source_host_audit
-    WHERE host=v_host ORDER BY revision DESC LIMIT 1;
-  RETURN v_host_action = 'grant' AND v_grant_source_revision = v_revision;
-END;
-$body$;
+      OR p_source->>'feedUrl' !~ '^https://[a-z0-9-]+([.][a-z0-9-]+)+(/[^?#%:@\\]*)?$'
       OR p_source->>'feedUrl' IS NOT DISTINCT FROM p_source->>'baseUrl'
       OR split_part(split_part(p_source->>'feedUrl','https://',2),'/',1)
-         IS DISTINCT FROM
-         split_part(split_part(p_source->>'baseUrl','https://',2),'/',1)
+        IS DISTINCT FROM split_part(split_part(p_source->>'baseUrl','https://',2),'/',1)
     THEN RETURN false; END IF;
   END IF;
 
