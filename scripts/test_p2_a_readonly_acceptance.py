@@ -80,9 +80,9 @@ class P2APreflight(unittest.TestCase):
             with self.assertRaises(ValueError):
                 expected_migrations(root)
             for i in range(1, 60):
-                (root / f"{i:04d}_test_migration.up.sql").write_text("BEGIN; COMMIT;")
+                (root / (f"{i:04d}_test_migration.up.sql" if i < 59 else EXPECTED_LAST + ".up.sql")).write_text("BEGIN; COMMIT;")
             self.assertEqual(len(expected_migrations(root)), 59)
-            last = root / "0059_test_migration.up.sql"
+            last = root / (EXPECTED_LAST + ".up.sql")
             last.unlink()
             last.symlink_to(root / "0058_test_migration.up.sql")
             with self.assertRaises(ValueError):
