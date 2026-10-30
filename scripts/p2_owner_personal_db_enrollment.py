@@ -217,7 +217,8 @@ def apply(*, sha: str) -> None:
     # Re-check all conditions immediately before creating the private file.
     if os.getenv(ACK) != ACK_VALUE or os.getenv(SHA_APPROVAL) != sha:
         raise RuntimeError(FAIL)
-    if run(["git", "-C", str(ROOT), "ls-remote", "origin", "refs/heads/main"]).split()[0] != sha:
+    remote = run(["git", "-C", str(ROOT), "ls-remote", "origin", "refs/heads/main"]).split()
+    if len(remote) != 2 or remote != [sha, "refs/heads/main"]:
         raise RuntimeError(FAIL)
     db_container()
     check_baseline(db_sql(READ_SQL, readonly=True))
