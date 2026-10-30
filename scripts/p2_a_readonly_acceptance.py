@@ -82,7 +82,7 @@ def expected_migrations(migration_dir: Path = VERSIONS) -> list[str]:
 
 def postgres_read_only(container: str, sql: str) -> str:
     """Only exact local Compose container name, fixed SQL and read-only session."""
-    if not re.fullmatch(r"[a-z][a-z0-9_-]{1,62}-postgres-1", container):
+    if container != PROJECT + "-postgres-1":
         raise ValueError("Container name refused")
     if sql not in (MIGRATION_SQL, AGGREGATE_SQL):
         raise ValueError("Unapproved SQL refused")
