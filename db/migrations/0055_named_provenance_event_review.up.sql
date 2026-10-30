@@ -8,7 +8,7 @@ CREATE FUNCTION vns.named_publisher_review_read(p_source text)
 RETURNS TABLE(source_revision bigint,reviewed boolean,publisher_group text,quality integer)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog
 AS $body$
-DECLARE actor uuid; sources jsonb; source_record jsonb;
+DECLARE actor uuid; sources jsonb; source_record jsonb; v_source_rev bigint;
 BEGIN
   SELECT principal.editor_id INTO actor
     FROM vns.editor_db_principals principal
@@ -21,7 +21,7 @@ BEGIN
   END IF;
   IF p_source IS NULL OR p_source !~ '^[a-z][a-z0-9_-]{2,40}$'
   THEN RAISE EXCEPTION 'Publisher review source invalid' USING ERRCODE='22023'; END IF;
-  SELECT registry.revision,registry.sources INTO source_revision,sources
+  SELECT registry.revision,registry.sources INTO v_source_rev,sources
     FROM vns.admin_source_registry registry WHERE singleton=true;
   SELECT item.value INTO source_record
     FROM jsonb_array_elements(sources) item(value)
@@ -32,8 +32,9 @@ BEGIN
   END IF;
   SELECT p.publisher_group,p.quality INTO publisher_group,quality
     FROM vns.feed_publisher_provenance_reviews p
-    WHERE p.source_id=p_source AND p.source_revision=source_revision;
+    WHERE p.source_id=p_source AND p.source_revision=v_source_rev;
   reviewed:=FOUND;
+  source_revision:=v_source_rev;
   RETURN NEXT;
 END;
 $body$;
@@ -83,7 +84,7 @@ RETURNS TABLE(profile_revision bigint,policy_revision bigint,reviewed boolean,
   explanatory_value integer,visualizability integer,risk integer)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog
 AS $body$
-DECLARE actor uuid;
+DECLARE actor uuid; v_profile_rev bigint; v_policy_rev bigint;
 BEGIN
   SELECT principal.editor_id INTO actor
     FROM vns.editor_db_principals principal
@@ -97,7 +98,7 @@ BEGIN
   IF p_event IS NULL OR p_profile IS NULL
       OR p_profile !~ '^[a-z][a-z0-9_-]{2,40}$'
   THEN RAISE EXCEPTION 'Event review request invalid' USING ERRCODE='22023'; END IF;
-  SELECT registry.revision INTO profile_revision
+  SELECT registry.revision INTO v_profile_rev
     FROM vns.editorial_profile_registry registry
     WHERE singleton=true AND EXISTS(
       SELECT 1 FROM jsonb_array_elements(registry.profiles) profile
@@ -106,11 +107,11 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Editorial profile not available' USING ERRCODE='22023';
   END IF;
-  SELECT max(policy.revision) INTO policy_revision
+  SELECT max(policy.revision) INTO v_policy_rev
     FROM vns.feed_ranking_policy_reviews policy
     WHERE policy.profile_id=p_profile
-      AND policy.profile_revision=profile_revision;
-  IF policy_revision IS NULL THEN
+      AND policy.profile_revision=v_profile_rev;
+  IF v_policy_rev IS NULL THEN
     RAISE EXCEPTION 'Reviewed ranking policy required' USING ERRCODE='42501';
   END IF;
   IF NOT EXISTS(
@@ -123,9 +124,11 @@ BEGIN
     INTO explanatory_value,visualizability,risk
     FROM vns.feed_event_factor_reviews factor
     WHERE factor.event_id=p_event AND factor.profile_id=p_profile
-      AND factor.profile_revision=profile_revision
-      AND factor.policy_revision=policy_revision;
+      AND factor.profile_revision=v_profile_rev
+      AND factor.policy_revision=v_policy_rev;
   reviewed:=FOUND;
+  profile_revision:=v_profile_rev;
+  policy_revision:=v_policy_rev;
   RETURN NEXT;
 END;
 $body$;
