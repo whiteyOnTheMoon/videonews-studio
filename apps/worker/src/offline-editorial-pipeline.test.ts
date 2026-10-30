@@ -270,3 +270,47 @@ test("ranking profiles reject duplicate or contradictory normalized terms", () =
     assert.throws(() => rankOfflineEvents([], invalid, new Date("2026-10-26T13:00:00.000Z")));
   }
 });
+
+test("lexical clustering ignores isolated one-codepoint words, including Unicode", () => {
+  const examples: readonly [string, string, number][] = [
+    [
+      "Science mission update confirmed today by agency a b c",
+      "Science mission update confirmed today by agency x y z",
+      1,
+    ],
+    [
+      "Ｆｕｌｌｗｉｄｔｈ science research breakthrough announced today a",
+      "Fullwidth science research breakthrough announced today x",
+      1,
+    ],
+    [
+      "Science science mission update confirmed today by agency",
+      "Science mission update confirmed today by agency",
+      1,
+    ],
+    [
+      "Science mission update confirmed today by agency biology",
+      "Science mission update confirmed today by agency astronomy",
+      2,
+    ],
+    ["A b c d e f g", "A b c d e f h", 2],
+    ["Short science update", "Science short update", 2],
+  ];
+  for (const [left, right, expectedGroups] of examples) {
+    const articles = normalizeFeedArticles([
+      item("news_one", "https://one.example.org/lexical/a", left),
+      item("news_two", "https://two.example.org/lexical/b", right),
+    ]);
+    const grouped = groupConservativeEventCandidates(articles);
+    assert.equal(
+      grouped.length,
+      expectedGroups,
+      "Lexical matching diverged for " + JSON.stringify([left, right]),
+    );
+    assert.equal(
+      grouped.reduce((count, event) => count + event.articles.length, 0),
+      2,
+    );
+    assert.ok(grouped.every((event) => event.reasons.includes("lexical_candidate_only")));
+  }
+});
