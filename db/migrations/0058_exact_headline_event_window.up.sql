@@ -11,7 +11,7 @@ DECLARE
   article uuid;
   event_key uuid;
   fingerprint text;
-  event_fingerprint text;
+  v_event_digest text;
   added integer := 0;
   changed integer;
   matching_count integer;
@@ -112,23 +112,23 @@ BEGIN
       -- distinct when a historical event already owns the exact digest.
       -- The canonical URL is immutable and scoped to the approved source.
       -- Advisory lock above serializes competing feed projectors.
-      event_fingerprint:=fingerprint;
+      v_event_digest:=fingerprint;
       IF EXISTS(
         SELECT 1 FROM vns.research_events e
         WHERE e.event_fingerprint=fingerprint
       ) THEN
-        event_fingerprint:=encode(sha256(convert_to(
+        v_event_digest:=encode(sha256(convert_to(
           'event-window-v1:'||fingerprint||E'\\n'||
           candidate.source_id||E'\\n'||candidate.article_url,'UTF8'
         )),'hex');
       END IF;
       INSERT INTO vns.research_events(event_fingerprint,label)
-        VALUES(event_fingerprint,candidate.headline)
+        VALUES(v_event_digest,candidate.headline)
         ON CONFLICT (event_fingerprint) DO NOTHING
         RETURNING event_id INTO event_key;
       IF event_key IS NULL THEN
         SELECT e.event_id INTO event_key FROM vns.research_events e
-        WHERE e.event_fingerprint=event_fingerprint;
+        WHERE e.event_fingerprint=v_event_digest;
       END IF;
     END IF;
     IF event_key IS NULL THEN
