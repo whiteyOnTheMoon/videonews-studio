@@ -93,28 +93,34 @@ function setup(mismatch = false, enabled = true) {
       }
       if (sqlText.includes("named_publisher_review_read")) {
         return {
-          rows: [{
-            source_revision: "5",
-            reviewed: false,
-            publisher_group: null,
-            quality: null,
-          }],
+          rows: [
+            {
+              source_revision: "5",
+              reviewed: false,
+              publisher_group: null,
+              quality: null,
+            },
+          ],
         };
       }
       if (sqlText.includes("named_event_factor_review_read")) {
         return {
-          rows: [{
-            profile_revision: "1",
-            policy_revision: "2",
-            reviewed: false,
-            explanatory_value: null,
-            visualizability: null,
-            risk: null,
-          }],
+          rows: [
+            {
+              profile_revision: "1",
+              policy_revision: "2",
+              reviewed: false,
+              explanatory_value: null,
+              visualizability: null,
+              risk: null,
+            },
+          ],
         };
       }
-      if (sqlText.includes("named_publisher_review_commit") ||
-          sqlText.includes("named_event_factor_review_commit")) {
+      if (
+        sqlText.includes("named_publisher_review_commit") ||
+        sqlText.includes("named_event_factor_review_commit")
+      ) {
         return { rows: [{ saved: true }] };
       }
       if (sqlText.includes("named_ranking_policy_read")) {
@@ -604,12 +610,19 @@ test("ranking policy rejects forged editor, unbounded risks, unexpected fields a
 
 test("personally attributed publisher and event review APIs are metadata-only", async () => {
   const source = {
-    sourceId: "science_feed", sourceRevision: 5, publisherGroup: "science_origin", quality: 4,
+    sourceId: "science_feed",
+    sourceRevision: 5,
+    publisherGroup: "science_origin",
+    quality: 4,
   };
   const factors = {
     eventId: "ca310002-2222-4222-8222-222222222222",
-    profileId: "science_news", profileRevision: 1, policyRevision: 2,
-    explanatoryValue: 4, visualizability: 5, risk: 1,
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 2,
+    explanatoryValue: 4,
+    visualizability: 5,
+    risk: 1,
   };
   assert.deepEqual(validateNamedPublisherReviewWrite(source), source);
   assert.deepEqual(validateNamedEventFactorReviewWrite(factors), factors);
@@ -617,17 +630,31 @@ test("personally attributed publisher and event review APIs are metadata-only", 
   assert.deepEqual(
     (await serve(state.handler, "/admin/editorial-publisher-review?sourceId=science_feed")).json,
     {
-      sourceId: "science_feed", sourceRevision: 5, reviewed: false,
-      publisherGroup: null, quality: null, approvedForPublication: false,
+      sourceId: "science_feed",
+      sourceRevision: 5,
+      reviewed: false,
+      publisherGroup: null,
+      quality: null,
+      approvedForPublication: false,
     },
   );
   assert.deepEqual(
-    (await serve(state.handler, "/admin/editorial-event-factors?eventId=" +
-      factors.eventId + "&profileId=science_news")).json,
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-event-factors?eventId=" + factors.eventId + "&profileId=science_news",
+      )
+    ).json,
     {
-      eventId: factors.eventId, profileId: factors.profileId, profileRevision: 1,
-      policyRevision: 2, reviewed: false, explanatoryValue: null,
-      visualizability: null, risk: null, approvedForPublication: false,
+      eventId: factors.eventId,
+      profileId: factors.profileId,
+      profileRevision: 1,
+      policyRevision: 2,
+      reviewed: false,
+      explanatoryValue: null,
+      visualizability: null,
+      risk: null,
+      approvedForPublication: false,
     },
   );
   const p = await serve(state.handler, "/admin/editorial-publisher-review", "POST", source);
@@ -646,12 +673,19 @@ test("personally attributed publisher and event review APIs are metadata-only", 
 test("publisher and event factor reviews reject forged actors, invalid revisions and origin", async () => {
   const state = setup();
   const source = {
-    sourceId: "science_feed", sourceRevision: 5, publisherGroup: "science_origin", quality: 4,
+    sourceId: "science_feed",
+    sourceRevision: 5,
+    publisherGroup: "science_origin",
+    quality: 4,
   };
   const factors = {
     eventId: "ca310002-2222-4222-8222-222222222222",
-    profileId: "science_news", profileRevision: 1, policyRevision: 2,
-    explanatoryValue: 4, visualizability: 5, risk: 1,
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 2,
+    explanatoryValue: 4,
+    visualizability: 5,
+    risk: 1,
   };
   for (const payload of [
     { ...source, actorId: ACTOR },
@@ -660,8 +694,10 @@ test("publisher and event factor reviews reject forged actors, invalid revisions
     { ...source, sourceRevision: 0 },
   ]) {
     assert.equal(validateNamedPublisherReviewWrite(payload), null);
-    assert.equal((await serve(state.handler, "/admin/editorial-publisher-review", "POST", payload))
-      .status, 400);
+    assert.equal(
+      (await serve(state.handler, "/admin/editorial-publisher-review", "POST", payload)).status,
+      400,
+    );
   }
   for (const payload of [
     { ...factors, reviewerId: ACTOR },
@@ -670,21 +706,32 @@ test("publisher and event factor reviews reject forged actors, invalid revisions
     { ...factors, eventId: "bad" },
   ]) {
     assert.equal(validateNamedEventFactorReviewWrite(payload), null);
-    assert.equal((await serve(state.handler, "/admin/editorial-event-factors", "POST", payload))
-      .status, 400);
+    assert.equal(
+      (await serve(state.handler, "/admin/editorial-event-factors", "POST", payload)).status,
+      400,
+    );
   }
   for (const path of [
     "/admin/editorial-publisher-review",
     "/admin/editorial-publisher-review?sourceId=science_feed&sourceId=science_feed",
     "/admin/editorial-event-factors?eventId=" + factors.eventId,
-    "/admin/editorial-event-factors?eventId=" + factors.eventId +
+    "/admin/editorial-event-factors?eventId=" +
+      factors.eventId +
       "&profileId=science_news&actorId=forged",
   ]) {
     assert.equal((await serve(state.handler, path)).status, 400);
   }
   assert.equal(
-    (await serve(state.handler, "/admin/editorial-publisher-review", "POST",
-      source, "https://attacker.invalid")).status, 403,
+    (
+      await serve(
+        state.handler,
+        "/admin/editorial-publisher-review",
+        "POST",
+        source,
+        "https://attacker.invalid",
+      )
+    ).status,
+    403,
   );
   assert.equal(
     (await serve(setup(true).handler, "/admin/editorial-event-factors", "POST", factors)).status,
