@@ -13,6 +13,14 @@ import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
 import EditorialRankedEvents, { parseRankedCandidatePage } from "./editorial-ranked-events";
 import EditorialRankingPolicy from "./editorial-ranking-policy";
+import EditorialMetadataReviews from "./editorial-metadata-reviews";
+import {
+  validPublisherReviewWrite,
+  validPublisherReviewSnapshot,
+  validEventFactorReviewWrite,
+  validEventFactorReviewSnapshot,
+  validMetadataReviewSaved,
+} from "../../lib/editorial-review-metadata";
 import {
   validRankingPolicyCommit,
   validRankingPolicySettings,
@@ -242,6 +250,84 @@ test("review form and BFF strictly reject changed policy shape or forged publish
       saved: true,
       policyRevision: 2,
       productionActive: true,
+    }),
+    false,
+  );
+});
+
+test("personal source and event factor forms have no publishing action", () => {
+  const disabled = renderToStaticMarkup(<EditorialMetadataReviews enabled={false} />);
+  assert.match(disabled, /Persönliche Metadatenprüfungen nicht freigeschaltet/);
+  assert.doesNotMatch(disabled, /<form|<input|<button/);
+  const enabled = renderToStaticMarkup(<EditorialMetadataReviews enabled />);
+  assert.match(enabled, /Freigegebene Quellen-ID/);
+  assert.match(enabled, /Ereignis-UUID/);
+  assert.doesNotMatch(enabled, /Herausgeberprüfung speichern|Ereignisbewertung speichern/);
+  assert.doesNotMatch(enabled, /Jetzt veröffentlichen|Upload starten/);
+});
+
+test("review metadata snapshots remain strictly bounded and never authorize publication", () => {
+  const pub = {
+    sourceId: "science_feed",
+    sourceRevision: 5,
+    publisherGroup: "science_origin",
+    quality: 4,
+  };
+  const event = {
+    eventId: "ca310002-2222-4222-8222-222222222222",
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 2,
+    explanatoryValue: 4,
+    visualizability: 5,
+    risk: 1,
+  };
+  assert.equal(validPublisherReviewWrite(pub), true);
+  assert.equal(validEventFactorReviewWrite(event), true);
+  assert.equal(
+    validPublisherReviewSnapshot({
+      sourceId: pub.sourceId,
+      sourceRevision: pub.sourceRevision,
+      reviewed: true,
+      publisherGroup: pub.publisherGroup,
+      quality: pub.quality,
+      approvedForPublication: false,
+    }),
+    true,
+  );
+  assert.equal(
+    validEventFactorReviewSnapshot({
+      ...event,
+      reviewed: true,
+      approvedForPublication: false,
+    }),
+    true,
+  );
+  assert.equal(
+    validMetadataReviewSaved({
+      saved: true,
+      approvedForPublication: false,
+    }),
+    true,
+  );
+  for (const bad of [
+    { ...pub, reviewerId: "forged" },
+    { ...pub, sourceRevision: 0 },
+    { ...pub, publisherGroup: "bad!" },
+    { ...pub, quality: 6 },
+  ])
+    assert.equal(validPublisherReviewWrite(bad), false);
+  for (const bad of [
+    { ...event, actorId: "forged" },
+    { ...event, policyRevision: 0 },
+    { ...event, explanatoryValue: -1 },
+    { ...event, risk: 6 },
+  ])
+    assert.equal(validEventFactorReviewWrite(bad), false);
+  assert.equal(
+    validMetadataReviewSaved({
+      saved: true,
+      approvedForPublication: true,
     }),
     false,
   );
