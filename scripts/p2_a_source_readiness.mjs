@@ -28,8 +28,9 @@ function canonicalHttps(value) {
 
 /**
  * A documented candidate is NOT an approved source or a feed credential.
- * Fail closed before issuing an operator recommendation that could
- * silently lose every article under the existing baseUrl/URL-scope contract.
+ * Migration 0050 supports independently reviewed, same-host feedUrl and
+ * article baseUrl: do not mistake different paths for incompatibility.
+ * The script never changes a registry or authorizes any live feed request.
  */
 export function assessOfficialFeedProposals(document) {
   if (
@@ -73,19 +74,21 @@ export function assessOfficialFeedProposals(document) {
     ids.add(source.id);
     groups.add(source.publisherGroup);
     const reasons = [];
-    // The current RegisteredResearchSource has only one baseUrl; it is
-    // *both* the exact feed request target and the article URL allow-scope.
-    if (!feed.pathname.endsWith("/")) reasons.push("feed_url_not_directory");
-    if (feed.hostname !== article.hostname || !article.pathname.startsWith(feed.pathname))
-      reasons.push("article_scope_outside_feed_base");
+    // Since migration 0050, the exact feedUrl may be a file or a sibling
+    // path of baseUrl. The registry still requires a same-host URL, and
+    // feedUrl=baseUrl must not be supplied as an optional exact endpoint.
+    if (feed.hostname !== article.hostname) reasons.push("feed_article_host_mismatch");
+    if (feed.href === article.href) reasons.push("feed_url_equals_article_scope");
+    // Neither compatibility nor public-domain agency guidance is a personal
+    // source/host grant or proof of per-item publication rights.
+    const compatibleWithCurrentRegistry = reasons.length === 0;
     reasons.push("operator_legal_and_host_review_missing");
+    reasons.push("per_item_rights_and_attribution_unverified");
     reasons.push("live_feed_response_unverified");
     results.push({
       id: source.id,
       publisherGroup: source.publisherGroup,
-      compatibleWithCurrentRegistry: reasons.every(
-        (x) => x !== "feed_url_not_directory" && x !== "article_scope_outside_feed_base",
-      ),
+      compatibleWithCurrentRegistry,
       reasons,
       approvedForLive: false,
     });
@@ -98,7 +101,7 @@ export function assessOfficialFeedProposals(document) {
     approvedForLive: false,
     currentRegistryReady: results.every((item) => item.compatibleWithCurrentRegistry),
     nextStep:
-      "Implement separately reviewed feedUrl and articleScope with signed registry and SQL authorization, then obtain operator and host approval",
+      "Separate same-host feedUrl and article baseUrl are supported since 0050; verify feed response, per-item rights, and personal operator/host approvals before any live polling",
   };
 }
 
