@@ -4,11 +4,11 @@
 
 ## 1. Drei prüfbare Kandidaten
 
-| Kandidat | Offiziell gelisteter RSS-Endpunkt | Artikel-`baseUrl` | Nutzungsregeln |
-| --- | --- | --- | --- |
-| NASA/JPL `nasa_jpl_news` | https://www.jpl.nasa.gov/feeds/news/ | https://www.jpl.nasa.gov/news/ | https://www.nasa.gov/nasa-brand-center/images-and-media/ |
-| NOAA `noaa_news` | https://www.noaa.gov/rss.xml | https://www.noaa.gov/ | https://www.noaa.gov/office-education/outreach-communication/faq |
-| USGS `usgs_national_news` | https://www.usgs.gov/news/national-news-release/feed | https://www.usgs.gov/news/ | https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits |
+| Kandidat                  | Offiziell gelisteter RSS-Endpunkt                    | Artikel-`baseUrl`              | Nutzungsregeln                                                                    |
+| ------------------------- | ---------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
+| NASA/JPL `nasa_jpl_news`  | https://www.jpl.nasa.gov/feeds/news/                 | https://www.jpl.nasa.gov/news/ | https://www.nasa.gov/nasa-brand-center/images-and-media/                          |
+| NOAA `noaa_news`          | https://www.noaa.gov/rss.xml                         | https://www.noaa.gov/          | https://www.noaa.gov/office-education/outreach-communication/faq                  |
+| USGS `usgs_national_news` | https://www.usgs.gov/news/national-news-release/feed | https://www.usgs.gov/news/     | https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits |
 
 Offizielle RSS-Verzeichnisse: [JPL](https://www.jpl.nasa.gov/rss/), [NOAA](https://www.noaa.gov/rss-feeds), [USGS-Nachrichten](https://www.usgs.gov/news/news-releases/national-news-releases).
 
