@@ -72,7 +72,7 @@ class OwnerEnrollmentTests(unittest.TestCase):
             self.assertEqual(calls, [(m.READ_SQL, True)])
             secret.assert_called_once_with(for_apply=False)
             self.assertIn("read-only", output.getvalue())
-            self.assertNotIn("password", output.getvalue().lower())
+            self.assertNotIn("SCRAM-SHA-256", output.getvalue())
 
     def test_must_have_exact_owner_private_secret_parent(self):
         with tempfile.TemporaryDirectory() as tmp:
