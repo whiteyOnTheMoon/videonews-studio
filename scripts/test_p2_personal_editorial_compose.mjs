@@ -12,8 +12,10 @@ const overlay = yaml.load(source);
 test("named editorial overlay keeps personal secrets read-only and startup disabled", () => {
   assert.deepEqual(Object.keys(overlay.services), ["web", "api"]);
   const web = overlay.services.web;
-  assert.equal(web.environment.VNS_WEB_EDITORIAL_ADMIN_ENABLED,
-    "${VNS_WEB_EDITORIAL_ADMIN_ENABLED:-false}");
+  assert.equal(
+    web.environment.VNS_WEB_EDITORIAL_ADMIN_ENABLED,
+    "${VNS_WEB_EDITORIAL_ADMIN_ENABLED:-false}",
+  );
   assert.equal(web.privileged, undefined);
   assert.equal(web.ports, undefined);
   assert.equal(web.volumes, undefined);
