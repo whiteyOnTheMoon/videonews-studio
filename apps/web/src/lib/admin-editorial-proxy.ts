@@ -4,18 +4,28 @@ import {
   validRankingPolicySettings,
   validRankingPolicySnapshot,
 } from "./editorial-ranking-policy";
+import {
+  validPublisherReviewWrite,
+  validEventFactorReviewWrite,
+  validPublisherReviewSnapshot,
+  validEventFactorReviewSnapshot,
+  validMetadataReviewSaved,
+} from "./editorial-review-metadata";
 import type { AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 type EditorialEndpoint =
-  "profiles" | "timeline" | "checkpoints" | "ranked-events" | "ranking-policy";
+  "profiles" | "timeline" | "checkpoints" | "ranked-events" | "ranking-policy" |
+  "publisher-review" | "event-factors";
 const ENDPOINTS: Record<EditorialEndpoint, string> = {
   profiles: "/admin/editorial-profiles",
   timeline: "/admin/editorial-timeline",
   checkpoints: "/admin/editorial-checkpoints",
   "ranked-events": "/admin/editorial-ranked-events",
   "ranking-policy": "/admin/editorial-ranking-policy",
+  "publisher-review": "/admin/editorial-publisher-review",
+  "event-factors": "/admin/editorial-event-factors",
 };
 
 export function editorialAdminProxyConfig(
@@ -46,6 +56,18 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   const keys = [...url.searchParams.keys()];
   if (keys.length !== new Set(keys).size) return false;
   if (path === "profiles") return keys.length === 0;
+  if (path === "publisher-review") {
+    const sourceId = url.searchParams.get("sourceId");
+    return keys.length === 1 && keys[0] === "sourceId" &&
+      !!sourceId && /^[a-z][a-z0-9_-]{2,40}$/.test(sourceId);
+  }
+  if (path === "event-factors") {
+    const eventId = url.searchParams.get("eventId");
+    const profileId = url.searchParams.get("profileId");
+    return keys.length === 2 && keys.includes("eventId") && keys.includes("profileId") &&
+      !!eventId && UUID.test(eventId) && !!profileId &&
+      /^[a-z][a-z0-9_-]{2,40}$/.test(profileId);
+  }
   if (path === "ranking-policy") {
     const profileId = url.searchParams.get("profileId");
     return (
@@ -143,6 +165,10 @@ async function readBody(request: Request, endpoint: EditorialEndpoint): Promise<
         )
       )
         return null;
+    } else if (endpoint === "publisher-review") {
+      if (!validPublisherReviewWrite(input)) return null;
+    } else if (endpoint === "event-factors") {
+      if (!validEventFactorReviewWrite(input)) return null;
     } else if (endpoint === "ranking-policy") {
       if (
         Object.keys(input).sort().join(",") !== "expectedRevision,profileId,settings" ||
@@ -214,7 +240,8 @@ export async function dormantEditorialAdminProxy(
   if (
     request.method !== "GET" &&
     !(
-      ["profiles", "ranking-policy", "checkpoints", "timeline"].includes(endpoint) &&
+      ["profiles", "ranking-policy", "publisher-review", "event-factors",
+        "checkpoints", "timeline"].includes(endpoint) &&
       request.method === "POST"
     )
   ) {
@@ -259,6 +286,15 @@ export async function dormantEditorialAdminProxy(
     if (raw.length > 1048576) return reply(503, { error: "temporarily_unavailable" });
     const value: unknown = JSON.parse(raw);
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
+    if (endpoint === "publisher-review" || endpoint === "event-factors") {
+      if (request.method === "GET") {
+        const valid = endpoint === "publisher-review"
+          ? validPublisherReviewSnapshot(value) : validEventFactorReviewSnapshot(value);
+        return valid ? reply(200, value) : reply(503, { error: "temporarily_unavailable" });
+      }
+      return validMetadataReviewSaved(value)
+        ? reply(200, value) : reply(503, { error: "temporarily_unavailable" });
+    }
     if (endpoint === "ranking-policy") {
       if (request.method === "GET") {
         if (!validRankingPolicySnapshot(value)) {
