@@ -3,7 +3,7 @@
 **Stand:** Reversible GitHub-Migration; produktiver VPS-Rollout und
 tatsächliche Quellenfreigaben sind damit nicht vorweggenommen.
 
-Problem: Ein persistierter Ranglisteneintrag ist eine *Momentaufnahme*.
+Problem: Ein persistierter Ranglisteneintrag ist eine _Momentaufnahme_.
 Nach einer erfolgreichen früheren Berechnung können sich die
 Artikel-/Quellzuordnungen einer Ereignisgruppe verändern. Außerdem ist
 die tatsächliche Unabhängigkeit von Herausgebern nicht allein aus der
