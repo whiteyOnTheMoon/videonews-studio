@@ -449,11 +449,19 @@ test("named ranking policy BFF enforces personal editor, origin, exact fields an
 test("source and event metadata reviews route only through same-origin personal BFF", async () => {
   const id = "ca310002-2222-4222-8222-222222222222";
   const source = {
-    sourceId: "science_feed", sourceRevision: 5, publisherGroup: "science_origin", quality: 4,
+    sourceId: "science_feed",
+    sourceRevision: 5,
+    publisherGroup: "science_origin",
+    quality: 4,
   };
   const factors = {
-    eventId: id, profileId: "science_news", profileRevision: 1, policyRevision: 2,
-    explanatoryValue: 4, visualizability: 5, risk: 1,
+    eventId: id,
+    profileId: "science_news",
+    profileRevision: 1,
+    policyRevision: 2,
+    explanatoryValue: 4,
+    visualizability: 5,
+    risk: 1,
   };
   const calls: { url: string; method?: string; body?: string }[] = [];
   const upstream = (async (resource: string | URL | Request, init?: RequestInit) => {
@@ -462,80 +470,144 @@ test("source and event metadata reviews route only through same-origin personal 
     if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
     if (url.includes("/admin/editorial-publisher-review?"))
       return Response.json({
-        sourceId: "science_feed", sourceRevision: 5, reviewed: false,
-        publisherGroup: null, quality: null, approvedForPublication: false,
+        sourceId: "science_feed",
+        sourceRevision: 5,
+        reviewed: false,
+        publisherGroup: null,
+        quality: null,
+        approvedForPublication: false,
       });
     if (url.includes("/admin/editorial-event-factors?"))
       return Response.json({
-        eventId: id, profileId: "science_news", profileRevision: 1,
-        policyRevision: 2, reviewed: false, explanatoryValue: null,
-        visualizability: null, risk: null, approvedForPublication: false,
+        eventId: id,
+        profileId: "science_news",
+        profileRevision: 1,
+        policyRevision: 2,
+        reviewed: false,
+        explanatoryValue: null,
+        visualizability: null,
+        risk: null,
+        approvedForPublication: false,
       });
     return Response.json({ saved: true, approvedForPublication: false });
   }) as typeof fetch;
   const a = await dormantEditorialAdminProxy(
     request("/api/admin/editorial-publisher-review?sourceId=science_feed"),
-    "publisher-review", config, upstream,
+    "publisher-review",
+    config,
+    upstream,
   );
   assert.equal(a.status, 200);
   const b = await dormantEditorialAdminProxy(
     request("/api/admin/editorial-event-factors?eventId=" + id + "&profileId=science_news"),
-    "event-factors", config, upstream,
+    "event-factors",
+    config,
+    upstream,
   );
   assert.equal(b.status, 200);
   const writes = [
     await dormantEditorialAdminProxy(
       request("/api/admin/editorial-publisher-review", "POST", source),
-      "publisher-review", config, upstream,
+      "publisher-review",
+      config,
+      upstream,
     ),
     await dormantEditorialAdminProxy(
       request("/api/admin/editorial-event-factors", "POST", factors),
-      "event-factors", config, upstream,
+      "event-factors",
+      config,
+      upstream,
     ),
   ];
   for (const w of writes) {
     assert.equal(w.status, 200);
     assert.deepEqual(await w.json(), { saved: true, approvedForPublication: false });
   }
-  assert.ok(calls.some((call) => call.url.endsWith("/admin/editorial-publisher-review") &&
-    call.method === "POST" && !!call.body && !call.body.includes("reviewerId")));
-  assert.ok(calls.some((call) => call.url.endsWith("/admin/editorial-event-factors") &&
-    call.method === "POST" && !!call.body && !call.body.includes("reviewerId")));
+  assert.ok(
+    calls.some(
+      (call) =>
+        call.url.endsWith("/admin/editorial-publisher-review") &&
+        call.method === "POST" &&
+        !!call.body &&
+        !call.body.includes("reviewerId"),
+    ),
+  );
+  assert.ok(
+    calls.some(
+      (call) =>
+        call.url.endsWith("/admin/editorial-event-factors") &&
+        call.method === "POST" &&
+        !!call.body &&
+        !call.body.includes("reviewerId"),
+    ),
+  );
   const count = calls.length;
   for (const bad of [
     { ...source, reviewerId: "forged" },
     { ...source, quality: 7 },
     { ...source, sourceRevision: 0 },
   ]) {
-    assert.equal((await dormantEditorialAdminProxy(
-      request("/api/admin/editorial-publisher-review", "POST", bad),
-      "publisher-review", config, upstream,
-    )).status, 400);
+    assert.equal(
+      (
+        await dormantEditorialAdminProxy(
+          request("/api/admin/editorial-publisher-review", "POST", bad),
+          "publisher-review",
+          config,
+          upstream,
+        )
+      ).status,
+      400,
+    );
   }
   for (const bad of [
     { ...factors, actorId: "forged" },
     { ...factors, risk: 6 },
     { ...factors, policyRevision: 0 },
   ]) {
-    assert.equal((await dormantEditorialAdminProxy(
-      request("/api/admin/editorial-event-factors", "POST", bad),
-      "event-factors", config, upstream,
-    )).status, 400);
+    assert.equal(
+      (
+        await dormantEditorialAdminProxy(
+          request("/api/admin/editorial-event-factors", "POST", bad),
+          "event-factors",
+          config,
+          upstream,
+        )
+      ).status,
+      400,
+    );
   }
   for (const url of [
     "/api/admin/editorial-publisher-review",
     "/api/admin/editorial-publisher-review?sourceId=../forged",
     "/api/admin/editorial-event-factors?eventId=" + id,
     "/api/admin/editorial-event-factors?eventId=" + id + "&profileId=science_news&actor=forged",
-  ]) assert.equal(
-    (await dormantEditorialAdminProxy(
-      request(url), url.includes("publisher") ? "publisher-review" : "event-factors",
-      config, upstream,
-    )).status, 400,
+  ])
+    assert.equal(
+      (
+        await dormantEditorialAdminProxy(
+          request(url),
+          url.includes("publisher") ? "publisher-review" : "event-factors",
+          config,
+          upstream,
+        )
+      ).status,
+      400,
+    );
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request(
+          "/api/admin/editorial-publisher-review",
+          "POST",
+          source,
+          "https://attacker.invalid",
+        ),
+        "publisher-review",
+        config,
+        upstream,
+      )
+    ).status,
+    403,
   );
-  assert.equal((await dormantEditorialAdminProxy(
-    request("/api/admin/editorial-publisher-review", "POST", source,
-      "https://attacker.invalid"), "publisher-review", config, upstream,
-  )).status, 403);
   assert.equal(calls.length, count);
 });
