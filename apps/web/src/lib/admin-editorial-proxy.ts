@@ -16,8 +16,13 @@ import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-p
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 type EditorialEndpoint =
-  "profiles" | "timeline" | "checkpoints" | "ranked-events" | "ranking-policy" |
-  "publisher-review" | "event-factors";
+  | "profiles"
+  | "timeline"
+  | "checkpoints"
+  | "ranked-events"
+  | "ranking-policy"
+  | "publisher-review"
+  | "event-factors";
 const ENDPOINTS: Record<EditorialEndpoint, string> = {
   profiles: "/admin/editorial-profiles",
   timeline: "/admin/editorial-timeline",
@@ -58,15 +63,25 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   if (path === "profiles") return keys.length === 0;
   if (path === "publisher-review") {
     const sourceId = url.searchParams.get("sourceId");
-    return keys.length === 1 && keys[0] === "sourceId" &&
-      !!sourceId && /^[a-z][a-z0-9_-]{2,40}$/.test(sourceId);
+    return (
+      keys.length === 1 &&
+      keys[0] === "sourceId" &&
+      !!sourceId &&
+      /^[a-z][a-z0-9_-]{2,40}$/.test(sourceId)
+    );
   }
   if (path === "event-factors") {
     const eventId = url.searchParams.get("eventId");
     const profileId = url.searchParams.get("profileId");
-    return keys.length === 2 && keys.includes("eventId") && keys.includes("profileId") &&
-      !!eventId && UUID.test(eventId) && !!profileId &&
-      /^[a-z][a-z0-9_-]{2,40}$/.test(profileId);
+    return (
+      keys.length === 2 &&
+      keys.includes("eventId") &&
+      keys.includes("profileId") &&
+      !!eventId &&
+      UUID.test(eventId) &&
+      !!profileId &&
+      /^[a-z][a-z0-9_-]{2,40}$/.test(profileId)
+    );
   }
   if (path === "ranking-policy") {
     const profileId = url.searchParams.get("profileId");
@@ -240,9 +255,14 @@ export async function dormantEditorialAdminProxy(
   if (
     request.method !== "GET" &&
     !(
-      ["profiles", "ranking-policy", "publisher-review", "event-factors",
-        "checkpoints", "timeline"].includes(endpoint) &&
-      request.method === "POST"
+      [
+        "profiles",
+        "ranking-policy",
+        "publisher-review",
+        "event-factors",
+        "checkpoints",
+        "timeline",
+      ].includes(endpoint) && request.method === "POST"
     )
   ) {
     return reply(405, { error: "method_not_allowed" });
@@ -288,12 +308,15 @@ export async function dormantEditorialAdminProxy(
     if (!object(value)) return reply(503, { error: "temporarily_unavailable" });
     if (endpoint === "publisher-review" || endpoint === "event-factors") {
       if (request.method === "GET") {
-        const valid = endpoint === "publisher-review"
-          ? validPublisherReviewSnapshot(value) : validEventFactorReviewSnapshot(value);
+        const valid =
+          endpoint === "publisher-review"
+            ? validPublisherReviewSnapshot(value)
+            : validEventFactorReviewSnapshot(value);
         return valid ? reply(200, value) : reply(503, { error: "temporarily_unavailable" });
       }
       return validMetadataReviewSaved(value)
-        ? reply(200, value) : reply(503, { error: "temporarily_unavailable" });
+        ? reply(200, value)
+        : reply(503, { error: "temporarily_unavailable" });
     }
     if (endpoint === "ranking-policy") {
       if (request.method === "GET") {
