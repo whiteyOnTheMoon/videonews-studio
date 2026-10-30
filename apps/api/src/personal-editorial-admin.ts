@@ -158,27 +158,39 @@ export function validateNamedPublisherReviewWrite(raw: unknown): NamedPublisherR
   if (
     !object(raw) ||
     Object.keys(raw).sort().join(",") !== "publisherGroup,quality,sourceId,sourceRevision" ||
-    typeof raw.sourceId !== "string" || !PROFILE_ID.test(raw.sourceId) ||
-    typeof raw.publisherGroup !== "string" || !PROFILE_ID.test(raw.publisherGroup) ||
-    revision(raw.sourceRevision) === null || (raw.sourceRevision as number) < 1 ||
-    !Number.isSafeInteger(raw.quality) || (raw.quality as number) < 0 ||
+    typeof raw.sourceId !== "string" ||
+    !PROFILE_ID.test(raw.sourceId) ||
+    typeof raw.publisherGroup !== "string" ||
+    !PROFILE_ID.test(raw.publisherGroup) ||
+    revision(raw.sourceRevision) === null ||
+    (raw.sourceRevision as number) < 1 ||
+    !Number.isSafeInteger(raw.quality) ||
+    (raw.quality as number) < 0 ||
     (raw.quality as number) > 5
-  ) return null;
+  )
+    return null;
   return raw as unknown as NamedPublisherReviewWrite;
 }
-export function validateNamedEventFactorReviewWrite(raw: unknown): NamedEventFactorReviewWrite | null {
+export function validateNamedEventFactorReviewWrite(
+  raw: unknown,
+): NamedEventFactorReviewWrite | null {
   if (
     !object(raw) ||
     Object.keys(raw).sort().join(",") !==
       "eventId,explanatoryValue,policyRevision,profileId,profileRevision,risk,visualizability" ||
-    typeof raw.eventId !== "string" || !UUID.test(raw.eventId) ||
-    typeof raw.profileId !== "string" || !PROFILE_ID.test(raw.profileId) ||
+    typeof raw.eventId !== "string" ||
+    !UUID.test(raw.eventId) ||
+    typeof raw.profileId !== "string" ||
+    !PROFILE_ID.test(raw.profileId) ||
     revision(raw.profileRevision) === null ||
-    revision(raw.policyRevision) === null || (raw.policyRevision as number) < 1 ||
-    !["explanatoryValue", "visualizability", "risk"].every((key) =>
-      Number.isSafeInteger(raw[key]) && (raw[key] as number) >= 0 && (raw[key] as number) <= 5
+    revision(raw.policyRevision) === null ||
+    (raw.policyRevision as number) < 1 ||
+    !["explanatoryValue", "visualizability", "risk"].every(
+      (key) =>
+        Number.isSafeInteger(raw[key]) && (raw[key] as number) >= 0 && (raw[key] as number) <= 5,
     )
-  ) return null;
+  )
+    return null;
   return raw as unknown as NamedEventFactorReviewWrite;
 }
 
@@ -502,8 +514,12 @@ export class DormantPersonalEditorialAdmin {
         if (req.method === "GET") {
           const keys = [...uri.searchParams.keys()];
           const sourceId = uri.searchParams.get("sourceId");
-          if (keys.length !== 1 || keys[0] !== "sourceId" ||
-            !sourceId || !PROFILE_ID.test(sourceId)) {
+          if (
+            keys.length !== 1 ||
+            keys[0] !== "sourceId" ||
+            !sourceId ||
+            !PROFILE_ID.test(sourceId)
+          ) {
             respond(res, 400, { error: "invalid_request" });
             return true;
           }
@@ -514,7 +530,9 @@ export class DormantPersonalEditorialAdmin {
             quality: number | null;
           }>("SELECT * FROM vns.named_publisher_review_read($1::text)", [sourceId]);
           const item = rows.rows[0];
-          if (rows.rows.length !== 1 || !item ||
+          if (
+            rows.rows.length !== 1 ||
+            !item ||
             revision(item.source_revision) === null ||
             (revision(item.source_revision) as number) < 1 ||
             typeof item.reviewed !== "boolean" ||
@@ -522,9 +540,11 @@ export class DormantPersonalEditorialAdmin {
               ? typeof item.publisher_group !== "string" ||
                 !PROFILE_ID.test(item.publisher_group) ||
                 !Number.isSafeInteger(item.quality) ||
-                (item.quality as number) < 0 || (item.quality as number) > 5
+                (item.quality as number) < 0 ||
+                (item.quality as number) > 5
               : item.publisher_group !== null || item.quality !== null)
-          ) throw new Error("Publisher review read invalid");
+          )
+            throw new Error("Publisher review read invalid");
           respond(res, 200, {
             sourceId,
             sourceRevision: revision(item.source_revision),
@@ -537,7 +557,7 @@ export class DormantPersonalEditorialAdmin {
           const input = validateNamedPublisherReviewWrite(command)!;
           const rows = await session.query<{ saved: boolean }>(
             "SELECT vns.named_publisher_review_commit($1::text,$2::bigint,$3::text,$4::integer) AS saved",
-            [input.sourceId,input.sourceRevision,input.publisherGroup,input.quality],
+            [input.sourceId, input.sourceRevision, input.publisherGroup, input.quality],
           );
           if (rows.rows.length !== 1 || typeof rows.rows[0]?.saved !== "boolean")
             throw new Error("Publisher review write invalid");
@@ -549,8 +569,15 @@ export class DormantPersonalEditorialAdmin {
           const keys = [...uri.searchParams.keys()];
           const eventId = uri.searchParams.get("eventId");
           const profileId = uri.searchParams.get("profileId");
-          if (keys.length !== 2 || !keys.includes("eventId") || !keys.includes("profileId") ||
-            !eventId || !UUID.test(eventId) || !profileId || !PROFILE_ID.test(profileId)) {
+          if (
+            keys.length !== 2 ||
+            !keys.includes("eventId") ||
+            !keys.includes("profileId") ||
+            !eventId ||
+            !UUID.test(eventId) ||
+            !profileId ||
+            !PROFILE_ID.test(profileId)
+          ) {
             respond(res, 400, { error: "invalid_request" });
             return true;
           }
@@ -561,20 +588,27 @@ export class DormantPersonalEditorialAdmin {
             explanatory_value: number | null;
             visualizability: number | null;
             risk: number | null;
-          }>("SELECT * FROM vns.named_event_factor_review_read($1::uuid,$2::text)",
-             [eventId,profileId]);
+          }>("SELECT * FROM vns.named_event_factor_review_read($1::uuid,$2::text)", [
+            eventId,
+            profileId,
+          ]);
           const item = rows.rows[0];
-          if (rows.rows.length !== 1 || !item ||
+          if (
+            rows.rows.length !== 1 ||
+            !item ||
             revision(item.profile_revision) === null ||
             revision(item.policy_revision) === null ||
             (revision(item.policy_revision) as number) < 1 ||
             typeof item.reviewed !== "boolean" ||
             (item.reviewed
-              ? ![item.explanatory_value,item.visualizability,item.risk].every(
-                (n) => Number.isSafeInteger(n) && (n as number) >= 0 && (n as number) <= 5)
-              : item.explanatory_value !== null || item.visualizability !== null ||
+              ? ![item.explanatory_value, item.visualizability, item.risk].every(
+                  (n) => Number.isSafeInteger(n) && (n as number) >= 0 && (n as number) <= 5,
+                )
+              : item.explanatory_value !== null ||
+                item.visualizability !== null ||
                 item.risk !== null)
-          ) throw new Error("Event factor review read invalid");
+          )
+            throw new Error("Event factor review read invalid");
           respond(res, 200, {
             eventId,
             profileId,
@@ -590,8 +624,15 @@ export class DormantPersonalEditorialAdmin {
           const input = validateNamedEventFactorReviewWrite(command)!;
           const rows = await session.query<{ saved: boolean }>(
             "SELECT vns.named_event_factor_review_commit($1::uuid,$2::text,$3::bigint,$4::bigint,$5::integer,$6::integer,$7::integer) AS saved",
-            [input.eventId,input.profileId,input.profileRevision,input.policyRevision,
-              input.explanatoryValue,input.visualizability,input.risk],
+            [
+              input.eventId,
+              input.profileId,
+              input.profileRevision,
+              input.policyRevision,
+              input.explanatoryValue,
+              input.visualizability,
+              input.risk,
+            ],
           );
           if (rows.rows.length !== 1 || typeof rows.rows[0]?.saved !== "boolean")
             throw new Error("Event factor write invalid");
