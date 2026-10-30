@@ -29,7 +29,7 @@ ACK = "VNS_P2_OWNER_DB_OPERATOR_APPROVED"
 ACK_VALUE = "ENROLL_EXISTING_OWNER_ONLY"
 FAIL = "REFUSED: personal owner PostgreSQL enrollment prerequisites not met"
 SHA = re.compile(r"^[a-f0-9]{40}$")
-SCRAM = re.compile(r"^SCRAM-SHA-256\\$4096:[A-Za-z0-9+/=]+\\$[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$")
+SCRAM = re.compile(r"^SCRAM-SHA-256\$4096:[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$")
 
 READ_SQL = """
 SELECT current_user || '|' || current_database() || '|' ||
