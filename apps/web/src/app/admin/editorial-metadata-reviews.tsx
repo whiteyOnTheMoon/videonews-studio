@@ -28,14 +28,19 @@ async function getSource(id: string): Promise<PublisherReviewSnapshot> {
 }
 async function getEvent(id: string, profile: string): Promise<EventFactorReviewSnapshot> {
   const response = await fetch(
-    "/api/admin/editorial-event-factors?eventId=" + encodeURIComponent(id) +
-      "&profileId=" + encodeURIComponent(profile),
+    "/api/admin/editorial-event-factors?eventId=" +
+      encodeURIComponent(id) +
+      "&profileId=" +
+      encodeURIComponent(profile),
     { credentials: "same-origin", cache: "no-store", redirect: "error" },
   );
   if (!response.ok) throw new Error("Event factors unavailable");
   const value: unknown = await response.json();
-  if (!validEventFactorReviewSnapshot(value) ||
-      value.eventId !== id || value.profileId !== profile) {
+  if (
+    !validEventFactorReviewSnapshot(value) ||
+    value.eventId !== id ||
+    value.profileId !== profile
+  ) {
     throw new Error("Event factor response invalid");
   }
   return value;
@@ -98,8 +103,16 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
   }
   async function saveSource(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!source || source.reviewed || !ID.test(publisherGroup) || busy ||
-      !Number.isSafeInteger(quality) || quality < 0 || quality > 5) return;
+    if (
+      !source ||
+      source.reviewed ||
+      !ID.test(publisherGroup) ||
+      busy ||
+      !Number.isSafeInteger(quality) ||
+      quality < 0 ||
+      quality > 5
+    )
+      return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -111,12 +124,18 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
         quality,
       });
       const fresh = await getSource(source.sourceId);
-      if (!fresh.reviewed || fresh.sourceRevision !== source.sourceRevision ||
-        fresh.publisherGroup !== publisherGroup || fresh.quality !== quality) {
+      if (
+        !fresh.reviewed ||
+        fresh.sourceRevision !== source.sourceRevision ||
+        fresh.publisherGroup !== publisherGroup ||
+        fresh.quality !== quality
+      ) {
         throw new Error("Source review not confirmed");
       }
       setSource(fresh);
-      setNotice("Herausgeberzuordnung persönlich dokumentiert. Keine Quellen- oder Veröffentlichungsfreigabe.");
+      setNotice(
+        "Herausgeberzuordnung persönlich dokumentiert. Keine Quellen- oder Veröffentlichungsfreigabe.",
+      );
     } catch {
       setSource(null);
       setError("Quellenprüfung nicht bestätigt. Bitte Quelle neu laden.");
@@ -138,17 +157,24 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
       setVisualizability(current.visualizability ?? 0);
       setRisk(current.risk ?? 0);
     } catch {
-      setError("Ereignisprüfung nicht verfügbar. Aktuelle Ranking-Policy und Ereignis kontrollieren.");
+      setError(
+        "Ereignisprüfung nicht verfügbar. Aktuelle Ranking-Policy und Ereignis kontrollieren.",
+      );
     } finally {
       setBusy(false);
     }
   }
   async function saveFactors(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!factor || factor.reviewed || busy ||
+    if (
+      !factor ||
+      factor.reviewed ||
+      busy ||
       ![explanatoryValue, visualizability, risk].every(
         (value) => Number.isSafeInteger(value) && value >= 0 && value <= 5,
-      )) return;
+      )
+    )
+      return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -163,14 +189,20 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
         risk,
       });
       const fresh = await getEvent(factor.eventId, factor.profileId);
-      if (!fresh.reviewed || fresh.profileRevision !== factor.profileRevision ||
+      if (
+        !fresh.reviewed ||
+        fresh.profileRevision !== factor.profileRevision ||
         fresh.policyRevision !== factor.policyRevision ||
         fresh.explanatoryValue !== explanatoryValue ||
-        fresh.visualizability !== visualizability || fresh.risk !== risk) {
+        fresh.visualizability !== visualizability ||
+        fresh.risk !== risk
+      ) {
         throw new Error("Event factor review not confirmed");
       }
       setFactor(fresh);
-      setNotice("Ereignisbewertung persönlich erfasst. Erneute Projektion für den SQL-Score erforderlich.");
+      setNotice(
+        "Ereignisbewertung persönlich erfasst. Erneute Projektion für den SQL-Score erforderlich.",
+      );
     } catch {
       setFactor(null);
       setError("Ereignisbewertung nicht bestätigt. Bitte Ereignis neu laden.");
@@ -183,40 +215,59 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
     <section className="jobs-section" aria-labelledby="review-metadata-heading">
       <h2 id="review-metadata-heading">Redaktionelle Herkunfts- und Ereignisprüfung</h2>
       <p>
-        Manuelle, personengebundene Metadatenbewertungen. Verschiedene Quellen-IDs
-        beweisen keine unabhängigen Herausgeber. Keine Lizenz- oder Faktenfreigabe.
+        Manuelle, personengebundene Metadatenbewertungen. Verschiedene Quellen-IDs beweisen keine
+        unabhängigen Herausgeber. Keine Lizenz- oder Faktenfreigabe.
       </p>
       {error ? <p role="alert">{error}</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
       <h3>Herausgebergruppe und Quellenqualität</h3>
       <form onSubmit={(event) => void loadSource(event)}>
         <label htmlFor="publisher-review-source-id">Freigegebene Quellen-ID</label>
-        <input id="publisher-review-source-id" required maxLength={41}
-          pattern="[a-z][a-z0-9_-]{2,40}" value={sourceId}
+        <input
+          id="publisher-review-source-id"
+          required
+          maxLength={41}
+          pattern="[a-z][a-z0-9_-]{2,40}"
+          value={sourceId}
           onChange={(event) => {
             setSourceId(event.target.value);
             setSource(null);
-          }} />
-        <button type="submit" disabled={busy || !ID.test(sourceId)}>Quelle prüfen</button>
+          }}
+        />
+        <button type="submit" disabled={busy || !ID.test(sourceId)}>
+          Quelle prüfen
+        </button>
       </form>
       {source ? (
         source.reviewed ? (
           <p role="status">
-            Quelle {source.sourceId} · Registerrevision {source.sourceRevision} ·
-            Herausgeber {source.publisherGroup} · Qualitätsstufe {source.quality}/5.
-            Unveränderlich dokumentiert.
+            Quelle {source.sourceId} · Registerrevision {source.sourceRevision} · Herausgeber{" "}
+            {source.publisherGroup} · Qualitätsstufe {source.quality}/5. Unveränderlich
+            dokumentiert.
           </p>
         ) : (
           <form onSubmit={(event) => void saveSource(event)}>
             <p>Quellenregisterrevision: {source.sourceRevision}</p>
             <label htmlFor="publisher-review-group">Geprüfte Herausgebergruppe</label>
-            <input id="publisher-review-group" required maxLength={41}
-              pattern="[a-z][a-z0-9_-]{2,40}" value={publisherGroup}
-              onChange={(event) => setPublisherGroup(event.target.value)} />
+            <input
+              id="publisher-review-group"
+              required
+              maxLength={41}
+              pattern="[a-z][a-z0-9_-]{2,40}"
+              value={publisherGroup}
+              onChange={(event) => setPublisherGroup(event.target.value)}
+            />
             <label htmlFor="publisher-review-quality">Quellenqualität (0–5)</label>
-            <input id="publisher-review-quality" type="number" min={0} max={5}
-              step={1} required value={quality}
-              onChange={(event) => setQuality(Number(event.target.value))} />
+            <input
+              id="publisher-review-quality"
+              type="number"
+              min={0}
+              max={5}
+              step={1}
+              required
+              value={quality}
+              onChange={(event) => setQuality(Number(event.target.value))}
+            />
             <button type="submit" disabled={busy || !ID.test(publisherGroup)}>
               Herausgeberprüfung speichern
             </button>
@@ -226,18 +277,28 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
       <h3>Erklärwert, Visualisierbarkeit und Risiko</h3>
       <form onSubmit={(event) => void loadFactors(event)}>
         <label htmlFor="event-factor-id">Ereignis-UUID</label>
-        <input id="event-factor-id" required value={eventId} maxLength={36}
+        <input
+          id="event-factor-id"
+          required
+          value={eventId}
+          maxLength={36}
           onChange={(event) => {
             setEventId(event.target.value);
             setFactor(null);
-          }} />
+          }}
+        />
         <label htmlFor="event-factor-profile">Profil-ID</label>
-        <input id="event-factor-profile" required maxLength={41}
-          pattern="[a-z][a-z0-9_-]{2,40}" value={profileId}
+        <input
+          id="event-factor-profile"
+          required
+          maxLength={41}
+          pattern="[a-z][a-z0-9_-]{2,40}"
+          value={profileId}
           onChange={(event) => {
             setProfileId(event.target.value);
             setFactor(null);
-          }} />
+          }}
+        />
         <button type="submit" disabled={busy || !UUID.test(eventId) || !ID.test(profileId)}>
           Ereignis laden
         </button>
@@ -247,24 +308,36 @@ export default function EditorialMetadataReviews({ enabled }: { enabled: boolean
           <p role="status">
             Profilrevision {factor.profileRevision} · Policyrevision {factor.policyRevision} ·
             Erklärwert {factor.explanatoryValue}/5 · Visualisierbarkeit
-            {factor.visualizability}/5 · Risiko {factor.risk}/5.
-            Unveränderlich dokumentiert.
+            {factor.visualizability}/5 · Risiko {factor.risk}/5. Unveränderlich dokumentiert.
           </p>
         ) : (
           <form onSubmit={(event) => void saveFactors(event)}>
-            <p>Profilrevision {factor.profileRevision} · Policyrevision {factor.policyRevision}</p>
-            {([
-              ["Erklärwert", explanatoryValue, setExplanatoryValue],
-              ["Visualisierbarkeit", visualizability, setVisualizability],
-              ["Risiko", risk, setRisk],
-            ] as const).map(([name, value, setter]) => (
+            <p>
+              Profilrevision {factor.profileRevision} · Policyrevision {factor.policyRevision}
+            </p>
+            {(
+              [
+                ["Erklärwert", explanatoryValue, setExplanatoryValue],
+                ["Visualisierbarkeit", visualizability, setVisualizability],
+                ["Risiko", risk, setRisk],
+              ] as const
+            ).map(([name, value, setter]) => (
               <label key={name}>
                 {name} (0–5)
-                <input type="number" min={0} max={5} step={1} required value={value}
-                  onChange={(event) => setter(Number(event.target.value))} />
+                <input
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={1}
+                  required
+                  value={value}
+                  onChange={(event) => setter(Number(event.target.value))}
+                />
               </label>
             ))}
-            <button type="submit" disabled={busy}>Ereignisbewertung speichern</button>
+            <button type="submit" disabled={busy}>
+              Ereignisbewertung speichern
+            </button>
           </form>
         )
       ) : null}
