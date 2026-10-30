@@ -416,6 +416,9 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0057_minimum_two_codepoint_tokens.test.sql"
   sql < "$root/db/migrations/0058_exact_headline_event_window.up.sql"
   sql < "$root/db/tests/0058_exact_headline_event_window.test.sql"
+  sql < "$root/db/migrations/0059_canonical_event_title_fingerprint.up.sql"
+  sql < "$root/db/tests/0059_canonical_event_title_fingerprint.test.sql"
+  sql < "$root/db/migrations/0059_canonical_event_title_fingerprint.down.sql"
   sql < "$root/db/migrations/0058_exact_headline_event_window.down.sql"
   sql < "$root/db/migrations/0057_minimum_two_codepoint_tokens.down.sql"
   sql < "$root/db/migrations/0056_failclosed_ranked_feed_read.down.sql"
@@ -480,4 +483,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0058 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0059 migrations, source authority, leases and budgets twice"
