@@ -1,6 +1,12 @@
 # Opt-in overlay for personal editorial Admin backend, not included by default.
 # The existing API remains feature-disabled without separate operator ACKs.
 services:
+  # Web is independently gated; the personal Editor login and backend
+  # still require their existing, separately approved operator settings.
+  web:
+    environment:
+      VNS_WEB_EDITORIAL_ADMIN_ENABLED: "${VNS_WEB_EDITORIAL_ADMIN_ENABLED:-false}"
+
   api:
     environment:
       VNS_EDITORIAL_PERSONAL_DB_ENABLED: "${VNS_EDITORIAL_PERSONAL_DB_ENABLED:-false}"
