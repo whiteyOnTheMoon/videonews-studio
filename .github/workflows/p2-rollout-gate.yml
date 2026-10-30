@@ -8,6 +8,8 @@ on:
       - "scripts/p2_a_readonly_acceptance.py"
       - "scripts/p2_a_schema_0048_to_0059.py"
       - "scripts/p2_owner_personal_db_enrollment.py"
+      - "deploy/compose.personal-editorial-admin.yaml"
+      - "scripts/test_p2_personal_editorial_compose.mjs"
       - "scripts/test_p2_owner_personal_db_enrollment.py"
       - "docs/P2_OWNER_PERSONAL_DB_ENROLLMENT.md"
       - "scripts/test_p2_a_schema_0048_to_0059.py"
@@ -40,6 +42,8 @@ jobs:
         run: python3 -m unittest discover -s scripts -p "test_p2_a_readonly_acceptance.py" -v
       - name: Verify exact P2-A 0048-to-0059 controlled schema upgrade denial paths
         run: python3 -m unittest discover -s scripts -p "test_p2_a_schema_0048_to_0059.py" -v
+      - name: Check personal web and API Compose gates remain independently disabled
+        run: node --test scripts/test_p2_personal_editorial_compose.mjs
       - name: Test default-off existing-owner personal PostgreSQL enrollment
         run: python3 -m unittest discover -s scripts -p "test_p2_owner_personal_db_enrollment.py" -v
       - name: Run fail-closed manifest tests
