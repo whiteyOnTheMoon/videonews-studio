@@ -5,11 +5,11 @@ import {
   readOfficialFeedProposals,
 } from "./p2_a_source_readiness.mjs";
 
-test("three official-source proposals retain pending status, distinct publishers and explicit incompatibility", () => {
+test("three separate official feed URLs match the 0050 same-host registry while remaining unapproved", () => {
   const document = readOfficialFeedProposals();
   const readiness = assessOfficialFeedProposals(document);
   assert.equal(readiness.approvedForLive, false);
-  assert.equal(readiness.currentRegistryReady, false);
+  assert.equal(readiness.currentRegistryReady, true);
   assert.equal(readiness.proposals.length, 3);
   assert.deepEqual(
     readiness.proposals.map((result) => result.id),
@@ -20,17 +20,19 @@ test("three official-source proposals retain pending status, distinct publishers
       (result) =>
         result.approvedForLive === false &&
         result.reasons.includes("operator_legal_and_host_review_missing") &&
-        result.reasons.includes("live_feed_response_unverified"),
+        result.reasons.includes("live_feed_response_unverified") &&
+        result.reasons.includes("per_item_rights_and_attribution_unverified") &&
+        result.compatibleWithCurrentRegistry === true,
     ),
   );
   assert.ok(
-    readiness.proposals.some((result) =>
-      result.reasons.includes("article_scope_outside_feed_base"),
+    readiness.proposals.every(
+      (result) =>
+        !result.reasons.includes("feed_article_host_mismatch") &&
+        !result.reasons.includes("feed_url_equals_article_scope"),
     ),
   );
-  assert.ok(
-    readiness.proposals.some((result) => result.reasons.includes("feed_url_not_directory")),
-  );
+  assert.match(readiness.nextStep, /supported since 0050/);
 });
 
 test("nothing about a document can promote rights, skip publisher independence or admit arbitrary URLs", () => {
@@ -62,18 +64,42 @@ test("nothing about a document can promote rights, skip publisher independence o
   }
 });
 
-test("model compatibility never means live operator approval", () => {
+test("same-host-but-separate paths are compatible, without ever implying rights approval", () => {
+  const readiness = assessOfficialFeedProposals(readOfficialFeedProposals());
+  assert.equal(readiness.currentRegistryReady, true);
+  assert.equal(readiness.approvedForLive, false);
+  assert.ok(readiness.proposals.every((item) => item.approvedForLive === false));
+});
+
+test("a separate feedUrl on another host is structurally incompatible", () => {
   const data = readOfficialFeedProposals();
-  const proposal = data.proposals[0];
-  const artificial = {
-    ...proposal,
-    feedUrl: "https://www.jpl.nasa.gov/news/",
-    articleScope: "https://www.jpl.nasa.gov/news/",
+  const wrongHost = {
+    ...data.proposals[0],
+    feedUrl: "https://www.nasa.gov/news-release/feed/",
   };
   const readiness = assessOfficialFeedProposals({
     ...data,
-    proposals: [artificial, ...data.proposals.slice(1)],
+    proposals: [wrongHost, ...data.proposals.slice(1)],
   });
-  assert.equal(readiness.proposals[0].compatibleWithCurrentRegistry, true);
+  assert.equal(readiness.currentRegistryReady, false);
+  assert.deepEqual(
+    readiness.proposals[0].reasons.filter((reason) => reason === "feed_article_host_mismatch"),
+    ["feed_article_host_mismatch"],
+  );
   assert.equal(readiness.proposals[0].approvedForLive, false);
+});
+
+test("supplying an identical feedUrl and baseUrl must not pass the optional feedUrl gate", () => {
+  const data = readOfficialFeedProposals();
+  const sameUrl = {
+    ...data.proposals[0],
+    feedUrl: data.proposals[0].articleScope,
+  };
+  const readiness = assessOfficialFeedProposals({
+    ...data,
+    proposals: [sameUrl, ...data.proposals.slice(1)],
+  });
+  assert.equal(readiness.proposals[0].compatibleWithCurrentRegistry, false);
+  assert.ok(readiness.proposals[0].reasons.includes("feed_url_equals_article_scope"));
+  assert.equal(readiness.approvedForLive, false);
 });
