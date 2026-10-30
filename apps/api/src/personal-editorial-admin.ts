@@ -138,6 +138,50 @@ export function validateNamedRankingPolicySettings(
   return raw as unknown as NamedRankingPolicySettings;
 }
 
+export interface NamedPublisherReviewWrite {
+  sourceId: string;
+  sourceRevision: number;
+  publisherGroup: string;
+  quality: number;
+}
+export interface NamedEventFactorReviewWrite {
+  eventId: string;
+  profileId: string;
+  profileRevision: number;
+  policyRevision: number;
+  explanatoryValue: number;
+  visualizability: number;
+  risk: number;
+}
+/** Exact bounded review payloads. Browser cannot supply reviewer identity. */
+export function validateNamedPublisherReviewWrite(raw: unknown): NamedPublisherReviewWrite | null {
+  if (
+    !object(raw) ||
+    Object.keys(raw).sort().join(",") !== "publisherGroup,quality,sourceId,sourceRevision" ||
+    typeof raw.sourceId !== "string" || !PROFILE_ID.test(raw.sourceId) ||
+    typeof raw.publisherGroup !== "string" || !PROFILE_ID.test(raw.publisherGroup) ||
+    revision(raw.sourceRevision) === null || (raw.sourceRevision as number) < 1 ||
+    !Number.isSafeInteger(raw.quality) || (raw.quality as number) < 0 ||
+    (raw.quality as number) > 5
+  ) return null;
+  return raw as unknown as NamedPublisherReviewWrite;
+}
+export function validateNamedEventFactorReviewWrite(raw: unknown): NamedEventFactorReviewWrite | null {
+  if (
+    !object(raw) ||
+    Object.keys(raw).sort().join(",") !==
+      "eventId,explanatoryValue,policyRevision,profileId,profileRevision,risk,visualizability" ||
+    typeof raw.eventId !== "string" || !UUID.test(raw.eventId) ||
+    typeof raw.profileId !== "string" || !PROFILE_ID.test(raw.profileId) ||
+    revision(raw.profileRevision) === null ||
+    revision(raw.policyRevision) === null || (raw.policyRevision as number) < 1 ||
+    !["explanatoryValue", "visualizability", "risk"].every((key) =>
+      Number.isSafeInteger(raw[key]) && (raw[key] as number) >= 0 && (raw[key] as number) <= 5
+    )
+  ) return null;
+  return raw as unknown as NamedEventFactorReviewWrite;
+}
+
 const CHECKPOINT_STAGES = [
   "ranking",
   "claim_review",
@@ -294,6 +338,8 @@ export class DormantPersonalEditorialAdmin {
         "/admin/editorial-checkpoints",
         "/admin/editorial-ranked-events",
         "/admin/editorial-ranking-policy",
+        "/admin/editorial-publisher-review",
+        "/admin/editorial-event-factors",
       ].includes(path)
     )
       return false;
@@ -342,9 +388,13 @@ export class DormantPersonalEditorialAdmin {
             !PROFILE_ID.test(command.profileId) ||
             revision(command.expectedRevision) === null ||
             !validateNamedRankingPolicySettings(command.settings)
-          : path === "/admin/editorial-checkpoints"
-            ? uri.search !== "" || !validateNamedCheckpointWrite(command)
-            : uri.search !== "" || !validateNamedTimelineWrite(command))
+          : path === "/admin/editorial-publisher-review"
+            ? uri.search !== "" || !validateNamedPublisherReviewWrite(command)
+            : path === "/admin/editorial-event-factors"
+              ? uri.search !== "" || !validateNamedEventFactorReviewWrite(command)
+              : path === "/admin/editorial-checkpoints"
+                ? uri.search !== "" || !validateNamedCheckpointWrite(command)
+                : uri.search !== "" || !validateNamedTimelineWrite(command))
     ) {
       respond(res, 400, { error: "invalid_request" });
       return true;
@@ -447,6 +497,106 @@ export class DormantPersonalEditorialAdmin {
               policyRevision: expected + 1,
               productionActive: false,
             });
+        }
+      } else if (path === "/admin/editorial-publisher-review") {
+        if (req.method === "GET") {
+          const keys = [...uri.searchParams.keys()];
+          const sourceId = uri.searchParams.get("sourceId");
+          if (keys.length !== 1 || keys[0] !== "sourceId" ||
+            !sourceId || !PROFILE_ID.test(sourceId)) {
+            respond(res, 400, { error: "invalid_request" });
+            return true;
+          }
+          const rows = await session.query<{
+            source_revision: string | number;
+            reviewed: boolean;
+            publisher_group: string | null;
+            quality: number | null;
+          }>("SELECT * FROM vns.named_publisher_review_read($1::text)", [sourceId]);
+          const item = rows.rows[0];
+          if (rows.rows.length !== 1 || !item ||
+            revision(item.source_revision) === null ||
+            (revision(item.source_revision) as number) < 1 ||
+            typeof item.reviewed !== "boolean" ||
+            (item.reviewed
+              ? typeof item.publisher_group !== "string" ||
+                !PROFILE_ID.test(item.publisher_group) ||
+                !Number.isSafeInteger(item.quality) ||
+                (item.quality as number) < 0 || (item.quality as number) > 5
+              : item.publisher_group !== null || item.quality !== null)
+          ) throw new Error("Publisher review read invalid");
+          respond(res, 200, {
+            sourceId,
+            sourceRevision: revision(item.source_revision),
+            reviewed: item.reviewed,
+            publisherGroup: item.publisher_group,
+            quality: item.quality,
+            approvedForPublication: false,
+          });
+        } else {
+          const input = validateNamedPublisherReviewWrite(command)!;
+          const rows = await session.query<{ saved: boolean }>(
+            "SELECT vns.named_publisher_review_commit($1::text,$2::bigint,$3::text,$4::integer) AS saved",
+            [input.sourceId,input.sourceRevision,input.publisherGroup,input.quality],
+          );
+          if (rows.rows.length !== 1 || typeof rows.rows[0]?.saved !== "boolean")
+            throw new Error("Publisher review write invalid");
+          if (!rows.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
+          else respond(res, 200, { saved: true, approvedForPublication: false });
+        }
+      } else if (path === "/admin/editorial-event-factors") {
+        if (req.method === "GET") {
+          const keys = [...uri.searchParams.keys()];
+          const eventId = uri.searchParams.get("eventId");
+          const profileId = uri.searchParams.get("profileId");
+          if (keys.length !== 2 || !keys.includes("eventId") || !keys.includes("profileId") ||
+            !eventId || !UUID.test(eventId) || !profileId || !PROFILE_ID.test(profileId)) {
+            respond(res, 400, { error: "invalid_request" });
+            return true;
+          }
+          const rows = await session.query<{
+            profile_revision: string | number;
+            policy_revision: string | number;
+            reviewed: boolean;
+            explanatory_value: number | null;
+            visualizability: number | null;
+            risk: number | null;
+          }>("SELECT * FROM vns.named_event_factor_review_read($1::uuid,$2::text)",
+             [eventId,profileId]);
+          const item = rows.rows[0];
+          if (rows.rows.length !== 1 || !item ||
+            revision(item.profile_revision) === null ||
+            revision(item.policy_revision) === null ||
+            (revision(item.policy_revision) as number) < 1 ||
+            typeof item.reviewed !== "boolean" ||
+            (item.reviewed
+              ? ![item.explanatory_value,item.visualizability,item.risk].every(
+                (n) => Number.isSafeInteger(n) && (n as number) >= 0 && (n as number) <= 5)
+              : item.explanatory_value !== null || item.visualizability !== null ||
+                item.risk !== null)
+          ) throw new Error("Event factor review read invalid");
+          respond(res, 200, {
+            eventId,
+            profileId,
+            profileRevision: revision(item.profile_revision),
+            policyRevision: revision(item.policy_revision),
+            reviewed: item.reviewed,
+            explanatoryValue: item.explanatory_value,
+            visualizability: item.visualizability,
+            risk: item.risk,
+            approvedForPublication: false,
+          });
+        } else {
+          const input = validateNamedEventFactorReviewWrite(command)!;
+          const rows = await session.query<{ saved: boolean }>(
+            "SELECT vns.named_event_factor_review_commit($1::uuid,$2::text,$3::bigint,$4::bigint,$5::integer,$6::integer,$7::integer) AS saved",
+            [input.eventId,input.profileId,input.profileRevision,input.policyRevision,
+              input.explanatoryValue,input.visualizability,input.risk],
+          );
+          if (rows.rows.length !== 1 || typeof rows.rows[0]?.saved !== "boolean")
+            throw new Error("Event factor write invalid");
+          if (!rows.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
+          else respond(res, 200, { saved: true, approvedForPublication: false });
         }
       } else if (path === "/admin/editorial-ranked-events") {
         // Read-only SQL projection. The DB, not the API, chooses which
