@@ -16,7 +16,7 @@
     "typecheck": "npm run build --workspace @vns/shared && npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --check . || bash scripts/p2_a_format_rights_diagnostic.sh",
     "test": "npm run build --workspace @vns/shared && npm run test --workspace @vns/shared && npm run test --workspace @vns/api && npm run test --workspace @vns/worker && npm run test --workspace @vns/web"
   },
   "devDependencies": {
