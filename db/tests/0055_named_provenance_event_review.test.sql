@@ -129,6 +129,10 @@ BEGIN
        'vns.feed_event_factor_reviews','INSERT')
  THEN RAISE EXCEPTION 'Client could forge metadata reviews'; END IF;
 END $boundaries$;
+-- Only the disposable CI administrator resolves the event ID.
+-- The named client must not receive raw research_events SELECT privileges.
+SELECT set_config('vns.ci_review_event_id',
+  (SELECT event_id::text FROM vns.research_events LIMIT 1),true);
 SET SESSION AUTHORIZATION editor_ci_ranking_metadata;
 DO $named$
 DECLARE
@@ -166,7 +170,7 @@ BEGIN
  IF NOT is_reviewed OR p_group<>'research_alpha' OR p_quality<>4
  THEN RAISE EXCEPTION 'Personal provenance not persisted'; END IF;
 
- SELECT event_id INTO e FROM vns.research_events LIMIT 1;
+ e:=current_setting('vns.ci_review_event_id')::uuid;
  SELECT x.profile_revision,x.policy_revision,x.reviewed,
    x.explanatory_value,x.visualizability,x.risk
  INTO rev,pol,is_reviewed,explanation,visual,risk_level
