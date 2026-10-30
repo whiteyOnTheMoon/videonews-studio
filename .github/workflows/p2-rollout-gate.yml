@@ -5,6 +5,9 @@ on:
     paths:
       - "scripts/p2_rollout_gate.mjs"
       - "scripts/p2_02_stage_a_vps_inventory.py"
+      - "scripts/p2_a_readonly_acceptance.py"
+      - "scripts/test_p2_a_readonly_acceptance.py"
+      - "docs/P2_A_READONLY_VPS_ACCEPTANCE_2026-10-29.md"
       - "scripts/test_p2_02_stage_a_vps_inventory.py"
       - "docs/P2-02_STAGE_A_READ_ONLY_VPS_AUDIT.md"
       - "docs/P2-02_IONOS_BESZEL_ACCEPTANCE_2026-10-27.md"
@@ -21,8 +24,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Validate repository formatting
+        run: |
+          npm ci --no-audit --no-fund
+          npm run format:check
       - name: Verify read-only Stage-A inventory with synthetic host and Docker states
         run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
+      - name: Check P2-A read-only schema and licensed-source acceptance preflight
+        run: python3 -m unittest discover -s scripts -p "test_p2_a_readonly_acceptance.py" -v
       - name: Run fail-closed manifest tests
         run: node --test scripts/test_p2_rollout_gate.mjs
       - name: Assert missing evidence blocks review
