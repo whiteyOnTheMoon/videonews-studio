@@ -60,9 +60,10 @@ BEGIN
      OR p_group IS NULL OR p_group !~ '^[a-z][a-z0-9_-]{2,40}$'
      OR p_quality IS NULL OR p_quality NOT BETWEEN 0 AND 5
   THEN RAISE EXCEPTION 'Publisher review metadata invalid' USING ERRCODE='22023'; END IF;
-  -- Prevent concurrent source/host revocation while writing provenance.
+  -- Check current authority with read-only named grants.
+  -- Admin ranking reads also revalidate any later source/host revocation.
   SELECT registry.revision,registry.sources INTO current_revision,sources
-    FROM vns.admin_source_registry registry WHERE singleton=true FOR SHARE;
+    FROM vns.admin_source_registry registry WHERE singleton=true;
   IF current_revision IS DISTINCT FROM p_source_revision THEN RETURN false; END IF;
   SELECT item.value INTO source_record
     FROM jsonb_array_elements(sources) item(value)
