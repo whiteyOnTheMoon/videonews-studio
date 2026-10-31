@@ -24,13 +24,13 @@ Der Helper `scripts/p2_02_feed_runtime_handoff.py` liest fünf **bereits
 vorhandene** Passwörter und erzeugt identische, unabhängige Kopien unter
 `/var/lib/videonews-studio/p2-feed-runtime-secrets/`:
 
-| Laufzeitdatei | Besitzer UID:GID | Dienst / Ziel im Container |
-| --- | --- | --- |
-| `vns_source_export_db_password` | 10001:10001 | source-publisher: `/run/secrets/vns_source_export_db_password` |
-| `vns_feed_db_password` | 10002:10002 | feed-consumer: `/run/secrets/vns_feed_db_password` |
-| `vns_feed_producer_redis_password` | 10002:10002 | feed-producer: `/run/secrets/vns_feed_redis_password` |
-| `vns_feed_consumer_redis_password` | 10002:10002 | feed-consumer: `/run/secrets/vns_feed_redis_password` |
-| `vns_feed_project_db_password` | 10004:10004 | feed-project-once/continuous: `/run/secrets/vns_feed_project_db_password` |
+- `vns_source_export_db_password`: 10001:10001, source-publisher.
+- `vns_feed_db_password`: 10002:10002, feed-consumer.
+- `vns_feed_producer_redis_password`: 10002:10002, feed-producer.
+- `vns_feed_consumer_redis_password`: 10002:10002, feed-consumer.
+- `vns_feed_project_db_password`: 10004:10004, feed-project-once und
+  feed-project-continuous.
+
 
 Die Zielverzeichnisse gehören **root:root (0700)**. Jede der fünf Dateien
 erhält den eigenen numerischen Dienst-UID/GID und den Modus **0400**. Ein
