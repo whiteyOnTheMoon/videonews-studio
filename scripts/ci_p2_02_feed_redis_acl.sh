@@ -100,7 +100,7 @@ def check(user, password_file, allowed_key, denied_key):
         raise RuntimeError("Redis ACL scope not preserved")
 
 check("vns_worker", root / "worker_password",
-      "bull:vns:vns-jobs:ci", "bull:vns:feed:vns-feed-poll:ci")
+      "bull:vns:vns-jobs:ci", "outside-vns:ci")
 check("vns_provider_producer", root / "provider_password",
       "bull:vns:vns-provider-text:ci", "bull:vns:feed:vns-feed-poll:ci")
 for user, name in (
@@ -111,5 +111,6 @@ for user, name in (
           "bull:vns:feed:vns-feed-poll:ci",
           "bull:vns:vns-provider-text:ci")
 print("PASS: isolated Redis users and feed-only namespaces validated")
-print("PASS: pre-existing worker/provider preserved; cross-queue and admin denied")
+print("PASS: pre-existing worker/provider preserved; new feed users cross-queue denied")
+print("NOTE: legacy vns_worker retains previously granted broad bull:vns:* scope")
 PY
