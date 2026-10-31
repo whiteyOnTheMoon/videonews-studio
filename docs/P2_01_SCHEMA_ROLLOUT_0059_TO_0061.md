@@ -11,7 +11,7 @@ Use the personal `ap` VPS user inside `/home/ap/www/videonews-studio` on a clean
 The script requires:
 
 - Healthy `videonews-studio-postgres-1` container with the exact Compose project and service labels.
-- PostgreSQL 17, the expected local database identity, safe authentication, and all paid provider switches disabled.
+- PostgreSQL 17, the expected local database identity, safe authentication, all required named SQL gateway roles already installed, and all paid provider switches disabled.
 - Exactly the 59 installed migrations through `0059_canonical_event_title_fingerprint`; 0060 or 0061 must not be partially installed.
 - Empty source and host registries (including revision zero), empty source/host audit, and no published event rankings.
 - A clean source/host/profile snapshot, unchanged across both migrations.
