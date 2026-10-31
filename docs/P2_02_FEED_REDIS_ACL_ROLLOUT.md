@@ -11,6 +11,8 @@ Der neue Helper scripts/p2_02_feed_redis_acl_custody.py ergänzt genau zwei getr
 
 Beide ACLs begrenzen Schlüssel und Pub/Sub auf bull:vns:feed:vns-feed-poll:*. Alle anderen Schlüsselräume, etwa bull:vns:vns-jobs:*, bull:vns:vns-research:* und bull:vns:vns-provider-text:*, bleiben verboten. Administrative und gefährliche Redis-Befehle sind ebenfalls untersagt. Die vorhandenen Einträge default, vns_worker und vns_provider_producer bleiben bytegenau unverändert. Der Standardbenutzer bleibt deaktiviert.
 
+**Bestehende Sicherheitsgrenze:** Der P1-Worker vns_worker hat aktuell schon das ältere, breite Redis-Muster bull:vns:*. Dieses gewährt ihm technisch weiterhin Zugriff auf Feed-Schlüssel. Wir verengen die P1-Rolle in diesem additiven Schritt nicht heimlich. Die beiden **neuen** Feed-Logins sind auf Feed-Schlüssel begrenzt und können nicht auf P1-Queues zugreifen; vollständige gegenseitige Isolation gegenüber dem Alt-Worker erfordert eine separat geprüfte P1-ACL-Migration.
+
 ## Bedienung nach geprüftem, freigegebenem Release
 
 Alle Schritte erfordern die Operator-UID 1000, einen sauberen main mit dem genauen freigegebenen Release-SHA, einen gesunden Redis-Compose-Container ohne Hostports und einen als 0644 gesicherten ACL-Dateiinode. Das Verzeichnis secrets/ ist 0700. Bei unklarem Ausgang niemals blind wiederholen.
