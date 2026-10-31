@@ -314,7 +314,9 @@ p {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.jobs-section > form:not(.admin-form) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+.jobs-section
+  > form:not(.admin-form)
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
   display: block;
   width: 100%;
   max-width: 100%;
