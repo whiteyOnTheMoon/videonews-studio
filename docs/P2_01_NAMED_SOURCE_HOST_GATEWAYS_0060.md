@@ -22,6 +22,7 @@ a shared DB writer identity for production use.
 ## 0060 security properties
 
 The additive migration introduces:
+
 - `vns.named_source_actor()`: binds active admin ID and matching
   authentication version to the physical PostgreSQL `session_user`
   via the DBA-only `vns.editor_db_principals` mapping;
@@ -69,7 +70,7 @@ P2-A acceptance check are required before activating any new handler.
    exact digest, then controlled 0060 schema rollout and API-only rollout
    with documented rollback and unchanged publication gates.
 4. Personally verify 3–5 exact feed endpoints and usage terms; add them
-   initially as `pending`. An *independent human* reviews each host.
+   initially as `pending`. An _independent human_ reviews each host.
    Only then admit polling and prove scheduler/queue/ingestion/projection,
    source independent ranking, reasoned editor reviews and admin visibility.
 
