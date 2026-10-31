@@ -39,7 +39,7 @@ class SourceSchema0061(unittest.TestCase):
                 return "vns|videonews|on|170006|0|0|0|0"
             if query == m.prior.UNCHANGED_SQL:
                 return snapshot
-            if query in (m.BASELINE_SQL, m.INACTIVE_SQL):
+            if query in (m.BASELINE_SQL, m.INACTIVE_SQL, m.REQUIRED_ROLES_SQL):
                 return "t"
             raise AssertionError("Unexpected SQL")
         with patch.object(m, "ledger", return_value=names[:59]), patch.object(
@@ -49,7 +49,7 @@ class SourceSchema0061(unittest.TestCase):
         with patch.object(m, "ledger", return_value=names[:60]):
             with self.assertRaises(RuntimeError):
                 m.preflight(names)
-        for false_query in (m.BASELINE_SQL, m.INACTIVE_SQL):
+        for false_query in (m.BASELINE_SQL, m.INACTIVE_SQL, m.REQUIRED_ROLES_SQL):
             with patch.object(m, "ledger", return_value=names[:59]), patch.object(
                 m, "sql", side_effect=lambda sql: "f" if sql == false_query else good(sql)
             ), patch.object(m.prior, "resources"):
@@ -113,7 +113,7 @@ class SourceSchema0061(unittest.TestCase):
         def good(query):
             if query == m.prior.UNCHANGED_SQL:
                 return snapshot
-            if query in (m.INACTIVE_SQL, m.FINAL_SQL):
+            if query in (m.INACTIVE_SQL, m.FINAL_SQL, m.REQUIRED_ROLES_SQL):
                 return "t"
             if query == m.prior.SAFETY_SQL:
                 return "vns|videonews|on|170006|0|0|0|0"
@@ -122,12 +122,19 @@ class SourceSchema0061(unittest.TestCase):
             m, "sql", side_effect=good
         ), patch.object(m.prior, "resources"):
             m.final_check(names, snapshot)
-        for false_query in (m.INACTIVE_SQL, m.FINAL_SQL):
+        for false_query in (m.INACTIVE_SQL, m.FINAL_SQL, m.REQUIRED_ROLES_SQL):
             with patch.object(m, "ledger", return_value=names), patch.object(
                 m, "sql", side_effect=lambda sql: "f" if sql == false_query else good(sql)
             ), patch.object(m.prior, "resources"):
                 with self.assertRaises(RuntimeError):
                     m.final_check(names, snapshot)
+
+    def test_postcheck_does_not_assume_nonexistent_shared_runtime_role(self):
+        # A shared API role may not exist in single-owner deployments.
+        self.assertIn("NOT EXISTS", m.FINAL_SQL)
+        self.assertIn("FROM pg_roles AS role", m.FINAL_SQL)
+        self.assertNotIn("'vns_api_runtime',", m.FINAL_SQL)
+        self.assertIn("to_regrole('vns_p2_named_client')", m.REQUIRED_ROLES_SQL)
 
     def test_status_0059_0060_0061_no_automatic_retries(self):
         names = m.expected_versions()

@@ -54,6 +54,12 @@ SELECT to_regprocedure('vns.named_source_read()') IS NOT NULL
        WHERE singleton=true)=1;
 """.strip()
 
+REQUIRED_ROLES_SQL = """
+SELECT to_regrole('vns_p2_named_client') IS NOT NULL
+  AND to_regrole('vns_p2_named_executor') IS NOT NULL
+  AND to_regrole('vns_host_approval_executor') IS NOT NULL;
+""".strip()
+
 FINAL_SQL = """
 SELECT
   (SELECT NOT enabled AND owner_editor_id IS NULL
@@ -66,9 +72,13 @@ SELECT
   AND has_function_privilege(
     'vns_p2_named_client',
     'vns.named_host_change(bigint,bigint,text,text,text)','EXECUTE')
-  AND NOT has_function_privilege(
-    'vns_api_runtime',
-    'vns.named_source_commit(bigint,bigint,jsonb,text,text)','EXECUTE')
+  AND NOT EXISTS (
+    SELECT 1 FROM pg_roles AS role
+    WHERE role.rolname='vns_api_runtime'
+      AND has_function_privilege(
+        role.oid,
+        'vns.named_source_commit(bigint,bigint,jsonb,text,text)','EXECUTE')
+  )
   AND NOT has_table_privilege(
     'vns_p2_named_client','vns.admin_source_registry','UPDATE')
   AND NOT has_table_privilege(
@@ -126,6 +136,9 @@ def preflight(names: list[str]) -> str:
     if ledger() != names[:59]:
         raise RuntimeError(FAIL)
     check_safety()
+    # Missing schema prerequisite roles must fail BEFORE any migration.
+    if sql(REQUIRED_ROLES_SQL) != "t":
+        raise RuntimeError(FAIL)
     if sql(BASELINE_SQL) != "t" or sql(INACTIVE_SQL) != "t":
         raise RuntimeError(FAIL)
     snapshot = sql(prior.UNCHANGED_SQL)
@@ -141,6 +154,8 @@ def final_check(names: list[str], snapshot: str) -> None:
     if ledger() != names or sql(prior.UNCHANGED_SQL) != snapshot:
         raise RuntimeError(FAIL)
     if sql(INACTIVE_SQL) != "t" or sql(FINAL_SQL) != "t":
+        raise RuntimeError(FAIL)
+    if sql(REQUIRED_ROLES_SQL) != "t":
         raise RuntimeError(FAIL)
     check_safety()
 
