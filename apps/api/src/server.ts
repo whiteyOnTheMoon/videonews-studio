@@ -8,6 +8,7 @@ import { NamedProviderRequestRuntime } from "./named-provider-runtime.js";
 import { DormantNamedSourceAdmin } from "./admin-source-registry.js";
 import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
 import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
+import { DormantPersonalSourceHostAdmin } from "./personal-source-host-admin.js";
 
 export function createApiServer(
   options: {
@@ -18,6 +19,7 @@ export function createApiServer(
     sourceRegistry?: DormantNamedSourceAdmin;
     hostApprovals?: DormantNamedHostApproval;
     personalEditorial?: DormantPersonalEditorialAdmin;
+    personalSourceHost?: DormantPersonalSourceHostAdmin;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -46,6 +48,15 @@ export function createApiServer(
     throw new Error("Personal editorial handler contract required");
   if (options.personalEditorial && (!options.auth || !options.editor))
     throw new Error("Personal editorial handler requires named editor login");
+  if (
+    options.personalSourceHost &&
+    !(options.personalSourceHost instanceof DormantPersonalSourceHostAdmin)
+  )
+    throw new Error("Personal source/host handler contract required");
+  if (options.personalSourceHost && (!options.auth || !options.editor))
+    throw new Error("Personal source/host requires named editor login");
+  if (options.personalSourceHost && (options.sourceRegistry || options.hostApprovals))
+    throw new Error("Conflicting legacy source/host handlers forbidden");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -86,7 +97,21 @@ export function createApiServer(
       return;
     }
 
-    // Explicit injection only: index.ts never mounts the dormant source registry.
+    // Explicitly personally bound SQL gateway, default OFF in index.ts.
+    if (
+      options.personalSourceHost &&
+      (request.url === "/admin/news-sources" || request.url === "/admin/source-hosts")
+    ) {
+      void options.personalSourceHost.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded)
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+      });
+      return;
+    }
+
+    // Legacy injected handlers remain dormant and are forbidden alongside the
+    // new personally bound source/host handler.
     if (request.url === "/admin/news-sources" && options.sourceRegistry) {
       void options.sourceRegistry.handle(request, response).catch(() => {
         if (!response.headersSent) response.writeHead(503);

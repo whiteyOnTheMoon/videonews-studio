@@ -8,6 +8,10 @@ import {
   readPersonalEditorialAdmission,
 } from "./personal-editorial-runtime.js";
 import { namedProviderRuntimeFromEnv } from "./named-provider-runtime.js";
+import {
+  DormantPersonalSourceHostAdmin,
+  readPersonalSourceHostGates,
+} from "./personal-source-host-admin.js";
 
 async function start(): Promise<void> {
   const host = process.env.API_HOST ?? "127.0.0.1";
@@ -23,14 +27,26 @@ async function start(): Promise<void> {
   if (personalAdmission && (!auth || !editor)) {
     throw new Error("Personal editorial runtime requires authenticated API and editor");
   }
-  const personalEditorial =
-    personalAdmission && auth && editor
-      ? new DormantPersonalEditorialAdmin(
+  const sourceHostGates = readPersonalSourceHostGates(process.env, !!personalAdmission);
+  const personalSessions = personalAdmission
+    ? createPersonalEditorialSessions(personalAdmission)
+    : undefined;
+  const personalSourceHost =
+    personalSessions &&
+    auth &&
+    editor &&
+    (sourceHostGates.sourceEnabled || sourceHostGates.hostEnabled)
+      ? new DormantPersonalSourceHostAdmin(
           editor,
           auth,
-          createPersonalEditorialSessions(personalAdmission),
-          true,
+          personalSessions,
+          sourceHostGates.sourceEnabled,
+          sourceHostGates.hostEnabled,
         )
+      : undefined;
+  const personalEditorial =
+    personalAdmission && auth && editor
+      ? new DormantPersonalEditorialAdmin(editor, auth, personalSessions!, true)
       : undefined;
 
   let providerConfig: Awaited<ReturnType<typeof namedProviderRuntimeFromEnv>>;
@@ -42,7 +58,14 @@ async function start(): Promise<void> {
     throw new Error("Named provider configuration failed startup checks");
   }
 
-  const server = createApiServer({ auth, jobs, editor, personalEditorial, providerConfig });
+  const server = createApiServer({
+    auth,
+    jobs,
+    editor,
+    personalEditorial,
+    personalSourceHost,
+    providerConfig,
+  });
   server.listen(port, host, () => {
     console.log(`VideoNews Studio API ready at http://${host}:${port}`);
   });
