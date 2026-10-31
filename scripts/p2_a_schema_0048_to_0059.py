@@ -83,13 +83,15 @@ def expected_versions() -> list[str]:
     paths = sorted(MIGRATIONS.glob("*.up.sql"))
     names = [p.name.removesuffix(".up.sql") for p in paths]
     if (
-        len(names) not in (TARGET, TARGET + 1)
+        len(names) not in (TARGET, TARGET + 1, TARGET + 2)
         or [name[:4] for name in names] != [f"{n:04d}" for n in range(1, len(names) + 1)]
         or not all(VERSION.fullmatch(name) for name in names)
         or names[BASE] != FIRST
         or names[TARGET - 1] != LAST
-        or (len(names) == TARGET + 1
+        or (len(names) >= TARGET + 1
             and names[TARGET] != "0060_named_source_host_admin_gateways")
+        or (len(names) == TARGET + 2
+            and names[TARGET + 1] != "0061_single_owner_review_policy")
     ):
         raise RuntimeError(FAIL)
     for path in paths[BASE:TARGET]:
