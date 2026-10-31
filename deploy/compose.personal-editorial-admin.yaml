@@ -6,6 +6,8 @@ services:
   web:
     environment:
       VNS_WEB_EDITORIAL_ADMIN_ENABLED: "${VNS_WEB_EDITORIAL_ADMIN_ENABLED:-false}"
+      VNS_WEB_SOURCE_REGISTRY_ENABLED: "${VNS_WEB_SOURCE_REGISTRY_ENABLED:-false}"
+      VNS_WEB_HOST_APPROVAL_ENABLED: "${VNS_WEB_HOST_APPROVAL_ENABLED:-false}"
 
   api:
     environment:
