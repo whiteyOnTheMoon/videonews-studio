@@ -20,8 +20,14 @@ test("named editorial overlay keeps personal secrets read-only and startup disab
   assert.equal(web.ports, undefined);
   assert.equal(web.volumes, undefined);
   assert.equal(web.secrets, undefined);
-  assert.equal(web.environment.VNS_WEB_SOURCE_REGISTRY_ENABLED, undefined);
-  assert.equal(web.environment.VNS_WEB_HOST_APPROVAL_ENABLED, undefined);
+  assert.equal(
+    web.environment.VNS_WEB_SOURCE_REGISTRY_ENABLED,
+    "${VNS_WEB_SOURCE_REGISTRY_ENABLED:-false}",
+  );
+  assert.equal(
+    web.environment.VNS_WEB_HOST_APPROVAL_ENABLED,
+    "${VNS_WEB_HOST_APPROVAL_ENABLED:-false}",
+  );
   assert.equal(web.environment.VNS_WEB_EDITOR_AUTH_ENABLED, undefined);
   const service = overlay.services.api;
   assert.equal(service.privileged, undefined);
@@ -48,6 +54,14 @@ test("named editorial overlay keeps personal secrets read-only and startup disab
   assert.equal(service.secrets, undefined);
   assert.equal(service.entrypoint, undefined);
   assert.equal(service.command, undefined);
+  for (const flag of [
+    "VNS_P2_SOURCE_ADMIN_ENABLED",
+    "VNS_P2_SOURCE_ADMIN_OPERATOR_ACK",
+    "VNS_P2_HOST_ADMIN_ENABLED",
+    "VNS_P2_HOST_ADMIN_OPERATOR_ACK",
+  ]) {
+    assert.equal(service.environment[flag], "${" + flag + ":-false}");
+  }
   assert.equal(service.environment.VNS_FEED_SCHEDULER_ENABLED, undefined);
   assert.equal(service.environment.VNS_FEED_RIGHTS_ATTESTED, undefined);
   assert.equal(service.environment.VNS_EDITORIAL_PUBLISH_ENABLED, undefined);
