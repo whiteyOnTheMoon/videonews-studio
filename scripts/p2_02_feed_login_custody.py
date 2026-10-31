@@ -239,32 +239,58 @@ def build_transaction(passwords: list[str], salts: list[bytes]) -> str:
 
 
 POSTCHECK_SQL = """
-SELECT
- (SELECT count(*) FROM pg_roles WHERE
-  rolname IN ('vns_source_export_login_prod','vns_feed_login_prod',
-              'vns_feed_project_login_prod')
-  AND rolcanlogin AND rolinherit AND NOT rolsuper
-  AND NOT rolcreaterole AND NOT rolcreatedb
-  AND NOT rolreplication AND NOT rolbypassrls) || '|' ||
- (SELECT count(*) FROM pg_auth_members m
-  JOIN pg_roles g ON g.oid=m.roleid
-  JOIN pg_roles u ON u.oid=m.member
-  WHERE (g.rolname,u.rolname) IN (
-    ('vns_source_export_reader','vns_source_export_login_prod'),
-    ('vns_feed_poll_writer','vns_feed_login_prod'),
-    ('vns_feed_project_client','vns_feed_project_login_prod'))
-    AND m.inherit_option AND NOT m.set_option) || '|' ||
- (SELECT count(*) FROM pg_auth_members m JOIN pg_roles u ON u.oid=m.member
-  WHERE u.rolname IN ('vns_source_export_login_prod',
-                      'vns_feed_login_prod','vns_feed_project_login_prod')) || '|' ||
- (NOT has_table_privilege('vns_source_export_login_prod',
-                           'vns.admin_source_registry','SELECT')
+-- Return a single native PostgreSQL boolean. Text concatenation converts
+-- boolean to 'true'/'false', NOT psql's bare scalar 't'/'f'. The original
+-- string comparison falsely rejected a committed three-LOGIN transaction.
+SELECT (
+  (SELECT count(*)=61 FROM vns.schema_migrations)
+  AND EXISTS (
+    SELECT 1 FROM vns.schema_migrations
+    WHERE version='0061_single_owner_review_policy')
+  AND (SELECT count(*) FROM pg_roles WHERE
+    rolname IN ('vns_source_export_login_prod','vns_feed_login_prod',
+                'vns_feed_project_login_prod')
+    AND rolcanlogin AND rolinherit AND NOT rolsuper
+    AND NOT rolcreaterole AND NOT rolcreatedb
+    AND NOT rolreplication AND NOT rolbypassrls)=3
+  AND (SELECT count(*) FROM pg_auth_members m
+    JOIN pg_roles g ON g.oid=m.roleid
+    JOIN pg_roles u ON u.oid=m.member
+    WHERE (g.rolname,u.rolname) IN (
+      ('vns_source_export_reader','vns_source_export_login_prod'),
+      ('vns_feed_poll_writer','vns_feed_login_prod'),
+      ('vns_feed_project_client','vns_feed_project_login_prod'))
+    AND m.inherit_option AND NOT m.set_option)=3
+  AND (SELECT count(*) FROM pg_auth_members m JOIN pg_roles u ON u.oid=m.member
+    WHERE u.rolname IN ('vns_source_export_login_prod',
+                        'vns_feed_login_prod','vns_feed_project_login_prod'))=3
+  AND has_function_privilege('vns_source_export_login_prod',
+                              'vns.read_approved_source_export()','EXECUTE')
+  AND has_function_privilege('vns_feed_login_prod',
+                              'vns.claim_feed_poll_authorized(jsonb,integer)','EXECUTE')
+  AND has_function_privilege('vns_feed_login_prod',
+                              'vns.commit_feed_poll_authorized(jsonb,uuid,jsonb,text,text)',
+                              'EXECUTE')
+  AND has_function_privilege('vns_feed_project_login_prod',
+                              'vns.project_approved_feed_candidates(text,integer)','EXECUTE')
+  AND NOT has_table_privilege('vns_source_export_login_prod',
+                               'vns.admin_source_registry','SELECT')
   AND NOT has_table_privilege('vns_feed_login_prod',
                                'vns.feed_poll_candidates','SELECT')
   AND NOT has_function_privilege('vns_feed_project_login_prod',
-                                 'vns.project_feed_candidates(text,integer)',
-                                 'EXECUTE'));
+                                 'vns.project_feed_candidates(text,integer)','EXECUTE')
+  AND NOT has_table_privilege('vns_feed_project_login_prod',
+                               'vns.research_events','INSERT')
+);
 """
+
+
+def verify_existing(expected_sha: str) -> None:
+    """Read-only confirmation after a write whose postcheck was inconclusive."""
+    check_release(expected_sha)
+    read_secrets()
+    if psql(POSTCHECK_SQL) != "t":
+        raise RuntimeError(FAIL)
 
 
 def apply(expected_sha: str) -> None:
@@ -275,7 +301,7 @@ def apply(expected_sha: str) -> None:
     sql = build_transaction(passwords, [os.urandom(16) for _ in SERVICES])
     del passwords
     psql(sql, read_only=False)
-    if psql(POSTCHECK_SQL) != "3|3|3|t":
+    if psql(POSTCHECK_SQL) != "t":
         raise RuntimeError(FAIL)
 
 
@@ -285,6 +311,7 @@ def main(argv: list[str]) -> None:
     operation.add_argument("--stage", action="store_true")
     operation.add_argument("--preflight", action="store_true")
     operation.add_argument("--apply", action="store_true")
+    operation.add_argument("--verify-existing", action="store_true")
     parser.add_argument("--expected-sha", required=True)
     args = parser.parse_args(argv)
     if args.stage:
@@ -293,6 +320,9 @@ def main(argv: list[str]) -> None:
     elif args.preflight:
         preflight(args.expected_sha)
         print("PASS: source/export/feed/projector admission and private credentials verified")
+    elif args.verify_existing:
+        verify_existing(args.expected_sha)
+        print("PASS: existing three restricted PostgreSQL LOGINs independently verified; no changes")
     elif args.apply:
         apply(args.expected_sha)
         print("PASS: three restricted PostgreSQL SCRAM LOGINs enrolled and audited by postcheck")

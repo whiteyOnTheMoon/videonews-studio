@@ -114,7 +114,7 @@ class FeedLoginCustodyTests(unittest.TestCase):
             patch.object(mod, "preflight"),
             patch.object(mod, "read_secrets", return_value=creds),
             patch.object(mod.os, "urandom", return_value=b"s" * 16),
-            patch.object(mod, "psql", side_effect=["", "3|3|3|t"]) as psql,
+            patch.object(mod, "psql", side_effect=["", "t"]) as psql,
             contextlib.redirect_stdout(io.StringIO()) as captured,
         ):
             mod.apply("a" * 40)
@@ -131,11 +131,55 @@ class FeedLoginCustodyTests(unittest.TestCase):
             patch.object(mod, "preflight"),
             patch.object(mod, "read_secrets", return_value=["a"*64,"b"*64,"c"*64]),
             patch.object(mod.os, "urandom", return_value=b"s"*16),
-            patch.object(mod, "psql", side_effect=["", "3|3|4|t"]) as psql,
+            patch.object(mod, "psql", side_effect=["", "f"]) as psql,
         ):
             with self.assertRaises(RuntimeError):
                 mod.apply("a"*40)
             self.assertEqual(psql.call_count, 2)
+
+    def test_postcheck_is_a_single_boolean_and_checks_effective_privileges(self):
+        self.assertIn("SELECT (", mod.POSTCHECK_SQL)
+        self.assertNotIn("|| '|' ||", mod.POSTCHECK_SQL)
+        self.assertIn("count(*)=61", mod.POSTCHECK_SQL)
+        for name in [
+            "vns_source_export_login_prod",
+            "vns_feed_login_prod",
+            "vns_feed_project_login_prod",
+        ]:
+            self.assertIn(name, mod.POSTCHECK_SQL)
+        self.assertIn("NOT has_table_privilege", mod.POSTCHECK_SQL)
+        self.assertIn("NOT has_function_privilege", mod.POSTCHECK_SQL)
+
+    def test_verify_existing_reads_only_and_does_not_call_apply(self):
+        with (
+            patch.object(mod, "check_release") as release,
+            patch.object(mod, "read_secrets", return_value=["a"*64,"b"*64,"c"*64]) as custody,
+            patch.object(mod, "psql", return_value="t") as psql,
+            patch.object(mod, "apply") as apply,
+        ):
+            mod.verify_existing("a"*40)
+            release.assert_called_once_with("a"*40)
+            custody.assert_called_once_with()
+            psql.assert_called_once_with(mod.POSTCHECK_SQL)
+            apply.assert_not_called()
+
+    def test_verify_existing_denies_incomplete_or_unexpected_rights(self):
+        with (
+            patch.object(mod, "check_release"),
+            patch.object(mod, "read_secrets", return_value=["a"*64,"b"*64,"c"*64]),
+            patch.object(mod, "psql", return_value="f") as psql,
+        ):
+            with self.assertRaises(RuntimeError):
+                mod.verify_existing("a"*40)
+            psql.assert_called_once_with(mod.POSTCHECK_SQL)
+
+    def test_cli_verify_existing_reuses_read_only_entrypoint(self):
+        with patch.object(mod, "verify_existing") as verify, patch.object(mod, "apply") as apply:
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                mod.main(["--verify-existing", "--expected-sha", "a"*40])
+            verify.assert_called_once_with("a"*40)
+            apply.assert_not_called()
+            self.assertIn("no changes", output.getvalue())
 
     def test_cli_has_no_implicit_apply(self):
         with patch.object(mod, "stage_secrets") as stage, patch.object(mod, "apply") as apply:
