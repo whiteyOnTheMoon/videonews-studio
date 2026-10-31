@@ -137,6 +137,11 @@ class SourceSchema0061(unittest.TestCase):
             with patch.object(m, "ledger", return_value=names[:59]):
                 m.main(["--status"])
             with patch.object(m, "ledger", return_value=names[:60]):
+                with self.assertRaises(RuntimeError):
+                    m.main(["--status"])
+            with patch.object(m, "ledger", return_value=names), patch.object(
+                m, "sql", return_value="t"
+            ):
                 m.main(["--status"])
         with patch.object(m, "ledger", return_value=names[:60]), patch.object(
             m, "sql", side_effect=AssertionError("Never auto-resume")
