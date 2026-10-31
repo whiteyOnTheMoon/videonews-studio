@@ -5,6 +5,9 @@ on:
     paths:
       - "scripts/p2_rollout_gate.mjs"
       - "scripts/p2_02_stage_a_vps_inventory.py"
+      - "scripts/p2_02_feed_login_custody.py"
+      - "scripts/test_p2_02_feed_login_custody.py"
+      - "docs/P2_02_FEED_LOGIN_CUSTODY.md"
       - "scripts/p2_a_readonly_acceptance.py"
       - "scripts/p2_a_schema_0048_to_0059.py"
       - "scripts/p2_01_schema_0059_to_0061.py"
@@ -42,6 +45,8 @@ jobs:
           npm run format:check
       - name: Verify read-only Stage-A inventory with synthetic host and Docker states
         run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
+      - name: Verify three-service P2-02 PostgreSQL LOGIN custody stays opt-in
+        run: python3 -m unittest discover -s scripts -p "test_p2_02_feed_login_custody.py" -v
       - name: Check P2-A read-only schema and licensed-source acceptance preflight
         run: python3 -m unittest discover -s scripts -p "test_p2_a_readonly_acceptance.py" -v
       - name: Verify exact P2-A 0048-to-0059 controlled schema upgrade denial paths
