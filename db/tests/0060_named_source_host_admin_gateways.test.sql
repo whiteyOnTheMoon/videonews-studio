@@ -44,7 +44,7 @@ BEGIN
        'vns_p2_named_client',
        'vns.admin_change_source_host_approval(bigint,bigint,text,text,text,uuid,integer)',
        'EXECUTE')
-    OR has_function_privilege('PUBLIC','vns.named_source_commit(bigint,bigint,jsonb,text,text)','EXECUTE')
+    OR has_function_privilege('vns_api_runtime','vns.named_source_commit(bigint,bigint,jsonb,text,text)','EXECUTE')
   THEN RAISE EXCEPTION 'Source admin DB privileges unexpectedly broadened'; END IF;
 END $scope$;
 
