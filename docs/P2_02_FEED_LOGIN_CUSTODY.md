@@ -10,11 +10,9 @@
 
 ## Drei getrennte technische Konten
 
-| PostgreSQL-Login | Ausschließlich geerbte Rolle | Lokale Passwortdatei |
-| --- | --- | --- |
-| vns_source_export_login_prod | vns_source_export_reader | vns_source_export_db_password |
-| vns_feed_login_prod | vns_feed_poll_writer | vns_feed_db_password |
-| vns_feed_project_login_prod | vns_feed_project_client | vns_feed_project_db_password |
+- Quellenexport: vns_source_export_login_prod; Rolle vns_source_export_reader; Passwortdatei vns_source_export_db_password.
+- Feed-Polling: vns_feed_login_prod; Rolle vns_feed_poll_writer; Passwortdatei vns_feed_db_password.
+- Projektion: vns_feed_project_login_prod; Rolle vns_feed_project_client; Passwortdatei vns_feed_project_db_password.
 
 Alle Logins sind NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS. Die Mitgliedschaften erhalten INHERIT TRUE, SET FALSE. Kein Konto wird als Admin oder für einen anderen Feed-Dienst wiederverwendet.
 
@@ -22,12 +20,11 @@ Alle Logins sind NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS. 
 
 Voraussetzung: unabhängige Prüfung und ausdrückliche Freigabe eines **neuen Release-SHA** auf sauberem main, gesunder bestehender Compose-PostgreSQL-17, exakt 61 Migrationen bis 0061, SCRAM-HBA, die erwarteten Rollen und deren minimale Funktionsrechte. Vorhandene oder halbfertige Logins blockieren die Einrichtung. Alle Schritte erfolgen unter Betreiber-UID 1000. Der eingesetzte SHA muss exakt zum ausgecheckten Release passen.
 
-1. **Stage:** python3 scripts/p2_02_feed_login_custody.py --stage --expected-sha FREIGEGEBENER_SHA
-   Vor dem Schreiben wird eine read-only DB- und Releaseprüfung durchgeführt. Erst danach entstehen drei unterschiedliche, kryptografisch zufällige Passwortdateien unter secrets/p2-feed-login-custody/. Verzeichnis 0700, Dateien 0600. Ein zweiter Aufruf überschreibt nichts.
-2. **Preflight:** python3 scripts/p2_02_feed_login_custody.py --preflight --expected-sha FREIGEGEBENER_SHA
-   Prüft nur Release, Rollen und die private Datei-Custody; keine Login-Erstellung.
-3. **Apply – nur nach separater ausdrücklicher Freigabe:** VNS_P2_FEED_LOGINS_OPERATOR_APPROVED=CREATE_THREE_RESTRICTED_FEED_LOGINS python3 scripts/p2_02_feed_login_custody.py --apply --expected-sha FREIGEGEBENER_SHA
-   Die drei fest benannten LOGINs werden in **einer atomaren SQL-Transaktion** nach erneuter Vorprüfung angelegt. Der anschließende Postcheck verlangt drei eingeschränkte Logins, genau drei je korrekt zugeordnete Rollen und keine Möglichkeit, diese per SET ROLE zu übernehmen.
+**Stage:** Mit --stage und --expected-sha FREIGEGEBENER_SHA wird zuerst die read-only Datenbankprüfung durchgeführt. Nur danach entstehen drei zufällige Passwortdateien unter secrets/p2-feed-login-custody/ (0700/0600). Ein zweiter Versuch überschreibt keine Datei.
+
+**Preflight:** Mit --preflight und --expected-sha FREIGEGEBENER_SHA werden Release, Rollen und Dateien ohne Änderung überprüft.
+
+**Apply:** Nur mit der zusätzlichen ausdrücklichen Betreiberfreigabe VNS_P2_FEED_LOGINS_OPERATOR_APPROVED=CREATE_THREE_RESTRICTED_FEED_LOGINS sowie --apply und --expected-sha FREIGEGEBENER_SHA werden die drei festen Logins in einer atomaren SQL-Transaktion eingerichtet. Der Postcheck verifiziert die drei separaten Mitgliedschaften und die fehlende SET-ROLE-Berechtigung.
 
 Klartextpasswörter verbleiben lokal in privaten Dateien. Zur Datenbank gehen ausschließlich je ein frisch gesalzener SCRAM-SHA-256-Verifier über stdin, niemals im Argument, im Commit oder im normalen Log. Bei Fehlern **nicht blind wiederholen**; zuerst lesend diagnostizieren.
 
