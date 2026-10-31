@@ -31,7 +31,6 @@ vorhandene** Passwörter und erzeugt identische, unabhängige Kopien unter
 - `vns_feed_project_db_password`: 10004:10004, feed-project-once und
   feed-project-continuous.
 
-
 Die Zielverzeichnisse gehören **root:root (0700)**. Jede der fünf Dateien
 erhält den eigenen numerischen Dienst-UID/GID und den Modus **0400**. Ein
 Container bekommt später nur die exakt erforderlichen Dateien per readonly
