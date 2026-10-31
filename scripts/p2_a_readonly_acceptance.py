@@ -70,9 +70,10 @@ def expected_migrations(migration_dir: Path = VERSIONS) -> list[str]:
     files = sorted(migration_dir.glob("*.up.sql"))
     names = [path.name.removesuffix(".up.sql") for path in files]
     if (
-        len(names) not in (59, 60)
+        len(names) not in (59, 60, 61)
         or names[58] != EXPECTED_LAST
-        or (len(names) == 60 and names[59] != "0060_named_source_host_admin_gateways")
+        or (len(names) >= 60 and names[59] != "0060_named_source_host_admin_gateways")
+        or (len(names) == 61 and names[60] != "0061_single_owner_review_policy")
         or [name[:4] for name in names] != [f"{i:04d}" for i in range(1, len(names) + 1)]
         or not all(MIGRATION.fullmatch(name) for name in names)
         or any(path.is_symlink() or not path.is_file() for path in files)
