@@ -28,7 +28,7 @@ jobs:
       - name: Verify repository formatting
         run: |
           npm ci --no-audit --no-fund
-          npm run format:check || { npm exec -- prettier docs/P2_02_FEED_REDIS_ACL_ROLLOUT.md | diff -u docs/P2_02_FEED_REDIS_ACL_ROLLOUT.md - || true; exit 1; }
+          npm run format:check
       - name: Verify private staged credentials and no implicit live changes
         run: python3 -m unittest discover -s scripts -p 'test_p2_02_feed_redis_acl_custody.py' -v
       - name: Exercise only synthetic users in disposable offline Redis
