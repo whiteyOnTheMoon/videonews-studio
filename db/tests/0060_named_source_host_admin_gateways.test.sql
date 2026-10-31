@@ -66,9 +66,13 @@ BEGIN
   END IF;
   SELECT r.revision,r.sources INTO current_revision,current_sources
   FROM vns.named_source_read() r;
-  IF current_revision<>0 OR current_sources<>'[]'::jsonb THEN
-    RAISE EXCEPTION 'Unexpected initial named source snapshot';
+  IF current_revision IS NULL OR current_sources IS NULL THEN
+    RAISE EXCEPTION 'Named source snapshot unavailable';
   END IF;
+  -- Prior migration CI exercises may have persisted synthetic fixtures.
+  -- Never assume registry revision 0 or an empty source list.
+  PERFORM set_config('vns.ci_gateway_base_source_revision',
+    current_revision::text,true);
 
   source_record:=jsonb_build_object(
     'id','ci_gateway_feed',
@@ -82,24 +86,35 @@ BEGIN
     'reviewedAt',to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD')
   );
   IF NOT vns.named_source_commit(
-    0,1,jsonb_build_array(source_record),'ci_gateway_feed','create_pending')
+    current_revision,current_revision+1,
+    current_sources||jsonb_build_array(source_record),
+    'ci_gateway_feed','create_pending')
   THEN RAISE EXCEPTION 'Personal pending source creation refused'; END IF;
 
   IF vns.named_source_commit(
-    0,1,jsonb_build_array(source_record),'ci_gateway_feed','create_pending')
+    current_revision,current_revision+1,
+    current_sources||jsonb_build_array(source_record),
+    'ci_gateway_feed','create_pending')
   THEN RAISE EXCEPTION 'Stale source write succeeded'; END IF;
 
   source_record:=jsonb_set(source_record,'{status}','"approved"'::jsonb);
   IF NOT vns.named_source_commit(
-    1,2,jsonb_build_array(source_record),'ci_gateway_feed','approve')
+    current_revision+1,current_revision+2,
+    current_sources||jsonb_build_array(source_record),
+    'ci_gateway_feed','approve')
   THEN RAISE EXCEPTION 'Named source approval refused'; END IF;
   SELECT r.revision INTO current_revision FROM vns.named_source_read() r;
-  IF current_revision<>2 THEN RAISE EXCEPTION 'Named source snapshot not updated'; END IF;
+  IF current_revision<>(
+    current_setting('vns.ci_gateway_base_source_revision')::bigint + 2
+  ) THEN RAISE EXCEPTION 'Named source snapshot not updated'; END IF;
+  PERFORM set_config('vns.ci_gateway_final_source_revision',
+    current_revision::text,true);
 
   -- A sole reviewer cannot approve the host of their own source.
   BEGIN
     PERFORM vns.named_host_change(
-      0,2,'grant','source.example.org',
+      (SELECT h.revision FROM vns.named_host_read() h),
+      current_revision,'grant','source.example.org',
       'Synthetic review reason from same human must be rejected.');
   EXCEPTION WHEN insufficient_privilege THEN denied:=true;
   END;
@@ -122,17 +137,26 @@ DECLARE
   current_revision bigint;
   approved jsonb;
 BEGIN
+  SELECT h.revision INTO current_revision FROM vns.named_host_read() h;
+  PERFORM set_config('vns.ci_gateway_base_host_revision',
+    current_revision::text,true);
   IF NOT vns.named_host_change(
-    0,2,'grant','source.example.org',
+    current_revision,
+    current_setting('vns.ci_gateway_final_source_revision')::bigint,
+    'grant','source.example.org',
     'Independent synthetic human approved the host separately.')
   THEN RAISE EXCEPTION 'Independent host grant failed'; END IF;
   SELECT h.revision,h.approved_hosts
     INTO current_revision,approved FROM vns.named_host_read() h;
-  IF current_revision<>1 OR approved<>'["source.example.org"]'::jsonb THEN
+  IF current_revision<>(
+    current_setting('vns.ci_gateway_base_host_revision')::bigint + 1
+  ) OR NOT (approved ? 'source.example.org') THEN
     RAISE EXCEPTION 'Personally reviewed host record missing';
   END IF;
   IF vns.named_host_change(
-    0,2,'grant','source.example.org',
+    current_revision-1,
+    current_setting('vns.ci_gateway_final_source_revision')::bigint,
+    'grant','source.example.org',
     'Stale independent host grant must fail closed.')
   THEN RAISE EXCEPTION 'Stale host CAS succeeded'; END IF;
 END $host$;
