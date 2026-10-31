@@ -26,6 +26,9 @@ on:
       - scripts/test_release_policy.py
       - scripts/check_ghcr_visibility.sh
       - scripts/test_ghcr_visibility.py
+      - scripts/vns_ghcr_pull.py
+      - scripts/test_vns_ghcr_pull.py
+      - docs/P1-04_GHCR_READONLY_PULL_RUNBOOK.md
       - docs/INTERNAL_PREVIEW.md
       - .gitignore
       - .github/workflows/p1-04-compose.yml
@@ -58,6 +61,8 @@ jobs:
         run: bash scripts/check_ghcr_visibility.sh
       - name: Test GHCR private/public/error metadata handling (offline)
         run: python3 -m unittest discover -s scripts -p 'test_ghcr_visibility.py'
+      - name: Test isolated GHCR pull credential helper (offline)
+        run: python3 -m unittest discover -s scripts -p 'test_vns_ghcr_pull.py'
       - name: Ensure Git ignores local credentials
         run: |
           git check-ignore -q secrets/postgres_password
