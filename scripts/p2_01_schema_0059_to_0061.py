@@ -47,6 +47,13 @@ SELECT
    WHERE approved_for_publication)=0;
 """.strip()
 
+STATUS_SQL = """
+SELECT to_regprocedure('vns.named_source_read()') IS NOT NULL
+  AND to_regprocedure('vns.named_host_change(bigint,bigint,text,text,text)') IS NOT NULL
+  AND (SELECT count(*) FROM vns.single_owner_review_policy
+       WHERE singleton=true)=1;
+""".strip()
+
 FINAL_SQL = """
 SELECT
   (SELECT NOT enabled AND owner_editor_id IS NULL
@@ -170,12 +177,13 @@ def main(args: list[str]) -> None:
         if len(existing) not in (59, 60, 61) or existing != names[:len(existing)]:
             raise RuntimeError(FAIL)
         if len(existing) == 60:
-            print("BLOCKED: partial 0060 installation; do not auto-resume")
-        elif len(existing) == 59:
+            raise RuntimeError(FAIL)  # Partial upgrade needs manual review.
+        if len(existing) == 59:
             print("PASS: exact installed schema 0059, 0060/0061 absent")
         else:
-            final_check(names, sql(prior.UNCHANGED_SQL))
-            print("PASS: schema 0061 installed, owner mode and sources disabled")
+            if sql(STATUS_SQL) != "t":
+                raise RuntimeError(FAIL)
+            print("PASS: exact installed schema 0061; owner policy managed separately")
         return
     if args == ["--preflight"]:
         preflight(names)
