@@ -68,7 +68,11 @@ def read_token(path: Path = TOKEN_FILE) -> str:
 def credential_helper(argv: list[str]) -> int:
     # The Docker CLI invokes this process via the temporary helper wrapper.
     # Only 'get' is supported; no token is ever stored by a credential manager.
-    if argv != ["get"]:
+    if (
+        argv != ["get"]
+        or os.environ.get("VNS_GHCR_HELPER_ALLOWED") != "1"
+        or sys.stdout.isatty()
+    ):
         return 1
     server = sys.stdin.buffer.read(1025)
     if len(server) > 1024 or server.strip() not in (b"ghcr.io", b"https://ghcr.io"):
@@ -135,6 +139,7 @@ def pull(image: str, revision: str) -> int:
             prepare_ephemeral_config(directory)
             env = os.environ.copy()
             env["DOCKER_CONFIG"] = folder
+            env["VNS_GHCR_HELPER_ALLOWED"] = "1"
             env["PATH"] = folder + os.pathsep + env.get("PATH", "")
             result = subprocess.run(
                 ["docker", "--config", folder, "pull", image],
