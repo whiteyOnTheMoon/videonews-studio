@@ -35,12 +35,6 @@ jobs:
       - name: Validate repository formatting
         run: |
           npm ci --no-audit --no-fund
-          for file in apps/api/src/index.ts apps/api/src/personal-source-host-admin.ts apps/api/src/personal-source-host-admin.test.ts; do
-            printf 'VNS_PRETTIER_BASE64_BEGIN:%s\\n' "$file"
-            ./node_modules/.bin/prettier "$file" | base64 -w0
-            echo
-            printf 'VNS_PRETTIER_BASE64_END:%s\\n' "$file"
-          done
           npm run format:check
       - name: Verify read-only Stage-A inventory with synthetic host and Docker states
         run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
