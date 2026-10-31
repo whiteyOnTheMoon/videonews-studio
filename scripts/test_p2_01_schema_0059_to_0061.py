@@ -18,7 +18,7 @@ class SourceSchema0061(unittest.TestCase):
             root = Path(tmp)
             for name in names:
                 (root / (name + ".up.sql")).write_text(
-                    "-- synthetic fixture\nBEGIN;\nSELECT 1;\nCOMMIT;\n",
+                    "-- synthetic fixture " + "x" * 120 + "\nBEGIN;\nSELECT 1;\nCOMMIT;\n",
                     encoding="utf-8",
                 )
             with patch.object(m, "MIGRATIONS", root), patch.object(
