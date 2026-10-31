@@ -22,6 +22,13 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify repository formatting
+        run: |
+          npm ci --no-audit --no-fund
+          npm run format:check
       - name: Verify private staged credentials and no implicit live changes
         run: python3 -m unittest discover -s scripts -p 'test_p2_02_feed_redis_acl_custody.py' -v
       - name: Exercise only synthetic users in disposable offline Redis
