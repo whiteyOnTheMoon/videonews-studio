@@ -83,21 +83,24 @@ def expected_versions() -> list[str]:
     paths = sorted(MIGRATIONS.glob("*.up.sql"))
     names = [p.name.removesuffix(".up.sql") for p in paths]
     if (
-        len(names) != TARGET
-        or [name[:4] for name in names] != [f"{n:04d}" for n in range(1, TARGET + 1)]
+        len(names) not in (TARGET, TARGET + 1)
+        or [name[:4] for name in names] != [f"{n:04d}" for n in range(1, len(names) + 1)]
         or not all(VERSION.fullmatch(name) for name in names)
         or names[BASE] != FIRST
-        or names[-1] != LAST
+        or names[TARGET - 1] != LAST
+        or (len(names) == TARGET + 1
+            and names[TARGET] != "0060_named_source_host_admin_gateways")
     ):
         raise RuntimeError(FAIL)
-    for path in paths[BASE:]:
+    for path in paths[BASE:TARGET]:
         info = path.lstat()
         if path.is_symlink() or not stat.S_ISREG(info.st_mode) or not 100 <= info.st_size <= 100000:
             raise RuntimeError(FAIL)
         sql = path.read_text(encoding="utf-8")
         if not sql.lstrip().startswith("--") or "BEGIN;" not in sql or not sql.rstrip().endswith("COMMIT;"):
             raise RuntimeError(FAIL)
-    return names
+    # This helper upgrades ONLY 0049..0059; 0060 needs a distinct gate.
+    return names[:TARGET]
 
 
 def ledger(name: str) -> list[str]:
