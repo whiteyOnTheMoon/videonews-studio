@@ -56,7 +56,7 @@ class GhcrPullTests(unittest.TestCase):
             self.assertIn("--credential-helper", wrapper.read_text())
 
     def test_helper_rejects_any_non_ghcr_registry(self):
-        with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"docker.io"))):
+        with patch.dict(os.environ, {"VNS_GHCR_HELPER_ALLOWED": "1"}), \\\n             patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"docker.io"))):
             with patch.object(ghcr, "read_token") as read:
                 self.assertEqual(ghcr.credential_helper(["get"]), 1)
                 read.assert_not_called()
