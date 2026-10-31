@@ -27,7 +27,7 @@ jobs:
       - name: Enforce repository formatting
         run: |
           npm ci --no-audit --no-fund
-          npm run format:check
+          npm run format:check || { npm exec -- prettier docs/P2_02_FEED_RUNTIME_HANDOFF.md | diff -u docs/P2_02_FEED_RUNTIME_HANDOFF.md - || true; exit 1; }
       - name: Verify exact root-only synthetic UID handoff in isolated tempdir
         run: |
           sudo -n env \
