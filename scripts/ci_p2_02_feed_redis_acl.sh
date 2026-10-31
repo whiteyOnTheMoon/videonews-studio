@@ -94,7 +94,7 @@ def check(user, password_file, allowed_key, denied_key):
     )
     if r.returncode != 0:
         raise RuntimeError("Redis ACL authentication failed")
-    lines = r.stdout.strip().splitlines()
+    lines = [line.strip() for line in r.stdout.splitlines() if line.strip()]
     if not (len(lines) >= 6 and lines[0:3] == ["OK","PONG","OK"]
             and all("NOPERM" in line for line in lines[3:6])):
         classes = ["OK" if line == "OK" else "PONG" if line == "PONG" else "NOPERM" if "NOPERM" in line else "OTHER" for line in lines]
