@@ -97,7 +97,8 @@ def check(user, password_file, allowed_key, denied_key):
     lines = r.stdout.strip().splitlines()
     if not (len(lines) >= 6 and lines[0:3] == ["OK","PONG","OK"]
             and all("NOPERM" in line for line in lines[3:6])):
-        raise RuntimeError("Redis ACL scope not preserved")
+        classes = ["OK" if line == "OK" else "PONG" if line == "PONG" else "NOPERM" if "NOPERM" in line else "OTHER" for line in lines]
+        raise RuntimeError(f"Redis ACL scope mismatch for {user}: {classes}")
 
 check("vns_worker", root / "worker_password",
       "bull:vns:vns-jobs:ci", "outside-vns:ci")
