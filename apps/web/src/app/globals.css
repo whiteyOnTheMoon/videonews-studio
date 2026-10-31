@@ -295,3 +295,101 @@ p {
   background: #233957;
   font: inherit;
 }
+
+/* P2 editorial mobile form layout. Scope to the new direct-child forms so
+   provider secrets, research jobs and sign-in keep their existing controls. */
+.jobs-section > form:not(.admin-form) {
+  display: grid;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 640px;
+  min-width: 0;
+  margin: 1.5rem 0 2rem;
+}
+.jobs-section > form:not(.admin-form) > label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.jobs-section > form:not(.admin-form) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  background: #111b2c;
+  color: #f5f7fb;
+  font: inherit;
+  font-size: 1rem;
+}
+.jobs-section > form:not(.admin-form) textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+.jobs-section > form:not(.admin-form) button,
+.jobs-section > button {
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid #7895bf;
+  border-radius: 8px;
+  background: #233957;
+  color: #f5f7fb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.jobs-section > form:not(.admin-form) button:disabled,
+.jobs-section > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.jobs-section > form:not(.admin-form) :is(input, select, textarea, button):focus-visible,
+.jobs-section > button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 3rem 1.125rem 4rem;
+  }
+  .jobs-section {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  .jobs-section h2 {
+    font-size: clamp(1.4rem, 6vw, 1.7rem);
+    overflow-wrap: anywhere;
+  }
+  .jobs-section > form:not(.admin-form) button,
+  .jobs-section > button {
+    width: 100%;
+  }
+  .admin-form,
+  .ai-provider-fields {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .admin-form input,
+  .admin-form button {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .jobs-heading {
+    align-items: stretch;
+  }
+  .jobs-heading > * {
+    max-width: 100%;
+  }
+}
