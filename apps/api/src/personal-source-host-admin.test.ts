@@ -56,39 +56,49 @@ function response() {
   };
   return state as unknown as ServerResponse & typeof state;
 }
-function setup(opts: {
-  source?: boolean;
-  host?: boolean;
-  identity?: "ok" | "missing" | "thrown";
-  dbMismatch?: boolean;
-  dbDown?: boolean;
-  clock?: () => Date;
-} = {}) {
+function setup(
+  opts: {
+    source?: boolean;
+    host?: boolean;
+    identity?: "ok" | "missing" | "thrown";
+    dbMismatch?: boolean;
+    dbDown?: boolean;
+    clock?: () => Date;
+  } = {},
+) {
   let sources: unknown[] = [];
   let sourceRevision = 0;
   let approvedHosts: unknown[] = [];
   let hostRevision = 0;
   let opened = 0;
   let closed = 0;
-  let calls: string[] = [];
+  const calls: string[] = [];
   const session = {
     async query(sql: string, params: readonly unknown[] = []) {
       calls.push(sql);
       if (opts.dbDown) throw new Error("private secret must not be reflected");
       if (sql.includes("named_current_editor")) {
-        return { rows: [{
-          editor_id: opts.dbMismatch ? "ca310009-1111-4111-8111-111111111111" : ID,
-          auth_version: 0,
-          editor_role: "admin",
-        }] };
+        return {
+          rows: [
+            {
+              editor_id: opts.dbMismatch ? "ca310009-1111-4111-8111-111111111111" : ID,
+              auth_version: 0,
+              editor_role: "admin",
+            },
+          ],
+        };
       }
       if (sql.includes("named_source_read"))
         return { rows: [{ revision: String(sourceRevision), sources: structuredClone(sources) }] };
       if (sql.includes("named_host_read"))
-        return { rows: [{
-          revision: String(hostRevision),
-          approved_hosts: structuredClone(approvedHosts),
-        }] };
+        return {
+          rows: [
+            {
+              revision: String(hostRevision),
+              approved_hosts: structuredClone(approvedHosts),
+            },
+          ],
+        };
       if (sql.includes("named_source_commit")) {
         if (params[0] !== sourceRevision) return { rows: [{ saved: false }] };
         sourceRevision++;
@@ -116,18 +126,35 @@ function setup(opts: {
         return { id: ID, username: "ci_admin", role: "admin" as const, authVersion: 0 };
       },
     },
-    { originAllowed(req) { return req.headers.origin === ORIGIN; } },
-    { async open() { opened++; return session; } },
+    {
+      originAllowed(req) {
+        return req.headers.origin === ORIGIN;
+      },
+    },
+    {
+      async open() {
+        opened++;
+        return session;
+      },
+    },
     opts.source ?? true,
     opts.host ?? true,
     opts.clock,
   );
   return {
     gateway,
-    get opened() { return opened; },
-    get closed() { return closed; },
-    get calls() { return calls; },
-    get sourceRevision() { return sourceRevision; },
+    get opened() {
+      return opened;
+    },
+    get closed() {
+      return closed;
+    },
+    get calls() {
+      return calls;
+    },
+    get sourceRevision() {
+      return sourceRevision;
+    },
   };
 }
 async function serve(
@@ -148,7 +175,8 @@ async function serve(
 
 test("no flags, missing ACK, or shared-editor admission cannot enable source API", () => {
   assert.deepEqual(readPersonalSourceHostGates({}, false), {
-    sourceEnabled: false, hostEnabled: false,
+    sourceEnabled: false,
+    hostEnabled: false,
   });
   for (const flags of [
     { VNS_P2_SOURCE_ADMIN_ENABLED: "true" },
@@ -160,22 +188,41 @@ test("no flags, missing ACK, or shared-editor admission cannot enable source API
   ]) {
     assert.throws(() => readPersonalSourceHostGates(flags, true));
   }
-  assert.throws(() => readPersonalSourceHostGates({
-    VNS_P2_SOURCE_ADMIN_ENABLED: "true",
-    VNS_P2_SOURCE_ADMIN_OPERATOR_ACK: "true",
-  }, false));
-  assert.deepEqual(readPersonalSourceHostGates({
-    VNS_P2_SOURCE_ADMIN_ENABLED: "true",
-    VNS_P2_SOURCE_ADMIN_OPERATOR_ACK: "true",
-    VNS_P2_HOST_ADMIN_ENABLED: "true",
-    VNS_P2_HOST_ADMIN_OPERATOR_ACK: "true",
-  }, true), { sourceEnabled: true, hostEnabled: true });
-  assert.throws(() => new DormantPersonalSourceHostAdmin(
-    { authenticatedAdminIdentity: async () => null },
-    { originAllowed: () => true },
-    { open: async () => { throw new Error("Never"); } },
-    false, true,
-  ));
+  assert.throws(() =>
+    readPersonalSourceHostGates(
+      {
+        VNS_P2_SOURCE_ADMIN_ENABLED: "true",
+        VNS_P2_SOURCE_ADMIN_OPERATOR_ACK: "true",
+      },
+      false,
+    ),
+  );
+  assert.deepEqual(
+    readPersonalSourceHostGates(
+      {
+        VNS_P2_SOURCE_ADMIN_ENABLED: "true",
+        VNS_P2_SOURCE_ADMIN_OPERATOR_ACK: "true",
+        VNS_P2_HOST_ADMIN_ENABLED: "true",
+        VNS_P2_HOST_ADMIN_OPERATOR_ACK: "true",
+      },
+      true,
+    ),
+    { sourceEnabled: true, hostEnabled: true },
+  );
+  assert.throws(
+    () =>
+      new DormantPersonalSourceHostAdmin(
+        { authenticatedAdminIdentity: async () => null },
+        { originAllowed: () => true },
+        {
+          open: async () => {
+            throw new Error("Never");
+          },
+        },
+        false,
+        true,
+      ),
+  );
 });
 
 test("default-off and separate flags deny before creating personal sessions", async () => {
@@ -205,43 +252,94 @@ test("unauthenticated, mismatched DB principal and origin spoofing fail closed",
   assert.deepEqual(mismatch.calls, ["SELECT * FROM vns.named_current_editor()"]);
 
   const origin = setup();
-  assert.equal((await serve(origin.gateway, "/admin/source-hosts", "POST", HOST,
-    "https://attacker.example.org")).status, 403);
+  assert.equal(
+    (
+      await serve(
+        origin.gateway,
+        "/admin/source-hosts",
+        "POST",
+        HOST,
+        "https://attacker.example.org",
+      )
+    ).status,
+    403,
+  );
   assert.equal(origin.opened, 0);
 });
 
 test("personally checked source/host GET, POST and CAS run on bounded SQL", async () => {
   const state = setup();
-  assert.deepEqual((await serve(state.gateway, "/admin/news-sources")).data,
-    { revision: 0, sources: [] });
+  assert.deepEqual((await serve(state.gateway, "/admin/news-sources")).data, {
+    revision: 0,
+    sources: [],
+  });
   const created = await serve(state.gateway, "/admin/news-sources", "POST", {
-    action: "create_pending", expectedRevision: 0, source: SOURCE,
+    action: "create_pending",
+    expectedRevision: 0,
+    source: SOURCE,
   });
   assert.deepEqual(created.data, {
-    saved: true, revision: 1, sourceId: SOURCE.id, status: "pending", feedActive: false,
+    saved: true,
+    revision: 1,
+    sourceId: SOURCE.id,
+    status: "pending",
+    feedActive: false,
   });
   assert.equal(created.headers["cache-control"], "no-store");
-  assert.equal((await serve(state.gateway, "/admin/news-sources", "POST", {
-    action: "create_pending", expectedRevision: 0, source: SOURCE,
-  })).status, 409);
+  assert.equal(
+    (
+      await serve(state.gateway, "/admin/news-sources", "POST", {
+        action: "create_pending",
+        expectedRevision: 0,
+        source: SOURCE,
+      })
+    ).status,
+    409,
+  );
   const approval = await serve(state.gateway, "/admin/news-sources", "POST", {
-    action: "approve", expectedRevision: 1, sourceId: SOURCE.id,
+    action: "approve",
+    expectedRevision: 1,
+    sourceId: SOURCE.id,
   });
   assert.deepEqual(approval.data, {
-    saved: true, revision: 2, sourceId: SOURCE.id, status: "approved", feedActive: false,
+    saved: true,
+    revision: 2,
+    sourceId: SOURCE.id,
+    status: "approved",
+    feedActive: false,
   });
 
-  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts")).data,
-    { revision: 0, approvedHosts: [], feedActive: false });
-  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts", "POST", HOST)).data,
-    { saved: true, host: HOST.host, action: "grant", revision: 1, feedActive: false });
-  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts")).data,
-    { revision: 1, approvedHosts: ["feed.example.org"], feedActive: false });
+  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts")).data, {
+    revision: 0,
+    approvedHosts: [],
+    feedActive: false,
+  });
+  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts", "POST", HOST)).data, {
+    saved: true,
+    host: HOST.host,
+    action: "grant",
+    revision: 1,
+    feedActive: false,
+  });
+  assert.deepEqual((await serve(state.gateway, "/admin/source-hosts")).data, {
+    revision: 1,
+    approvedHosts: ["feed.example.org"],
+    feedActive: false,
+  });
   assert.equal((await serve(state.gateway, "/admin/source-hosts", "POST", HOST)).status, 409);
   assert.equal(state.opened, state.closed);
-  assert.equal(state.calls.every((sql) => sql.startsWith("SELECT ")), true);
-  assert.equal(state.calls.some((sql) => sql.includes("admin_commit_source_registry")), false);
-  assert.equal(state.calls.some((sql) => sql.includes("admin_change_source_host_approval")), false);
+  assert.equal(
+    state.calls.every((sql) => sql.startsWith("SELECT ")),
+    true,
+  );
+  assert.equal(
+    state.calls.some((sql) => sql.includes("admin_commit_source_registry")),
+    false,
+  );
+  assert.equal(
+    state.calls.some((sql) => sql.includes("admin_change_source_host_approval")),
+    false,
+  );
 });
 
 test("forged actor fields, bad framing and unsafe host are rejected before DB", async () => {
@@ -270,7 +368,9 @@ test("personal DB errors are redacted; sessions always close; 10-write ceiling",
   const state = setup();
   for (let i = 0; i < 10; i++) {
     const outcome = await serve(state.gateway, "/admin/news-sources", "POST", {
-      action: "approve", expectedRevision: 0, sourceId: "absent_source",
+      action: "approve",
+      expectedRevision: 0,
+      sourceId: "absent_source",
     });
     assert.equal(outcome.status, 409);
   }
