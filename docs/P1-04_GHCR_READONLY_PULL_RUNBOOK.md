@@ -54,7 +54,8 @@ write to Git or touch Docker:
 import getpass, os, re, stat
 from pathlib import Path
 
-assert os.isatty(0), "Requires an interactive SSH terminal"
+with open("/dev/tty", "rb", buffering=0) as terminal:
+    assert os.isatty(terminal.fileno()), "Requires an interactive SSH terminal"
 base = Path("secrets")
 metadata = base.lstat()
 assert stat.S_ISDIR(metadata.st_mode) and metadata.st_uid == os.getuid()
