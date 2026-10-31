@@ -70,14 +70,17 @@ def expected_migrations(migration_dir: Path = VERSIONS) -> list[str]:
     files = sorted(migration_dir.glob("*.up.sql"))
     names = [path.name.removesuffix(".up.sql") for path in files]
     if (
-        len(names) != 59
-        or names[-1] != EXPECTED_LAST
-        or [name[:4] for name in names] != [f"{i:04d}" for i in range(1, 60)]
+        len(names) not in (59, 60)
+        or names[58] != EXPECTED_LAST
+        or (len(names) == 60 and names[59] != "0060_named_source_host_admin_gateways")
+        or [name[:4] for name in names] != [f"{i:04d}" for i in range(1, len(names) + 1)]
         or not all(MIGRATION.fullmatch(name) for name in names)
         or any(path.is_symlink() or not path.is_file() for path in files)
     ):
         raise ValueError("Unexpected release migration manifest")
-    return names
+    # This acceptance is strictly for the already-installed 0059 baseline.
+    # Migration 0060 is reviewed separately; do not silently approve it here.
+    return names[:59]
 
 
 def postgres_read_only(container: str, sql: str) -> str:
