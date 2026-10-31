@@ -1,0 +1,40 @@
+name: P2-02 feed runtime secret custody (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/p2-02-feed-runtime-handoff.yml"
+      - "scripts/p2_02_feed_runtime_handoff.py"
+      - "scripts/test_p2_02_feed_runtime_handoff.py"
+      - "docs/P2_02_FEED_RUNTIME_HANDOFF.md"
+permissions:
+  contents: read
+concurrency:
+  group: p2-02-feed-runtime-handoff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  feed-runtime-secret-custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Enforce repository formatting
+        run: |
+          npm ci --no-audit --no-fund
+          npm run format:check
+      - name: Verify exact root-only synthetic UID handoff in isolated tempdir
+        run: |
+          sudo -n env \
+            GITHUB_ACTIONS="$GITHUB_ACTIONS" \
+            CI="$CI" \
+            GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+            GITHUB_RUN_ID="$GITHUB_RUN_ID" \
+            PYTHONDONTWRITEBYTECODE=1 \
+            python3 -m unittest discover -s scripts \
+              -p 'test_p2_02_feed_runtime_handoff.py' -v
