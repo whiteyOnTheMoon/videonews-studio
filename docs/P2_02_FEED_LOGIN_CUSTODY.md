@@ -26,6 +26,28 @@ Voraussetzung: unabhängige Prüfung und ausdrückliche Freigabe eines **neuen R
 
 **Apply:** Nur mit der zusätzlichen ausdrücklichen Betreiberfreigabe VNS_P2_FEED_LOGINS_OPERATOR_APPROVED=CREATE_THREE_RESTRICTED_FEED_LOGINS sowie --apply und --expected-sha FREIGEGEBENER_SHA werden die drei festen Logins in einer atomaren SQL-Transaktion eingerichtet. Der Postcheck verifiziert die drei separaten Mitgliedschaften und die fehlende SET-ROLE-Berechtigung.
 
+## Bestehende Konten nach irreführendem Apply-Fehler prüfen
+
+Bei der ersten produktiven Ausführung am 31.10.2026 führte die atomare
+SQL-Transaktion nachweislich zum COMMIT der drei Logins, aber die
+nachgelagerte Erfolgskontrolle meldete fälschlich REFUSED.
+Die Ursache war der Vergleich einer SQL-Zeichenkette mit angehängtem
+Boolean (PostgreSQL-Textdarstellung true/false) gegen das psql-Kürzel t.
+Die Prüfung verwendet jetzt ein **einzelnes echtes SQL-Boolean**.
+
+Der Betreiber hat anschließend rein lesend bestätigt:
+login_count=3, expected_memberships=3, total_memberships=3 und alle
+drei LOGIN-Flags true. **Keinen erneuten Apply-Aufruf ausführen!**
+
+Nach separatem kontrolliertem Release-Update den neuen Modus verwenden:
+`python3 scripts/p2_02_feed_login_custody.py --verify-existing --expected-sha FREIGEGEBENER_SHA`.
+
+Dieser Modus prüft den sauberen Release, die bestehenden lokalen
+Passwortdateien und die effektiven eingeschränkten DB-Funktions- und
+Rollenrechte read-only. Kein CREATE ROLE, kein Passwortwechsel, keine
+Entfernung von Konten, kein Neustart. Bei abweichenden Rechten
+nur Diagnose, keine automatische Reparatur.
+
 Klartextpasswörter verbleiben lokal in privaten Dateien. Zur Datenbank gehen ausschließlich je ein frisch gesalzener SCRAM-SHA-256-Verifier über stdin, niemals im Argument, im Commit oder im normalen Log. Bei Fehlern **nicht blind wiederholen**; zuerst lesend diagnostizieren.
 
 ## Weitere Produktionsvoraussetzungen
