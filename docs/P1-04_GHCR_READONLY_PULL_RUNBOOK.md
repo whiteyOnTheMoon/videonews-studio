@@ -98,6 +98,7 @@ python3 scripts/vns_ghcr_pull.py \
 ```
 
 The helper:
+
 - Rejects non-allowlisted image repositories, tags, and any unpinned digest.
 - Requires strict file ownership/mode and refuses symlinked secret directories
   or token file, and rejects non-GHCR credential requests.
