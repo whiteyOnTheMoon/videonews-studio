@@ -53,10 +53,6 @@ class FeedRedisACLTests(unittest.TestCase):
             acl.acl_line(acl.USERS[0][0], "short")
 
     def test_default_off_and_existing_users_required(self):
-        with self.fixture()[0] as temp:
-            pass
-        with tempfile.TemporaryDirectory() as root:
-            _, _, _, _ = self.fixture()
         password = "a"*64
         base = (
             "user default off\n"
