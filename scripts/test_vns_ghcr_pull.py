@@ -56,18 +56,31 @@ class GhcrPullTests(unittest.TestCase):
             self.assertIn("--credential-helper", wrapper.read_text())
 
     def test_helper_rejects_any_non_ghcr_registry(self):
-        with patch.dict(os.environ, {"VNS_GHCR_HELPER_ALLOWED": "1"}), \\\n             patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"docker.io"))):
+        with (
+            patch.dict(os.environ, {"VNS_GHCR_HELPER_ALLOWED": "1"}),
+            patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"docker.io"))),
+        ):
             with patch.object(ghcr, "read_token") as read:
                 self.assertEqual(ghcr.credential_helper(["get"]), 1)
                 read.assert_not_called()
 
     def test_helper_emits_credentials_only_on_its_private_pipe(self):
         output = io.StringIO()
-        with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"ghcr.io"))), \
-             patch("sys.stdout", output), patch.object(ghcr, "read_token", return_value=FAKE_TOKEN):
+        with (
+            patch.dict(os.environ, {"VNS_GHCR_HELPER_ALLOWED": "1"}),
+            patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"ghcr.io"))),
+            patch("sys.stdout", output),
+            patch.object(ghcr, "read_token", return_value=FAKE_TOKEN),
+        ):
             self.assertEqual(ghcr.credential_helper(["get"]), 0)
         self.assertEqual(json.loads(output.getvalue()),
                          {"Username": "whiteyOnTheMoon", "Secret": FAKE_TOKEN})
+
+    def test_helper_rejects_direct_use(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(ghcr, "read_token") as read:
+                self.assertEqual(ghcr.credential_helper(["get"]), 1)
+                read.assert_not_called()
 
     def test_successful_pull_verifies_both_digest_and_revision(self):
         calls = []
