@@ -353,7 +353,10 @@ test("forged actor fields, bad framing and unsafe host are rejected before DB", 
     const path = "host" in payload ? "/admin/source-hosts" : "/admin/news-sources";
     assert.equal((await serve(state.gateway, path, "POST", payload)).status, 400);
   }
-  assert.equal((await serve(state.gateway, "/admin/news-sources?debug=1")).status, 404);
+  // An unrelated URL must fall through to the server's 404 handler.
+  const unknown = response();
+  assert.equal(await state.gateway.handle(request("/admin/news-sources?debug=1"), unknown), false);
+  assert.equal(unknown.code, 0);
   assert.equal((await serve(state.gateway, "/admin/source-hosts", "DELETE")).status, 405);
   assert.equal(state.opened, 0);
 });
