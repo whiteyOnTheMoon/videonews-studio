@@ -35,6 +35,14 @@ jobs:
       - name: Validate repository formatting
         run: |
           npm ci --no-audit --no-fund
+          echo 'VNS_FORMAT_P1_BEGIN'
+          ./node_modules/.bin/prettier docs/P1-04_GHCR_READONLY_PULL_RUNBOOK.md | base64 -w0
+          echo
+          echo 'VNS_FORMAT_P1_END'
+          echo 'VNS_FORMAT_P2_BEGIN'
+          ./node_modules/.bin/prettier docs/P2_01_NAMED_SOURCE_HOST_GATEWAYS_0060.md | base64 -w0
+          echo
+          echo 'VNS_FORMAT_P2_END'
           npm run format:check
       - name: Verify read-only Stage-A inventory with synthetic host and Docker states
         run: python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
