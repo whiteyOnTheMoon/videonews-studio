@@ -49,16 +49,17 @@ def check_release(expected_sha: str, *, install: bool = False) -> None:
     if (not EXPECTED_RELEASE_PATTERN.fullmatch(expected_sha)
             or os.geteuid() != (0 if install else 1000)):
         raise PermissionError(DENIED)
-    if command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
+    # Root does not inherit the owner's SSH key and must not change global
+    # Git safe.directory. Pass this exact literal checkout path per invocation.
+    git = ["git", "-c", "safe.directory=" + str(ROOT), "-C", str(ROOT)]
+    if command(git + ["branch", "--show-current"]) != "main":
         raise RuntimeError(DENIED)
-    if command(["git", "-C", str(ROOT), "rev-parse", "HEAD"]) != expected_sha:
+    if command(git + ["rev-parse", "HEAD"]) != expected_sha:
         raise RuntimeError(DENIED)
-    if command(["git", "-C", str(ROOT), "status", "--porcelain"]):
+    if command(git + ["status", "--porcelain"]):
         raise RuntimeError(DENIED)
-    if install:
-        remote = command([
-            "git", "-C", str(ROOT), "ls-remote", "origin", "refs/heads/main"
-        ]).split("\t")[0]
+    if not install:
+        remote = command(git + ["ls-remote", "origin", "refs/heads/main"]).split("\t")[0]
         if remote != expected_sha:
             raise RuntimeError(DENIED)
 
