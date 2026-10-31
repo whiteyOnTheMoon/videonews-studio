@@ -32,7 +32,9 @@ async function start(): Promise<void> {
     ? createPersonalEditorialSessions(personalAdmission)
     : undefined;
   const personalSourceHost =
-    personalSessions && auth && editor &&
+    personalSessions &&
+    auth &&
+    editor &&
     (sourceHostGates.sourceEnabled || sourceHostGates.hostEnabled)
       ? new DormantPersonalSourceHostAdmin(
           editor,
@@ -44,12 +46,7 @@ async function start(): Promise<void> {
       : undefined;
   const personalEditorial =
     personalAdmission && auth && editor
-      ? new DormantPersonalEditorialAdmin(
-          editor,
-          auth,
-          personalSessions!,
-          true,
-        )
+      ? new DormantPersonalEditorialAdmin(editor, auth, personalSessions!, true)
       : undefined;
 
   let providerConfig: Awaited<ReturnType<typeof namedProviderRuntimeFromEnv>>;
@@ -61,7 +58,14 @@ async function start(): Promise<void> {
     throw new Error("Named provider configuration failed startup checks");
   }
 
-  const server = createApiServer({ auth, jobs, editor, personalEditorial, personalSourceHost, providerConfig });
+  const server = createApiServer({
+    auth,
+    jobs,
+    editor,
+    personalEditorial,
+    personalSourceHost,
+    providerConfig,
+  });
   server.listen(port, host, () => {
     console.log(`VideoNews Studio API ready at http://${host}:${port}`);
   });
