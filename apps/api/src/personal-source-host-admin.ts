@@ -122,8 +122,10 @@ export class DormantPersonalSourceHostAdmin {
     const path = req.url;
     if (path !== SOURCE_PATH && path !== HOST_PATH) return false;
 
-    if ((path === SOURCE_PATH && !this.sourceEnabled) ||
-        (path === HOST_PATH && !this.hostEnabled)) {
+    if (
+      (path === SOURCE_PATH && !this.sourceEnabled) ||
+      (path === HOST_PATH && !this.hostEnabled)
+    ) {
       respond(res, 404, { error: "not_found" });
       return true;
     }
@@ -149,10 +151,10 @@ export class DormantPersonalSourceHostAdmin {
     }
 
     const command = req.method === "POST" ? await boundedJson(req) : undefined;
-    const sourceCommand = path === SOURCE_PATH && req.method === "POST"
-      ? parseSourceAdminCommand(command) : null;
-    const hostCommand = path === HOST_PATH && req.method === "POST"
-      ? parseHostApprovalCommand(command) : null;
+    const sourceCommand =
+      path === SOURCE_PATH && req.method === "POST" ? parseSourceAdminCommand(command) : null;
+    const hostCommand =
+      path === HOST_PATH && req.method === "POST" ? parseHostApprovalCommand(command) : null;
     if (req.method === "POST" && !(sourceCommand || hostCommand)) {
       respond(res, 400, { error: "invalid_request" });
       return true;
@@ -189,7 +191,9 @@ export class DormantPersonalSourceHostAdmin {
         }
 
         const mutation = applySourceAdminCommand(
-          snapshot, sourceCommand!, this.clock().toISOString().slice(0, 10)
+          snapshot,
+          sourceCommand!,
+          this.clock().toISOString().slice(0, 10),
         );
         if (!mutation) {
           respond(res, 409, { error: "source_conflict" });
@@ -203,7 +207,7 @@ export class DormantPersonalSourceHostAdmin {
             JSON.stringify(mutation.next.sources),
             mutation.id,
             sourceCommand!.action,
-          ]
+          ],
         );
         if (saved.rows.length !== 1 || typeof saved.rows[0]?.saved !== "boolean")
           throw new Error("Named source commit unavailable");
@@ -231,7 +235,8 @@ export class DormantPersonalSourceHostAdmin {
         if (result.rows.length !== 1 || !row || revision === null)
           throw new Error("Named host read unavailable");
         const state = validateHostApprovalSnapshot({
-          revision, approvedHosts: row.approved_hosts
+          revision,
+          approvedHosts: row.approved_hosts,
         });
         respond(res, 200, { ...state, feedActive: false });
         return true;
@@ -245,7 +250,7 @@ export class DormantPersonalSourceHostAdmin {
           hostCommand!.action,
           hostCommand!.host,
           hostCommand!.reason,
-        ]
+        ],
       );
       if (saved.rows.length !== 1 || typeof saved.rows[0]?.saved !== "boolean")
         throw new Error("Named host commit unavailable");
