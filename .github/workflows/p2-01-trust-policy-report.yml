@@ -26,10 +26,6 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build --workspace @vns/shared
           npm run build --workspace @vns/worker
-      - name: Temporary formatting report
-        run: |
-          npx prettier --write scripts/p2_01_pinned_trust_policy_report.mjs scripts/test_p2_01_pinned_trust_policy_report.mjs
-          node -e 'const fs=require("node:fs");for(const p of ["scripts/p2_01_pinned_trust_policy_report.mjs","scripts/test_p2_01_pinned_trust_policy_report.mjs"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Check source formatting
         run: npx prettier --check scripts/p2_01_pinned_trust_policy_report.mjs scripts/test_p2_01_pinned_trust_policy_report.mjs docs/P2_01_TRUST_POLICY_OPERATOR_REPORT.md .github/workflows/p2-01-trust-policy-report.yml
       - name: Verify digest parity and private file permission failures
