@@ -147,47 +147,50 @@ test("relative and absolute CLI calls must execute and refuse an invalid release
   }
 });
 
-
-test("real worker UID can read staged bytes but cannot edit stage or access publisher", { skip: !enabled }, () => {
-  const f = fixture();
-  try {
-    stageOnce(f.cfg);
-    const probe = `
-      const fs = require("node:fs");
-      process.setgid(10002);
-      process.setuid(10002);
-      const data = fs.readFileSync("./source-export.signed.json");
-      if (!data.includes(Buffer.from("vns-source-export-ed25519-v1"))) process.exit(9);
-      for (const path of [
-        "../publisher/source-export.signed.json",
-        "./not-allowed-write-test"
-      ]) {
-        try {
-          if (path.includes("not-allowed")) {
-            fs.writeFileSync(path, "must refuse", { flag: "wx" });
-          } else {
-            fs.readFileSync(path);
+test(
+  "real worker UID can read staged bytes but cannot edit stage or access publisher",
+  { skip: !enabled },
+  () => {
+    const f = fixture();
+    try {
+      stageOnce(f.cfg);
+      const probe = `
+        const fs = require("node:fs");
+        process.setgid(10002);
+        process.setuid(10002);
+        const data = fs.readFileSync("./source-export.signed.json");
+        if (!data.includes(Buffer.from("vns-source-export-ed25519-v1"))) process.exit(9);
+        for (const path of [
+          "../publisher/source-export.signed.json",
+          "./not-allowed-write-test"
+        ]) {
+          try {
+            if (path.includes("not-allowed")) {
+              fs.writeFileSync(path, "must refuse", { flag: "wx" });
+            } else {
+              fs.readFileSync(path);
+            }
+            process.exit(10);
+          } catch (error) {
+            if (error.code !== "EACCES" && error.code !== "EPERM") throw error;
           }
-          process.exit(10);
+        }
+        try {
+          fs.openSync("./source-export.signed.json", "r+");
+          process.exit(11);
         } catch (error) {
           if (error.code !== "EACCES" && error.code !== "EPERM") throw error;
         }
-      }
-      try {
-        fs.openSync("./source-export.signed.json", "r+");
-        process.exit(11);
-      } catch (error) {
-        if (error.code !== "EACCES" && error.code !== "EPERM") throw error;
-      }
-    `;
-    const result = spawnSync(process.execPath, ["-e", probe], {
-      cwd: f.p("handoff-staging"),
-      encoding: "utf8",
-      timeout: 5000,
-    });
-    assert.equal(result.status, 0, result.stderr || "UID isolation failed");
-    verifyStage(f.cfg);
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
+      `;
+      const result = spawnSync(process.execPath, ["-e", probe], {
+        cwd: f.p("handoff-staging"),
+        encoding: "utf8",
+        timeout: 5000,
+      });
+      assert.equal(result.status, 0, result.stderr || "UID isolation failed");
+      verifyStage(f.cfg);
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  },
+);
