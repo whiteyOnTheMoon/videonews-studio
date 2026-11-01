@@ -8,6 +8,8 @@ const env: NodeJS.ProcessEnv = {
   VNS_FEED_RUNTIME_ENABLED: "true",
   VNS_FEED_SIGNED_EXPORT_ENABLED: "true",
   VNS_FEED_SOURCE_ANCHOR_APPROVED: "true",
+  VNS_FEED_TRUST_POLICY_APPROVED: "true",
+  VNS_FEED_TRUST_POLICY_REVISION: "1",
   VNS_FEED_SIGNED_SOURCE_INBOX: "/var/lib/vns/feed-source-inbox",
   VNS_FEED_SOURCE_CHECKPOINT_DIR: "/var/lib/vns/feed-source-checkpoint",
   VNS_FEED_SOURCE_PUBLIC_KEY_FILE: "/run/secrets/vns_feed_source_public_key",
@@ -41,11 +43,13 @@ const env: NodeJS.ProcessEnv = {
 test("every independent operator gate is required before opening any connections", () => {
   const admission = readFeedRuntimeAdmission(env);
   assert.equal(admission.dbUser, login);
+  assert.equal(admission.trustPolicyRevision, 1);
   assert.equal(admission.dbHost, "postgres");
   for (const flag of [
     "VNS_FEED_RUNTIME_ENABLED",
     "VNS_FEED_SIGNED_EXPORT_ENABLED",
     "VNS_FEED_SOURCE_ANCHOR_APPROVED",
+    "VNS_FEED_TRUST_POLICY_APPROVED",
     "VNS_FEED_RUNTIME_OPERATOR_ACK",
     "VNS_FEED_RIGHTS_ATTESTED",
     "VNS_FEED_NETWORK_APPROVED",
@@ -84,6 +88,12 @@ test("refuses automatic scheduling, arbitrary endpoints and shared database user
     { VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE: "/tmp/key" },
     { VNS_FEED_SOURCE_ANCHOR_CA_FILE: "/tmp/ca" },
     { VNS_FEED_SOURCE_ANCHOR_HOST: "localhost" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "0" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "-1" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "1.5" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "01" },
+    { VNS_FEED_TRUST_POLICY_REVISION: "9007199254740992" },
     { VNS_FEED_SOURCE_ANCHOR_USER: "postgres" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "unknown" },
