@@ -1,0 +1,29 @@
+name: P2-01 one-shot signed source staging (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_signed_handoff_stage.mjs"
+      - "scripts/test_p2_01_signed_handoff_stage.mjs"
+      - "docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md"
+      - ".github/workflows/p2-01-signed-source-stage.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-signed-stage-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  signed-source-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Enforce formatting for signed staging changes
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check scripts/p2_01_signed_handoff_stage.mjs scripts/test_p2_01_signed_handoff_stage.mjs docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md .github/workflows/p2-01-signed-source-stage.yml
+      - name: Test staging with disposable Ed25519 keys and synthetic UIDs
+        run: sudo -n node --test scripts/test_p2_01_signed_handoff_stage.mjs
