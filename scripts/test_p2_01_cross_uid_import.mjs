@@ -118,17 +118,21 @@ test(
   },
 );
 
-test("tampered source envelope cannot cross UID handoff or create inbox", { skip: !enabled }, () => {
-  const f = fixture();
-  try {
-    const doc = JSON.parse(readFileSync(f.staged, "utf8"));
-    doc.export.sourceRevision = 9;
-    writeFileSync(f.staged, JSON.stringify(doc));
-    const result = runWorker(f, "refuse");
-    assert.equal(result.status, 0, result.stderr || "Tampered signature accepted");
-    assert.equal(existsSync(join(f.inbox, "source-export.signed.json")), false);
-    assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
+test(
+  "tampered source envelope cannot cross UID handoff or create inbox",
+  { skip: !enabled },
+  () => {
+    const f = fixture();
+    try {
+      const doc = JSON.parse(readFileSync(f.staged, "utf8"));
+      doc.export.sourceRevision = 9;
+      writeFileSync(f.staged, JSON.stringify(doc));
+      const result = runWorker(f, "refuse");
+      assert.equal(result.status, 0, result.stderr || "Tampered signature accepted");
+      assert.equal(existsSync(join(f.inbox, "source-export.signed.json")), false);
+      assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  },
+);
