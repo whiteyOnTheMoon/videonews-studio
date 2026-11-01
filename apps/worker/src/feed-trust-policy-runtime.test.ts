@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, type KeyObject } from "node:crypto";
 import test from "node:test";
 import type { AnchorQuery } from "./postgres-source-revision-anchor.js";
 import { pinnedTrustPolicyDigest } from "./source-trust-policy-anchor.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 
-const digestFor = (key: ReturnType<typeof generateKeyPairSync>["publicKey"], revision: number) =>
+const digestFor = (key: KeyObject, revision: number) =>
   pinnedTrustPolicyDigest({
     policyRevision: revision,
     rotation: {
