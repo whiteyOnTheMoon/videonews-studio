@@ -24,11 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Temporary document formatting capture
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write docs/P2_02_INDEPENDENT_TRUST_PREAPPROVAL.md
-          node -e 'const fs=require("node:fs");console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:"docs/P2_02_INDEPENDENT_TRUST_PREAPPROVAL.md",content:fs.readFileSync("docs/P2_02_INDEPENDENT_TRUST_PREAPPROVAL.md","utf8")}))'
       - name: Compile worker contracts and enforce formatting
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
