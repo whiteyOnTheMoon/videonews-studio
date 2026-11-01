@@ -174,6 +174,7 @@ export function verifySignedFeedOverlay(data) {
         "VNS_FEED_RIGHTS_ATTESTED",
         "VNS_FEED_SIGNED_EXPORT_ENABLED",
         "VNS_FEED_SOURCE_ANCHOR_APPROVED",
+        "VNS_FEED_TRUST_POLICY_APPROVED",
       ],
     ],
   ]) {
@@ -199,7 +200,16 @@ export function verifySignedFeedOverlay(data) {
     scheduler.environment.VNS_FEED_SCHEDULER_FAILURE_LIMIT,
     "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}",
   );
-  for (const flag of ["VNS_FEED_RUNTIME_ENABLED", "VNS_FEED_SOURCE_ANCHOR_APPROVED"]) {
+  assert.equal(
+    observer.environment.VNS_FEED_TRUST_POLICY_REVISION,
+    "${VNS_FEED_TRUST_POLICY_REVISION:-0}",
+  );
+  for (const flag of [
+    "VNS_FEED_RUNTIME_ENABLED",
+    "VNS_FEED_SOURCE_ANCHOR_APPROVED",
+    "VNS_FEED_TRUST_POLICY_APPROVED",
+    "VNS_FEED_TRUST_POLICY_REVISION",
+  ]) {
     assert.equal(scheduler.environment[flag], observer.environment[flag]);
   }
   for (const [role, service] of [
