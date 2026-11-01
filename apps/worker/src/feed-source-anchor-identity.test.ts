@@ -7,6 +7,7 @@ const login = "vns_anchor_login_worker";
 const allowed = {
   session_user: login,
   can_advance: true,
+  can_advance_trust_policy: true,
   can_read_anchor: false,
   superuser: false,
   create_role: false,
@@ -20,6 +21,7 @@ function db(rows: unknown[]): Pick<Pool, "query"> {
     async query(sql: string) {
       assert.match(sql, /session_user/);
       assert.match(sql, /vns_source_anchor[.]advance/);
+      assert.match(sql, /vns_source_anchor[.]advance_trust_policy/);
       return { rows };
     },
   } as unknown as Pick<Pool, "query">;
@@ -33,6 +35,7 @@ test("independent source anchor login has only the monotonic advance function", 
   );
   for (const key of [
     "can_advance",
+    "can_advance_trust_policy",
     "can_read_anchor",
     "superuser",
     "create_role",
@@ -42,7 +45,7 @@ test("independent source anchor login has only the monotonic advance function", 
   ]) {
     const bad = {
       ...allowed,
-      [key]: key === "can_advance" ? false : true,
+      [key]: ["can_advance", "can_advance_trust_policy"].includes(key) ? false : true,
     };
     await assert.rejects(attestFeedSourceAnchorIdentity(db([bad]), login), /admission denied/);
   }
