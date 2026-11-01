@@ -21,6 +21,8 @@ const env: NodeJS.ProcessEnv = {
   VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK: "true",
   VNS_FEED_SIGNED_EXPORT_ENABLED: "true",
   VNS_FEED_SOURCE_ANCHOR_APPROVED: "true",
+  VNS_FEED_TRUST_POLICY_APPROVED: "true",
+  VNS_FEED_TRUST_POLICY_REVISION: "1",
   VNS_FEED_SOURCE_BOOTSTRAP: "false",
   VNS_FEED_SOURCE_ANCHOR_HOST: "anchor.example.org",
   VNS_FEED_SOURCE_ANCHOR_USER: "vns_anchor_login_ciunit",
@@ -79,6 +81,7 @@ test("all continuous safety gates and explicit operator limits fail closed", () 
     "VNS_FEED_RIGHTS_ATTESTED",
     "VNS_FEED_NETWORK_APPROVED",
     "VNS_FEED_SOURCE_ANCHOR_APPROVED",
+    "VNS_FEED_TRUST_POLICY_APPROVED",
     "VNS_FEED_SCHEDULER_ENABLED",
     "VNS_FEED_SCHEDULER_OPERATOR_ACK",
   ]) {
