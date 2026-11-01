@@ -24,6 +24,7 @@ const REQUIRED_FLAGS = [
   "VNS_FEED_BULLMQ_BRIDGE_OPERATOR_ACK",
   "VNS_FEED_SIGNED_EXPORT_ENABLED",
   "VNS_FEED_SOURCE_ANCHOR_APPROVED",
+  "VNS_FEED_TRUST_POLICY_APPROVED",
 ] as const;
 
 export type FeedRuntimeMode =
@@ -37,6 +38,7 @@ export interface FeedRuntimeAdmission {
   anchorHost: string;
   anchorUser: string;
   initialBootstrap: boolean;
+  trustPolicyRevision: number;
   signedExportDirectory: typeof FEED_SIGNED_SOURCE_INBOX;
   signedCheckpointDirectory: typeof FEED_SOURCE_CHECKPOINT;
   sourcePublicKeyPath: typeof FEED_SOURCE_PUBLIC_KEY;
@@ -90,6 +92,10 @@ export function readFeedRuntimeAdmission(
   const redisUser = env.VNS_FEED_REDIS_USER ?? "";
   const anchorHost = env.VNS_FEED_SOURCE_ANCHOR_HOST ?? "";
   const anchorUser = env.VNS_FEED_SOURCE_ANCHOR_USER ?? "";
+  // Explicit, independently approved trust-policy revision. Never default to 1:
+  // a replaced public-key file with an unchanged revision must fail remotely.
+  const policyRevisionText = env.VNS_FEED_TRUST_POLICY_REVISION ?? "";
+  const trustPolicyRevision = Number(policyRevisionText);
   if (
     !["postgres", "127.0.0.1"].includes(dbHost) ||
     !["redis", "127.0.0.1"].includes(redisHost) ||
@@ -99,7 +105,9 @@ export function readFeedRuntimeAdmission(
     anchorHost.length > 253 ||
     !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(anchorHost) ||
     /[.](local|internal|localhost|onion)$/.test(anchorHost) ||
-    !/^vns_anchor_login_[a-z0-9_]{3,24}$/.test(anchorUser)
+    !/^vns_anchor_login_[a-z0-9_]{3,24}$/.test(anchorUser) ||
+    !/^[1-9][0-9]{0,14}$/.test(policyRevisionText) ||
+    !Number.isSafeInteger(trustPolicyRevision)
   ) {
     throw new Error("Feed runtime identities or endpoints refused");
   }
@@ -113,6 +121,7 @@ export function readFeedRuntimeAdmission(
     anchorHost,
     anchorUser,
     initialBootstrap: env.VNS_FEED_SOURCE_BOOTSTRAP === "true",
+    trustPolicyRevision,
     signedExportDirectory: FEED_SIGNED_SOURCE_INBOX,
     signedCheckpointDirectory: FEED_SOURCE_CHECKPOINT,
     sourcePublicKeyPath: FEED_SOURCE_PUBLIC_KEY,
