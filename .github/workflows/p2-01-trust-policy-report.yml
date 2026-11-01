@@ -1,0 +1,32 @@
+name: P2-01 pinned trust policy operator report (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_pinned_trust_policy_report.mjs"
+      - "scripts/test_p2_01_pinned_trust_policy_report.mjs"
+      - "docs/P2_01_TRUST_POLICY_OPERATOR_REPORT.md"
+      - ".github/workflows/p2-01-trust-policy-report.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-policy-report-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  operator-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile trusted worker source
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Check source formatting
+        run: npx prettier --check scripts/p2_01_pinned_trust_policy_report.mjs scripts/test_p2_01_pinned_trust_policy_report.mjs docs/P2_01_TRUST_POLICY_OPERATOR_REPORT.md .github/workflows/p2-01-trust-policy-report.yml
+      - name: Verify digest parity and private file permission failures
+        run: sudo -n env CI=true GITHUB_ACTIONS="$GITHUB_ACTIONS" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" PATH="$PATH" node --test scripts/test_p2_01_pinned_trust_policy_report.mjs
