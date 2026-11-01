@@ -13,6 +13,7 @@ import { readApprovedFetchPolicy } from "./source-fetch.js";
 import { acceptDormantSourceFile } from "./source-export-files.js";
 import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.js";
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
+import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 
 function secret(path: string): string {
   try {
@@ -108,6 +109,18 @@ export async function observeFeedOnce(
         return { rowCount: result.rowCount, rows: result.rows };
       },
     });
+    // Independently anchor the actual pinned signer and its explicit policy
+    // revision BEFORE advancing source checkpoint or starting feed transport.
+    await advancePinnedFeedTrustPolicy(
+      {
+        async query(sql, params) {
+          const result = await anchorPool!.query<{ accepted: unknown }>(sql, [...params]);
+          return { rowCount: result.rowCount, rows: result.rows };
+        },
+      },
+      pinnedKey,
+      admission.trustPolicyRevision,
+    );
     const sources = await acceptDormantSourceFile(
       admission.signedExportDirectory,
       admission.signedCheckpointDirectory,
