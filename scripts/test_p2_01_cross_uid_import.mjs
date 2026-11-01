@@ -13,7 +13,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { prepareDormantSourceExport } from "../apps/worker/dist/source-registry-export.js";
@@ -80,7 +80,14 @@ function fixture() {
 }
 
 function runWorker(f, action) {
+  // GitHub's ephemeral checkout may be private to the runner. The worker
+  // image normally supplies readable compiled code; allow execute-only
+  // traversal of the disposable runner path, never publisher data.
   const probe = fileURLToPath(new URL("./p2_01_cross_uid_import_probe.mjs", import.meta.url));
+  for (let path = dirname(probe); path !== dirname(path); path = dirname(path)) {
+    const info = statSync(path);
+    if ((info.mode & 0o001) === 0) chmodSync(path, (info.mode & 0o777) | 0o001);
+  }
   return spawnSync(process.execPath, [probe, f.root, action], {
     cwd: process.cwd(),
     uid: 10002,
@@ -91,7 +98,11 @@ function runWorker(f, action) {
   });
 }
 
-const enabled = process.getuid?.() === 0 && process.env.CI === "true";
+const enabled =
+  process.getuid?.() === 0 &&
+  process.env.CI === "true" &&
+  process.env.GITHUB_ACTIONS === "true" &&
+  process.env.GITHUB_REPOSITORY === "whiteyOnTheMoon/videonews-studio";
 
 test(
   "signed transfer -> real separate worker UID -> private inbox -> anchored checkpoint",
