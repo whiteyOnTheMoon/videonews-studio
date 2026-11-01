@@ -200,7 +200,10 @@ export function verifySignedFeedOverlay(data) {
     scheduler.environment.VNS_FEED_SCHEDULER_FAILURE_LIMIT,
     "${VNS_FEED_SCHEDULER_FAILURE_LIMIT:-0}",
   );
-  assert.equal(observer.environment.VNS_FEED_TRUST_POLICY_REVISION, "${VNS_FEED_TRUST_POLICY_REVISION:-0}");
+  assert.equal(
+    observer.environment.VNS_FEED_TRUST_POLICY_REVISION,
+    "${VNS_FEED_TRUST_POLICY_REVISION:-0}",
+  );
   for (const flag of [
     "VNS_FEED_RUNTIME_ENABLED",
     "VNS_FEED_SOURCE_ANCHOR_APPROVED",
