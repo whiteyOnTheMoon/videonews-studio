@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import {
   chmodSync,
   chownSync,
@@ -12,7 +13,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { inspectSource, preflight, stageOnce, verifyStage } from "./p2_01_signed_handoff_stage.mjs";
 
 const enabled = process.getuid?.() === 0;
@@ -126,5 +128,21 @@ test("refuses nonempty worker checkpoint before staging", { skip: !enabled }, ()
     assert.throws(() => stageOnce(f.cfg));
   } finally {
     rmSync(f.root, { recursive: true, force: true });
+  }
+});
+
+test("relative and absolute CLI calls must execute and refuse an invalid release", () => {
+  const script = fileURLToPath(new URL("./p2_01_signed_handoff_stage.mjs", import.meta.url));
+  const cwd = dirname(dirname(script));
+  const args = ["--preflight", "--expected-sha", "0".repeat(40)];
+  for (const executable of ["scripts/p2_01_signed_handoff_stage.mjs", script]) {
+    const processResult = spawnSync(process.execPath, [executable, ...args], {
+      cwd,
+      encoding: "utf8",
+      timeout: 5000,
+    });
+    assert.equal(processResult.status, 2, executable);
+    assert.match(processResult.stderr, /REFUSED: signed source staging unsafe/);
+    assert.doesNotMatch(processResult.stdout, /PASS:/);
   }
 });
