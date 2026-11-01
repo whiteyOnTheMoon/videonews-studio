@@ -1,0 +1,37 @@
+name: P2-02 independent signing trust preapproval (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/independent-anchor/004_preapproved_trust_policy.sql"
+      - "db/independent-anchor/test_trust_policy.sql"
+      - "db/scripts/test_independent_anchor.sh"
+      - "apps/worker/src/feed-source-anchor-identity.ts"
+      - "apps/worker/src/feed-source-anchor-identity.test.ts"
+      - "docs/P2_02_INDEPENDENT_TRUST_PREAPPROVAL.md"
+      - ".github/workflows/p2-02-trust-preapproval.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-02-trust-approval-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  approval-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile worker contracts and enforce formatting
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts docs/P2_02_INDEPENDENT_TRUST_PREAPPROVAL.md .github/workflows/p2-02-trust-preapproval.yml
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+          node --test apps/worker/dist/feed-source-anchor-identity.test.js apps/worker/dist/feed-trust-policy-runtime.test.js
+      - name: Exercise independent authority with real disposable PostgreSQL
+        env:
+          CI: "true"
+        run: bash db/scripts/test_independent_anchor.sh
