@@ -1,0 +1,32 @@
+name: P2-01 isolated signed importer cross-UID (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_cross_uid_import_probe.mjs"
+      - "scripts/test_p2_01_cross_uid_import.mjs"
+      - ".github/workflows/p2-01-cross-uid-import.yml"
+      - "docs/P2_01_CROSS_UID_IMPORT_CI.md"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-cross-uid-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  cross-uid-signed-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install offline test dependencies and compile worker entrypoints
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Enforce CI test formatting
+        run: npx prettier --check scripts/p2_01_cross_uid_import_probe.mjs scripts/test_p2_01_cross_uid_import.mjs .github/workflows/p2-01-cross-uid-import.yml docs/P2_01_CROSS_UID_IMPORT_CI.md
+      - name: Run disposable cross-Linux-UID import and refusal tests
+        run: sudo -n env CI=true GITHUB_ACTIONS="$GITHUB_ACTIONS" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" PATH="$PATH" node --test scripts/test_p2_01_cross_uid_import.mjs
