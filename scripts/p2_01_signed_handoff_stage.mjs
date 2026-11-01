@@ -21,6 +21,7 @@ import {
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 const ROOT = "/home/ap/www/videonews-studio";
 const BASE = "/var/lib/videonews-studio/p2-signed-source";
@@ -280,7 +281,9 @@ function main(argv) {
         : "PASS: staged source matches signed publisher export byte-for-byte",
   );
 }
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Node keeps a relative CLI entrypoint relative; compare canonical absolute paths
+// so an operator invocation from the repository root actually executes main().
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   try {
     main(process.argv.slice(2));
   } catch {
