@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { createPublicKey } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { importSignedSourceHandoff, acceptDormantSourceFile } from "../apps/worker/dist/source-export-files.js";
+import {
+  importSignedSourceHandoff,
+  acceptDormantSourceFile,
+} from "../apps/worker/dist/source-export-files.js";
 
 async function main() {
   assert.equal(process.env.CI, "true");
@@ -17,10 +20,7 @@ async function main() {
   const inbox = join(root, "inbox");
   const checkpoint = join(root, "checkpoint");
   // This is a real OS access-control check, not a stub.
-  assert.throws(
-    () => readFileSync(join(root, "publisher/private-key.pem")),
-    { code: "EACCES" },
-  );
+  assert.throws(() => readFileSync(join(root, "publisher/private-key.pem")), { code: "EACCES" });
   const publicKey = createPublicKey(readFileSync(join(root, "pinned-public.pem")));
   if (action === "refuse") {
     await assert.rejects(importSignedSourceHandoff(stage, inbox, policy, publicKey));
@@ -37,10 +37,7 @@ async function main() {
   const sources = await acceptDormantSourceFile(inbox, checkpoint, policy, publicKey, true, {
     async advance(candidate) {
       advances++;
-      assert.deepEqual(
-        [candidate.sourceRevision, candidate.hostApprovalRevision],
-        [8, 7],
-      );
+      assert.deepEqual([candidate.sourceRevision, candidate.hostApprovalRevision], [8, 7]);
       assert.match(candidate.envelopeSha256, /^[a-f0-9]{64}$/);
     },
   });
