@@ -88,8 +88,7 @@ function run(cmd, args) {
 }
 function release(sha) {
   must(process.getuid?.() === 0 && /^[a-f0-9]{40}$/.test(sha));
-  const git = (...args) =>
-    run("git", ["-c", "safe.directory=" + ROOT, "-C", ROOT, ...args]);
+  const git = (...args) => run("git", ["-c", "safe.directory=" + ROOT, "-C", ROOT, ...args]);
   must(git("branch", "--show-current") === "main");
   must(git("rev-parse", "HEAD") === sha);
   must(git("status", "--porcelain") === "");
@@ -107,11 +106,13 @@ function report(args) {
   strictDirectory("/var/lib/videonews-studio/p2-signed-source");
   strictDirectory("/var/lib/videonews-studio/p2-signed-source/trust-material");
   const key = readPinnedPublicKey();
-  console.log(JSON.stringify({
-    status: "local_fingerprint_only",
-    independent_anchor_verified: false,
-    ...calculateTrustPolicyManifest(key, revision),
-  }));
+  console.log(
+    JSON.stringify({
+      status: "local_fingerprint_only",
+      independent_anchor_verified: false,
+      ...calculateTrustPolicyManifest(key, revision),
+    }),
+  );
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
