@@ -1,0 +1,41 @@
+name: P2-01 production feed trust-policy anchor (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-runtime-admission.ts"
+      - "apps/worker/src/feed-runtime-admission.test.ts"
+      - "apps/worker/src/feed-source-anchor-identity.ts"
+      - "apps/worker/src/feed-source-anchor-identity.test.ts"
+      - "apps/worker/src/feed-trusted-context.ts"
+      - "apps/worker/src/feed-observe-once.ts"
+      - "apps/worker/src/feed-trust-policy-runtime.ts"
+      - "apps/worker/src/feed-trust-policy-runtime.test.ts"
+      - "compose.feed-observation.yaml"
+      - "scripts/test_p2_feed_compose.mjs"
+      - "docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md"
+      - ".github/workflows/p2-01-live-trust-policy.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-live-trust-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  live-trust-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check source formatting
+        run: npx prettier --check apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-trust-policy-runtime.ts apps/worker/src/feed-trust-policy-runtime.test.ts compose.feed-observation.yaml scripts/test_p2_feed_compose.mjs docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md .github/workflows/p2-01-live-trust-policy.yml
+      - name: Build actual worker and execute trust admission tests
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+          node --test apps/worker/dist/feed-trust-policy-runtime.test.js apps/worker/dist/feed-runtime-admission.test.js apps/worker/dist/feed-source-anchor-identity.test.js apps/worker/dist/postgres-trust-policy-anchor.test.js
+          node --test scripts/test_p2_feed_compose.mjs
