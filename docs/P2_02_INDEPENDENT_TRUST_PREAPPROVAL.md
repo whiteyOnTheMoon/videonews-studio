@@ -3,7 +3,7 @@
 ## Security change
 
 The existing external `advance_trust_policy(revision,digest)` high-water function
-only rejected *stale revisions* and *same-revision digest substitution*.
+only rejected _stale revisions_ and _same-revision digest substitution_.
 A compromised runtime principal with EXECUTE could still advance to an
 **arbitrary higher revision and digest**. High-water monotonicity alone is
 therefore **not** an independently approved signing-key trust policy.
