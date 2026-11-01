@@ -3,6 +3,10 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "apps/worker/src/bounded-feed-scheduler.test.ts"
+      - "apps/worker/src/feed-scheduler-continuous.test.ts"
+      - "apps/worker/src/feed-separated-roles.test.ts"
+      - "scripts/ci_p2_separated_ports.mjs"
       - "apps/worker/src/feed-runtime-admission.ts"
       - "apps/worker/src/feed-runtime-admission.test.ts"
       - "apps/worker/src/feed-source-anchor-identity.ts"
@@ -32,7 +36,7 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check source formatting
-        run: npx prettier --check apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-trust-policy-runtime.ts apps/worker/src/feed-trust-policy-runtime.test.ts compose.feed-observation.yaml scripts/test_p2_feed_compose.mjs docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md .github/workflows/p2-01-live-trust-policy.yml
+        run: npx prettier --check apps/worker/src/bounded-feed-scheduler.test.ts apps/worker/src/feed-scheduler-continuous.test.ts apps/worker/src/feed-separated-roles.test.ts scripts/ci_p2_separated_ports.mjs apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-trust-policy-runtime.ts apps/worker/src/feed-trust-policy-runtime.test.ts compose.feed-observation.yaml scripts/test_p2_feed_compose.mjs docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md .github/workflows/p2-01-live-trust-policy.yml
       - name: Build actual worker and execute trust admission tests
         run: |
           npm run build --workspace @vns/shared
