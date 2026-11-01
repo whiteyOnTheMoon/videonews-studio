@@ -9,6 +9,7 @@ import type { Pool } from "pg";
 export interface FeedAnchorIdentity {
   session_user: string;
   can_advance: boolean;
+  can_advance_trust_policy: boolean;
   can_read_anchor: boolean;
   superuser: boolean;
   create_role: boolean;
@@ -30,6 +31,9 @@ export async function attestFeedSourceAnchorIdentity(
          has_function_privilege(
            session_user,'vns_source_anchor.advance(bigint,bigint,text)','EXECUTE'
          ) AS can_advance,
+         has_function_privilege(
+           session_user,'vns_source_anchor.advance_trust_policy(bigint,text)','EXECUTE'
+         ) AS can_advance_trust_policy,
          has_table_privilege(
            session_user,'vns_source_anchor.high_water','SELECT'
          ) AS can_read_anchor,
@@ -44,6 +48,7 @@ export async function attestFeedSourceAnchorIdentity(
       !row ||
       row.session_user !== expectedLogin ||
       row.can_advance !== true ||
+      row.can_advance_trust_policy !== true ||
       [
         row.can_read_anchor,
         row.superuser,
