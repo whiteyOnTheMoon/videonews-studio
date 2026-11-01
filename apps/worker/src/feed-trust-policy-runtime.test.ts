@@ -39,10 +39,7 @@ test("same policy revision with replaced key is rejected by remote high-water au
     async query(_sql, [revision, digest]) {
       const rev = revision as number;
       const sha = digest as string;
-      if (
-        pinned &&
-        (rev < pinned.revision || (rev === pinned.revision && sha !== pinned.digest))
-      ) {
+      if (pinned && (rev < pinned.revision || (rev === pinned.revision && sha !== pinned.digest))) {
         return { rowCount: 1, rows: [{ accepted: false }] };
       }
       pinned = { revision: rev, digest: sha };
