@@ -23,8 +23,3 @@ jobs:
           node-version: "22"
       - name: Test staging with disposable Ed25519 keys and synthetic UIDs
         run: sudo -n node --test scripts/test_p2_01_signed_handoff_stage.mjs
-      - name: Temporary PR formatting inspection (source files only)
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write scripts/p2_01_signed_handoff_stage.mjs scripts/test_p2_01_signed_handoff_stage.mjs docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md .github/workflows/p2-01-signed-source-stage.yml
-          node -e 'const fs=require("node:fs");for(const p of ["scripts/p2_01_signed_handoff_stage.mjs","scripts/test_p2_01_signed_handoff_stage.mjs","docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md",".github/workflows/p2-01-signed-source-stage.yml"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
