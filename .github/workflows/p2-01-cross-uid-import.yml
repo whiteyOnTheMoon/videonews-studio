@@ -26,11 +26,7 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build --workspace @vns/shared
           npm run build --workspace @vns/worker
-      - name: Temporary normalized source formatting inspection
-        run: |
-          npx prettier --write scripts/p2_01_cross_uid_import_probe.mjs scripts/test_p2_01_cross_uid_import.mjs
-          node -e 'const fs=require("node:fs");for(const p of ["scripts/p2_01_cross_uid_import_probe.mjs","scripts/test_p2_01_cross_uid_import.mjs"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Enforce CI test formatting
         run: npx prettier --check scripts/p2_01_cross_uid_import_probe.mjs scripts/test_p2_01_cross_uid_import.mjs .github/workflows/p2-01-cross-uid-import.yml docs/P2_01_CROSS_UID_IMPORT_CI.md
       - name: Run disposable cross-Linux-UID import and refusal tests
-        run: sudo -n env CI=true PATH="$PATH" node --test scripts/test_p2_01_cross_uid_import.mjs
+        run: sudo -n env CI=true GITHUB_ACTIONS="$GITHUB_ACTIONS" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" PATH="$PATH" node --test scripts/test_p2_01_cross_uid_import.mjs
