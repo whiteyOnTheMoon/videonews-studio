@@ -9,6 +9,9 @@ const allowed = {
   can_advance: true,
   can_advance_trust_policy: true,
   can_read_anchor: false,
+  can_read_policy_anchor: false,
+  can_read_trust_approvals: false,
+  can_write_trust_approvals: false,
   superuser: false,
   create_role: false,
   create_db: false,
@@ -22,6 +25,7 @@ function db(rows: unknown[]): Pick<Pool, "query"> {
       assert.match(sql, /session_user/);
       assert.match(sql, /vns_source_anchor[.]advance/);
       assert.match(sql, /vns_source_anchor[.]advance_trust_policy/);
+      assert.match(sql, /vns_source_anchor[.]trust_policy_approvals/);
       return { rows };
     },
   } as unknown as Pick<Pool, "query">;
@@ -37,6 +41,9 @@ test("independent source anchor login has only the monotonic advance function", 
     "can_advance",
     "can_advance_trust_policy",
     "can_read_anchor",
+    "can_read_policy_anchor",
+    "can_read_trust_approvals",
+    "can_write_trust_approvals",
     "superuser",
     "create_role",
     "create_db",

@@ -25,7 +25,23 @@ sql < "$root/db/independent-anchor/001_high_water.sql"
 sql < "$root/db/independent-anchor/002_server_admission.sql"
 sql < "$root/db/independent-anchor/test_admission.sql"
 sql < "$root/db/independent-anchor/003_trust_policy_admission.sql"
+sql < "$root/db/independent-anchor/004_preapproved_trust_policy.sql"
 sql < "$root/db/independent-anchor/test_trust_policy.sql"
+# No runtime grant may manipulate the out-of-band trust policy approvals,
+# even when directly attempting SQL under SET ROLE.
+for statement in \
+  "INSERT INTO vns_source_anchor.trust_policy_approvals(policy_revision,policy_sha256) VALUES (4,repeat('f',64))" \
+  "UPDATE vns_source_anchor.trust_policy_approvals SET policy_sha256=repeat('f',64)" \
+  "DELETE FROM vns_source_anchor.trust_policy_approvals" \
+  "SELECT * FROM vns_source_anchor.trust_policy_approvals"; do
+  if docker exec "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d anchor_ci \
+    -c "SET ROLE vns_trust_ci_worker; $statement" >/dev/null 2>&1; then
+    echo "FAIL: worker can read or mutate independent trust approvals" >&2
+    exit 1
+  fi
+done
+echo "PASS: independent trust approvals not readable or writable by runtime"
+
 # Direct DML by worker must fail; not merely return zero rows.
 if docker exec "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d anchor_ci \
   -c "SET ROLE vns_anchor_ci_worker; UPDATE vns_source_anchor.high_water SET source_revision=0" >/dev/null 2>&1; then
@@ -52,7 +68,8 @@ test "$(cat "$work/a" "$work/b" | grep -cx t)" -eq 1
 test "$(cat "$work/a" "$work/b" | grep -cx f)" -eq 1
 echo "PASS: independent authority deny, replay and concurrent admission"
 
-# Concurrent trust-policy attempts with distinct same-revision digests.
+# Concurrent trust-policy attempts with one independently preapproved digest.
+# An unapproved competing SHA must never be admitted, even at higher revision.
 work_trust="$(mktemp -d /tmp/vns-trust-race-XXXXXXXX)"
 for pair in "a d" "b e"; do
   read -r label digit <<< "$pair"

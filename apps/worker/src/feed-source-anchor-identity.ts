@@ -11,6 +11,9 @@ export interface FeedAnchorIdentity {
   can_advance: boolean;
   can_advance_trust_policy: boolean;
   can_read_anchor: boolean;
+  can_read_policy_anchor: boolean;
+  can_read_trust_approvals: boolean;
+  can_write_trust_approvals: boolean;
   superuser: boolean;
   create_role: boolean;
   create_db: boolean;
@@ -37,6 +40,15 @@ export async function attestFeedSourceAnchorIdentity(
          has_table_privilege(
            session_user,'vns_source_anchor.high_water','SELECT'
          ) AS can_read_anchor,
+         has_table_privilege(
+           session_user,'vns_source_anchor.trust_policy_high_water','SELECT'
+         ) AS can_read_policy_anchor,
+         has_table_privilege(
+           session_user,'vns_source_anchor.trust_policy_approvals','SELECT'
+         ) AS can_read_trust_approvals,
+         has_table_privilege(
+           session_user,'vns_source_anchor.trust_policy_approvals','INSERT,UPDATE,DELETE'
+         ) AS can_write_trust_approvals,
          rol.rolsuper AS superuser, rol.rolcreaterole AS create_role,
          rol.rolcreatedb AS create_db, rol.rolreplication AS replication,
          rol.rolbypassrls AS bypass_rls
@@ -51,6 +63,9 @@ export async function attestFeedSourceAnchorIdentity(
       row.can_advance_trust_policy !== true ||
       [
         row.can_read_anchor,
+        row.can_read_policy_anchor,
+        row.can_read_trust_approvals,
+        row.can_write_trust_approvals,
         row.superuser,
         row.create_role,
         row.create_db,
