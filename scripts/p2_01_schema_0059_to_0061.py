@@ -61,8 +61,50 @@ SELECT
   AND
   (SELECT revision>0 AND jsonb_array_length(approved_hosts) BETWEEN 1 AND 5
      FROM vns.admin_source_host_approvals WHERE singleton=true)
-  AND (SELECT count(*)>0 FROM vns.admin_source_audit)
-  AND (SELECT count(*)>0 FROM vns.admin_source_host_audit)
+  -- Audit ledger must be consecutive: rev=8 means exactly 1..8 and no
+  -- unrecorded historical transition, not merely 'some' audit rows.
+  AND (SELECT count(*)=r.revision AND min(a.revision)=1
+              AND max(a.revision)=r.revision
+       FROM vns.admin_source_audit a CROSS JOIN vns.admin_source_registry r
+       WHERE r.singleton=true)
+  AND (SELECT count(*)=h.revision AND min(a.revision)=1
+              AND max(a.revision)=h.revision
+       FROM vns.admin_source_host_audit a
+       CROSS JOIN vns.admin_source_host_approvals h
+       WHERE h.singleton=true)
+  -- Every currently approved source must end in a personally audited
+  -- approval, even if earlier events were pending/replaced.
+  AND NOT EXISTS (
+    SELECT 1 FROM vns.admin_source_registry r
+    CROSS JOIN LATERAL jsonb_array_elements(r.sources) AS item(value)
+    WHERE r.singleton=true AND item.value->>'status'='approved'
+      AND coalesce((
+        SELECT a.action FROM vns.admin_source_audit a
+        WHERE a.source_id=item.value->>'id'
+        ORDER BY a.revision DESC LIMIT 1
+      ),'')<>'approve'
+  )
+  -- Every approved host must have a current grant audit and an approved
+  -- source at that exact host. This check does not grant any rights.
+  AND NOT EXISTS (
+    SELECT 1 FROM vns.admin_source_host_approvals h
+    CROSS JOIN LATERAL jsonb_array_elements_text(h.approved_hosts)
+      AS approved(host)
+    WHERE h.singleton=true AND (
+      coalesce((
+        SELECT a.action FROM vns.admin_source_host_audit a
+        WHERE a.host=approved.host ORDER BY a.revision DESC LIMIT 1
+      ),'')<>'grant'
+      OR NOT EXISTS (
+        SELECT 1 FROM vns.admin_source_registry r
+        CROSS JOIN LATERAL jsonb_array_elements(r.sources) AS item(value)
+        WHERE r.singleton=true AND item.value->>'status'='approved'
+          AND split_part(
+            split_part(item.value->>'baseUrl','https://',2), '/',1
+          )=approved.host
+      )
+    )
+  )
   AND (SELECT count(*)=0 FROM vns.feed_event_rankings
        WHERE approved_for_publication);
 """.strip()
