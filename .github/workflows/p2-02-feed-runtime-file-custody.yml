@@ -24,6 +24,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Temporary capture canonical worker formatting
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --write apps/worker/src/feed-runtime-protected-files.ts apps/worker/src/feed-observe-once.ts scripts/test_p2_feed_runtime_file_custody.mjs
+          node -e 'const fs=require("node:fs");for(const p of ["apps/worker/src/feed-runtime-protected-files.ts","apps/worker/src/feed-observe-once.ts","scripts/test_p2_feed_runtime_file_custody.mjs"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Install and verify source formatting
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
