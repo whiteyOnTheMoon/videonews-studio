@@ -17,7 +17,7 @@ const WORKER_GID = 10002;
 
 interface Restriction {
   readonly ownerUid: number;
-  readonly ownerGid: number;
+  readonly ownerGid?: number;
   readonly mode: number;
   readonly minBytes: number;
   readonly maxBytes: number;
@@ -46,7 +46,7 @@ function restrictedFile(path: string, policy: Restriction, errorMessage: string)
       !before.isFile() ||
       before.nlink !== 1 ||
       before.uid !== policy.ownerUid ||
-      before.gid !== policy.ownerGid ||
+      (policy.ownerGid !== undefined && before.gid !== policy.ownerGid) ||
       (before.mode & 0o777) !== policy.mode ||
       before.size < policy.minBytes ||
       before.size > policy.maxBytes ||
@@ -83,7 +83,7 @@ function restrictedFile(path: string, policy: Restriction, errorMessage: string)
 export function readFeedSecretFile(path: string): string {
   const text = restrictedFile(
     path,
-    { ownerUid: WORKER_UID, ownerGid: WORKER_GID, mode: 0o400, minBytes: 40, maxBytes: 257 },
+    { ownerUid: WORKER_UID, mode: 0o400, minBytes: 40, maxBytes: 257 },
     "Feed runtime secret unavailable",
   );
   const password = text.trimEnd();
