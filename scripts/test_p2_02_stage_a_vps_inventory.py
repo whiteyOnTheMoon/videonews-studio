@@ -100,7 +100,7 @@ class StageAReadOnlyTests(unittest.TestCase):
         for name in ("feed-project-once", "feed-project-continuous",
                      "source-publisher", "source-handoff-import"):
             run, _ = fake_runner(
-                docker=name + "|running|Up 1m|0.0.0.0:9999->9999/tcp\\n"
+                docker=name + "|running|Up 1m|0.0.0.0:9999->9999/tcp"
             )
             result = self.inspect(run)
             self.assertEqual(result["stage_a_readiness"], "blocked")
