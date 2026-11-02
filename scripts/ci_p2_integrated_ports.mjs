@@ -32,6 +32,7 @@ import { runContinuousProjection } from "../apps/worker/dist/feed-project-contin
 import { attestSourcePublisherIdentity } from "../apps/worker/dist/feed-source-publish-once.js";
 import { publishApprovedAdminSourceFile } from "../apps/worker/dist/postgres-admin-source-publisher.js";
 import { acceptDormantSourceFile } from "../apps/worker/dist/source-export-files.js";
+import { verifyNamedAdminRankedFeed } from "./ci_p2_named_admin_live_pg.mjs";
 
 if (
   process.env.GITHUB_ACTIONS !== "true" ||
@@ -458,6 +459,9 @@ test(
         assert.equal(viewed.rows.length, 1);
         assert.equal(viewed.rows[0].source_count, 3);
         assert.equal(viewed.rows[0].approved_for_publication, false);
+        // Keep all producer/consumer/projector data and exercise the actual
+        // personally authenticated Admin API against this same SQL session.
+        await verifyNamedAdminRankedFeed({ reader, dba });
       } finally {
         await reader.end();
       }
