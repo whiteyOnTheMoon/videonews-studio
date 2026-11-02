@@ -270,7 +270,7 @@ def main(args: list[str]) -> None:
         snapshot = preflight(names, reviewed_state=True)
         audit_snapshot = sql(REVIEWED_AUDIT_SNAPSHOT_SQL)
         if not re.fullmatch(
-            r"[0-9]{1,16}:[0-9a-f]{32}\\|[0-9]{1,16}:[0-9a-f]{32}",
+            r"[0-9]{1,16}:[0-9a-f]{32}\|[0-9]{1,16}:[0-9a-f]{32}",
             audit_snapshot,
         ):
             raise RuntimeError(FAIL)
@@ -281,7 +281,7 @@ def main(args: list[str]) -> None:
         snapshot = preflight(names, reviewed_state=True)
         audit_snapshot = sql(REVIEWED_AUDIT_SNAPSHOT_SQL)
         if not re.fullmatch(
-            r"[0-9]{1,16}:[0-9a-f]{32}\\|[0-9]{1,16}:[0-9a-f]{32}",
+            r"[0-9]{1,16}:[0-9a-f]{32}\|[0-9]{1,16}:[0-9a-f]{32}",
             audit_snapshot,
         ):
             raise RuntimeError(FAIL)
