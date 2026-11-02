@@ -1,4 +1,3 @@
-import { closeSync, constants, fstatSync, openSync, readFileSync } from "node:fs";
 import { createPublicKey } from "node:crypto";
 import { Pool } from "pg";
 import { Redis } from "ioredis";
@@ -15,33 +14,7 @@ import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 
-function secret(path: string): string {
-  try {
-    const password = readFileSync(path, "utf8").trimEnd();
-    if (password.length < 40 || password.length > 256 || !/^[A-Za-z0-9_-]+$/.test(password)) {
-      throw new Error("invalid password");
-    }
-    return password;
-  } catch {
-    throw new Error("Feed runtime secret unavailable");
-  }
-}
-
-function readPinnedFile(path: string): string {
-  let fd: number | undefined;
-  try {
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-    const stat = fstatSync(fd);
-    if (!stat.isFile() || stat.size < 16 || stat.size > 16384 || (stat.mode & 0o022) !== 0) {
-      throw new Error("Untrusted file");
-    }
-    return readFileSync(fd, "utf8");
-  } catch {
-    throw new Error("Pinned feed trust material unavailable");
-  } finally {
-    if (fd !== undefined) closeSync(fd);
-  }
-}
+import { readFeedSecretFile, readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
 export interface FeedObservationSummary {
   ok: true;
@@ -60,8 +33,8 @@ export async function observeFeedOnce(
 ): Promise<FeedObservationSummary> {
   // Zero side effects before fully validating every non-secret gate.
   const admission = readFeedRuntimeAdmission(env);
-  const pgPassword = secret(admission.dbSecretPath);
-  const redisPassword = secret(admission.redisSecretPath);
+  const pgPassword = readFeedSecretFile(admission.dbSecretPath);
+  const redisPassword = readFeedSecretFile(admission.redisSecretPath);
 
   const pool = new Pool({
     host: admission.dbHost,
@@ -84,12 +57,12 @@ export async function observeFeedOnce(
     // Do not read a source file or create Redis connections until PostgreSQL
     // has proved the actual authenticated session_user has narrow permissions.
     await attestFeedDatabaseIdentity(pool, admission.dbUser);
-    const pinnedKey = createPublicKey(readPinnedFile(admission.sourcePublicKeyPath));
+    const pinnedKey = createPublicKey(readPinnedFeedTrustFile(admission.sourcePublicKeyPath));
     if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
       throw new Error("Pinned feed publisher identity invalid");
     }
-    const ca = readPinnedFile(admission.anchorCaPath);
-    const anchorPassword = secret(admission.anchorPasswordPath);
+    const ca = readPinnedFeedTrustFile(admission.anchorCaPath);
+    const anchorPassword = readFeedSecretFile(admission.anchorPasswordPath);
     anchorPool = new Pool({
       host: admission.anchorHost,
       port: 5432,
