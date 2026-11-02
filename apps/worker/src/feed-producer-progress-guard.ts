@@ -29,11 +29,7 @@ export function createFeedProducerProgressGuard(
 
   const readClock = (): number => {
     const value = now();
-    if (
-      !Number.isSafeInteger(value) ||
-      value < 0 ||
-      (lastTime !== null && value < lastTime)
-    ) {
+    if (!Number.isSafeInteger(value) || value < 0 || (lastTime !== null && value < lastTime)) {
       throw new Error("Feed producer progress clock refused");
     }
     lastTime = value;
