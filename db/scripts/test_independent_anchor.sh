@@ -52,6 +52,7 @@ for spec in \
   operation="${spec%% *}"
   table="${spec#* }"
   sql -c "GRANT $operation ON $table TO vns_anchor_login_ci_worker" >/dev/null
+  sql -q -t -A -c "SELECT has_table_privilege('vns_anchor_login_ci_worker','$table','$operation'), (SELECT relacl::text FROM pg_class WHERE oid='$table'::regclass)" >&2
   if ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null 2>&1; then
     echo "FAIL: external anchor accepted runtime direct table privilege: $operation on $table" >&2
     ci_login -q -t -A -c "SELECT session_user, has_table_privilege(session_user,'$table','$operation')" >&2
