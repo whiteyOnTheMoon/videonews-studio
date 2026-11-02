@@ -73,78 +73,94 @@ function probe(path, kind, expected, drop = true) {
   assert.equal(result.stdout, "");
 }
 
-test("real worker UID accepts only 0400-owned secret and root:worker-group 0440 trust", {
-  skip: !ENABLED,
-}, () => {
-  const f = fixture();
-  try {
-    probe(f.secret, "secret", "allow");
-    probe(f.pinned, "pinned", "allow");
-    probe(f.secret, "secret", "deny", false);
-    probe(f.pinned, "pinned", "deny", false);
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
-
-test("a symlink, hardlink, wrong UID or overbroad secret mode fails closed", {
-  skip: !ENABLED,
-}, () => {
-  const f = fixture();
-  try {
-    const link = join(f.root, "secret-link");
-    symlinkSync(f.secret, link);
-    probe(link, "secret", "deny");
-    const hard = join(f.root, "secret-hardlink");
-    linkSync(f.secret, hard);
-    probe(f.secret, "secret", "deny");
-    rmSync(hard);
-    chmodSync(f.secret, 0o440);
-    probe(f.secret, "secret", "deny");
-    chmodSync(f.secret, 0o400);
-    chownSync(f.secret, 0, 0);
-    probe(f.secret, "secret", "deny");
-    chownSync(f.secret, 10002, 0);
-    probe(f.secret, "secret", "allow");
-    const ancestor = join(f.root, "ancestor");
-    symlinkSync(f.root, ancestor);
-    probe(join(ancestor, "feed-db-password"), "secret", "deny");
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
-
-test("pinned TLS CA/public key requires root UID and exact group/mode", {
-  skip: !ENABLED,
-}, () => {
-  const f = fixture();
-  try {
-    chmodSync(f.pinned, 0o444);
-    probe(f.pinned, "pinned", "deny");
-    chmodSync(f.pinned, 0o440);
-    chownSync(f.pinned, 10002, 10002);
-    probe(f.pinned, "pinned", "deny");
-    chownSync(f.pinned, 0, 0);
-    probe(f.pinned, "pinned", "deny");
-    chownSync(f.pinned, 0, 10002);
-    probe(f.pinned, "pinned", "allow");
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
-
-test("too-short and malformed credentials fail before a network connection", {
-  skip: !ENABLED,
-}, () => {
-  const f = fixture();
-  try {
-    for (const content of ["x".repeat(39), "x".repeat(257), "x".repeat(40) + " !"]) {
-      writeFileSync(f.secret, content);
-      chownSync(f.secret, 10002, 0);
-      chmodSync(f.secret, 0o400);
-      probe(f.secret, "secret", "deny");
+test(
+  "real worker UID accepts only 0400-owned secret and root:worker-group 0440 trust",
+  {
+    skip: !ENABLED,
+  },
+  () => {
+    const f = fixture();
+    try {
+      probe(f.secret, "secret", "allow");
+      probe(f.pinned, "pinned", "allow");
+      probe(f.secret, "secret", "deny", false);
+      probe(f.pinned, "pinned", "deny", false);
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
     }
-  } finally {
-    rmSync(f.root, { recursive: true, force: true });
-  }
-});
+  },
+);
+
+test(
+  "a symlink, hardlink, wrong UID or overbroad secret mode fails closed",
+  {
+    skip: !ENABLED,
+  },
+  () => {
+    const f = fixture();
+    try {
+      const link = join(f.root, "secret-link");
+      symlinkSync(f.secret, link);
+      probe(link, "secret", "deny");
+      const hard = join(f.root, "secret-hardlink");
+      linkSync(f.secret, hard);
+      probe(f.secret, "secret", "deny");
+      rmSync(hard);
+      chmodSync(f.secret, 0o440);
+      probe(f.secret, "secret", "deny");
+      chmodSync(f.secret, 0o400);
+      chownSync(f.secret, 0, 0);
+      probe(f.secret, "secret", "deny");
+      chownSync(f.secret, 10002, 0);
+      probe(f.secret, "secret", "allow");
+      const ancestor = join(f.root, "ancestor");
+      symlinkSync(f.root, ancestor);
+      probe(join(ancestor, "feed-db-password"), "secret", "deny");
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "pinned TLS CA/public key requires root UID and exact group/mode",
+  {
+    skip: !ENABLED,
+  },
+  () => {
+    const f = fixture();
+    try {
+      chmodSync(f.pinned, 0o444);
+      probe(f.pinned, "pinned", "deny");
+      chmodSync(f.pinned, 0o440);
+      chownSync(f.pinned, 10002, 10002);
+      probe(f.pinned, "pinned", "deny");
+      chownSync(f.pinned, 0, 0);
+      probe(f.pinned, "pinned", "deny");
+      chownSync(f.pinned, 0, 10002);
+      probe(f.pinned, "pinned", "allow");
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "too-short and malformed credentials fail before a network connection",
+  {
+    skip: !ENABLED,
+  },
+  () => {
+    const f = fixture();
+    try {
+      for (const content of ["x".repeat(39), "x".repeat(257), "x".repeat(40) + " !"]) {
+        writeFileSync(f.secret, content);
+        chownSync(f.secret, 10002, 0);
+        chmodSync(f.secret, 0o400);
+        probe(f.secret, "secret", "deny");
+      }
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  },
+);
