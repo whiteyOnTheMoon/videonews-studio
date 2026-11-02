@@ -1,4 +1,3 @@
-import { closeSync, constants, fstatSync, openSync, readFileSync } from "node:fs";
 import { createPublicKey } from "node:crypto";
 import { Pool } from "pg";
 import {
@@ -18,34 +17,12 @@ import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 
-/** Read only precisely located, pre-provisioned runtime secrets. Never log values. */
-export function readFeedSecret(path: string): string {
-  try {
-    const password = readFileSync(path, "utf8").trimEnd();
-    if (password.length < 40 || password.length > 256 || !/^[A-Za-z0-9_-]+$/.test(password)) {
-      throw new Error("Invalid feed secret");
-    }
-    return password;
-  } catch {
-    throw new Error("Feed runtime secret unavailable");
-  }
-}
+import {
+  readFeedSecretFile as readFeedSecret,
+  readPinnedFeedTrustFile,
+} from "./feed-runtime-protected-files.js";
 
-function readPinnedFile(path: string): string {
-  let fd: number | undefined;
-  try {
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-    const stat = fstatSync(fd);
-    if (!stat.isFile() || stat.size < 16 || stat.size > 16384 || (stat.mode & 0o022) !== 0) {
-      throw new Error("Untrusted feed trust material");
-    }
-    return readFileSync(fd, "utf8");
-  } catch {
-    throw new Error("Pinned feed trust material unavailable");
-  } finally {
-    if (fd !== undefined) closeSync(fd);
-  }
-}
+export { readFeedSecretFile as readFeedSecret } from "./feed-runtime-protected-files.js";
 
 export interface TrustedFeedContext {
   scheduler: OfflineFeedScheduler;
@@ -78,11 +55,11 @@ export async function openTrustedFeedContext(
   let anchorPool: Pool | undefined;
   try {
     await attestFeedDatabaseIdentity(pool, admission.dbUser);
-    const pinnedKey = createPublicKey(readPinnedFile(admission.sourcePublicKeyPath));
+    const pinnedKey = createPublicKey(readPinnedFeedTrustFile(admission.sourcePublicKeyPath));
     if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
       throw new Error("Publisher identity refused");
     }
-    const ca = readPinnedFile(admission.anchorCaPath);
+    const ca = readPinnedFeedTrustFile(admission.anchorCaPath);
     const anchorPassword = readFeedSecret(admission.anchorPasswordPath);
     anchorPool = new Pool({
       host: admission.anchorHost,
