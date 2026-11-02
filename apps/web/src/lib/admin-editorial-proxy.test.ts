@@ -45,7 +45,7 @@ test("feature flag off, missing editor cookie and invalid method have no proxy s
   assert.equal(
     (
       await dormantEditorialAdminProxy(
-        request("/api/admin/editorial-timeline", "POST"),
+        request("/api/admin/editorial-timeline", "PUT"),
         "timeline",
         config,
         b.fetcher,
@@ -123,7 +123,7 @@ test("checkpoint write accepts only an authenticated same-origin revision-bound 
   const fetcher = (async (resource: string | URL | Request, init?: RequestInit) => {
     const url = String(resource);
     attempts.push({ url, method: init?.method, body: init?.body as string | undefined });
-    if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     if (url.endsWith("/admin/editorial-checkpoints")) {
       return Response.json({ saved: true, revision: 2, approvedForPublication: false });
     }
@@ -207,7 +207,7 @@ test("P2-10 personal story timeline writes audited events but cannot publish", a
   const mock = (async (resource: string | URL | Request, init?: RequestInit) => {
     const url = String(resource);
     calls.push(url);
-    if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     if (url.endsWith("/admin/editorial-timeline") && init?.method === "POST") {
       return Response.json({ eventId: created, approvedForPublication: false });
     }
@@ -294,7 +294,7 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
   };
   let upstreamCalls = 0;
   const upstream = (async (resource: string | URL | Request) => {
-    if (String(resource).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (String(resource).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     upstreamCalls++;
     return Response.json({ candidates: [candidate], metadataOnly: true });
   }) as typeof fetch;
@@ -321,7 +321,7 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
   );
   assert.equal(upstreamCalls, 1);
   const forged = (async (resource: string | URL | Request) => {
-    if (String(resource).endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (String(resource).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     return Response.json({
       candidates: [{ ...candidate, approvedForPublication: true, internalSecret: "leaked" }],
       metadataOnly: true,
@@ -348,7 +348,7 @@ test("named ranking policy BFF enforces personal editor, origin, exact fields an
   const upstream = (async (url: string | URL | Request, init?: RequestInit) => {
     const target = String(url);
     calls.push({ url: target, body: init?.body as string | undefined });
-    if (target.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (target.endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     if (target.includes("/admin/editorial-ranking-policy?profileId="))
       return Response.json({
         profileId: "science_news",
@@ -467,7 +467,7 @@ test("source and event metadata reviews route only through same-origin personal 
   const upstream = (async (resource: string | URL | Request, init?: RequestInit) => {
     const url = String(resource);
     calls.push({ url, method: init?.method, body: init?.body as string | undefined });
-    if (url.endsWith("/editor/me")) return Response.json({ role: "admin" });
+    if (url.endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
     if (url.includes("/admin/editorial-publisher-review?"))
       return Response.json({
         sourceId: "science_feed",
