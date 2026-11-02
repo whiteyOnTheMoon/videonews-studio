@@ -9,9 +9,12 @@ const allowed = {
   can_advance: true,
   can_advance_trust_policy: true,
   can_read_anchor: false,
+  can_write_anchor: false,
   can_read_policy_anchor: false,
+  can_write_policy_anchor: false,
   can_read_trust_approvals: false,
   can_write_trust_approvals: false,
+  can_assume_authority_owner: false,
   superuser: false,
   create_role: false,
   create_db: false,
@@ -26,6 +29,10 @@ function db(rows: unknown[]): Pick<Pool, "query"> {
       assert.match(sql, /vns_source_anchor[.]advance/);
       assert.match(sql, /vns_source_anchor[.]advance_trust_policy/);
       assert.match(sql, /vns_source_anchor[.]trust_policy_approvals/);
+      assert.match(sql, /can_write_anchor/);
+      assert.match(sql, /can_write_policy_anchor/);
+      assert.match(sql, /pg_has_role/);
+      assert.match(sql, /can_assume_authority_owner/);
       return { rows };
     },
   } as unknown as Pick<Pool, "query">;
@@ -41,9 +48,12 @@ test("independent source anchor login has only the monotonic advance function", 
     "can_advance",
     "can_advance_trust_policy",
     "can_read_anchor",
+    "can_write_anchor",
     "can_read_policy_anchor",
+    "can_write_policy_anchor",
     "can_read_trust_approvals",
     "can_write_trust_approvals",
+    "can_assume_authority_owner",
     "superuser",
     "create_role",
     "create_db",
@@ -56,6 +66,24 @@ test("independent source anchor login has only the monotonic advance function", 
     };
     await assert.rejects(attestFeedSourceAnchorIdentity(db([bad]), login), /admission denied/);
   }
+  // Even a valid-looking LOGIN must be refused if it could write a
+  // high-water row directly or assume the SECURITY DEFINER owner.
+  for (const privilege of [
+    "can_write_anchor",
+    "can_write_policy_anchor",
+    "can_write_trust_approvals",
+    "can_assume_authority_owner",
+  ] as const) {
+    await assert.rejects(
+      attestFeedSourceAnchorIdentity(db([{ ...allowed, [privilege]: true }]), login),
+      /admission denied/,
+    );
+  }
+  // A missing or nonboolean privilege result is never interpreted as false.
+  await assert.rejects(
+    attestFeedSourceAnchorIdentity(db([{ ...allowed, can_write_anchor: undefined }]), login),
+    /admission denied/,
+  );
   await assert.rejects(
     attestFeedSourceAnchorIdentity(db([{ ...allowed, session_user: "other" }]), login),
     /admission denied/,
