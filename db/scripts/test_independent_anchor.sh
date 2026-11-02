@@ -53,7 +53,8 @@ for spec in \
   table="${spec#* }"
   sql -c "GRANT $operation ON $table TO vns_anchor_login_ci_worker" >/dev/null
   if ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null 2>&1; then
-    echo "FAIL: external anchor accepted runtime direct table privilege" >&2
+    echo "FAIL: external anchor accepted runtime direct table privilege: $operation on $table" >&2
+    ci_login -q -t -A -c "SELECT session_user, has_table_privilege(session_user,'$table','$operation')" >&2
     exit 1
   fi
   sql -c "REVOKE $operation ON $table FROM vns_anchor_login_ci_worker" >/dev/null
