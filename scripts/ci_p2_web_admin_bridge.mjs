@@ -62,19 +62,18 @@ export async function verifyWebRankedFeedBridge(handler, expectedStatus = 200) {
     });
   };
 
-  function webRequest(path = "/api/admin/editorial-ranked-events?limit=25", method = "GET", cookie = COOKIE) {
+  function webRequest(
+    path = "/api/admin/editorial-ranked-events?limit=25",
+    method = "GET",
+    cookie = COOKIE,
+  ) {
     return new Request(ORIGIN + path, {
       method,
       headers: { Cookie: cookie, Origin: ORIGIN },
     });
   }
 
-  const result = await dormantEditorialAdminProxy(
-    webRequest(),
-    "ranked-events",
-    CONFIG,
-    backend,
-  );
+  const result = await dormantEditorialAdminProxy(webRequest(), "ranked-events", CONFIG, backend);
   assert.equal(result.headers.get("cache-control"), "no-store");
   assert.equal(result.headers.get("x-content-type-options"), "nosniff");
   assert.equal(result.headers.get("referrer-policy"), "no-referrer");
@@ -102,30 +101,36 @@ export async function verifyWebRankedFeedBridge(handler, expectedStatus = 200) {
 
   const before = [profileRequests, rankedApiRequests];
   assert.equal(
-    (await dormantEditorialAdminProxy(
-      webRequest("/api/admin/editorial-ranked-events?limit=25", "POST"),
-      "ranked-events",
-      CONFIG,
-      backend,
-    )).status,
+    (
+      await dormantEditorialAdminProxy(
+        webRequest("/api/admin/editorial-ranked-events?limit=25", "POST"),
+        "ranked-events",
+        CONFIG,
+        backend,
+      )
+    ).status,
     405,
   );
   assert.equal(
-    (await dormantEditorialAdminProxy(
-      webRequest("/api/admin/editorial-ranked-events?limit=25&limit=25"),
-      "ranked-events",
-      CONFIG,
-      backend,
-    )).status,
+    (
+      await dormantEditorialAdminProxy(
+        webRequest("/api/admin/editorial-ranked-events?limit=25&limit=25"),
+        "ranked-events",
+        CONFIG,
+        backend,
+      )
+    ).status,
     400,
   );
   assert.equal(
-    (await dormantEditorialAdminProxy(
-      webRequest("/api/admin/editorial-ranked-events?limit=25", "GET", "invalid-cookie"),
-      "ranked-events",
-      CONFIG,
-      backend,
-    )).status,
+    (
+      await dormantEditorialAdminProxy(
+        webRequest("/api/admin/editorial-ranked-events?limit=25", "GET", "invalid-cookie"),
+        "ranked-events",
+        CONFIG,
+        backend,
+      )
+    ).status,
     401,
   );
   assert.deepEqual([profileRequests, rankedApiRequests], before);
