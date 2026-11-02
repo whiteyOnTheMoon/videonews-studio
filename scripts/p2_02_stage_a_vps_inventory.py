@@ -16,6 +16,10 @@ PROJECT = "videonews-studio"
 SERVICES = (
     "postgres",
     "redis",
+    "source-publisher",
+    "source-handoff-import",
+    "feed-project-once",
+    "feed-project-continuous",
     "feed-observer",
     "feed-scheduler",
     "feed-producer",
