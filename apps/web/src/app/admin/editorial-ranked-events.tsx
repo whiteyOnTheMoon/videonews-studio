@@ -30,6 +30,16 @@ export function parseRankedCandidatePage(value: unknown): readonly RankedCandida
   return data.candidates as RankedCandidate[];
 }
 
+/** A prior authenticated snapshot must not display during a later refresh. */
+export function mayDisplayRankedCandidates(
+  enabled: boolean,
+  loading: boolean,
+  error: string,
+  count: number,
+): boolean {
+  return enabled && !loading && error === "" && count > 0;
+}
+
 export default function EditorialRankedEvents({ enabled }: { enabled: boolean }) {
   const [candidates, setCandidates] = useState<readonly RankedCandidate[]>([]);
   const [loading, setLoading] = useState(enabled);
@@ -88,7 +98,7 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
       {enabled && !loading && !error && candidates.length === 0 ? (
         <p>Noch keine persistierten Rankingkandidaten vorhanden.</p>
       ) : null}
-      {enabled && !loading && candidates.length > 0 && !error ? (
+      {mayDisplayRankedCandidates(enabled, loading, error, candidates.length) ? (
         <ol>
           {candidates.map((candidate) => (
             <li
