@@ -70,3 +70,24 @@ Scheduler, Neustart- und Fehlerfall sowie Admin-Ranking sind damit
 Dieser Helper ersetzt keinen unabhängigen Transfer-Daemon und ist bewusst
 nur eine einzelne, durch root autorisierte Betreiberkopie. Er gewährt UID 10003
 keinen Zugriff auf das private Publisher-Verzeichnis und läuft nicht dauerhaft.
+
+## Disposable UID-übergreifender Integrationsnachweis
+
+Die GitHub-CI erzeugt jetzt einen **kanonischen** Export mit dem echten
+TypeScript-Signierer und prüft die tatsächliche Staging-Implementierung
+mit Unix-Eigentümern und Modus (Transfer UID 10003, Worker GID 10002).
+Die Stage wird für den Test in eine vom Worker erreichbare, nur lesbare
+Verzeichnisansicht verschoben, die dem späteren Docker-Bind-Mount
+entspricht. Ein getrennt gestarteter Node-Prozess legt dann seine
+Root-Rechte ab und ruft mit **UID/GID 10002** den echten kompilierten
+`importSignedSourceHandoff()` auf.
+
+Der Test belegt eine bytegleiche private Worker-Inbox (0600), das
+fehlende Quell-Checkpoint vor externer Ankerfreigabe, den wiederholbaren
+gleichwertigen Import sowie die Verweigerung eines falschen öffentlichen
+Schlüssels und einer beschädigten Stage ohne Inbox-Änderung.
+
+**Grenze:** Das Verschieben in der CI ersetzt keinen echten Docker-Mount,
+keine unabhängige TLS-Ankerfreigabe und keine VPS-Abnahme. Es werden
+keine realen Quellen, privaten Signierschlüssel oder Produktivdateien
+gelesen und keine Dienste gestartet.

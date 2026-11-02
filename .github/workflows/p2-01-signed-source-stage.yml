@@ -5,6 +5,10 @@ on:
     paths:
       - "scripts/p2_01_signed_handoff_stage.mjs"
       - "scripts/test_p2_01_signed_handoff_stage.mjs"
+      - "scripts/test_p2_01_signed_stage_to_import.mjs"
+      - "apps/worker/src/source-export-files.ts"
+      - "apps/worker/src/source-export-signature.ts"
+      - "apps/worker/src/source-registry-export.ts"
       - "docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md"
       - ".github/workflows/p2-01-signed-source-stage.yml"
 permissions:
@@ -24,6 +28,12 @@ jobs:
       - name: Enforce formatting for signed staging changes
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --check scripts/p2_01_signed_handoff_stage.mjs scripts/test_p2_01_signed_handoff_stage.mjs docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md .github/workflows/p2-01-signed-source-stage.yml
+          npx prettier --check scripts/p2_01_signed_handoff_stage.mjs scripts/test_p2_01_signed_handoff_stage.mjs scripts/test_p2_01_signed_stage_to_import.mjs docs/P2_01_SIGNED_SOURCE_STAGE_HANDOFF.md .github/workflows/p2-01-signed-source-stage.yml
       - name: Test staging with disposable Ed25519 keys and synthetic UIDs
         run: sudo -n node --test scripts/test_p2_01_signed_handoff_stage.mjs
+      - name: Build canonical worker publisher and importer
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Verify stage to actual isolated worker UID importer
+        run: sudo -n env CI=true node --test scripts/test_p2_01_signed_stage_to_import.mjs
