@@ -33,7 +33,7 @@ function restrictedFile(path: string, policy: Restriction, errorMessage: string)
 
     // O_NOFOLLOW prevents a link as the leaf; realpath comparison also
     // forbids an unexpected symlink in the ancestor chain.
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_CLOEXEC);
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const before = fstatSync(fd);
     if (
       !before.isFile() ||
