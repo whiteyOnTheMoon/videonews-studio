@@ -1,0 +1,50 @@
+name: P2 redacted host custody status (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_readonly_host_custody_report.py"
+      - "scripts/test_p2_readonly_host_custody_report.py"
+      - "scripts/p2_02_stage_a_vps_inventory.py"
+      - "scripts/test_p2_02_stage_a_vps_inventory.py"
+      - "docs/P2_READONLY_HOST_CUSTODY_REPORT.md"
+      - ".github/workflows/p2-host-custody-status.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-host-custody-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  host-custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check documentation format
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check docs/P2_READONLY_HOST_CUSTODY_REPORT.md .github/workflows/p2-host-custody-status.yml
+      - name: Run synthetic read-only file and Docker metadata probes
+        run: |
+          python3 -m unittest discover -s scripts -p "test_p2_readonly_host_custody_report.py" -v
+          python3 -m unittest discover -s scripts -p "test_p2_02_stage_a_vps_inventory.py" -v
+      - name: CLI cannot execute as unprivileged runner or expose files
+        run: |
+          if python3 scripts/p2_readonly_host_custody_report.py --expected-sha $(printf 'a%.0s' {1..40}) > /tmp/vns-p2-custody-test-output; then
+            echo "FAIL: privileged host inventory accepted unprivileged execution" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path("/tmp/vns-p2-custody-test-output").read_text())
+          assert result == {
+            "schema_version": 1,
+            "scope": "read_only_p2_host_custody_status",
+            "read_only_metadata_preflight": "incomplete",
+            "production_authorized": False,
+          }
+          PY
