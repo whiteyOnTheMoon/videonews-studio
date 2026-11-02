@@ -2,6 +2,7 @@ import {
   readProjectionAdmission,
   runApprovedProjectionOnce,
 } from "./feed-candidate-project-once.js";
+import { createFeedProjectionHealthGuard } from "./feed-projector-health.js";
 
 const SOURCE = /^[a-z][a-z0-9_-]{2,40}$/;
 
@@ -114,12 +115,38 @@ if (process.argv[1]?.endsWith("/feed-project-continuous.js")) {
     const stop = () => controller.abort();
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
+    const guard = createFeedProjectionHealthGuard();
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
     try {
-      await runContinuousProjection(process.env, controller.signal);
+      // Do not report "ready" until all source/UID/admission controls pass.
+      readContinuousProjectionAdmission(process.env);
+      if (!guard.pulse()) throw new Error("Feed projector health initialization refused");
+      heartbeat = setInterval(() => {
+        if (!guard.pulse()) controller.abort();
+      }, 20_000);
+      heartbeat.unref();
+      await runContinuousProjection(
+        process.env,
+        controller.signal,
+        async (env) => {
+          guard.beginSource();
+          await runApprovedProjectionOnce(env);
+          guard.finishSource();
+        },
+      );
+      if (!controller.signal.aborted) {
+        throw new Error("Continuous projector exited without shutdown");
+      }
     } catch {
       console.error("Continuous feed projection halted, no further sources processed");
       process.exitCode = 1;
     } finally {
+      if (heartbeat) clearInterval(heartbeat);
+      try {
+        guard.stop();
+      } catch {
+        process.exitCode = 1;
+      }
       process.off("SIGINT", stop);
       process.off("SIGTERM", stop);
     }
