@@ -1,0 +1,50 @@
+name: P2-01 reviewed registry upgrade on real PostgreSQL (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/ci_p2_0061_reviewed_state_real_pg.py"
+      - "scripts/p2_01_schema_0059_to_0061.py"
+      - "db/migrations/0060_named_source_host_admin_gateways.up.sql"
+      - "db/migrations/0061_single_owner_review_policy.up.sql"
+      - ".github/workflows/p2-01-reviewed-registry-real-pg.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-real-reviewed-pg-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  reviewed-registry-real-pg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vns_p2_0061_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_only_disposable_reviewed_registry
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vns_p2_0061_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      VNS_P2_0061_ISOLATED_TEST: "true"
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: vns_p2_0061_ci
+      PGUSER: postgres
+      PGPASSWORD: ci_only_disposable_reviewed_registry
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm Python sources compile and synthetic negative tests pass
+        run: |
+          python3 -m py_compile scripts/ci_p2_0061_reviewed_state_real_pg.py
+          python3 -m unittest discover -s scripts -p "test_p2_01_schema_0059_to_0061.py" -v
+          python3 -m unittest discover -s scripts -p "test_p2_01_schema_0061_reviewed_state.py" -v
+      - name: Exercise 59 real migrations plus seeded existing reviews and 0060/0061
+        run: python3 scripts/ci_p2_0061_reviewed_state_real_pg.py
