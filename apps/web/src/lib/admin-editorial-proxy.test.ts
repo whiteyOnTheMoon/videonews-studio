@@ -294,7 +294,8 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
   };
   let upstreamCalls = 0;
   const upstream = (async (resource: string | URL | Request) => {
-    if (String(resource).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
+    if (String(resource).endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
     upstreamCalls++;
     return Response.json({ candidates: [candidate], metadataOnly: true });
   }) as typeof fetch;
@@ -321,7 +322,8 @@ test("ranked feed BFF is personal, read-only and rejects forged metadata", async
   );
   assert.equal(upstreamCalls, 1);
   const forged = (async (resource: string | URL | Request) => {
-    if (String(resource).endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
+    if (String(resource).endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
     return Response.json({
       candidates: [{ ...candidate, approvedForPublication: true, internalSecret: "leaked" }],
       metadataOnly: true,
@@ -348,7 +350,8 @@ test("named ranking policy BFF enforces personal editor, origin, exact fields an
   const upstream = (async (url: string | URL | Request, init?: RequestInit) => {
     const target = String(url);
     calls.push({ url: target, body: init?.body as string | undefined });
-    if (target.endsWith("/editor/me")) return Response.json({ username: "ci_admin", role: "admin" });
+    if (target.endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
     if (target.includes("/admin/editorial-ranking-policy?profileId="))
       return Response.json({
         profileId: "science_news",
