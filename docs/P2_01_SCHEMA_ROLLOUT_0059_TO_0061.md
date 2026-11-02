@@ -43,6 +43,57 @@ After the exact release SHA and baseline preflight are personally verified, the 
 
 The helper checks the exact `main` SHA and clean worktree, then applies **0060 followed by 0061** in separate SQL transactions and validates each installed ledger step. If the second step fails after the first commits, **do not rerun or apply a `.down.sql` file**. Record the partial state, stop and investigate; automatic rollback of a production schema is not supported.
 
+## Separater Pfad: vorhandene geprüfte Register erhalten
+
+Wenn ein bestehendes 0059-System **bereits Quellen, Hostfreigaben und
+Audit-Einträge** enthält, sind die obigen Leerregister-Voraussetzungen
+nicht erfüllt. **Keinesfalls** Register oder Audits löschen, auf Revision
+null zurücksetzen oder Freigaben erneut erzeugen, nur um den normalen
+Upgrade-Pfad zu ermöglichen.
+
+Hierfür existieren die getrennten Aktionen
+`--preflight-reviewed` (nur lesend) und `--apply-reviewed` (zwei
+schemaändernde Transaktionen, nur nach ausdrücklicher Freigabe).
+Sie verlangen drei bis fünf bereits auf `approved` gesetzte Quellen,
+nichtleere geprüfte Hostfreigaben und bestehende Quell-/Hostaudits.
+Sie vergleichen die bestehenden Quell-, Host- und Profilregister sowie
+**beide vollständigen Audit-Reihen** anhand revisionsgebundener
+Fingerabdrücke vor und nach den SQL-Migrationen. Die von 0061
+neu ergänzte Spalte `approval_model` wird dabei nur für die
+Vergleichsberechnung ausgeklammert; Auditzeilen werden nicht verändert
+oder aus der Datenbank gelöscht.
+
+Zuerst ausschließlich lesend prüfen:
+
+```bash
+cd /home/ap/www/videonews-studio
+python3 scripts/p2_01_schema_0059_to_0061.py --status
+python3 scripts/p2_01_schema_0059_to_0061.py --preflight-reviewed
+```
+
+Für den schreibenden Schritt ist **eine separate persönliche
+Betreiberentscheidung** über den genauen Release-Commit, den
+vorhandenen Registerzustand und den zulässigen Schema-Upgradeumfang
+erforderlich. Die drei Werte sind explizit zu setzen und dürfen
+nicht von einem automatisch ausgelesenen HEAD hergeleitet werden:
+
+```bash
+cd /home/ap/www/videonews-studio
+VNS_P2_0061_APPLY_APPROVED=INSTALL_SCHEMA_ONLY_0060_0061 \
+VNS_P2_0061_EXPECTED_MAIN_SHA=INDEPENDENTLY_REVIEWED_40_HEX_SHA \
+VNS_P2_0061_REVIEWED_STATE_APPROVED=PRESERVE_EXISTING_REVIEWED_SOURCE_AND_HOST_REGISTERS \
+  python3 scripts/p2_01_schema_0059_to_0061.py --apply-reviewed
+```
+
+**Nicht ausführen, bevor der Betreiber den aktuellen Produktionszustand
+und den Release ausdrücklich freigegeben hat.** Die Prüfung ist für den
+**genauen** Zustand vor 0060 gedacht. Ist 0060 bereits installiert,
+wird ein manueller Abgleich erforderlich; es erfolgt kein automatischer
+zweiter Versuch. Der Upgrade-Pfad erzeugt **keine** Nutzungsrechte,
+unabhängigen Ankerfreigaben, Owner-Policy-Aktivierung oder Live-Feed-Läufe.
+Ein erhaltenes `approved`-Feld allein ist ausdrücklich **kein
+Lizenznachweis**.
+
 ## Post-installation acceptance
 
 The successful result must show both migrations, matching source/host/profile snapshots, personal SQL grants (without any API shared-writer or direct owner-policy grant), and `single_owner_review_policy.enabled=false` with no owner assigned. The new owner policy is **not** enabled merely by installing 0061.

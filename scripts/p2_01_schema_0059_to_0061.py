@@ -21,6 +21,8 @@ CONTAINER = prior.CONTAINER
 FAIL = "REFUSED: controlled P2-01 0059-to-0061 schema gate not satisfied"
 ACK = "VNS_P2_0061_APPLY_APPROVED"
 SHA_ACK = "VNS_P2_0061_EXPECTED_MAIN_SHA"
+REVIEWED_ACK = "VNS_P2_0061_REVIEWED_STATE_APPROVED"
+REVIEWED_ACK_VALUE = "PRESERVE_EXISTING_REVIEWED_SOURCE_AND_HOST_REGISTERS"
 NEW = (
     "0060_named_source_host_admin_gateways",
     "0061_single_owner_review_policy",
@@ -45,6 +47,39 @@ SELECT
   AND (SELECT count(*) FROM vns.admin_source_host_audit)=0
   AND (SELECT count(*) FROM vns.feed_event_rankings
    WHERE approved_for_publication)=0;
+""".strip()
+
+# Additive schema changes on a VPS may follow already audited source/host
+# revisions. Such state must be preserved, never silently reset to empty.
+# This check proves only structural/audit consistency, NOT legal feed rights.
+REVIEWED_STATE_SQL = """
+SELECT
+  (SELECT revision>0 AND jsonb_array_length(sources) BETWEEN 3 AND 5
+     AND (SELECT count(*) FROM jsonb_array_elements(sources) AS s(value)
+          WHERE s.value->>'status'='approved') BETWEEN 3 AND 5
+     FROM vns.admin_source_registry WHERE singleton=true)
+  AND
+  (SELECT revision>0 AND jsonb_array_length(approved_hosts) BETWEEN 1 AND 5
+     FROM vns.admin_source_host_approvals WHERE singleton=true)
+  AND (SELECT count(*)>0 FROM vns.admin_source_audit)
+  AND (SELECT count(*)>0 FROM vns.admin_source_host_audit)
+  AND (SELECT count(*)=0 FROM vns.feed_event_rankings
+       WHERE approved_for_publication);
+""".strip()
+
+# Only aggregate row counts and digests are ever seen by the operator tool.
+# The new approval_model column added by 0061 must be excluded from both
+# sides of this comparison to avoid a false-positive historical audit drift.
+REVIEWED_AUDIT_SNAPSHOT_SQL = """
+SELECT
+  (SELECT count(*)::text || ':' ||
+    md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY revision)::text,'[]'))
+   FROM vns.admin_source_audit AS a)
+  || '|' ||
+  (SELECT count(*)::text || ':' ||
+    md5(coalesce(jsonb_agg(to_jsonb(a)-'approval_model'
+                           ORDER BY revision)::text,'[]'))
+   FROM vns.admin_source_host_audit AS a);
 """.strip()
 
 STATUS_SQL = """
@@ -132,14 +167,15 @@ def check_safety() -> None:
     prior.resources()
 
 
-def preflight(names: list[str]) -> str:
+def preflight(names: list[str], *, reviewed_state: bool = False) -> str:
     if ledger() != names[:59]:
         raise RuntimeError(FAIL)
     check_safety()
     # Missing schema prerequisite roles must fail BEFORE any migration.
     if sql(REQUIRED_ROLES_SQL) != "t":
         raise RuntimeError(FAIL)
-    if sql(BASELINE_SQL) != "t" or sql(INACTIVE_SQL) != "t":
+    state_sql = REVIEWED_STATE_SQL if reviewed_state else INACTIVE_SQL
+    if sql(BASELINE_SQL) != "t" or sql(state_sql) != "t":
         raise RuntimeError(FAIL)
     snapshot = sql(prior.UNCHANGED_SQL)
     if not re.fullmatch(
@@ -150,21 +186,35 @@ def preflight(names: list[str]) -> str:
     return snapshot
 
 
-def final_check(names: list[str], snapshot: str) -> None:
+def final_check(names: list[str], snapshot: str, *, reviewed_state: bool = False,
+                audit_snapshot: str | None = None) -> None:
     if ledger() != names or sql(prior.UNCHANGED_SQL) != snapshot:
         raise RuntimeError(FAIL)
-    if sql(INACTIVE_SQL) != "t" or sql(FINAL_SQL) != "t":
+    state_sql = REVIEWED_STATE_SQL if reviewed_state else INACTIVE_SQL
+    if sql(state_sql) != "t" or sql(FINAL_SQL) != "t":
+        raise RuntimeError(FAIL)
+    if reviewed_state and (audit_snapshot is None or
+            sql(REVIEWED_AUDIT_SNAPSHOT_SQL) != audit_snapshot):
         raise RuntimeError(FAIL)
     if sql(REQUIRED_ROLES_SQL) != "t":
         raise RuntimeError(FAIL)
     check_safety()
 
 
-def apply(names: list[str], snapshot: str) -> None:
+def apply(names: list[str], snapshot: str, *, reviewed_state: bool = False,
+          audit_snapshot: str | None = None) -> None:
     # Only forward additive transactions; no retries, .down.sql, or restarts.
     for idx in (59, 60):
         if ledger() != names[:idx]:
             raise RuntimeError(FAIL)
+        if reviewed_state:
+            # Halt before the next irreversible schema transaction if source,
+            # host, profile or historical audits changed since preflight.
+            if (sql(prior.UNCHANGED_SQL) != snapshot
+                    or audit_snapshot is None
+                    or sql(REVIEWED_AUDIT_SNAPSHOT_SQL) != audit_snapshot
+                    or sql(REVIEWED_STATE_SQL) != "t"):
+                raise RuntimeError(FAIL)
         path = MIGRATIONS / (names[idx] + ".up.sql")
         sql_text = path.read_text(encoding="utf-8")
         if not sql_text.rstrip().endswith("COMMIT;"):
@@ -173,17 +223,28 @@ def apply(names: list[str], snapshot: str) -> None:
         if ledger() != names[:idx+1]:
             raise RuntimeError(FAIL)
         print("PASS: applied " + names[idx], flush=True)
-    final_check(names, snapshot)
+    if reviewed_state:
+        final_check(names, snapshot, reviewed_state=True,
+                    audit_snapshot=audit_snapshot)
+    else:
+        final_check(names, snapshot)
 
 
 def main(args: list[str]) -> None:
-    if args not in (["--status"], ["--preflight"], ["--apply"]):
+    if args not in (["--status"], ["--preflight"], ["--apply"],
+                    ["--preflight-reviewed"], ["--apply-reviewed"]):
         raise RuntimeError(FAIL)
     sha = prior.git_sha()
     names = expected_versions()
     if args == ["--apply"] and (
         os.getenv(ACK) != "INSTALL_SCHEMA_ONLY_0060_0061"
         or os.getenv(SHA_ACK) != sha
+    ):
+        raise RuntimeError(FAIL)
+    if args == ["--apply-reviewed"] and (
+        os.getenv(ACK) != "INSTALL_SCHEMA_ONLY_0060_0061"
+        or os.getenv(SHA_ACK) != sha
+        or os.getenv(REVIEWED_ACK) != REVIEWED_ACK_VALUE
     ):
         raise RuntimeError(FAIL)
     prior.container()
@@ -204,6 +265,29 @@ def main(args: list[str]) -> None:
         preflight(names)
         print("PASS: additive 0060/0061 schema-only rollout prerequisites")
         print("INFO: no source, owner-policy, host or feed activation")
+        return
+    if args == ["--preflight-reviewed"]:
+        snapshot = preflight(names, reviewed_state=True)
+        audit_snapshot = sql(REVIEWED_AUDIT_SNAPSHOT_SQL)
+        if not re.fullmatch(
+            r"[0-9]{1,16}:[0-9a-f]{32}\|[0-9]{1,16}:[0-9a-f]{32}",
+            audit_snapshot,
+        ):
+            raise RuntimeError(FAIL)
+        print("PASS: existing reviewed source/host registers can be preserved")
+        print("INFO: source rights and feed activation remain separately gated")
+        return
+    if args == ["--apply-reviewed"]:
+        snapshot = preflight(names, reviewed_state=True)
+        audit_snapshot = sql(REVIEWED_AUDIT_SNAPSHOT_SQL)
+        if not re.fullmatch(
+            r"[0-9]{1,16}:[0-9a-f]{32}\|[0-9]{1,16}:[0-9a-f]{32}",
+            audit_snapshot,
+        ):
+            raise RuntimeError(FAIL)
+        apply(names, snapshot, reviewed_state=True, audit_snapshot=audit_snapshot)
+        print("PASS: schema 0061 installed; existing source and host audits preserved")
+        print("INFO: no source review, feed activation or publication performed")
         return
     snapshot = preflight(names)
     apply(names, snapshot)

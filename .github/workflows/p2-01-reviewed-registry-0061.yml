@@ -1,0 +1,33 @@
+name: P2-01 reviewed existing-registry 0061 migration gate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_schema_0059_to_0061.py"
+      - "scripts/test_p2_01_schema_0059_to_0061.py"
+      - "scripts/test_p2_01_schema_0061_reviewed_state.py"
+      - "docs/P2_01_SCHEMA_ROLLOUT_0059_TO_0061.md"
+      - ".github/workflows/p2-01-reviewed-registry-0061.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-01-reviewed-schema-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  existing-registry-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check script and exact Python source compilation
+        run: |
+          python3 -m py_compile scripts/p2_01_schema_0059_to_0061.py scripts/test_p2_01_schema_0061_reviewed_state.py
+          python3 -m unittest discover -s scripts -p "test_p2_01_schema_0059_to_0061.py" -v
+          python3 -m unittest discover -s scripts -p "test_p2_01_schema_0061_reviewed_state.py" -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check operator runbook formatting
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check docs/P2_01_SCHEMA_ROLLOUT_0059_TO_0061.md .github/workflows/p2-01-reviewed-registry-0061.yml
