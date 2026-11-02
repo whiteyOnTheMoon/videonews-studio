@@ -24,11 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Temporary canonical Prettier capture
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/worker/src/feed-producer-progress-guard.ts apps/worker/src/feed-producer-progress-guard.test.ts apps/worker/src/feed-producer-continuous.ts docs/P2_03_CONTINUOUS_PRODUCER_PROGRESS_HEALTH.md
-          node -e 'const fs=require("node:fs");for(const p of ["apps/worker/src/feed-producer-progress-guard.ts","apps/worker/src/feed-producer-progress-guard.test.ts","apps/worker/src/feed-producer-continuous.ts","docs/P2_03_CONTINUOUS_PRODUCER_PROGRESS_HEALTH.md"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Install and check formatting
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
