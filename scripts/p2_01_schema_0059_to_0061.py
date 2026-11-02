@@ -63,15 +63,20 @@ SELECT
      FROM vns.admin_source_host_approvals WHERE singleton=true)
   -- Audit ledger must be consecutive: rev=8 means exactly 1..8 and no
   -- unrecorded historical transition, not merely 'some' audit rows.
-  AND (SELECT count(*)=r.revision AND min(a.revision)=1
-              AND max(a.revision)=r.revision
-       FROM vns.admin_source_audit a CROSS JOIN vns.admin_source_registry r
-       WHERE r.singleton=true)
-  AND (SELECT count(*)=h.revision AND min(a.revision)=1
-              AND max(a.revision)=h.revision
-       FROM vns.admin_source_host_audit a
-       CROSS JOIN vns.admin_source_host_approvals h
-       WHERE h.singleton=true)
+  AND (SELECT audit.row_count=r.revision AND audit.first_rev=1
+              AND audit.last_rev=r.revision
+       FROM vns.admin_source_registry r
+       CROSS JOIN (
+         SELECT count(*) AS row_count, min(revision) AS first_rev,
+                max(revision) AS last_rev FROM vns.admin_source_audit
+       ) audit WHERE r.singleton=true)
+  AND (SELECT audit.row_count=h.revision AND audit.first_rev=1
+              AND audit.last_rev=h.revision
+       FROM vns.admin_source_host_approvals h
+       CROSS JOIN (
+         SELECT count(*) AS row_count, min(revision) AS first_rev,
+                max(revision) AS last_rev FROM vns.admin_source_host_audit
+       ) audit WHERE h.singleton=true)
   -- Every currently approved source must end in a personally audited
   -- approval, even if earlier events were pending/replaced.
   AND NOT EXISTS (
