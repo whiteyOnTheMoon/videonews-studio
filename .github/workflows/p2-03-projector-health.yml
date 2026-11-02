@@ -1,0 +1,38 @@
+name: P2-03 continuous projector watchdog (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-projector-health.ts"
+      - "apps/worker/src/feed-projector-health.test.ts"
+      - "apps/worker/src/feed-projector-healthcheck.ts"
+      - "apps/worker/src/feed-project-continuous.ts"
+      - "apps/worker/src/feed-candidate-project-once.ts"
+      - "deploy/compose.feed-projection.yaml"
+      - "scripts/test_p2_feed_projection_compose.mjs"
+      - "docs/P2_03_PROJECTOR_HEALTH_WATCHDOG.md"
+      - ".github/workflows/p2-03-projector-health.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-03-projector-health-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  projector-watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile and check source format
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check apps/worker/src/feed-projector-health.ts apps/worker/src/feed-projector-health.test.ts apps/worker/src/feed-projector-healthcheck.ts apps/worker/src/feed-project-continuous.ts apps/worker/src/feed-candidate-project-once.ts deploy/compose.feed-projection.yaml scripts/test_p2_feed_projection_compose.mjs docs/P2_03_PROJECTOR_HEALTH_WATCHDOG.md .github/workflows/p2-03-projector-health.yml
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Test watchdog and disabled Docker overlay
+        run: |
+          node --test apps/worker/dist/feed-projector-health.test.js apps/worker/dist/feed-project-continuous.test.js
+          node --test scripts/test_p2_feed_projection_compose.mjs
