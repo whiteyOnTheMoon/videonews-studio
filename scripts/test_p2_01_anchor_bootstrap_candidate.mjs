@@ -109,7 +109,7 @@ test("candidate matches canonical signed envelope and independently pinned trust
     assert.equal(candidate.publicKeyFingerprint, trusted.publicKeyFingerprint);
     assert.equal(candidate.sourceEpochStart, 1);
     assert.equal(candidate.hostEpochStart, 1);
-    assert.equal(Object.keys(candidate).length, 12);
+    assert.equal(Object.keys(candidate).length, 13);
     assert.doesNotMatch(JSON.stringify(candidate), /news[.]example[.]org|privateKey/);
   } finally {
     f.cleanup();
