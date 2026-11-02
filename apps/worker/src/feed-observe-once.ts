@@ -14,10 +14,7 @@ import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 
-import {
-  readFeedSecretFile,
-  readPinnedFeedTrustFile,
-} from "./feed-runtime-protected-files.js";
+import { readFeedSecretFile, readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
 export interface FeedObservationSummary {
   ok: true;
