@@ -103,9 +103,13 @@ INSERT INTO vns.admin_source_host_audit
  (revision,source_revision,action,host,reason,editor_id,
   editor_username,editor_auth_version,recorded_at)
  SELECT seq,8,
-        CASE WHEN seq%2=0 THEN 'revoke' ELSE 'grant' END,
-        (ARRAY['alpha.example.org','beta.example.org','gamma.example.org'])
-        [1 + ((seq - 1) % 3)],
+        CASE WHEN seq IN (4,5) THEN 'revoke' ELSE 'grant' END,
+        CASE
+          WHEN seq IN (4,6) THEN 'alpha.example.org'
+          WHEN seq IN (5,7) THEN 'beta.example.org'
+          ELSE (ARRAY['alpha.example.org','beta.example.org','gamma.example.org'])
+               [seq]
+        END,
         'Synthetic independent CI review of metadata host access.',
         'fa620001-1111-4111-8111-111111111111'::uuid,
         'ci_existing_owner',0,
@@ -129,6 +133,35 @@ def main() -> None:
             raise RuntimeError(FAIL)
 
     isolated_psql(SEED, readonly=False)
+    # The SQL preflight must refuse audit ledger gaps, stale approvals,
+    # and host grants inconsistent with the final registry. All scenarios
+    # are rolled back; the approved synthetic baseline remains unchanged.
+    def invalid_in_transaction(mutation: str) -> None:
+        result = isolated_psql(
+            "BEGIN;\\n" + mutation + "\\n" + upgrade.REVIEWED_STATE_SQL +
+            "\\nROLLBACK;",
+            readonly=False,
+        )
+        if result != "f":
+            raise RuntimeError(FAIL)
+
+    invalid_in_transaction(
+        "UPDATE vns.admin_source_registry SET revision=9 WHERE singleton=true;"
+    )
+    invalid_in_transaction(
+        "UPDATE vns.admin_source_host_approvals "
+        "SET approved_hosts='[\"unreviewed.example.org\"]'::jsonb "
+        "WHERE singleton=true;"
+    )
+    invalid_in_transaction(
+        "UPDATE vns.admin_source_registry SET revision=9 WHERE singleton=true;\n"
+        "INSERT INTO vns.admin_source_audit("
+        "revision,source_id,action,editor_id,editor_username,"
+        "editor_auth_version,recorded_at) VALUES (9,'ci_source_alpha','block',"
+        "'fa620001-1111-4111-8111-111111111111',"
+        "'ci_existing_owner',0,'2026-10-01T01:00:00Z'::timestamptz);"
+    )
+
     with (
         patch.object(upgrade, "sql", side_effect=isolated_psql),
         patch.object(upgrade, "check_safety", return_value=None),
