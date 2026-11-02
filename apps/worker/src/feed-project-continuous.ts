@@ -125,15 +125,11 @@ if (process.argv[1]?.endsWith("/feed-project-continuous.js")) {
         if (!guard.pulse()) controller.abort();
       }, 20_000);
       heartbeat.unref();
-      await runContinuousProjection(
-        process.env,
-        controller.signal,
-        async (env) => {
-          guard.beginSource();
-          await runApprovedProjectionOnce(env);
-          guard.finishSource();
-        },
-      );
+      await runContinuousProjection(process.env, controller.signal, async (env) => {
+        guard.beginSource();
+        await runApprovedProjectionOnce(env);
+        guard.finishSource();
+      });
       if (!controller.signal.aborted) {
         throw new Error("Continuous projector exited without shutdown");
       }
