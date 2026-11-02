@@ -59,6 +59,13 @@ def isolated_psql(query: str, *, readonly: bool = True, timeout: int = 140) -> s
 
 SEED = """
 BEGIN;
+-- Physical session_user operator enrollment is mandatory even for CI.
+INSERT INTO vns.editor_operator_registry
+  (login_role,operator_id,operator_label,active)
+VALUES (
+  'postgres','fa620099-9999-4999-8999-999999999999',
+  'Disposable CI-only database operator',true
+);
 INSERT INTO vns.editor_accounts (
   id,username,display_name,role,password_hash,active
 ) VALUES (
