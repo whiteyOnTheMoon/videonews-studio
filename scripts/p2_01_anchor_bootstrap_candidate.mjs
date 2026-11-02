@@ -119,8 +119,7 @@ function command(name, args) {
 
 function verifyRelease(expectedSha) {
   must(process.getuid?.() === 0 && /^[a-f0-9]{40}$/.test(expectedSha));
-  const git = (...args) =>
-    command("git", ["-c", "safe.directory=" + ROOT, "-C", ROOT, ...args]);
+  const git = (...args) => command("git", ["-c", "safe.directory=" + ROOT, "-C", ROOT, ...args]);
   must(git("branch", "--show-current") === "main");
   must(git("rev-parse", "HEAD") === expectedSha);
   must(git("status", "--porcelain") === "");
