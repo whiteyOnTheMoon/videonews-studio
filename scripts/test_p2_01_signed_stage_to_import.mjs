@@ -109,6 +109,10 @@ function workerImport(f, expectedSuccess) {
     import { readFileSync, openSync, closeSync } from "node:fs";
     import { createPublicKey } from "node:crypto";
     const [stage, inbox, keyPath, moduleUrl] = process.argv.slice(1);
+    // GitHub's checkout is root-only from the disposable test process:
+    // load only code before dropping privileges; ALL stage/inbox I/O and
+    // the actual importer invocation happen after dropping to UID 10002.
+    const { importSignedSourceHandoff } = await import(moduleUrl);
     process.setgroups([]);
     process.setgid(10002);
     process.setuid(10002);
@@ -121,7 +125,6 @@ function workerImport(f, expectedSuccess) {
     } catch (error) {
       if (error.code !== "EACCES" && error.code !== "EPERM") throw error;
     }
-    const { importSignedSourceHandoff } = await import(moduleUrl);
     const key = createPublicKey(readFileSync(keyPath));
     await importSignedSourceHandoff(
       stage, inbox, { enabled: true, hosts: ["news.example.org"] }, key
