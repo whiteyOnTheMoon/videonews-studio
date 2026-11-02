@@ -91,7 +91,9 @@ export function createFeedConsumerJobHealthGuard(
       }
       activeAt = null;
       failures = 0;
-      return true;
+      // Persist job progress and reset counters immediately, not only on
+      // the 20-second heartbeat interval.
+      return this.pulse();
     },
     failed(): boolean {
       if (!ready || stopped || activeAt === null || !checkActive()) {
@@ -104,7 +106,7 @@ export function createFeedConsumerJobHealthGuard(
         stop();
         return false;
       }
-      return true;
+      return this.pulse();
     },
     pulse(): boolean {
       if (!ready || !checkActive()) return false;
