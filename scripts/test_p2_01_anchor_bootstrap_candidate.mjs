@@ -87,121 +87,134 @@ function fixture() {
   };
 }
 
-test("candidate matches canonical signed envelope and independently pinned trust digest", {
-  skip: !root,
-}, () => {
-  const f = fixture();
-  try {
-    const candidate = buildAnchorBootstrapCandidate(f.config, 1);
-    const trusted = calculateTrustPolicyManifest(f.publicKey, 1);
-    assert.equal(candidate.status, "bootstrap_candidate_only");
-    assert.equal(candidate.schemaVersion, 1);
-    assert.equal(candidate.externalAnchorVerified, false);
-    assert.equal(candidate.independentlyApproved, false);
-    assert.equal(candidate.checkpointCreated, false);
-    assert.equal(candidate.sourceRevision, 8);
-    assert.equal(candidate.hostApprovalRevision, 7);
-    assert.equal(
-      candidate.envelopeSha256,
-      createHash("sha256").update(f.canonical).digest("hex"),
-    );
-    assert.equal(candidate.policySha256, trusted.policySha256);
-    assert.equal(candidate.publicKeyFingerprint, trusted.publicKeyFingerprint);
-    assert.equal(candidate.sourceEpochStart, 1);
-    assert.equal(candidate.hostEpochStart, 1);
-    assert.equal(Object.keys(candidate).length, 13);
-    assert.doesNotMatch(JSON.stringify(candidate), /news[.]example[.]org|privateKey/);
-  } finally {
-    f.cleanup();
-  }
-});
-
-test("candidate refuses missing or altered worker import and unsafe ownership", {
-  skip: !root,
-}, () => {
-  const f = fixture();
-  try {
-    unlinkSync(f.inboxFile);
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-    writeFileSync(f.inboxFile, f.canonical, { mode: 0o600 });
-    chownSync(f.inboxFile, 10002, 10002);
-    writeFileSync(f.inboxFile, "tampered");
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-    writeFileSync(f.inboxFile, f.canonical);
-    chmodSync(f.inboxFile, 0o644);
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-    chmodSync(f.inboxFile, 0o600);
-    chownSync(f.inboxFile, 0, 0);
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-    chownSync(f.inboxFile, 10002, 10002);
-    assert.equal(buildAnchorBootstrapCandidate(f.config, 1).sourceRevision, 8);
-  } finally {
-    f.cleanup();
-  }
-});
-
-test("candidate refuses changed stage, symlinked inbox and existing checkpoint", {
-  skip: !root,
-}, () => {
-  const f = fixture();
-  try {
-    writeFileSync(f.path("handoff-staging/source-export.signed.json"), "tampered");
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-  } finally {
-    f.cleanup();
-  }
-  const g = fixture();
-  try {
-    unlinkSync(g.inboxFile);
-    symlinkSync(g.path("publisher/source-export.signed.json"), g.inboxFile);
-    assert.throws(() => buildAnchorBootstrapCandidate(g.config, 1));
-  } finally {
-    g.cleanup();
-  }
-  const h = fixture();
-  try {
-    writeFileSync(h.path("worker-checkpoint/source-export.checkpoint.json"), "{}");
-    assert.throws(() => buildAnchorBootstrapCandidate(h.config, 1));
-    assert.throws(() => buildAnchorBootstrapCandidate(h.config, 0));
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("candidate refuses changed pinned signer and noncanonical envelope", {
-  skip: !root,
-}, () => {
-  const f = fixture();
-  try {
-    const { publicKey } = generateKeyPairSync("ed25519");
-    writeFileSync(
-      f.path("trust-material/signing-public.pem"),
-      publicKey.export({ type: "spki", format: "pem" }),
-    );
-    assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
-  } finally {
-    f.cleanup();
-  }
-  const g = fixture();
-  try {
-    const noncanonical = Buffer.from(
-      JSON.stringify(JSON.parse(g.canonical.toString("utf8"))).replace(
-        '"format":',
-        '"format" :',
-      ),
-    );
-    for (const part of [
-      "publisher/source-export.signed.json",
-      "handoff-staging/source-export.signed.json",
-      "worker-inbox/source-export.signed.json",
-    ]) {
-      writeFileSync(g.path(part), noncanonical);
+test(
+  "candidate matches canonical signed envelope and independently pinned trust digest",
+  {
+    skip: !root,
+  },
+  () => {
+    const f = fixture();
+    try {
+      const candidate = buildAnchorBootstrapCandidate(f.config, 1);
+      const trusted = calculateTrustPolicyManifest(f.publicKey, 1);
+      assert.equal(candidate.status, "bootstrap_candidate_only");
+      assert.equal(candidate.schemaVersion, 1);
+      assert.equal(candidate.externalAnchorVerified, false);
+      assert.equal(candidate.independentlyApproved, false);
+      assert.equal(candidate.checkpointCreated, false);
+      assert.equal(candidate.sourceRevision, 8);
+      assert.equal(candidate.hostApprovalRevision, 7);
+      assert.equal(
+        candidate.envelopeSha256,
+        createHash("sha256").update(f.canonical).digest("hex"),
+      );
+      assert.equal(candidate.policySha256, trusted.policySha256);
+      assert.equal(candidate.publicKeyFingerprint, trusted.publicKeyFingerprint);
+      assert.equal(candidate.sourceEpochStart, 1);
+      assert.equal(candidate.hostEpochStart, 1);
+      assert.equal(Object.keys(candidate).length, 13);
+      assert.doesNotMatch(JSON.stringify(candidate), /news[.]example[.]org|privateKey/);
+    } finally {
+      f.cleanup();
     }
-    assert.throws(() => buildAnchorBootstrapCandidate(g.config, 1));
-  } finally {
-    g.cleanup();
-  }
-});
+  },
+);
+
+test(
+  "candidate refuses missing or altered worker import and unsafe ownership",
+  {
+    skip: !root,
+  },
+  () => {
+    const f = fixture();
+    try {
+      unlinkSync(f.inboxFile);
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+      writeFileSync(f.inboxFile, f.canonical, { mode: 0o600 });
+      chownSync(f.inboxFile, 10002, 10002);
+      writeFileSync(f.inboxFile, "tampered");
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+      writeFileSync(f.inboxFile, f.canonical);
+      chmodSync(f.inboxFile, 0o644);
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+      chmodSync(f.inboxFile, 0o600);
+      chownSync(f.inboxFile, 0, 0);
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+      chownSync(f.inboxFile, 10002, 10002);
+      assert.equal(buildAnchorBootstrapCandidate(f.config, 1).sourceRevision, 8);
+    } finally {
+      f.cleanup();
+    }
+  },
+);
+
+test(
+  "candidate refuses changed stage, symlinked inbox and existing checkpoint",
+  {
+    skip: !root,
+  },
+  () => {
+    const f = fixture();
+    try {
+      writeFileSync(f.path("handoff-staging/source-export.signed.json"), "tampered");
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+    } finally {
+      f.cleanup();
+    }
+    const g = fixture();
+    try {
+      unlinkSync(g.inboxFile);
+      symlinkSync(g.path("publisher/source-export.signed.json"), g.inboxFile);
+      assert.throws(() => buildAnchorBootstrapCandidate(g.config, 1));
+    } finally {
+      g.cleanup();
+    }
+    const h = fixture();
+    try {
+      writeFileSync(h.path("worker-checkpoint/source-export.checkpoint.json"), "{}");
+      assert.throws(() => buildAnchorBootstrapCandidate(h.config, 1));
+      assert.throws(() => buildAnchorBootstrapCandidate(h.config, 0));
+    } finally {
+      h.cleanup();
+    }
+  },
+);
+
+test(
+  "candidate refuses changed pinned signer and noncanonical envelope",
+  {
+    skip: !root,
+  },
+  () => {
+    const f = fixture();
+    try {
+      const { publicKey } = generateKeyPairSync("ed25519");
+      writeFileSync(
+        f.path("trust-material/signing-public.pem"),
+        publicKey.export({ type: "spki", format: "pem" }),
+      );
+      assert.throws(() => buildAnchorBootstrapCandidate(f.config, 1));
+    } finally {
+      f.cleanup();
+    }
+    const g = fixture();
+    try {
+      const noncanonical = Buffer.from(
+        JSON.stringify(JSON.parse(g.canonical.toString("utf8"))).replace('"format":', '"format" :'),
+      );
+      for (const part of [
+        "publisher/source-export.signed.json",
+        "handoff-staging/source-export.signed.json",
+        "worker-inbox/source-export.signed.json",
+      ]) {
+        writeFileSync(g.path(part), noncanonical);
+      }
+      assert.throws(() => buildAnchorBootstrapCandidate(g.config, 1));
+    } finally {
+      g.cleanup();
+    }
+  },
+);
 
 test("CLI rejects invalid release without emitting candidate digests", () => {
   const script = fileURLToPath(new URL("./p2_01_anchor_bootstrap_candidate.mjs", import.meta.url));
