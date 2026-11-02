@@ -25,6 +25,34 @@ The new **independent-authority-only** SQL upgrade
 - The runtime cannot promote a new signer merely by changing
   `VNS_FEED_TRUST_POLICY_REVISION` to a larger value.
 
+## Zusätzliche Anmeldungssperre: direkte Schreibrechte und Owner-Mitgliedschaft
+
+Die aktuelle Live-Anmeldung prüft **alle drei unabhängigen Ankertabellen**
+auf unzulässige `SELECT`-, `INSERT`-, `UPDATE`-, `DELETE`-,
+`TRUNCATE`-, `REFERENCES`- und `TRIGGER`-Berechtigungen.
+Das gilt ausdrücklich auch für beide monotonen High-Water-Tabellen;
+ein reines `UPDATE` ohne `SELECT` reicht sonst aus, um die
+`SECURITY DEFINER`-Funktion zu umgehen.
+
+Zusätzlich verweigert die Live-Anmeldung jede Mitgliedschaft in einer
+Eigentümerrolle der drei Ankertabellen oder beider Advance-Funktionen,
+auch wenn eine Rolle mit `INHERIT FALSE` aktuell keine Tabellenrechte
+erbt. Es genügt nicht, dass die Runtime-Rolle selbst kein Superuser ist:
+`SET ROLE` zu einer Autoritätsrolle würde trotzdem den unabhängigen
+Anker umgehen.
+
+Der disposable PostgreSQL-17-Test legt deshalb einen **tatsächlichen,
+passwortauthentifizierten** Runtime-LOGIN an (nicht bloß
+`SET ROLE` als Superuser), testet die minimalen Rechte positiv und
+prüft ausdrücklich die negative Aufnahme direkter
+`UPDATE`-/`TRUNCATE`-Rechte sowie einer nicht geerbten
+Eigentümerrollen-Mitgliedschaft. Nach jedem Negativtest stellt er den
+ursprünglichen synthetischen Minimalzustand wieder her.
+
+Die produktive Freigabe bleibt dem unabhängigen Betreiber vorbehalten.
+Keine bereits installierten Rechte auf dem VPS werden automatisch
+geändert und keine bereits genehmigten Signierschlüssel still ersetzt.
+
 ## External-only provisioning and upgrade
 
 This is **not** a regular VideoNews Studio PostgreSQL migration. It belongs
