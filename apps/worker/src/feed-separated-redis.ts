@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import { readFeedRuntimeAdmission, type FeedRuntimeMode } from "./feed-runtime-admission.js";
-import { readFeedSecret } from "./feed-trusted-context.js";
+import { readFeedSecretFile } from "./feed-runtime-protected-files.js";
 
 /** Caller must first pass the dedicated side-effect-free role admission. */
 export function openSeparatedFeedRedis(env: NodeJS.ProcessEnv, mode: FeedRuntimeMode): Redis {
@@ -12,7 +12,7 @@ export function openSeparatedFeedRedis(env: NodeJS.ProcessEnv, mode: FeedRuntime
     throw new Error("Separated Redis runtime mode refused");
   }
   const admission = readFeedRuntimeAdmission(env, mode);
-  const password = readFeedSecret(admission.redisSecretPath);
+  const password = readFeedSecretFile(admission.redisSecretPath);
   const connection = new Redis({
     host: admission.redisHost,
     port: 6379,
