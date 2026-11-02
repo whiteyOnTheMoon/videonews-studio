@@ -30,11 +30,7 @@ export function createFeedConsumerJobHealthGuard(
 
   const readClock = (): number => {
     const at = clock();
-    if (
-      !Number.isFinite(at) ||
-      at < 0 ||
-      (lastNow !== null && at < lastNow)
-    ) {
+    if (!Number.isFinite(at) || at < 0 || (lastNow !== null && at < lastNow)) {
       throw new Error("Feed consumer monotonic clock refused");
     }
     lastNow = at;
