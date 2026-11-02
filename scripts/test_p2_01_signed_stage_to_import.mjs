@@ -140,7 +140,11 @@ function workerImport(f, expectedSuccess) {
       timeout: 15000,
     },
   );
-  assert.equal(result.status === 0, expectedSuccess, "Worker UID handoff result mismatched: " + result.stderr.slice(0, 1000));
+  assert.equal(
+    result.status === 0,
+    expectedSuccess,
+    "Worker UID handoff result mismatched: " + result.stderr.slice(0, 1000),
+  );
   if (!expectedSuccess) assert.equal(result.stdout, "");
   return result;
 }
