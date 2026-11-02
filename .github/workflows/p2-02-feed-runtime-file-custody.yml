@@ -1,0 +1,39 @@
+name: P2-02 feed runtime protected file custody (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-runtime-protected-files.ts"
+      - "apps/worker/src/feed-trusted-context.ts"
+      - "apps/worker/src/feed-observe-once.ts"
+      - "apps/worker/src/feed-separated-redis.ts"
+      - "scripts/test_p2_feed_runtime_file_custody.mjs"
+      - "docs/P2_02_FEED_RUNTIME_FILE_CUSTODY.md"
+      - ".github/workflows/p2-02-feed-runtime-file-custody.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-02-file-custody-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  real-worker-uid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install and verify source formatting
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check apps/worker/src/feed-runtime-protected-files.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-separated-redis.ts scripts/test_p2_feed_runtime_file_custody.mjs docs/P2_02_FEED_RUNTIME_FILE_CUSTODY.md .github/workflows/p2-02-feed-runtime-file-custody.yml
+      - name: Build exact worker and dependency contracts
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Prove file access with actual UID/GID 10002
+        run: sudo -n env CI=true node --test scripts/test_p2_feed_runtime_file_custody.mjs
+      - name: Verify runtime gate and Redis roles regression
+        run: |
+          node --test apps/worker/dist/feed-runtime-admission.test.js apps/worker/dist/feed-separated-roles.test.js
