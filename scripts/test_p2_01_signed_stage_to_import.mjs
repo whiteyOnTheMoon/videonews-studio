@@ -90,6 +90,7 @@ function fixture() {
     stage,
     inbox,
     pub,
+    publicPem,
     checkpoint,
     config,
     bytes,
@@ -184,9 +185,7 @@ test("wrong key and tampered staged data cannot replace worker's private inbox",
     workerImport(f, false);
     assert.deepEqual(readFileSync(imported), original);
     // Restore the independently pinned public key; then corrupt only stage.
-    writeFileSync(f.pub, generateKeyPairSync("ed25519").publicKey.export({
-      type: "spki", format: "pem",
-    }));
+    writeFileSync(f.pub, f.publicPem);
     writeFileSync(join(f.stage, "source-export.signed.json"), "tampered", {
       flag: "w",
     });
