@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import { DormantPersonalEditorialAdmin } from "../apps/api/dist/personal-editorial-admin.js";
+import { verifyWebRankedFeedBridge } from "./ci_p2_web_admin_bridge.mjs";
 
 const ORIGIN = "https://studio.example.invalid";
 const TEST_EDITOR_ID = "ca340001-1111-4111-8111-111111111111";
@@ -125,6 +126,7 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
     ].sort(),
   );
   assert.ok(connections >= 1 && selectCalls >= 2);
+  await verifyWebRankedFeedBridge(handler);
 
   // Method denial, missing cookie-level authorization and malformed query
   // may not create new source or ranking rows or access the database.
@@ -154,6 +156,7 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
       "UPDATE vns.editor_db_principals SET active=false WHERE login_role='editor_ci_fullchain'",
     );
     const revoked = await request("GET", path);
+    await verifyWebRankedFeedBridge(handler, "revoked");
     assert.notEqual(revoked.status, 200);
     assert.ok(!JSON.stringify(revoked.json).includes(candidate.headline));
     const stillThere = await dba.query(
@@ -167,5 +170,6 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
   }
   const restored = await request("GET", path);
   assert.equal(restored.status, 200);
+  await verifyWebRankedFeedBridge(handler);
   assert.equal(restored.json.candidates[0].eventId, candidate.eventId);
 }
