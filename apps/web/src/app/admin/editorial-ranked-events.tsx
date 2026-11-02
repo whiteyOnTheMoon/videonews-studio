@@ -37,6 +37,9 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
 
   async function refresh(signal?: AbortSignal) {
     setLoading(true);
+    // Never display a previously authorized snapshot while a new
+    // authenticated read is in flight (including after auth revocation).
+    setCandidates([]);
     setError("");
     try {
       const response = await fetch("/api/admin/editorial-ranked-events?limit=25", {
@@ -85,7 +88,7 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
       {enabled && !loading && !error && candidates.length === 0 ? (
         <p>Noch keine persistierten Rankingkandidaten vorhanden.</p>
       ) : null}
-      {enabled && candidates.length > 0 && !error ? (
+      {enabled && !loading && candidates.length > 0 && !error ? (
         <ol>
           {candidates.map((candidate) => (
             <li
