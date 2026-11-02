@@ -11,7 +11,10 @@ import EditorialAuditExport, {
 } from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
-import EditorialRankedEvents, { parseRankedCandidatePage } from "./editorial-ranked-events";
+import EditorialRankedEvents, {
+  parseRankedCandidatePage,
+  mayDisplayRankedCandidates,
+} from "./editorial-ranked-events";
 import EditorialRankingPolicy from "./editorial-ranking-policy";
 import EditorialMetadataReviews from "./editorial-metadata-reviews";
 import {
@@ -154,6 +157,18 @@ test("Admin profile editor rejects tokenless and duplicated terms before saving"
   assert.equal(validEditorialProfileTerms(["science"], ["Science"]), false);
   assert.equal(validEditorialProfileTerms(["news"], ["token\\value"]), false);
   assert.equal(validEditorialProfileTerms(Array(31).fill("news"), []), false);
+});
+
+test("an earlier ranking is never rendered during refresh, error or disabled admission", () => {
+  assert.equal(mayDisplayRankedCandidates(true, false, "", 1), true);
+  for (const args of [
+    [true, true, "", 1],
+    [true, false, "rankings unavailable", 1],
+    [false, false, "", 1],
+    [true, false, "", 0],
+  ] as const) {
+    assert.equal(mayDisplayRankedCandidates(args[0], args[1], args[2], args[3]), false);
+  }
 });
 
 test("P2-04 ranked snapshots stay hidden until personal Admin admission", () => {

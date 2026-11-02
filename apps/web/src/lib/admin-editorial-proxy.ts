@@ -279,13 +279,15 @@ export async function dormantEditorialAdminProxy(
     return reply(400, { error: "invalid_request" });
   const cookie = clientEditorCookie(request.headers.get("cookie"));
   if (!cookie) return reply(401, { error: "unauthorized" });
+  // Reject malformed writes before any network request, including the
+  // otherwise unnecessary upstream editor-session lookup.
+  const body = request.method === "POST" ? await readBody(request, endpoint) : undefined;
+  if (request.method === "POST" && !body) return reply(400, { error: "invalid_request" });
   const profile = await editorProfile(request, config, fetcher);
   if (profile.status === 401) return reply(401, { error: "unauthorized" });
   if (profile.status !== 200) return reply(503, { error: "temporarily_unavailable" });
   const actor: unknown = await profile.json();
   if (!object(actor) || actor.role !== "admin") return reply(403, { error: "forbidden" });
-  const body = request.method === "POST" ? await readBody(request, endpoint) : undefined;
-  if (request.method === "POST" && !body) return reply(400, { error: "invalid_request" });
   try {
     const upstream = await fetcher(config.api + ENDPOINTS[endpoint] + url.search, {
       method: request.method,
@@ -333,7 +335,7 @@ export async function dormantEditorialAdminProxy(
         Object.keys(value).sort().join(",") !== "candidates,metadataOnly" ||
         value.metadataOnly !== true ||
         !Array.isArray(value.candidates) ||
-        value.candidates.length > 50 ||
+        value.candidates.length > Number(url.searchParams.get("limit")) ||
         !value.candidates.every(isRankedFeedCandidate)
       )
         return reply(503, { error: "temporarily_unavailable" });
