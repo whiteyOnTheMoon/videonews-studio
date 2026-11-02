@@ -611,3 +611,36 @@ test("source and event metadata reviews route only through same-origin personal 
   );
   assert.equal(calls.length, count);
 });
+
+
+test("ranked BFF rejects an oversized upstream page even if every candidate is valid", async () => {
+  const candidate = {
+    eventId,
+    profileId: "science_news",
+    profileRevision: 1,
+    headline: "Synthetic science candidate awaiting independent verification",
+    score: 42,
+    articleCount: 2,
+    sourceCount: 2,
+    reasons: ["metadata_candidate_only", "independent_verification_required"],
+    rankedAt: "2026-10-28T12:00:00.000Z",
+    approvedForPublication: false,
+  };
+  let calls = 0;
+  const upstream = (async (resource: string | URL | Request) => {
+    if (String(resource).endsWith("/editor/me"))
+      return Response.json({ username: "ci_admin", role: "admin" });
+    calls++;
+    return Response.json({ candidates: [candidate, candidate], metadataOnly: true });
+  }) as typeof fetch;
+  const response = await dormantEditorialAdminProxy(
+    request("/api/admin/editorial-ranked-events?limit=1"),
+    "ranked-events",
+    config,
+    upstream,
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: "temporarily_unavailable" });
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(calls, 1);
+});
