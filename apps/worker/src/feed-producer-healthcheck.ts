@@ -1,5 +1,5 @@
 import { checkFeedConsumerHealth } from "./feed-consumer-health.js";
-import { FEED_PRODUCER_HEALTH_PATH } from "./feed-producer-continuous.js";
+import { FEED_PRODUCER_HEALTH_PATH } from "./feed-producer-health-path.js";
 
 // Fail closed: Docker/Beszel observes stopped or stale continuous producer.
 if (process.argv[1]?.endsWith("/feed-producer-healthcheck.js")) {
