@@ -1,11 +1,4 @@
-import {
-  closeSync,
-  constants,
-  fstatSync,
-  openSync,
-  readFileSync,
-  realpathSync,
-} from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync } from "node:fs";
 
 /**
  * Operator-provisioned bind-mounted files in the feed observer/consumer.
@@ -87,11 +80,7 @@ export function readFeedSecretFile(path: string): string {
     "Feed runtime secret unavailable",
   );
   const password = text.trimEnd();
-  if (
-    password.length < 40 ||
-    password.length > 256 ||
-    !/^[A-Za-z0-9_-]+$/.test(password)
-  ) {
+  if (password.length < 40 || password.length > 256 || !/^[A-Za-z0-9_-]+$/.test(password)) {
     throw new Error("Feed runtime secret unavailable");
   }
   return password;
