@@ -27,6 +27,49 @@ sql < "$root/db/independent-anchor/test_admission.sql"
 sql < "$root/db/independent-anchor/003_trust_policy_admission.sql"
 sql < "$root/db/independent-anchor/004_preapproved_trust_policy.sql"
 sql < "$root/db/independent-anchor/test_trust_policy.sql"
+# Test the EXACT authenticated runtime LOGIN rather than a superuser
+# `SET ROLE` session. Privilege introspection must reject unexpectedly
+# granted direct DML, even when SELECT remains denied.
+sql <<'SQL'
+CREATE ROLE vns_anchor_login_ci_worker LOGIN PASSWORD 'synthetic-ci-anchor-login-only';
+GRANT USAGE ON SCHEMA vns_source_anchor TO vns_anchor_login_ci_worker;
+GRANT EXECUTE ON FUNCTION vns_source_anchor.advance(bigint,bigint,text)
+  TO vns_anchor_login_ci_worker;
+GRANT EXECUTE ON FUNCTION vns_source_anchor.advance_trust_policy(bigint,text)
+  TO vns_anchor_login_ci_worker;
+SQL
+ci_login() {
+  docker exec -i -e PGPASSWORD=synthetic-ci-anchor-login-only "$name" \
+    psql -h 127.0.0.1 -X -w -q -v ON_ERROR_STOP=1 \
+      -U vns_anchor_login_ci_worker -d anchor_ci "$@"
+}
+ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null
+for spec in \
+  "UPDATE vns_source_anchor.high_water" \
+  "TRUNCATE vns_source_anchor.high_water" \
+  "UPDATE vns_source_anchor.trust_policy_high_water" \
+  "TRUNCATE vns_source_anchor.trust_policy_approvals"; do
+  operation="${spec%% *}"
+  table="${spec#* }"
+  sql -c "GRANT $operation ON $table TO vns_anchor_login_ci_worker" >/dev/null
+  if ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null 2>&1; then
+    echo "FAIL: external anchor accepted runtime direct table privilege" >&2
+    exit 1
+  fi
+  sql -c "REVOKE $operation ON $table FROM vns_anchor_login_ci_worker" >/dev/null
+  ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null
+done
+# An operator-owned, NOINHERIT membership may expose no direct DML before
+# SET ROLE; it must still be rejected as a possible bypass of SECURITY DEFINER.
+sql -c "GRANT vns_anchor_ci_owner TO vns_anchor_login_ci_worker WITH INHERIT FALSE, SET TRUE" >/dev/null
+if ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null 2>&1; then
+  echo "FAIL: external anchor accepted membership in owner role" >&2
+  exit 1
+fi
+sql -c "REVOKE vns_anchor_ci_owner FROM vns_anchor_login_ci_worker" >/dev/null
+ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null
+echo "PASS: actual PostgreSQL runtime LOGIN denies direct DML and owner-role membership"
+
 # No runtime grant may manipulate the out-of-band trust policy approvals,
 # even when directly attempting SQL under SET ROLE.
 for statement in \
