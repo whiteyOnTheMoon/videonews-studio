@@ -129,70 +129,84 @@ function workerImport(f, expectedSuccess) {
     const file = readFileSync(inbox + "/source-export.signed.json");
     assert.ok(file.includes(Buffer.from("vns-source-export-ed25519-v1")));
   `;
-  const result = spawnSync(process.execPath, ["--input-type=module", "-e", code,
-    f.stage, f.inbox, f.pub, workerModule], {
-    encoding: "utf8",
-    timeout: 15000,
-  });
+  const result = spawnSync(
+    process.execPath,
+    ["--input-type=module", "-e", code, f.stage, f.inbox, f.pub, workerModule],
+    {
+      encoding: "utf8",
+      timeout: 15000,
+    },
+  );
   assert.equal(result.status === 0, expectedSuccess, "Worker UID handoff result mismatched");
   if (!expectedSuccess) assert.equal(result.stdout, "");
   return result;
 }
 
-test("canonical signed publisher export stages byte-identically and imports under worker UID", {
-  skip: !RUN,
-}, () => {
-  const f = fixture();
-  try {
-    stageOnce(f.config);
-    verifyStage(f.config);
-    renameSync(f.p("handoff-staging"), f.stage);
-    const stageStat = statSync(f.stage);
-    const fileStat = statSync(join(f.stage, "source-export.signed.json"));
-    assert.deepEqual([stageStat.uid, stageStat.gid, stageStat.mode & 0o777],
-      [10003, 10002, 0o750]);
-    assert.deepEqual([fileStat.uid, fileStat.gid, fileStat.mode & 0o777],
-      [10003, 10002, 0o640]);
-    assert.deepEqual(readFileSync(join(f.stage, "source-export.signed.json")), f.bytes);
-    workerImport(f, true);
-    const imported = join(f.inbox, "source-export.signed.json");
-    assert.deepEqual(readFileSync(imported), f.bytes);
-    const privateStat = statSync(imported);
-    assert.deepEqual([privateStat.uid, privateStat.gid, privateStat.mode & 0o777],
-      [10002, 10002, 0o600]);
-    assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
-    // Stage can be imported idempotently, without touching the independent
-    // high-water or creating a checkpoint.
-    workerImport(f, true);
-    assert.deepEqual(readFileSync(imported), f.bytes);
-  } finally {
-    f.cleanup();
-  }
-});
+test(
+  "canonical signed publisher export stages byte-identically and imports under worker UID",
+  {
+    skip: !RUN,
+  },
+  () => {
+    const f = fixture();
+    try {
+      stageOnce(f.config);
+      verifyStage(f.config);
+      renameSync(f.p("handoff-staging"), f.stage);
+      const stageStat = statSync(f.stage);
+      const fileStat = statSync(join(f.stage, "source-export.signed.json"));
+      assert.deepEqual(
+        [stageStat.uid, stageStat.gid, stageStat.mode & 0o777],
+        [10003, 10002, 0o750],
+      );
+      assert.deepEqual([fileStat.uid, fileStat.gid, fileStat.mode & 0o777], [10003, 10002, 0o640]);
+      assert.deepEqual(readFileSync(join(f.stage, "source-export.signed.json")), f.bytes);
+      workerImport(f, true);
+      const imported = join(f.inbox, "source-export.signed.json");
+      assert.deepEqual(readFileSync(imported), f.bytes);
+      const privateStat = statSync(imported);
+      assert.deepEqual(
+        [privateStat.uid, privateStat.gid, privateStat.mode & 0o777],
+        [10002, 10002, 0o600],
+      );
+      assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
+      // Stage can be imported idempotently, without touching the independent
+      // high-water or creating a checkpoint.
+      workerImport(f, true);
+      assert.deepEqual(readFileSync(imported), f.bytes);
+    } finally {
+      f.cleanup();
+    }
+  },
+);
 
-test("wrong key and tampered staged data cannot replace worker's private inbox", {
-  skip: !RUN,
-}, () => {
-  const f = fixture();
-  try {
-    stageOnce(f.config);
-    renameSync(f.p("handoff-staging"), f.stage);
-    workerImport(f, true);
-    const imported = join(f.inbox, "source-export.signed.json");
-    const original = readFileSync(imported);
-    const wrong = generateKeyPairSync("ed25519").publicKey;
-    writeFileSync(f.pub, wrong.export({ type: "spki", format: "pem" }));
-    workerImport(f, false);
-    assert.deepEqual(readFileSync(imported), original);
-    // Restore the independently pinned public key; then corrupt only stage.
-    writeFileSync(f.pub, f.publicPem);
-    writeFileSync(join(f.stage, "source-export.signed.json"), "tampered", {
-      flag: "w",
-    });
-    workerImport(f, false);
-    assert.deepEqual(readFileSync(imported), original);
-    assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
-  } finally {
-    f.cleanup();
-  }
-});
+test(
+  "wrong key and tampered staged data cannot replace worker's private inbox",
+  {
+    skip: !RUN,
+  },
+  () => {
+    const f = fixture();
+    try {
+      stageOnce(f.config);
+      renameSync(f.p("handoff-staging"), f.stage);
+      workerImport(f, true);
+      const imported = join(f.inbox, "source-export.signed.json");
+      const original = readFileSync(imported);
+      const wrong = generateKeyPairSync("ed25519").publicKey;
+      writeFileSync(f.pub, wrong.export({ type: "spki", format: "pem" }));
+      workerImport(f, false);
+      assert.deepEqual(readFileSync(imported), original);
+      // Restore the independently pinned public key; then corrupt only stage.
+      writeFileSync(f.pub, f.publicPem);
+      writeFileSync(join(f.stage, "source-export.signed.json"), "tampered", {
+        flag: "w",
+      });
+      workerImport(f, false);
+      assert.deepEqual(readFileSync(imported), original);
+      assert.equal(existsSync(join(f.checkpoint, "source-export.checkpoint.json")), false);
+    } finally {
+      f.cleanup();
+    }
+  },
+);
