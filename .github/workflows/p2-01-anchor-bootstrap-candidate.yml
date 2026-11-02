@@ -1,0 +1,27 @@
+name: P2-01 independent anchor bootstrap candidate (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_anchor_bootstrap_candidate.mjs"
+      - "scripts/test_p2_01_anchor_bootstrap_candidate.mjs"
+      - "docs/P2_01_ANCHOR_BOOTSTRAP_CANDIDATE.md"
+      - ".github/workflows/p2-01-anchor-bootstrap-candidate.yml"
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install formatting tool
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Enforce source, test, documentation and workflow formatting
+        run: |
+          npx prettier --check scripts/p2_01_anchor_bootstrap_candidate.mjs scripts/test_p2_01_anchor_bootstrap_candidate.mjs docs/P2_01_ANCHOR_BOOTSTRAP_CANDIDATE.md .github/workflows/p2-01-anchor-bootstrap-candidate.yml
+      - name: Verify exact signed envelope and fail-closed candidate metadata
+        run: sudo -n env CI=true node --test scripts/test_p2_01_anchor_bootstrap_candidate.mjs
