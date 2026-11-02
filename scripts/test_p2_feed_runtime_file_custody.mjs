@@ -4,7 +4,6 @@ import {
   chmodSync,
   chownSync,
   linkSync,
-  mkdirSync,
   mkdtempSync,
   rmSync,
   symlinkSync,
