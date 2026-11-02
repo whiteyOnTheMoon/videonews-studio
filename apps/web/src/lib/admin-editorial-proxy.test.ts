@@ -612,7 +612,6 @@ test("source and event metadata reviews route only through same-origin personal 
   assert.equal(calls.length, count);
 });
 
-
 test("ranked BFF rejects an oversized upstream page even if every candidate is valid", async () => {
   const candidate = {
     eventId,
