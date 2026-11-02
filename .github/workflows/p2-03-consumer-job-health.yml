@@ -1,0 +1,35 @@
+name: P2-03 monotonic consumer job health (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-consumer-job-health-guard.ts"
+      - "apps/worker/src/feed-consumer-job-health-guard.test.ts"
+      - "apps/worker/src/feed-worker-persistent.ts"
+      - "docs/P2_03_MONOTONIC_CONSUMER_WATCHDOG.md"
+      - ".github/workflows/p2-03-consumer-job-health.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-03-consumer-job-health-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  consumer-job-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install and check source formatting
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --check apps/worker/src/feed-consumer-job-health-guard.ts apps/worker/src/feed-consumer-job-health-guard.test.ts apps/worker/src/feed-worker-persistent.ts docs/P2_03_MONOTONIC_CONSUMER_WATCHDOG.md .github/workflows/p2-03-consumer-job-health.yml
+      - name: Build real worker and shared contracts
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Verify monotonic deadlines and real private stopped heartbeat
+        run: |
+          node --test apps/worker/dist/feed-consumer-job-health-guard.test.js apps/worker/dist/feed-consumer-health.test.js apps/worker/dist/feed-scheduler-continuous.test.js
