@@ -82,7 +82,11 @@ test("three consecutive failed jobs disable the consumer without a fourth delive
 });
 
 test("invalid event transitions and monotonic clock rollback fail closed", () => {
-  const uninitialized = createFeedConsumerJobHealthGuard(30_000, () => 100, () => {});
+  const uninitialized = createFeedConsumerJobHealthGuard(
+    30_000,
+    () => 100,
+    () => {},
+  );
   assert.equal(uninitialized.active(), false);
   assert.equal(uninitialized.stopped, true);
   const completedWithoutActive = createFeedConsumerJobHealthGuard(
@@ -94,12 +98,20 @@ test("invalid event transitions and monotonic clock rollback fail closed", () =>
   assert.equal(completedWithoutActive.completed(), false);
   assert.equal(completedWithoutActive.stopped, true);
   let at = 1000;
-  const rollback = createFeedConsumerJobHealthGuard(30_000, () => at, () => {});
+  const rollback = createFeedConsumerJobHealthGuard(
+    30_000,
+    () => at,
+    () => {},
+  );
   assert.equal(rollback.ready(), true);
   at--;
   assert.equal(rollback.pulse(), false);
   assert.equal(rollback.stopped, true);
-  const invalidClock = createFeedConsumerJobHealthGuard(30_000, () => NaN, () => {});
+  const invalidClock = createFeedConsumerJobHealthGuard(
+    30_000,
+    () => NaN,
+    () => {},
+  );
   assert.equal(invalidClock.ready(), false);
   assert.equal(invalidClock.stopped, true);
   for (const bound of [0, 29_999, 600_001, NaN, 30_000.5]) {
@@ -128,23 +140,36 @@ test("private 0600 consumer heartbeat fails immediately on timed-out processing"
       ),
   );
   try {
-    assert.equal(checkFeedConsumerHealth(path, wall, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, wall, () => true),
+      false,
+    );
     assert.equal(guard.ready(), true);
-    assert.equal(checkFeedConsumerHealth(path, wall, () => true), true);
+    assert.equal(
+      checkFeedConsumerHealth(path, wall, () => true),
+      true,
+    );
     assert.equal(guard.active(), true);
     elapsed += 30_000;
     wall += 30_000;
     assert.equal(guard.pulse(), false);
-    assert.equal(checkFeedConsumerHealth(path, wall, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, wall, () => true),
+      false,
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test("failed health writes never turn an unhealthy worker back to ready", () => {
-  const bad = createFeedConsumerJobHealthGuard(30_000, () => 1000, () => {
-    throw Error("synthetic unavailable private heartbeat");
-  });
+  const bad = createFeedConsumerJobHealthGuard(
+    30_000,
+    () => 1000,
+    () => {
+      throw Error("synthetic unavailable private heartbeat");
+    },
+  );
   assert.equal(bad.ready(), false);
   assert.equal(bad.stopped, true);
   assert.equal(bad.active(), false);
