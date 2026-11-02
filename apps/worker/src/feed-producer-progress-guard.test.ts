@@ -85,7 +85,10 @@ test("idle 30-second scheduling sleeps are healthy; stale queue observations are
 
 test("an operation that returns after its timeout cannot restore ready", () => {
   let at = 10_000;
-  const guard = createFeedProducerProgressGuard(() => at, () => undefined);
+  const guard = createFeedProducerProgressGuard(
+    () => at,
+    () => undefined,
+  );
   guard.begin("inspect");
   at += FEED_PRODUCER_MAX_OPERATION_MS;
   assert.throws(() => guard.finish("inspect"), /progress watchdog exceeded/);
@@ -95,7 +98,10 @@ test("an operation that returns after its timeout cannot restore ready", () => {
 
 test("bounded enqueue failures do not falsely refresh successful inspection age", () => {
   let at = 100;
-  const guard = createFeedProducerProgressGuard(() => at, () => undefined);
+  const guard = createFeedProducerProgressGuard(
+    () => at,
+    () => undefined,
+  );
   guard.begin("inspect");
   guard.finish("inspect");
   guard.begin("enqueue");
@@ -107,13 +113,19 @@ test("bounded enqueue failures do not falsely refresh successful inspection age"
 
 test("invalid monotonic clock or failed private heartbeat write fails closed", () => {
   let at = 15000;
-  const guard = createFeedProducerProgressGuard(() => at, () => undefined);
+  const guard = createFeedProducerProgressGuard(
+    () => at,
+    () => undefined,
+  );
   guard.begin("inspect");
   guard.finish("inspect");
   at--;
   assert.equal(guard.pulse(), false);
   assert.equal(guard.stopped, true);
-  const malformed = createFeedProducerProgressGuard(() => NaN, () => undefined);
+  const malformed = createFeedProducerProgressGuard(
+    () => NaN,
+    () => undefined,
+  );
   assert.equal(malformed.pulse(), false);
   const failedWrite = createFeedProducerProgressGuard(
     () => 20000,
@@ -139,15 +151,24 @@ test("actual 0600 heartbeat becomes unhealthy immediately after operation watchd
       ),
   );
   try {
-    assert.equal(checkFeedConsumerHealth(path, at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, at, () => true),
+      false,
+    );
     guard.begin("inspect");
     guard.finish("inspect");
     assert.equal(guard.pulse(), true);
-    assert.equal(checkFeedConsumerHealth(path, at, () => true), true);
+    assert.equal(
+      checkFeedConsumerHealth(path, at, () => true),
+      true,
+    );
     guard.begin("enqueue");
     at += FEED_PRODUCER_MAX_OPERATION_MS;
     assert.equal(guard.pulse(), false);
-    assert.equal(checkFeedConsumerHealth(path, at, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, at, () => true),
+      false,
+    );
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
