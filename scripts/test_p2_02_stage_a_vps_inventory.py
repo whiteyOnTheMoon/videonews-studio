@@ -96,6 +96,17 @@ class StageAReadOnlyTests(unittest.TestCase):
                 report = self.inspect(run)
                 self.assertEqual(report["stage_a_readiness"], "blocked")
 
+    def test_projector_and_signer_host_ports_are_not_omitted(self):
+        for name in ("feed-project-once", "feed-project-continuous",
+                     "source-publisher", "source-handoff-import"):
+            run, _ = fake_runner(
+                docker=name + "|running|Up 1m|0.0.0.0:9999->9999/tcp\\n"
+            )
+            result = self.inspect(run)
+            self.assertEqual(result["stage_a_readiness"], "blocked")
+            self.assertIs(result["checks"]["no_feed_host_ports"], False)
+            self.assertIs(result["docker"]["services"][name]["host_ports_published"], True)
+
     def test_no_docker_access_is_unknown_not_no_containers(self):
         run, _ = fake_runner(docker_ok=False)
         report = self.inspect(run)
