@@ -11,7 +11,7 @@ trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
 docker run -d --rm --name "$name" --network none --memory 512m --cpus 1 \
   --tmpfs /var/lib/postgresql/data:rw,nosuid,size=256m \
   -e POSTGRES_PASSWORD=synthetic-ci-only -e POSTGRES_DB=anchor_ci postgres:17-alpine >/dev/null
-sql() { docker exec -i "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d anchor_ci; }
+sql() { docker exec -i "$name" psql -X -v ON_ERROR_STOP=1 -U postgres -d anchor_ci "$@"; }
 ready=0
 for _ in $(seq 1 60); do
   if docker exec "$name" psql -X -q -t -A -U postgres -d anchor_ci -c "SELECT 1" 2>/dev/null | grep -qx 1; then
@@ -52,10 +52,8 @@ for spec in \
   operation="${spec%% *}"
   table="${spec#* }"
   sql -c "GRANT $operation ON $table TO vns_anchor_login_ci_worker" >/dev/null
-  sql -q -t -A -c "SELECT has_table_privilege('vns_anchor_login_ci_worker','$table','$operation'), (SELECT relacl::text FROM pg_class WHERE oid='$table'::regclass)" >&2
   if ci_login < "$root/db/independent-anchor/test_runtime_login.sql" >/dev/null 2>&1; then
     echo "FAIL: external anchor accepted runtime direct table privilege: $operation on $table" >&2
-    ci_login -q -t -A -c "SELECT session_user, has_table_privilege(session_user,'$table','$operation')" >&2
     exit 1
   fi
   sql -c "REVOKE $operation ON $table FROM vns_anchor_login_ci_worker" >/dev/null
