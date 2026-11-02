@@ -22,6 +22,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Temporary canonical source formatting capture
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prettier --write apps/worker/src/feed-consumer-job-health-guard.ts apps/worker/src/feed-consumer-job-health-guard.test.ts
+          node -e 'const fs=require("node:fs");for(const p of ["apps/worker/src/feed-consumer-job-health-guard.ts","apps/worker/src/feed-consumer-job-health-guard.test.ts"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Install and check source formatting
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
