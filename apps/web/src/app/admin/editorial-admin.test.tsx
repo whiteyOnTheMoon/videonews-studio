@@ -167,7 +167,7 @@ test("an earlier ranking is never rendered during refresh, error or disabled adm
     [false, false, "", 1],
     [true, false, "", 0],
   ] as const) {
-    assert.equal(mayDisplayRankedCandidates(...args), false);
+    assert.equal(mayDisplayRankedCandidates(args[0], args[1], args[2], args[3]), false);
   }
 });
 
