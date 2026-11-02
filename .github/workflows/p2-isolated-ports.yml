@@ -75,6 +75,10 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
+      - name: Temporary formatting capture for new boundary tests
+        run: |
+          npx prettier --write apps/web/src/lib/admin-editorial-proxy.test.ts scripts/ci_p2_web_admin_bridge.mjs
+          node -e 'const fs=require("node:fs");for(const p of ["apps/web/src/lib/admin-editorial-proxy.test.ts","scripts/ci_p2_web_admin_bridge.mjs"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Check code formatting and lint
         run: |
           npm run format:check
