@@ -26,11 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Temporary formatting capture
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prettier --write apps/worker/src/feed-projector-health.test.ts apps/worker/src/feed-project-continuous.ts
-          node -e 'const fs=require("node:fs");for(const p of ["apps/worker/src/feed-projector-health.test.ts","apps/worker/src/feed-project-continuous.ts"])console.log("VNS_FORMATTED_FILE="+JSON.stringify({path:p,content:fs.readFileSync(p,"utf8")}))'
       - name: Compile and check source format
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
