@@ -7,6 +7,11 @@ on:
       - "db/migrations/**"
       - "scripts/ci_p2_integrated_ports.mjs"
       - "scripts/ci_p2_named_admin_live_pg.mjs"
+      - "scripts/ci_p2_web_admin_bridge.mjs"
+      - "apps/web/src/lib/admin-editorial-proxy.ts"
+      - "apps/web/src/lib/admin-editorial-proxy.test.ts"
+      - "apps/web/src/app/admin/editorial-ranked-events.tsx"
+      - "apps/web/src/app/admin/editorial-admin.test.tsx"
       - "apps/api/src/personal-editorial-admin.ts"
       - "scripts/ci_p2_separated_ports.mjs"
       - "scripts/ci_p2_projection_ports.mjs"
@@ -125,8 +130,10 @@ jobs:
           CREATE ROLE vns_feed_project_login_ciunit LOGIN INHERIT PASSWORD 'ci_only_projector_disposable_password';
           GRANT vns_feed_project_client TO vns_feed_project_login_ciunit;
           SQL
-      - name: Verify Redis queue, PostgreSQL persistence and never-publish review
-        run: node --test scripts/ci_p2_integrated_ports.mjs
+      - name: Check browser ranking parser and BFF guard regressions
+        run: npx tsx --test apps/web/src/lib/admin-editorial-proxy.test.ts apps/web/src/app/admin/editorial-admin.test.tsx
+      - name: Verify Redis to PostgreSQL to personal API to Web BFF and browser parser
+        run: node --import tsx --test scripts/ci_p2_integrated_ports.mjs
       - name: Verify named approved-source projection against real PostgreSQL
         run: node --test scripts/ci_p2_projection_ports.mjs
       - name: Verify independent producer and consumer against disposable Redis ACLs
