@@ -138,8 +138,8 @@ def main() -> None:
     # are rolled back; the approved synthetic baseline remains unchanged.
     def invalid_in_transaction(mutation: str) -> None:
         result = isolated_psql(
-            "BEGIN;\\n" + mutation + "\\n" + upgrade.REVIEWED_STATE_SQL +
-            "\\nROLLBACK;",
+            "BEGIN;\n" + mutation + "\n" + upgrade.REVIEWED_STATE_SQL +
+            "\nROLLBACK;",
             readonly=False,
         )
         if result != "f":
