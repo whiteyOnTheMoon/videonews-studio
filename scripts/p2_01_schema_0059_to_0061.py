@@ -61,8 +61,55 @@ SELECT
   AND
   (SELECT revision>0 AND jsonb_array_length(approved_hosts) BETWEEN 1 AND 5
      FROM vns.admin_source_host_approvals WHERE singleton=true)
-  AND (SELECT count(*)>0 FROM vns.admin_source_audit)
-  AND (SELECT count(*)>0 FROM vns.admin_source_host_audit)
+  -- Audit ledger must be consecutive: rev=8 means exactly 1..8 and no
+  -- unrecorded historical transition, not merely 'some' audit rows.
+  AND (SELECT audit.row_count=r.revision AND audit.first_rev=1
+              AND audit.last_rev=r.revision
+       FROM vns.admin_source_registry r
+       CROSS JOIN (
+         SELECT count(*) AS row_count, min(revision) AS first_rev,
+                max(revision) AS last_rev FROM vns.admin_source_audit
+       ) audit WHERE r.singleton=true)
+  AND (SELECT audit.row_count=h.revision AND audit.first_rev=1
+              AND audit.last_rev=h.revision
+       FROM vns.admin_source_host_approvals h
+       CROSS JOIN (
+         SELECT count(*) AS row_count, min(revision) AS first_rev,
+                max(revision) AS last_rev FROM vns.admin_source_host_audit
+       ) audit WHERE h.singleton=true)
+  -- Every currently approved source must end in a personally audited
+  -- approval, even if earlier events were pending/replaced.
+  AND NOT EXISTS (
+    SELECT 1 FROM vns.admin_source_registry r
+    CROSS JOIN LATERAL jsonb_array_elements(r.sources) AS item(value)
+    WHERE r.singleton=true AND item.value->>'status'='approved'
+      AND coalesce((
+        SELECT a.action FROM vns.admin_source_audit a
+        WHERE a.source_id=item.value->>'id'
+        ORDER BY a.revision DESC LIMIT 1
+      ),'')<>'approve'
+  )
+  -- Every approved host must have a current grant audit and an approved
+  -- source at that exact host. This check does not grant any rights.
+  AND NOT EXISTS (
+    SELECT 1 FROM vns.admin_source_host_approvals h
+    CROSS JOIN LATERAL jsonb_array_elements_text(h.approved_hosts)
+      AS approved(host)
+    WHERE h.singleton=true AND (
+      coalesce((
+        SELECT a.action FROM vns.admin_source_host_audit a
+        WHERE a.host=approved.host ORDER BY a.revision DESC LIMIT 1
+      ),'')<>'grant'
+      OR NOT EXISTS (
+        SELECT 1 FROM vns.admin_source_registry r
+        CROSS JOIN LATERAL jsonb_array_elements(r.sources) AS item(value)
+        WHERE r.singleton=true AND item.value->>'status'='approved'
+          AND split_part(
+            split_part(item.value->>'baseUrl','https://',2), '/',1
+          )=approved.host
+      )
+    )
+  )
   AND (SELECT count(*)=0 FROM vns.feed_event_rankings
        WHERE approved_for_publication);
 """.strip()

@@ -56,6 +56,14 @@ Hierfür existieren die getrennten Aktionen
 schemaändernde Transaktionen, nur nach ausdrücklicher Freigabe).
 Sie verlangen drei bis fünf bereits auf `approved` gesetzte Quellen,
 nichtleere geprüfte Hostfreigaben und bestehende Quell-/Hostaudits.
+Zusätzlich verlangen sie lückenlose Audit-Revisionen für Quellen und
+Hostfreigaben. Jede aktuell freigegebene Quelle muss als letzte
+Auditentscheidung `approve` besitzen; jeder genehmigte Host als letzte
+Hostentscheidung `grant` und eine aktuell freigegebene Quelle für genau
+diesen Host. Ein fehlerhafter oder nur teilweise protokollierter
+Bestandszustand wird ausdrücklich nicht durch Schemaänderungen
+repariert: Der Vorgang wird vor der Migration abgebrochen.
+
 Sie vergleichen die bestehenden Quell-, Host- und Profilregister sowie
 **beide vollständigen Audit-Reihen** anhand revisionsgebundener
 Fingerabdrücke vor und nach den SQL-Migrationen. Die von 0061
