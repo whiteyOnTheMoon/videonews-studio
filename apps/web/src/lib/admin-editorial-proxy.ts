@@ -333,7 +333,7 @@ export async function dormantEditorialAdminProxy(
         Object.keys(value).sort().join(",") !== "candidates,metadataOnly" ||
         value.metadataOnly !== true ||
         !Array.isArray(value.candidates) ||
-        value.candidates.length > 50 ||
+        value.candidates.length > Number(url.searchParams.get("limit")) ||
         !value.candidates.every(isRankedFeedCandidate)
       )
         return reply(503, { error: "temporarily_unavailable" });
