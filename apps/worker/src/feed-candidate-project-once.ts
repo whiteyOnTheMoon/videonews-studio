@@ -191,6 +191,11 @@ export async function runApprovedProjectionOnce(
     max: 1,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 5000,
+    // Limit every guarded identity query and projection in PostgreSQL itself;
+    // a hung query must not leave the continuous projector falsely healthy.
+    statement_timeout: 10_000,
+    query_timeout: 15_000,
+    idle_in_transaction_session_timeout: 15_000,
     application_name: "vns_p2_feed_projector",
   });
   try {

@@ -23,6 +23,7 @@ test("projection overlay never runs by default and has no feed transport, queue 
   assert.equal(service.ports, undefined);
   assert.equal(service.privileged, undefined);
   assert.equal(service.network_mode, undefined);
+  assert.equal(service.healthcheck, undefined);
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_MODE, "single_pass");
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP, "false");
   for (const flag of ["VNS_P2_FEED_PROJECTION_ENABLED", "VNS_P2_FEED_PROJECTION_OPERATOR_ACK"]) {
@@ -54,6 +55,13 @@ test("continuous projected ranking is a separate disabled/no-egress/no-queue 3â€
   assert.equal(service.ports, undefined);
   assert.equal(service.privileged, undefined);
   assert.equal(service.network_mode, undefined);
+  assert.deepEqual(service.healthcheck, {
+    test: ["CMD", "node", "apps/worker/dist/feed-projector-healthcheck.js"],
+    interval: "30s",
+    timeout: "5s",
+    retries: 3,
+    start_period: "60s",
+  });
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_MODE, "continuous");
   assert.equal(service.environment.VNS_P2_FEED_PROJECTION_SOURCE_BOOTSTRAP, "false");
   for (const flag of [
