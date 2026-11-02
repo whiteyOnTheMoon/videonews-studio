@@ -34,7 +34,6 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
   let authenticated = true;
   let connections = 0;
   let selectCalls = 0;
-  let writes = 0;
   const handler = new DormantPersonalEditorialAdmin(
     {
       async authenticatedAdminIdentity() {
@@ -71,7 +70,7 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
     true,
   );
 
-  async function request(method, path, *,origin = ORIGIN) {
+  async function request(method, path, origin = ORIGIN) {
     const req = Object.assign(Readable.from([""]), {
       url: path,
       method,
@@ -169,5 +168,4 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
   const restored = await request("GET", path);
   assert.equal(restored.status, 200);
   assert.equal(restored.json.candidates[0].eventId, candidate.eventId);
-  assert.equal(writes, 0);
 }
