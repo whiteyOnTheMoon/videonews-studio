@@ -22,7 +22,6 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Enforce source, test, documentation and workflow formatting
         run: |
-          npx prettier --write scripts/p2_01_anchor_bootstrap_candidate.mjs scripts/test_p2_01_anchor_bootstrap_candidate.mjs docs/P2_01_ANCHOR_BOOTSTRAP_CANDIDATE.md .github/workflows/p2-01-anchor-bootstrap-candidate.yml
-          git diff -- scripts/p2_01_anchor_bootstrap_candidate.mjs scripts/test_p2_01_anchor_bootstrap_candidate.mjs docs/P2_01_ANCHOR_BOOTSTRAP_CANDIDATE.md
+          npx prettier --check scripts/p2_01_anchor_bootstrap_candidate.mjs scripts/test_p2_01_anchor_bootstrap_candidate.mjs docs/P2_01_ANCHOR_BOOTSTRAP_CANDIDATE.md .github/workflows/p2-01-anchor-bootstrap-candidate.yml
       - name: Verify exact signed envelope and fail-closed candidate metadata
         run: sudo -n env CI=true node --test scripts/test_p2_01_anchor_bootstrap_candidate.mjs
