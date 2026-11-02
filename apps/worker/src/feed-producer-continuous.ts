@@ -6,9 +6,9 @@ import {
   runContinuousFeedSchedule,
   readContinuousFeedPolicy,
 } from "./feed-scheduler-continuous.js";
-import { publishFeedConsumerHealth } from "./feed-consumer-health.js";
+import { createFeedProducerProgressGuard } from "./feed-producer-progress-guard.js";
 
-export const FEED_PRODUCER_HEALTH_PATH = "/tmp/vns-feed-producer-health.json";
+export { FEED_PRODUCER_HEALTH_PATH } from "./feed-producer-health-path.js";
 
 /**
  * Explicit opt-in continuous scheduler. Only BullMQ access is mounted.
@@ -28,26 +28,24 @@ export async function runContinuousFeedProducer(
   let producer: ReturnType<typeof createSeparatedFeedProducer> | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let connectionFailed = false;
+  const progress = createFeedProducerProgressGuard();
   const unhealthy = () => {
     connectionFailed = true;
+    try {
+      progress.stop();
+    } catch {
+      process.exitCode = 1;
+    }
     controller.abort();
   };
   redis.on("error", unhealthy);
-  const pulse = (state: "ready" | "stopped") =>
-    publishFeedConsumerHealth(
-      { version: 1, state, at: Date.now(), pid: process.pid, consecutiveFailures: 0 },
-      FEED_PRODUCER_HEALTH_PATH,
-    );
   try {
     producer = createSeparatedFeedProducer(env, redis, "continuous_producer");
     await producer.queue.waitUntilReady();
-    pulse("ready");
+    // Heartbeat may only report ready AFTER the queue was inspected.
+    // A stuck Redis request must not be concealed by this independent timer.
     heartbeat = setInterval(() => {
-      try {
-        pulse("ready");
-      } catch {
-        unhealthy();
-      }
+      if (!progress.pulse()) unhealthy();
     }, 20_000);
     heartbeat.unref();
     console.info(JSON.stringify({ event: "feed_continuous_producer_ready" }));
@@ -58,8 +56,30 @@ export async function runContinuousFeedProducer(
         async delay(ms, signal) {
           await delay(ms, undefined, { signal });
         },
-        inspect: () => inspectFeedQueue(producer!.queue),
-        enqueue: (at) => producer!.enqueue(at),
+        async inspect() {
+          progress.begin("inspect");
+          try {
+            const snapshot = await inspectFeedQueue(producer!.queue);
+            progress.finish("inspect");
+            return snapshot;
+          } catch {
+            unhealthy();
+            throw new Error("Feed queue inspection unavailable");
+          }
+        },
+        async enqueue(at) {
+          progress.begin("enqueue");
+          try {
+            const id = await producer!.enqueue(at);
+            progress.finish("enqueue");
+            return id;
+          } catch {
+            // Preserve the existing bounded enqueue-failure policy in the
+            // scheduler. The progress watchdog remains authoritative.
+            if (!progress.stopped) progress.finish("enqueue", false);
+            throw new Error("Feed queue enqueue unavailable");
+          }
+        },
         record(event, fields) {
           const line = JSON.stringify({ event: "feed_continuous_" + event, ...fields });
           if (event === "slot_enqueued") console.info(line);
@@ -72,7 +92,7 @@ export async function runContinuousFeedProducer(
   } finally {
     if (heartbeat) clearInterval(heartbeat);
     try {
-      pulse("stopped");
+      progress.stop();
     } catch {
       process.exitCode = 1;
     }
