@@ -50,7 +50,10 @@ test("successful projections reset their watchdog and failed clock is not health
   guard.stop();
   assert.deepEqual(records, ["ready", "stopped"]);
   assert.equal(guard.pulse(), false);
-  const wrong = createFeedProjectionHealthGuard(() => NaN, () => undefined);
+  const wrong = createFeedProjectionHealthGuard(
+    () => NaN,
+    () => undefined,
+  );
   assert.equal(wrong.pulse(), false);
   const rollback = createFeedProjectionHealthGuard(
     (() => {
@@ -76,15 +79,30 @@ test("private on-disk projector heartbeat shares strict Docker health file contr
       ),
   );
   try {
-    assert.equal(checkFeedConsumerHealth(path, time, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, time, () => true),
+      false,
+    );
     assert.equal(guard.pulse(), true);
-    assert.equal(checkFeedConsumerHealth(path, time, () => true), true);
+    assert.equal(
+      checkFeedConsumerHealth(path, time, () => true),
+      true,
+    );
     time += 89_999;
-    assert.equal(checkFeedConsumerHealth(path, time, () => true), true);
+    assert.equal(
+      checkFeedConsumerHealth(path, time, () => true),
+      true,
+    );
     time += 2;
-    assert.equal(checkFeedConsumerHealth(path, time, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, time, () => true),
+      false,
+    );
     guard.stop();
-    assert.equal(checkFeedConsumerHealth(path, time, () => true), false);
+    assert.equal(
+      checkFeedConsumerHealth(path, time, () => true),
+      false,
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -92,7 +110,10 @@ test("private on-disk projector heartbeat shares strict Docker health file contr
 
 test("a source that finishes beyond its bound is rejected even between heartbeats", () => {
   let time = 1000;
-  const guard = createFeedProjectionHealthGuard(() => time, () => undefined);
+  const guard = createFeedProjectionHealthGuard(
+    () => time,
+    () => undefined,
+  );
   guard.beginSource();
   time += FEED_PROJECTOR_MAX_SOURCE_MS + 1;
   assert.throws(() => guard.finishSource(), /watchdog exceeded/);
