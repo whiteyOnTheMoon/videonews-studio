@@ -18,7 +18,7 @@ checkout whose SHA was already independently reviewed:
       --report --expected-sha REVIEWED_40_CHARACTER_MAIN_SHA \
       --policy-revision 1
 
-Revision 1 is only the *candidate* initial signing-policy revision. No
+Revision 1 is only the _candidate_ initial signing-policy revision. No
 script chooses an authoritative policy revision or remotely approves it.
 
 The root-only script checks the pinned checkout, Git worktree, existing
