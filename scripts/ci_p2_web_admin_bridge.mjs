@@ -78,7 +78,11 @@ export async function verifyWebRankedFeedBridge(handler, expectedStatus = 200) {
   assert.equal(result.headers.get("cache-control"), "no-store");
   assert.equal(result.headers.get("x-content-type-options"), "nosniff");
   assert.equal(result.headers.get("referrer-policy"), "no-referrer");
-  assert.equal(result.status, expectedStatus);
+  if (expectedStatus === "revoked") {
+    assert.ok([401, 403, 503].includes(result.status));
+  } else {
+    assert.equal(result.status, expectedStatus);
+  }
   const body = await result.json();
   if (expectedStatus === 200) {
     assert.equal(body.metadataOnly, true);
