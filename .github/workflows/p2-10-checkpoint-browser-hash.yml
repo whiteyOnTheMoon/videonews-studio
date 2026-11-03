@@ -25,8 +25,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Enforce formatting of changed files
         run: |
-          npx prettier --write apps/web/src/lib/editorial-export-continuity.ts apps/web/src/lib/editorial-export-continuity.test.ts apps/web/src/app/admin/editorial-audit-export.tsx docs/P2-09-10_ADMIN_PERSONAL_EXPORTS_0031.md .github/workflows/p2-10-checkpoint-browser-hash.yml
-          git diff -- apps/web/src/lib/editorial-export-continuity.ts apps/web/src/lib/editorial-export-continuity.test.ts apps/web/src/app/admin/editorial-audit-export.tsx docs/P2-09-10_ADMIN_PERSONAL_EXPORTS_0031.md
+          npx prettier --check apps/web/src/lib/editorial-export-continuity.ts apps/web/src/lib/editorial-export-continuity.test.ts apps/web/src/app/admin/editorial-audit-export.tsx docs/P2-09-10_ADMIN_PERSONAL_EXPORTS_0031.md .github/workflows/p2-10-checkpoint-browser-hash.yml
       - name: Recompute checkpoint hashes and deny altered page content
         run: npx tsx --test apps/web/src/lib/editorial-export-continuity.test.ts
       - name: Verify Web TypeScript
