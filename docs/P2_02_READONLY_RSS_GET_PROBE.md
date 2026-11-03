@@ -69,6 +69,7 @@ aborted** is now classified as `request_timeout`, not as a generic
 `response_stream_refused`. The actual timeout remains 5 seconds.
 
 Fixed, non-content fields may additionally show:
+
 - `phase: before_headers | response_body`
 - `bodySizeBand: zero | under_limit | over_limit`
 - `declaredLengthBand: missing | under_limit | over_limit | invalid`
