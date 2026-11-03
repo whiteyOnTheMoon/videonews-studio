@@ -33,9 +33,8 @@ test("single-shot refuses shared, default or unexpectedly privileged Redis users
     "vns_feed_producer_",
     "vns_feed_producer_ROOT",
   ]) {
-    assert.throws(() =>
-      readOneShotFeedRedisAdmission({ ...env, VNS_FEED_PRODUCER_REDIS_USER: name }, consumer),
-    );
+    const invalid = { ...env, VNS_FEED_PRODUCER_REDIS_USER: name };
+    assert.throws(() => readOneShotFeedRedisAdmission(invalid, consumer));
   }
   for (const name of ["", "default", "vns_worker", "vns_feed_producer_prod", "vns_feed_observer"]) {
     assert.throws(() => readOneShotFeedRedisAdmission(env, name));
@@ -50,12 +49,8 @@ test("single-shot denies absent or arbitrary producer secret path before credent
     "/run/secrets/vns_feed_redis_password",
     "/run/secrets/vns_feed_producer_redis_password/../x",
   ]) {
-    assert.throws(() =>
-      readOneShotFeedRedisAdmission(
-        { ...env, VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE: path },
-        consumer,
-      ),
-    );
+    const invalid = { ...env, VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE: path };
+    assert.throws(() => readOneShotFeedRedisAdmission(invalid, consumer));
   }
   assert.throws(() => readOneShotFeedRedisAdmission({}, consumer));
 });

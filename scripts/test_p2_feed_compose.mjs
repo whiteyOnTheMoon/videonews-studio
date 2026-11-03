@@ -81,7 +81,9 @@ export function verifySignedFeedOverlay(data) {
   assert.deepEqual(consumer.networks, ["backend", "feed_egress"]);
   assert.deepEqual(
     consumer.volumes,
-    observer.volumes.filter((mount) => mount.target !== "/run/secrets/vns_feed_producer_redis_password"),
+    observer.volumes.filter(
+      (mount) => mount.target !== "/run/secrets/vns_feed_producer_redis_password",
+    ),
   );
   assert.deepEqual(scheduler.volumes, observer.volumes);
   assert.equal(producer.volumes.length, 1);
@@ -122,25 +124,34 @@ export function verifySignedFeedOverlay(data) {
     assert.equal(continuous.environment[key], "${" + key + ":-0}");
   }
   assert.deepEqual(scheduler.depends_on, observer.depends_on);
-  assert.equal(observer.environment.VNS_FEED_PRODUCER_REDIS_USER, "${VNS_FEED_PRODUCER_REDIS_USER:-}");
+  assert.equal(
+    observer.environment.VNS_FEED_PRODUCER_REDIS_USER,
+    "${VNS_FEED_PRODUCER_REDIS_USER:-}",
+  );
   assert.equal(
     observer.environment.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE,
     "/run/secrets/vns_feed_producer_redis_password",
   );
   assert.equal(consumer.environment.VNS_FEED_REDIS_USER, observer.environment.VNS_FEED_REDIS_USER);
   assert.ok(
-    !consumer.volumes.some((mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password"),
+    !consumer.volumes.some(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ),
     "persistent consumer must not mount producer Redis credentials",
   );
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
   const mountTargets = (name) => services[name].volumes.map((x) => x.target);
   const signer = "/run/secrets/vns_source_export_signing_key";
   assert.equal(
-    observer.volumes.filter((mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password").length,
+    observer.volumes.filter(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ).length,
     1,
   );
   assert.equal(
-    scheduler.volumes.filter((mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password").length,
+    scheduler.volumes.filter(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ).length,
     1,
   );
   assert.deepEqual(mountTargets("source-publisher"), [

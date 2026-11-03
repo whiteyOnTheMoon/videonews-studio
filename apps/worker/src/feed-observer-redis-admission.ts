@@ -22,8 +22,7 @@ export function readOneShotFeedRedisAdmission(
 ): OneShotFeedRedisAdmission {
   const producerUser = env.VNS_FEED_PRODUCER_REDIS_USER ?? "";
   if (
-    env.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE !==
-      ONE_SHOT_FEED_PRODUCER_REDIS_SECRET ||
+    env.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE !== ONE_SHOT_FEED_PRODUCER_REDIS_SECRET ||
     !/^vns_feed_producer_[a-z0-9_]{3,24}$/.test(producerUser) ||
     !/^vns_feed_consumer_[a-z0-9_]{3,24}$/.test(consumerUser) ||
     producerUser === consumerUser
