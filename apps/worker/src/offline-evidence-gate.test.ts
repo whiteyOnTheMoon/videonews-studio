@@ -1,17 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { gateOfflineClaimEvidence } from "./offline-evidence-gate.js";
-import type { EditorialDraft, NewsEvent } from "./offline-editorial-pipeline.js";
+import {
+  normalizeFeedArticles,
+  type EditorialDraft,
+  type NewsEvent,
+} from "./offline-editorial-pipeline.js";
 
 const at = "2026-10-26T12:00:00.000Z";
-const article = {
-  id: "article_1",
-  sourceId: "news_one",
-  url: "https://news.example.org/article",
-  headline: "Scientific research initiative announced",
-  publishedAt: at,
-  titleFingerprint: "fingerprint",
-};
+const article = normalizeFeedArticles([
+  {
+    sourceId: "news_one",
+    url: "https://news.example.org/article",
+    headline: "Scientific research initiative announced",
+    publishedAt: at,
+    reviewStatus: "candidate",
+  },
+])[0]!;
 const event: NewsEvent = {
   id: "event_1",
   headline: article.headline,
@@ -165,4 +170,60 @@ test("review, observation and article timestamps must be canonical and chronolog
       "evidence_timeline_conflict",
     ),
   );
+});
+
+test("forged article identity or publisher URL never passes the metadata-only check", () => {
+  for (const changed of [
+    { ...article, id: "f".repeat(64) },
+    { ...article, titleFingerprint: "f".repeat(64) },
+    { ...article, url: "https://forged.example.org/article" },
+    { ...article, headline: "Unrelated synthetic science discovery announced" },
+    { ...article, publishedAt: "tomorrow" },
+  ]) {
+    const forgedEvent: NewsEvent = {
+      ...event,
+      articles: [changed],
+    };
+    const result = gateOfflineClaimEvidence(forgedEvent, draft, reviewed, new Date(at), 24);
+    assert.equal(result.ready, false);
+    assert.ok(result.reasons.includes("event_metadata_mismatch"));
+  }
+});
+
+test("duplicate and foreign claim article references are explicitly rejected", () => {
+  const repeated: EditorialDraft = {
+    ...draft,
+    claims: [{ ...draft.claims[0]!, articleIds: [article.id, article.id] }],
+  };
+  const duplicated = gateOfflineClaimEvidence(event, repeated, reviewed, new Date(at), 24);
+  assert.equal(duplicated.ready, false);
+  assert.ok(duplicated.reasons.includes("duplicate_claim_article_reference"));
+
+  const foreign: EditorialDraft = {
+    ...draft,
+    claims: [{ ...draft.claims[0]!, articleIds: [article.id, "f".repeat(64)] }],
+  };
+  const result = gateOfflineClaimEvidence(event, foreign, reviewed, new Date(at), 24);
+  assert.equal(result.ready, false);
+  assert.ok(result.reasons.includes("unknown_claim_article_reference"));
+  assert.ok(result.reasons.includes("evidence_mismatch"));
+});
+
+test("tampered source metadata cannot be masked by matching forged review URLs", () => {
+  const replacementUrl = "https://forged.example.org/article";
+  const forgedEvent: NewsEvent = {
+    ...event,
+    articles: [{ ...article, url: replacementUrl }],
+  };
+  const forgedReview = [
+    {
+      ...reviewed[0]!,
+      evidence: [{ ...reviewed[0]!.evidence[0]!, sourceUrl: replacementUrl }],
+    },
+  ];
+  const result = gateOfflineClaimEvidence(forgedEvent, draft, forgedReview, new Date(at), 24);
+  assert.deepEqual(result, {
+    ready: false,
+    reasons: ["event_metadata_mismatch"],
+  });
 });

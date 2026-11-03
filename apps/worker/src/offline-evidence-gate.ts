@@ -1,4 +1,8 @@
-import type { EditorialDraft, NewsEvent } from "./offline-editorial-pipeline.js";
+import {
+  attestEditorialEventMetadata,
+  type EditorialDraft,
+  type NewsEvent,
+} from "./offline-editorial-pipeline.js";
 
 export interface IndependentClaimReview {
   readonly statement: string;
@@ -46,6 +50,13 @@ export function gateOfflineClaimEvidence(
     throw new Error("Editorial review age threshold invalid");
   }
   const maxAgeMillis = maxAgeHours * 3600000;
+  // A caller could otherwise replace an article URL/headline and its review
+  // with matching forged metadata. Recompute canonical article identities.
+  try {
+    attestEditorialEventMetadata(event);
+  } catch {
+    reasons.push("event_metadata_mismatch");
+  }
   const articles = new Map(event.articles.map((article) => [article.id, article]));
   const statementIds = new Set<string>();
   for (const claim of draft.claims) {
@@ -62,6 +73,12 @@ export function gateOfflineClaimEvidence(
   for (const claim of draft.claims) {
     if (claim.status !== "verified") reasons.push("claim_not_verified");
     if (!claim.statement.trim()) reasons.push("empty_claim");
+    if (new Set(claim.articleIds).size !== claim.articleIds.length) {
+      reasons.push("duplicate_claim_article_reference");
+    }
+    if (claim.articleIds.some((id) => !articles.has(id))) {
+      reasons.push("unknown_claim_article_reference");
+    }
     const review = reviewMap.get(claim.statement);
     if (!review || review.decision !== "supported") {
       reasons.push("claim_not_independently_supported");
