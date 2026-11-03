@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  createDormantFeedPoller,
-  type FeedPollStore,
-  type FeedTransport,
-} from "./feed-poller.js";
+import { createDormantFeedPoller, type FeedPollStore, type FeedTransport } from "./feed-poller.js";
 import type { RegisteredResearchSource } from "./source-registry.js";
 
 const sources: RegisteredResearchSource[] = ["alpha", "beta", "gamma"].map((name) => ({
