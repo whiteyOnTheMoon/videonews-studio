@@ -328,3 +328,54 @@ test("diagnostic callbacks never change rejection and never expose raw network e
   assert.deepEqual(events, [{ sourceId: src.id, refusal: { kind: "https_unavailable" } }]);
   assert.equal(JSON.stringify(events).includes("SECRET"), false);
 });
+
+test("operator telemetry only emits exact phase and size bands", async () => {
+  const src = registry()[0]!;
+  const collected: unknown[] = [];
+  const trace = createPinnedFeedHttpsTransport(registry(), POLICY, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    requestPinned: async (_url, _ip, _headers, diagnose) => {
+      diagnose?.("response_stream_refused", undefined, {
+        phase: "response_body",
+        bodySizeBand: "under_limit",
+        declaredLengthBand: "over_limit",
+      });
+      throw new Error("private network exception");
+    },
+    onRefusal(_sourceId, refusal) {
+      collected.push(refusal);
+    },
+  });
+  await assert.rejects(trace.request(src, { etag: null, lastModified: null }));
+  assert.deepEqual(collected, [
+    {
+      kind: "response_stream_refused",
+      phase: "response_body",
+      bodySizeBand: "under_limit",
+      declaredLengthBand: "over_limit",
+    },
+  ]);
+  assert.equal(JSON.stringify(collected).includes("private"), false);
+});
+
+test("forged telemetry and callback exceptions cannot escape into operator output", async () => {
+  const src = registry()[0]!;
+  const collected: unknown[] = [];
+  const transport = createPinnedFeedHttpsTransport(registry(), POLICY, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    requestPinned: async (_url, _ip, _headers, diagnose) => {
+      diagnose?.("response_stream_refused", undefined, {
+        phase: "private URL",
+        bodySizeBand: "private cookies",
+        declaredLengthBand: "private headers",
+      } as never);
+      throw new Error("secret");
+    },
+    onRefusal(_sourceId, value) {
+      collected.push(value);
+      throw new Error("private log");
+    },
+  });
+  await assert.rejects(transport.request(src, { etag: null, lastModified: null }));
+  assert.deepEqual(collected, [{ kind: "response_stream_refused" }]);
+});

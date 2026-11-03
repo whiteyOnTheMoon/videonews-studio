@@ -7,6 +7,7 @@ on:
       - "apps/worker/src/source-fetch.test.ts"
       - "apps/worker/src/feed-https-transport.ts"
       - "apps/worker/src/feed-https-transport.test.ts"
+      - "docs/P2_02_READONLY_RSS_GET_PROBE.md"
       - "scripts/p2_02_readonly_https_head_probe.mjs"
       - "scripts/p2_02_readonly_rss_get_probe.mjs"
       - "scripts/p2_02_readonly_rss_get_probe.test.mjs"
@@ -26,7 +27,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check probe formatting and show exact diff on failure
         run: |
-          files="scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs scripts/p2_02_readonly_rss_get_probe.mjs scripts/p2_02_readonly_rss_get_probe.test.mjs"
+          files="scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs scripts/p2_02_readonly_rss_get_probe.mjs scripts/p2_02_readonly_rss_get_probe.test.mjs apps/worker/src/feed-https-transport.ts docs/P2_02_READONLY_RSS_GET_PROBE.md"
           if ! npx prettier --check $files; then
             npx prettier --write $files
             git diff -- $files

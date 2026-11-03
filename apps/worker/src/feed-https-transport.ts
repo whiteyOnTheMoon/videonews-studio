@@ -33,11 +33,20 @@ export type FeedHttpsRefusalKind =
   | "response_utf8_refused"
   | "response_304_body_refused";
 
+export type FeedHttpsFailurePhase = "before_headers" | "response_body";
+export type FeedHttpsBodySizeBand = "zero" | "under_limit" | "over_limit";
+export type FeedHttpsDeclaredLengthBand = "missing" | "under_limit" | "over_limit" | "invalid";
+
 export interface FeedHttpsRefusal {
   kind: FeedHttpsRefusalKind;
+  phase?: FeedHttpsFailurePhase;
+  bodySizeBand?: FeedHttpsBodySizeBand;
+  declaredLengthBand?: FeedHttpsDeclaredLengthBand;
   /** Exact numeric status only for a rejected HTTP response, never a Location header. */
   httpStatus?: number;
 }
+
+type StreamDetails = Pick<FeedHttpsRefusal, "phase" | "bodySizeBand" | "declaredLengthBand">;
 
 export interface FeedHttpsDependencies {
   resolveIPv4(hostname: string): Promise<string[]>;
@@ -45,7 +54,7 @@ export interface FeedHttpsDependencies {
     url: URL,
     address: string,
     requestHeaders: Record<string, string>,
-    diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number) => void,
+    diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number, details?: StreamDetails) => void,
   ): Promise<WireReply>;
   /** Diagnostic side channel: fixed labels only, no raw HTTP/Node errors. */
   onRefusal?: (sourceId: string, refusal: FeedHttpsRefusal) => void;
@@ -96,15 +105,32 @@ function requestPinned(
   url: URL,
   address: string,
   conditionalHeaders: Record<string, string>,
-  diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number) => void,
+  diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number, details?: StreamDetails) => void,
 ): Promise<WireReply> {
   return new Promise((resolve, reject) => {
     const pinned = createPinnedHttpsOptions(url, address);
     let settled = false;
+    let headersSeen = false;
+    let size = 0;
+    let declaredLengthBand: FeedHttpsDeclaredLengthBand = "missing";
+    const phase = (): FeedHttpsFailurePhase => (headersSeen ? "response_body" : "before_headers");
+    const sizeBand = (): FeedHttpsBodySizeBand => {
+      if (size === 0) return "zero";
+      return size > MAX_BYTES ? "over_limit" : "under_limit";
+    };
+    const details = (): StreamDetails => ({
+      phase: phase(),
+      ...(headersSeen
+        ? {
+            bodySizeBand: sizeBand(),
+            declaredLengthBand,
+          }
+        : {}),
+    });
     const fail = (kind: FeedHttpsRefusalKind, status?: number) => {
       if (settled) return;
       settled = true;
-      diagnose?.(kind, status);
+      diagnose?.(kind, status, details());
       reject(new Error("Feed HTTPS retrieval refused"));
     };
     const req = https.request(
@@ -118,13 +144,22 @@ function requestPinned(
         },
       },
       (res) => {
+        headersSeen = true;
+        const declared = res.headers["content-length"];
+        declaredLengthBand =
+          declared === undefined
+            ? "missing"
+            : typeof declared !== "string" || !/^(0|[1-9][0-9]*)$/.test(declared)
+              ? "invalid"
+              : Number(declared) > MAX_BYTES
+                ? "over_limit"
+                : "under_limit";
         if (res.statusCode !== 200 && res.statusCode !== 304) {
           res.destroy();
           fail("http_status_refused", res.statusCode);
           return;
         }
         const chunks: Buffer[] = [];
-        let size = 0;
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
           if (size > MAX_BYTES) {
@@ -134,8 +169,10 @@ function requestPinned(
             chunks.push(chunk);
           }
         });
-        res.on("error", () => fail("response_stream_refused"));
-        res.on("aborted", () => fail("response_stream_refused"));
+        const failStream = () =>
+          fail(pinned.signal?.aborted ? "request_timeout" : "response_stream_refused");
+        res.on("error", failStream);
+        res.on("aborted", failStream);
         res.on("end", () => {
           if (settled) return;
           settled = true;
@@ -185,18 +222,43 @@ export function createPinnedFeedHttpsTransport(
       validators: FeedValidators,
     ): Promise<FeedResponse> {
       let reported = false;
-      const diagnose = (kind: FeedHttpsRefusalKind, httpStatus?: number): void => {
+      const diagnose = (
+        kind: FeedHttpsRefusalKind,
+        httpStatus?: number,
+        details?: StreamDetails,
+      ): void => {
         if (reported) return;
         reported = true;
         // Never expose the raw header value, URL, IP, response bytes or error.
-        const refusal: FeedHttpsRefusal =
+        const refusal: FeedHttpsRefusal = { kind };
+        if (
           kind === "http_status_refused" &&
           Number.isInteger(httpStatus) &&
           httpStatus !== undefined &&
           httpStatus >= 100 &&
           httpStatus <= 599
-            ? { kind, httpStatus }
-            : { kind };
+        ) {
+          refusal.httpStatus = httpStatus;
+        }
+        // Whitelist each field independently: the callback is never an object spread.
+        if (details?.phase === "before_headers" || details?.phase === "response_body") {
+          refusal.phase = details.phase;
+        }
+        if (
+          details?.bodySizeBand === "zero" ||
+          details?.bodySizeBand === "under_limit" ||
+          details?.bodySizeBand === "over_limit"
+        ) {
+          refusal.bodySizeBand = details.bodySizeBand;
+        }
+        if (
+          details?.declaredLengthBand === "missing" ||
+          details?.declaredLengthBand === "under_limit" ||
+          details?.declaredLengthBand === "over_limit" ||
+          details?.declaredLengthBand === "invalid"
+        ) {
+          refusal.declaredLengthBand = details.declaredLengthBand;
+        }
         try {
           dependencies.onRefusal?.(source.id, refusal);
         } catch {

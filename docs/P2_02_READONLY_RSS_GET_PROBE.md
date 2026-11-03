@@ -60,3 +60,22 @@ remain unchanged. Do **not** increase it or admit redirects based solely
 on a failure classification; review source rights and metadata constraints
 first. In particular, the NASA feed may include long article bodies, but
 that is not evidence of which actual refusal occurred on the VPS.
+
+## Narrow timeout/stream diagnosis
+
+A complete per-request `AbortSignal.timeout(5000)` can terminate an active
+RSS response stream. A stream that is closed **because this signal is already
+aborted** is now classified as `request_timeout`, not as a generic
+`response_stream_refused`. The actual timeout remains 5 seconds.
+
+Fixed, non-content fields may additionally show:
+
+- `phase: before_headers | response_body`
+- `bodySizeBand: zero | under_limit | over_limit`
+- `declaredLengthBand: missing | under_limit | over_limit | invalid`
+
+The size bands are only approximations at the point of refusal; declared
+Content-Length is an untrusted upstream header and need not reflect the
+actual body. No raw content length, bytes, headers, URLs or upstream error
+strings are emitted. These observations must not be used to circumvent
+the byte/time or strict reviewed-source restrictions.

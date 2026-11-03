@@ -261,3 +261,65 @@ test("forged diagnostic fields are reduced to a fixed code without arbitrary tex
   assert.ok(report.every((result) => !("httpStatus" in result)));
   assert.ok(!JSON.stringify(report).includes("PRIVATE"));
 });
+
+test("only predetermined phase and response size categories enter the JSON diagnostic", async () => {
+  const plan = validated();
+  const telemetry = new Map(
+    plan.approved.map((source) => [
+      source.id,
+      {
+        kind: "request_timeout",
+        phase: "response_body",
+        bodySizeBand: "under_limit",
+        declaredLengthBand: "over_limit",
+      },
+    ]),
+  );
+  const report = await runReadOnlyRssGetProbe(
+    plan,
+    {
+      async request() {
+        throw new Error("secret");
+      },
+    },
+    decodeApprovedFeed,
+    telemetry,
+  );
+  for (const item of report) {
+    assert.equal(item.refusal, "request_timeout");
+    assert.equal(item.phase, "response_body");
+    assert.equal(item.bodySizeBand, "under_limit");
+    assert.equal(item.declaredLengthBand, "over_limit");
+    assert.equal(JSON.stringify(item).includes("secret"), false);
+  }
+});
+
+test("arbitrary strings cannot be injected into phase or size output", async () => {
+  const plan = validated();
+  const telemetry = new Map(
+    plan.approved.map((source) => [
+      source.id,
+      {
+        kind: "response_stream_refused",
+        phase: "secret headers",
+        bodySizeBand: "secret response",
+        declaredLengthBand: "secret length",
+      },
+    ]),
+  );
+  const report = await runReadOnlyRssGetProbe(
+    plan,
+    {
+      async request() {
+        throw new Error("secret");
+      },
+    },
+    decodeApprovedFeed,
+    telemetry,
+  );
+  assert.ok(report.every((entry) => entry.refusal === "response_stream_refused"));
+  assert.ok(report.every((entry) => !("phase" in entry)));
+  assert.ok(report.every((entry) => !("bodySizeBand" in entry)));
+  assert.ok(report.every((entry) => !("declaredLengthBand" in entry)));
+  assert.equal(JSON.stringify(report).includes("secret"), false);
+});
