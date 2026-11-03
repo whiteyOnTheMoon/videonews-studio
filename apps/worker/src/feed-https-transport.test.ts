@@ -276,7 +276,7 @@ test("operator diagnostic classifies only fixed reasons without exposing headers
       kind: "response_framing_refused",
     },
     {
-      reply: { ...good, headers: { etag: "PRIVATE_SECRET\\r\\n" } },
+      reply: { ...good, headers: { "content-type": "application/rss+xml", etag: "PRIVATE_SECRET\r\n" } },
       kind: "response_header_refused",
     },
     { reply: { ...good, body: Buffer.from([0xff]) }, kind: "response_utf8_refused" },
