@@ -46,6 +46,8 @@ export interface FeedHttpsRefusal {
   httpStatus?: number;
 }
 
+type StreamDetails = Pick<FeedHttpsRefusal, "phase" | "bodySizeBand" | "declaredLengthBand">;
+
 export interface FeedHttpsDependencies {
   resolveIPv4(hostname: string): Promise<string[]>;
   requestPinned(
@@ -55,10 +57,7 @@ export interface FeedHttpsDependencies {
     diagnose?: (
       kind: FeedHttpsRefusalKind,
       httpStatus?: number,
-      details?: Pick<
-        FeedHttpsRefusal,
-        "phase" | "bodySizeBand" | "declaredLengthBand"
-      >,
+      details?: StreamDetails,
     ) => void,
   ): Promise<WireReply>;
   /** Diagnostic side channel: fixed labels only, no raw HTTP/Node errors. */
@@ -113,7 +112,7 @@ function requestPinned(
   diagnose?: (
     kind: FeedHttpsRefusalKind,
     httpStatus?: number,
-    details?: Pick<FeedHttpsRefusal, "phase" | "bodySizeBand" | "declaredLengthBand">,
+    details?: StreamDetails,
   ) => void,
 ): Promise<WireReply> {
   return new Promise((resolve, reject) => {
@@ -123,15 +122,15 @@ function requestPinned(
     let size = 0;
     let declaredLengthBand: FeedHttpsDeclaredLengthBand = "missing";
     const phase = (): FeedHttpsFailurePhase => (headersSeen ? "response_body" : "before_headers");
-    const details = (): Pick<
-      FeedHttpsRefusal,
-      "phase" | "bodySizeBand" | "declaredLengthBand"
-    > => ({
+    const sizeBand = (): FeedHttpsBodySizeBand => {
+      if (size === 0) return "zero";
+      return size > MAX_BYTES ? "over_limit" : "under_limit";
+    };
+    const details = (): StreamDetails => ({
       phase: phase(),
       ...(headersSeen
         ? {
-            bodySizeBand:
-              size === 0 ? "zero" : size > MAX_BYTES ? "over_limit" : "under_limit",
+            bodySizeBand: sizeBand(),
             declaredLengthBand,
           }
         : {}),
@@ -234,7 +233,7 @@ export function createPinnedFeedHttpsTransport(
       const diagnose = (
         kind: FeedHttpsRefusalKind,
         httpStatus?: number,
-        details?: Pick<FeedHttpsRefusal, "phase" | "bodySizeBand" | "declaredLengthBand">,
+        details?: StreamDetails,
       ): void => {
         if (reported) return;
         reported = true;
