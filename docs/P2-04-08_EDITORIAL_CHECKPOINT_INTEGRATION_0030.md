@@ -23,3 +23,31 @@ CI uses synthetic article data and isolated PostgreSQL role/auth-version, revisi
 ## Unmet acceptance criteria
 
 Real independently verified publisher provenance and rights; semantic/foreign-text and fact verification; authenticated source checking; attribution for externally generated scripts; independent provider integration; native Admin screens for policy, decisions and export; production story-to-event linkage; external immutable audit anchoring; personally authenticated PostgreSQL connection brokering; real fully wired Postgres/Redis/worker run; signed recovery and actual VPS rollout. Issues #19–#23 and #25 remain open.
+
+## P2-08: independently supplied scaffold and stricter mock QA (code-only)
+
+The deterministic QA function now requires an **independently supplied,
+trusted** `ScriptScaffold` before it may label a generated mock as
+`acceptedForHumanReview: true`. The scaffold must come from a separately
+reviewed operator configuration, never be copied uncritically from the
+untrusted script. Without the independent input it returns
+`trusted_scaffold_missing_or_invalid`, even for otherwise clean metadata.
+
+For every unverified candidate claim the mock generator emits one scripted
+section. QA now rechecks that every claim appears in exactly one corresponding
+section, sections contain no extra keys, claim references are neither
+duplicated nor foreign, the script envelope has only expected fields and the
+narration matches the independently supplied format scaffold **byte-for-byte**.
+Changing narration to inject an invented numerical claim is denied even if
+the author adjusts reported token and mock-cost totals to be mathematically
+consistent. Rejected/duplicated/foreign claim references also block triage.
+
+This is a narrow **structural** guarantee about offline mock templates, not
+semantic fact checking: a malicious or incorrectly approved scaffold could
+still contain false claims, and an independently authenticated reviewer is
+not yet enrolled. The flag is **only for subsequent human review**, not
+publication. `approvedForPublication: false` is unconditional; no provider,
+real news source, application database, queue or VPS deployment is activated.
+Full independent AI QA, cited evidence, publisher rights, human identity,
+revisions backed by production data, and end-to-end release acceptance remain
+open under P2-07/P2-08.
