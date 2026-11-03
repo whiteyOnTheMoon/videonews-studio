@@ -447,11 +447,7 @@ export function independentlyReviewMockScript(
     }
   }
   const sections = Array.isArray(script.sections) ? script.sections : [];
-  if (
-    !sections.length ||
-    sections.length > 30 ||
-    sections.length !== claimMap.size
-  ) {
+  if (!sections.length || sections.length > 30 || sections.length !== claimMap.size) {
     reasons.push("script_sections_invalid");
   }
   let characters = 0;
