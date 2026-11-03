@@ -171,7 +171,6 @@ export function verifyTimelinePage(
   return cursor;
 }
 
-
 /**
  * Recompute PostgreSQL migration 0030's SHA-256 value for every editorial
  * checkpoint, not just the previous_sha256 pointer. This catches accidentally
