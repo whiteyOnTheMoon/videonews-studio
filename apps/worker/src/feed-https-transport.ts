@@ -46,7 +46,10 @@ export interface FeedHttpsRefusal {
   httpStatus?: number;
 }
 
-type StreamDetails = Pick<FeedHttpsRefusal, "phase" | "bodySizeBand" | "declaredLengthBand">;
+type StreamDetails = Pick<
+  FeedHttpsRefusal,
+  "phase" | "bodySizeBand" | "declaredLengthBand"
+>;
 
 export interface FeedHttpsDependencies {
   resolveIPv4(hostname: string): Promise<string[]>;
@@ -121,7 +124,8 @@ function requestPinned(
     let headersSeen = false;
     let size = 0;
     let declaredLengthBand: FeedHttpsDeclaredLengthBand = "missing";
-    const phase = (): FeedHttpsFailurePhase => (headersSeen ? "response_body" : "before_headers");
+    const phase = (): FeedHttpsFailurePhase =>
+      headersSeen ? "response_body" : "before_headers";
     const sizeBand = (): FeedHttpsBodySizeBand => {
       if (size === 0) return "zero";
       return size > MAX_BYTES ? "over_limit" : "under_limit";
