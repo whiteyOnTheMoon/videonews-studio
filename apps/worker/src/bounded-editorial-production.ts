@@ -224,6 +224,12 @@ export interface ScriptLimits {
   mockMicroUsdPerToken: number;
   maxRevisions: number;
 }
+/** Separately reviewed assignment; never derive from the untrusted script. */
+export interface TrustedScriptReviewAssignment {
+  eventId: string;
+  format: EditorialProfile["format"];
+  language: string;
+}
 export interface BoundedMockScript {
   version: 1;
   revision: number;
@@ -349,6 +355,8 @@ export function independentlyReviewMockScript(
   limits: ScriptLimits,
   /** Independently supplied operator template; never read from the script itself. */
   trustedScaffold?: ScriptScaffold,
+  /** Separately approved event/format/language routing, not copied from the script. */
+  trustedAssignment?: TrustedScriptReviewAssignment,
 ): {
   acceptedForHumanReview: boolean;
   approvedForPublication: false;
@@ -412,6 +420,26 @@ export function independentlyReviewMockScript(
     Array.from(expectedNarration).some((letter) => letter.charCodeAt(0) < 32)
   ) {
     reasons.push("trusted_scaffold_missing_or_invalid");
+  }
+  // Valid template text alone does not bind a script to the review task.
+  // A different valid language/format or a swapped event must not be triaged.
+  if (
+    !trustedAssignment ||
+    typeof trustedAssignment !== "object" ||
+    Object.keys(trustedAssignment).sort().join(",") !== "eventId,format,language" ||
+    typeof trustedAssignment.eventId !== "string" ||
+    !DIGEST.test(trustedAssignment.eventId) ||
+    !["briefing", "analysis", "explainer"].includes(trustedAssignment.format) ||
+    typeof trustedAssignment.language !== "string" ||
+    !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(trustedAssignment.language)
+  ) {
+    reasons.push("trusted_review_assignment_missing_or_invalid");
+  } else if (
+    trustedAssignment.eventId !== event.id ||
+    trustedAssignment.format !== script.format ||
+    trustedAssignment.language !== script.language
+  ) {
+    reasons.push("script_review_assignment_mismatch");
   }
   try {
     attestEditorialEventMetadata(event);
