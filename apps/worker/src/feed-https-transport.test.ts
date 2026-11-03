@@ -118,6 +118,15 @@ test("pending, blocked, unreviewed and forged registry entries cannot reach DNS"
   assert.equal(state.calls.length, 0);
 });
 
+test("public 192.0.66 CDN addresses are permitted by the existing DNS-pin boundary", async () => {
+  const src = registry()[0]!;
+  const requests = deps({ resolveIPv4: async () => ["192.0.66.108"] });
+  const transport = createPinnedFeedHttpsTransport(registry(), POLICY, requests.values);
+  assert.equal((await transport.request(src, { etag: null, lastModified: null })).status, 200);
+  assert.equal(requests.calls.length, 1);
+  assert.equal(requests.calls[0]?.ip, "192.0.66.108");
+});
+
 test("private DNS, mixed-address answers and dangerous conditional headers are rejected", async () => {
   const src = registry()[0]!;
   for (const addresses of [

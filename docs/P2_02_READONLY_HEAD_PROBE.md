@@ -16,8 +16,15 @@ Es gibt keinen IP-Fallback und keine Redirect-Verfolgung.
 
 Die Ausgaben sind ausschließlich Source-ID, Anzahl/Verboten-Zählung der
 DNS-Antworten, feste Fehlercodes oder HTTP-Status, MIME-Kategorie und
-Kompressionsflag. Keine IP-Adressen, URL-Pfade, SSL-Fehlermeldungen,
-Antwortkörper oder Zugangsdaten werden geloggt.
+Kompressionsflag. Für unbekannte Fehler werden nur feste Fehlerfamilien und
+der TCP-/TLS-Verbindungsfortschritt gemeldet. Keine IP-Adressen, URL-Pfade,
+SSL-Fehlermeldungen, Antwortkörper oder Zugangsdaten werden geloggt.
+
+Die bisherige globale Sperre für `192.0.x.x` war zu breit: Auch öffentliche
+NASA-CDN-Adressen aus `192.0.66.x` wurden abgewiesen. Die gemeinsame
+Worker-DNS-Sperre blockiert jetzt nur `192.0.0.0/24` und
+`192.0.2.0/24` sowie alle zuvor gesperrten übrigen Bereiche. Tests
+belegen den weiterhin geschlossenen Transport zu privaten IP-Adressen.
 
 Dieser Test braucht keine Feed-Secrets und darf nur mit dem getrennten
 `videonews-studio_feed_egress`-Docker-Netz ausgeführt werden. Er

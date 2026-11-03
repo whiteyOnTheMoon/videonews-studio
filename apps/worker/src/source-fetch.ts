@@ -76,6 +76,8 @@ export function readApprovedFetchPolicy(env: NodeJS.ProcessEnv = process.env): A
 /**
  * IPv4-only fail-closed filter: exclude loopback, LAN, carrier-grade NAT,
  * link-local, protocol/test ranges, multicast and reserved destinations.
+ * 192.0.0.0/24 and 192.0.2.0/24 are special-purpose, but the whole
+ * 192.0.0.0/16 is NOT reserved (NASA publicly serves 192.0.66.x).
  * Do not infer address safety from an HTTPS URL or an allowlisted DNS name.
  */
 export function isPublicIPv4(address: string): boolean {
@@ -92,7 +94,7 @@ export function isPublicIPv4(address: string): boolean {
     (a === 100 && b >= 64 && b <= 127) ||
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && (b === 0 || b === 168 || (b === 88 && c === 99))) ||
+    (a === 192 && ((b === 0 && (c === 0 || c === 2)) || b === 168 || (b === 88 && c === 99))) ||
     (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
     (a === 203 && b === 0 && c === 113)
   )
