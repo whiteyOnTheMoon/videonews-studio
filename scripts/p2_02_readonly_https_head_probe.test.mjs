@@ -16,7 +16,10 @@ const validIp = (ip) => ip === "1.1.1.1" || ip === "8.8.8.8";
 
 test("exact current source IDs, expected hostnames, no URL exploits", () => {
   const approved = validatedProbeSources(INPUT);
-  assert.deepEqual(approved.map((source) => source.id), ["nasa_news", "noaa_news", "usgs_news"]);
+  assert.deepEqual(
+    approved.map((source) => source.id),
+    ["nasa_news", "noaa_news", "usgs_news"],
+  );
   for (const mutation of [
     INPUT.slice(0, 2),
     [...INPUT, INPUT[0]],
@@ -41,7 +44,10 @@ test("DNS rejects all unsafe or oversized answer sets without fallback", () => {
   assert.equal(dnsVerdict([], validIp).status, "empty_dns_response");
   assert.equal(dnsVerdict(["1.1.1.1", "127.0.0.1"], validIp).status, "non_public_ipv4_in_answers");
   assert.equal(
-    dnsVerdict(Array.from({ length: 17 }, () => "8.8.8.8"), validIp).status,
+    dnsVerdict(
+      Array.from({ length: 17 }, () => "8.8.8.8"),
+      validIp,
+    ).status,
     "too_many_ipv4_answers",
   );
 });
@@ -78,11 +84,10 @@ test("unapproved DNS cannot trigger HTTPS, raw errors never reach operator repor
       throw Object.assign(new Error("TOP_SECRET_TLS_URL"), { code: "ETIMEDOUT" });
     },
   });
-  assert.deepEqual(report.map((item) => item.stage), [
-    "dns_rejected",
-    "https_or_tls_unavailable",
-    "https_or_tls_unavailable",
-  ]);
+  assert.deepEqual(
+    report.map((item) => item.stage),
+    ["dns_rejected", "https_or_tls_unavailable", "https_or_tls_unavailable"],
+  );
   assert.equal(report[1].errorCode, "ETIMEDOUT");
   assert.equal(JSON.stringify(report).includes("TOP_SECRET"), false);
 });
