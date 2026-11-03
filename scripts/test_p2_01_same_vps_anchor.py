@@ -77,7 +77,7 @@ class SameVpsAnchorTests(unittest.TestCase):
         self.assertEqual(sql.count("\nCOMMIT;"), 1)
         self.assertEqual(sql.count("\nBEGIN;"), 0)
         self.assertEqual(sql.count("CREATE ROLE"), 2)
-        self.assertEqual(sql.count("CREATE TABLE"), 2)  # 001 uses IF NOT EXISTS
+        self.assertEqual(sql.count("CREATE TABLE"), 3)  # all three authority tables
         self.assertNotIn(password, sql)
         self.assertIn("PASSWORD '" + verifier + "'", sql)
         self.assertIn("vns_source_anchor.high_water", sql)
