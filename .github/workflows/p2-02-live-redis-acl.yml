@@ -1,0 +1,27 @@
+name: P2-02 active Redis ACL preflight (no network)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_live_redis_acl_readonly.py"
+      - "scripts/test_p2_02_live_redis_acl_readonly.py"
+      - ".github/workflows/p2-02-live-redis-acl.yml"
+permissions:
+  contents: read
+jobs:
+  read-only-acl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test RESP read-only auth and deny paths
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_p2_02_live_redis_acl_readonly.py' -v
+          python3 -m py_compile scripts/p2_02_live_redis_acl_readonly.py
+      - name: Reject CLI without live operator sudo and pinned main
+        run: |
+          if python3 scripts/p2_02_live_redis_acl_readonly.py \
+            --expected-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa; then
+            echo "FAIL: unauthenticated read-only host preflight was admitted" >&2
+            exit 1
+          fi
