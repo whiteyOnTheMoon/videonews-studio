@@ -51,3 +51,22 @@ real news source, application database, queue or VPS deployment is activated.
 Full independent AI QA, cited evidence, publisher rights, human identity,
 revisions backed by production data, and end-to-end release acceptance remain
 open under P2-07/P2-08.
+
+## P2-08: independent review-task binding (code-only)
+
+A valid independent scaffold is not enough to establish that a script belongs
+to the actual review assignment. The structural QA now additionally requires
+a separately approved `TrustedScriptReviewAssignment` containing **event ID,
+format and language**. The caller must obtain this from its trusted editorial
+assignment, not copy it from the script or its author. If the assignment is
+missing, malformed or has extra fields, QA refuses review triage. If a script
+switches to another otherwise valid template/language, or an event and script
+ID are both swapped, QA also refuses triage even with mathematically correct
+costs. Synthetic regression tests cover these cases.
+
+This protects only metadata routing for an offline mock. It is **not** a
+cryptographic assignment signature, independent factual evaluation, human
+identity verification or a real script-review agent. Until independently
+stored assignments and live reviewer authorization are integrated, QA can
+only mark a matching mock as suitable for later human review, never for
+publication. No deployment or external services are activated.

@@ -8,6 +8,7 @@ import {
   type SourceProvenance,
   type ScriptLimits,
   type ScriptScaffold,
+  type TrustedScriptReviewAssignment,
   type WeightedRankingPolicy,
 } from "./bounded-editorial-production.js";
 import {
@@ -75,6 +76,11 @@ const scaffold: ScriptScaffold = {
   briefing: "Redaktionelle Kurzmeldung: Fakten müssen überprüft werden.",
   analysis: "Redaktionelle Einordnung: Kontext muss separat überprüft werden.",
   explainer: "Redaktionelles Erklärstück: Begriffe müssen überprüft werden.",
+};
+const assignment: TrustedScriptReviewAssignment = {
+  eventId: event.id,
+  format: profile.format,
+  language: profile.language,
 };
 const limits: ScriptLimits = {
   maxCharacters: 1000,
@@ -163,6 +169,7 @@ test("independent structural QA never certifies factual or legal clearance", () 
     now,
     limits,
     scaffold,
+    assignment,
   );
   assert.equal(report.acceptedForHumanReview, true);
   assert.equal(report.approvedForPublication, false);
@@ -170,7 +177,17 @@ test("independent structural QA never certifies factual or legal clearance", () 
   assert.ok(report.reasons.includes("independent_claim_verification_required"));
   assert.deepEqual(
     report,
-    independentlyReviewMockScript(event, script, claims, policy, provenance, now, limits, scaffold),
+    independentlyReviewMockScript(
+      event,
+      script,
+      claims,
+      policy,
+      provenance,
+      now,
+      limits,
+      scaffold,
+      assignment,
+    ),
   );
 });
 
@@ -644,6 +661,7 @@ test("P2-08 detects duplicated claim IDs, unrepresented citations and hidden sec
     now,
     limits,
     scaffold,
+    assignment,
   );
   assert.equal(passed.acceptedForHumanReview, true);
   assert.equal(passed.approvedForPublication, false);
@@ -674,4 +692,93 @@ test("P2-08 refuses invalid or foreign claim evidence independently of generatio
         result.reasons.includes("claim_evidence_mismatch"),
     );
   }
+});
+
+test("P2-08 requires an independently bound event, format and language assignment", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const missing = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+  );
+  assert.equal(missing.acceptedForHumanReview, false);
+  assert.ok(missing.reasons.includes("trusted_review_assignment_missing_or_invalid"));
+
+  // Both alternate language and alternate template are syntactically valid:
+  // a caller can recalculate honest costs but cannot change the review task.
+  const changedTokens = Math.ceil((scaffold.analysis.length * script.sections.length) / 4);
+  const switched = {
+    ...script,
+    format: "analysis" as const,
+    language: "en-US",
+    sections: script.sections.map((section) => ({
+      ...section,
+      narration: scaffold.analysis,
+    })),
+    estimatedMockTokens: changedTokens,
+    estimatedMicroUsd: changedTokens * limits.mockMicroUsdPerToken,
+  };
+  const rerouted = independentlyReviewMockScript(
+    event,
+    switched,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+    assignment,
+  );
+  assert.equal(rerouted.acceptedForHumanReview, false);
+  assert.ok(rerouted.reasons.includes("script_review_assignment_mismatch"));
+  assert.equal(rerouted.reasons.includes("script_narration_not_scaffold"), false);
+  assert.equal(rerouted.reasons.includes("script_cost_integrity_mismatch"), false);
+
+  const forgedEvent = { ...event, id: "f".repeat(64) };
+  const eventSwap = independentlyReviewMockScript(
+    forgedEvent,
+    { ...script, eventId: forgedEvent.id },
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+    assignment,
+  );
+  assert.equal(eventSwap.acceptedForHumanReview, false);
+  assert.ok(eventSwap.reasons.includes("script_review_assignment_mismatch"));
+
+  const invalidAssignment = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+    { ...assignment, hiddenApproval: true } as unknown as TrustedScriptReviewAssignment,
+  );
+  assert.equal(invalidAssignment.acceptedForHumanReview, false);
+  assert.ok(invalidAssignment.reasons.includes("trusted_review_assignment_missing_or_invalid"));
+
+  const clean = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+    assignment,
+  );
+  assert.equal(clean.acceptedForHumanReview, true);
+  assert.equal(clean.approvedForPublication, false);
 });
