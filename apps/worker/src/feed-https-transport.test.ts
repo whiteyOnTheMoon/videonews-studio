@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import https from "node:https";
 import test from "node:test";
 import {
   createPinnedFeedHttpsTransport,
+  productionFeedHttpsDependencies,
   type FeedHttpsDependencies,
 } from "./feed-https-transport.js";
 import { parseReviewedSourceRegistry } from "./source-registry.js";
@@ -378,4 +381,61 @@ test("forged telemetry and callback exceptions cannot escape into operator outpu
   });
   await assert.rejects(transport.request(src, { etag: null, lastModified: null }));
   assert.deepEqual(collected, [{ kind: "response_stream_refused" }]);
+});
+
+test("actual pinned HTTPS request reports the first size refusal, even if destroying stream synchronously aborts it", async () => {
+  const mutableHttps = https as unknown as { request: typeof https.request };
+  const originalRequest = mutableHttps.request;
+  let sends = 0;
+  let destroys = 0;
+  try {
+    mutableHttps.request = ((_options: unknown, callback: (response: unknown) => void) => {
+      const request = new EventEmitter() as EventEmitter & { end(): void };
+      request.end = () => {
+        queueMicrotask(() => {
+          sends++;
+          const response = new EventEmitter() as EventEmitter & {
+            statusCode: number;
+            headers: Record<string, string>;
+            destroy(): void;
+          };
+          response.statusCode = 200;
+          response.headers = { "content-type": "application/rss+xml" };
+          response.destroy = () => {
+            destroys++;
+            // In Node's real stream implementation, destroy can make
+            // aborted visible before returning to the caller.
+            response.emit("aborted");
+          };
+          callback(response);
+          response.emit("data", Buffer.alloc(131073));
+        });
+      };
+      return request;
+    }) as unknown as typeof https.request;
+
+    const reasons: Array<{ kind: string; phase?: string; band?: string }> = [];
+    await assert.rejects(
+      productionFeedHttpsDependencies().requestPinned(
+        new URL("https://www.example.org/rss.xml"),
+        "1.1.1.1",
+        {},
+        (kind, _status, details) => {
+          reasons.push({
+            kind,
+            phase: details?.phase,
+            band: details?.bodySizeBand,
+          });
+        },
+      ),
+      /Feed HTTPS retrieval refused/,
+    );
+    assert.equal(sends, 1);
+    assert.equal(destroys, 1);
+    assert.deepEqual(reasons, [
+      { kind: "response_size_refused", phase: "response_body", band: "over_limit" },
+    ]);
+  } finally {
+    mutableHttps.request = originalRequest;
+  }
 });
