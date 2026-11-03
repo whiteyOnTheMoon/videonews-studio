@@ -7,6 +7,8 @@ on:
       - "apps/worker/src/source-fetch.test.ts"
       - "apps/worker/src/feed-https-transport.test.ts"
       - "scripts/p2_02_readonly_https_head_probe.mjs"
+      - "scripts/p2_02_readonly_rss_get_probe.mjs"
+      - "scripts/p2_02_readonly_rss_get_probe.test.mjs"
       - "scripts/p2_02_readonly_https_head_probe.test.mjs"
       - ".github/workflows/p2-02-readonly-head-probe.yml"
 permissions:
@@ -23,7 +25,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check probe formatting and show exact diff on failure
         run: |
-          files="scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs"
+          files="scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs scripts/p2_02_readonly_rss_get_probe.mjs scripts/p2_02_readonly_rss_get_probe.test.mjs"
           if ! npx prettier --check $files; then
             npx prettier --write $files
             git diff -- $files
@@ -34,4 +36,4 @@ jobs:
           npm run build --workspace @vns/shared
           npm run build --workspace @vns/worker
           node --test apps/worker/dist/source-fetch.test.js apps/worker/dist/feed-https-transport.test.js
-      - run: node --test scripts/p2_02_readonly_https_head_probe.test.mjs
+      - run: node --test scripts/p2_02_readonly_https_head_probe.test.mjs scripts/p2_02_readonly_rss_get_probe.test.mjs
