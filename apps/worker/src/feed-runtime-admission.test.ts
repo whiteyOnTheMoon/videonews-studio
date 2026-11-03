@@ -45,6 +45,8 @@ test("every independent operator gate is required before opening any connections
   assert.equal(admission.dbUser, login);
   assert.equal(admission.trustPolicyRevision, 1);
   assert.equal(admission.dbHost, "postgres");
+  assert.equal(admission.anchorPlacement, "separate_tls");
+  assert.equal(admission.anchorDatabase, "vns_source_anchor");
   for (const flag of [
     "VNS_FEED_RUNTIME_ENABLED",
     "VNS_FEED_SIGNED_EXPORT_ENABLED",
@@ -101,6 +103,41 @@ test("refuses automatic scheduling, arbitrary endpoints and shared database user
   ]) {
     assert.throws(() => readFeedRuntimeAdmission({ ...env, ...change }));
   }
+});
+
+test("same-VPS anchor requires explicit shared-restore approval and exact Docker host", () => {
+  const sameVps = {
+    ...env,
+    VNS_FEED_ANCHOR_PLACEMENT: "same_vps",
+    VNS_FEED_SOURCE_ANCHOR_HOST: "postgres",
+    VNS_FEED_SAME_VPS_RISK_ACK: "ACCEPT_SHARED_POSTGRES_AND_RESTORE_DOMAIN",
+  };
+  const admission = readFeedRuntimeAdmission(sameVps);
+  assert.equal(admission.anchorPlacement, "same_vps");
+  assert.equal(admission.anchorDatabase, "videonews");
+  assert.equal(admission.anchorHost, "postgres");
+  assert.equal(admission.initialBootstrap, false);
+  for (const change of [
+    { VNS_FEED_SAME_VPS_RISK_ACK: "" },
+    { VNS_FEED_SAME_VPS_RISK_ACK: "true" },
+    { VNS_FEED_SOURCE_ANCHOR_HOST: "127.0.0.1" },
+    { VNS_FEED_SOURCE_ANCHOR_HOST: "source-anchor.example.org" },
+    { VNS_FEED_SOURCE_ANCHOR_HOST: "redis" },
+    { VNS_FEED_ANCHOR_PLACEMENT: "separate_tls" },
+    { VNS_FEED_ANCHOR_PLACEMENT: "local" },
+    { VNS_FEED_ANCHOR_PLACEMENT: "" },
+  ]) {
+    assert.throws(() => readFeedRuntimeAdmission({ ...sameVps, ...change }));
+  }
+  assert.throws(() =>
+    readFeedRuntimeAdmission({
+      ...env,
+      VNS_FEED_SAME_VPS_RISK_ACK: "ACCEPT_SHARED_POSTGRES_AND_RESTORE_DOMAIN",
+    }),
+  );
+  assert.throws(() =>
+    readFeedRuntimeAdmission({ ...env, VNS_FEED_ANCHOR_PLACEMENT: "same_vps" }),
+  );
 });
 
 const allowed = {

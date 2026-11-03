@@ -4,9 +4,9 @@ import type {
 } from "./source-export-files.js";
 
 /**
- * A dedicated PostgreSQL authority must be administered outside the publisher
- * and worker rollback domain. Provision its schema separately; this module
- * neither creates roles nor opens a connection.
+ * An external PostgreSQL authority offers stronger rollback protection.
+ * The explicitly approved same-VPS option shares the administration/restore
+ * domain but retains the least-privilege SQL gateway. No roles are created here.
  */
 export interface AnchorQuery {
   query(
