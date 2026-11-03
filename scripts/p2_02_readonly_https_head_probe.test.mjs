@@ -122,7 +122,10 @@ test("only exact recognized TLS/network codes may leave the process", () => {
   );
   assert.equal(safeErrorCode({ code: "SECRET_TOKEN_123" }), "OTHER");
   assert.equal(safeErrorCode(new Error("SECRET")), "OTHER");
-  assert.equal(safeErrorCode({ code: "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" }), "UNABLE_TO_GET_ISSUER_CERT_LOCALLY");
+  assert.equal(
+    safeErrorCode({ code: "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" }),
+    "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  );
   assert.equal(safeErrorFamily({ code: "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR" }), "openssl_tls");
   assert.equal(safeErrorFamily({ code: "ERR_INVALID_THIS" }), "node_runtime");
   assert.equal(safeErrorFamily({ code: "SECRET_PRIVATE_KEY" }), "unclassified");
