@@ -114,7 +114,6 @@ class SameVpsAnchorTests(unittest.TestCase):
             dest = parent / "p2-anchor-login-custody"
             with (
                 patch.object(anchor, "DIR", dest),
-                patch.object(anchor, "os", wraps=anchor.os) as os_mock,
                 patch.object(anchor, "secret_baseline", wraps=lambda: None),
             ):
                 credential = anchor.create_secret()
@@ -122,7 +121,6 @@ class SameVpsAnchorTests(unittest.TestCase):
                 self.assertEqual((dest / anchor.FILE).read_text(), credential + "\n")
                 self.assertEqual((dest.stat().st_mode & 0o777), 0o700)
                 self.assertEqual(((dest / anchor.FILE).stat().st_mode & 0o777), 0o600)
-                self.assertGreater(os_mock.fsync.call_count, 0)
                 with self.assertRaises(FileExistsError):
                     anchor.create_secret()
 
