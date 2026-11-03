@@ -1,0 +1,22 @@
+name: P2-02 read-only RSS HEAD probe (offline unit tests)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_readonly_https_head_probe.mjs"
+      - "scripts/p2_02_readonly_https_head_probe.test.mjs"
+      - ".github/workflows/p2-02-readonly-head-probe.yml"
+permissions:
+  contents: read
+jobs:
+  no-network-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prettier --check scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs
+      - run: node --test scripts/p2_02_readonly_https_head_probe.test.mjs
