@@ -6,7 +6,6 @@
 
 The tests use only synthetic metadata; no real feeds, paid provider requests, Docker or VPS mutations are performed. Outstanding #20 and #21 acceptance items therefore remain open.
 
-
 ## Canonical source identity and claim citations (P2-05/06 hardening)
 
 The offline gate now independently recomputes the canonical source/article IDs and
