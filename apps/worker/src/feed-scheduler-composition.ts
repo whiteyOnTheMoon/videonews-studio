@@ -59,10 +59,7 @@ export function createDormantFeedScheduler(
 
   // Before loading a registry, reject unauthorized selection. The normal
   // scheduler remains unchanged with no selector.
-  const selectedSourceId = readSingleSourceCanarySelection(
-    env,
-    env.VNS_FEED_RUNTIME_MODE ?? "",
-  );
+  const selectedSourceId = readSingleSourceCanarySelection(env, env.VNS_FEED_RUNTIME_MODE ?? "");
   const policy = readApprovedFetchPolicy(env);
   let contents: string;
   try {
