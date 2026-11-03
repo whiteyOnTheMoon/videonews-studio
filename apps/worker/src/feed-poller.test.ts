@@ -298,7 +298,10 @@ test("single source polling preserves complete 3-source gate and never leases ot
     { sourceId: "feed_rss", status: "ingested", newItems: 1 },
   ]);
   assert.deepEqual([...f.claims.keys()], ["feed_rss"]);
-  assert.deepEqual(f.requested.map((x) => x.id), ["feed_rss"]);
+  assert.deepEqual(
+    f.requested.map((x) => x.id),
+    ["feed_rss"],
+  );
   assert.equal(f.items.size, 1);
   assert.deepEqual(await poller.poll(at(1)), []);
   assert.throws(
