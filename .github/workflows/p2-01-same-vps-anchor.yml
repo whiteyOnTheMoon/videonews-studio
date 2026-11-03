@@ -5,6 +5,7 @@ on:
     paths:
       - "scripts/p2_01_same_vps_anchor.py"
       - "scripts/test_p2_01_same_vps_anchor.py"
+      - "scripts/ci_p2_same_vps_anchor_real_pg.sh"
       - "docs/P2_01_SAME_VPS_ANCHOR_PROVISIONING.md"
       - ".github/workflows/p2-01-same-vps-anchor.yml"
 permissions:
@@ -19,6 +20,10 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts -p 'test_p2_01_same_vps_anchor.py' -v
           python3 -m py_compile scripts/p2_01_same_vps_anchor.py
+      - name: Test actual local authority SQL against real disposable PostgreSQL 17
+        env:
+          CI: "true"
+        run: bash scripts/ci_p2_same_vps_anchor_real_pg.sh
       - name: Deny accidental real deployment in CI
         run: |
           if python3 scripts/p2_01_same_vps_anchor.py --install \
