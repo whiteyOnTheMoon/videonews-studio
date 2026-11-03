@@ -101,3 +101,34 @@ Worker-Adapter bleibt standardmäßig deaktiviert und muss weiterhin
 über einen persönlich authentifizierten, least-privilege PostgreSQL-LOGIN
 und gesonderte Freigabe betrieben werden. Keine produktive Migration,
 kein VPS-Deploy und keine Nachrichtenquellenaktivierung.
+
+## P2-10: Browser berechnet die PostgreSQL-Checkpoint-Hashkette selbst nach
+
+Die bestehende Seiten- und Revisionskontrolle verglich bisher nur gespeicherte
+Hash-Zeiger. Eine Manipulation der hashgebundenen Attribute innerhalb
+derselben Zeile wurde nicht erkannt, solange die Zeiger formal aufeinander
+verwiesen.
+
+Der Admin-Exporter ruft jetzt nach der strukturellen Prüfung für jede
+Checkpoint-Seite eine zusätzliche SHA-256-Neuberechnung über Browser Web
+Crypto auf. Die Eingabe reproduziert exakt die Zeichenkette der
+PostgreSQL-Migration 0030: vorheriger Digest, **angefragte Ereignis-UUID**,
+Revision, Stage, Outcome, Actor-UUID, Artifact-Digest,
+PostgreSQL-JSONB-Textdarstellung der begrenzten Reason-Codes sowie Score
+oder den Literalwert null. Bei verändertem hashgebundenem Feld, falschem
+Event-Kontext oder nicht unterstütztem Web Crypto wird **kein** JSON-Export
+erzeugt. Der Export benötigt für Web Crypto einen sicheren Browserkontext.
+
+Die neue CI-Prüfung umfasst mehrere Seiten und Reason-Code-Arrays mit mehr
+als einem Eintrag. Auch dann, wenn die bisherige Pointer-Prüfung bestehen
+würde, muss eine Änderung des hashgebundenen Inhalts zum Abbruch führen.
+
+**Grenzen:** Die PostgreSQL-Hashkette umfasst nicht jeden gespeicherten
+Metadatenwert; zum Beispiel ist recorded_at nicht Teil des Hash-Inputs.
+Ein kompromittierter DB-Administrator kann außerdem eine vollständige
+Hashkette neu erzeugen. Diese lokale Prüfung weist deshalb keine
+unabhängige Authentizität, keine punktgenaue Snapshot-Isolation während
+der Paginierung und keine vollständige Produktionsprovenienz nach.
+Der Export bleibt evidence-only und erteilt niemals eine Veröffentlichungs-
+freigabe. Keine produktive Migration, neue KI, Quellenabrufe, VPS-Veränderung
+oder Änderung an IONOS/Beszel durch diese Code-Erweiterung.

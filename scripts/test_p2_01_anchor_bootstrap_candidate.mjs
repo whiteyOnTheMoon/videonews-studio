@@ -6,7 +6,6 @@ import {
   chownSync,
   mkdtempSync,
   mkdirSync,
-  readFileSync,
   rmSync,
   symlinkSync,
   unlinkSync,

@@ -30,7 +30,6 @@ const CONFIG = {
 };
 const REFUSED = "REFUSED: independent anchor candidate evidence unavailable";
 const FILE = "source-export.signed.json";
-const CHECKPOINT = "source-export.checkpoint.json";
 const must = (condition) => {
   if (!condition) throw Error(REFUSED);
 };

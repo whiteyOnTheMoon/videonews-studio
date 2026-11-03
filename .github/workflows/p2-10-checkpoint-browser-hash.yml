@@ -1,0 +1,34 @@
+name: P2-10 browser checkpoint SHA-256 integrity (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/web/src/lib/editorial-export-continuity.ts"
+      - "apps/web/src/lib/editorial-export-continuity.test.ts"
+      - "apps/web/src/app/admin/editorial-audit-export.tsx"
+      - "docs/P2-09-10_ADMIN_PERSONAL_EXPORTS_0031.md"
+      - ".github/workflows/p2-10-checkpoint-browser-hash.yml"
+permissions:
+  contents: read
+jobs:
+  browser-chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Enforce formatting of changed files
+        run: |
+          npx prettier --check apps/web/src/lib/editorial-export-continuity.ts apps/web/src/lib/editorial-export-continuity.test.ts apps/web/src/app/admin/editorial-audit-export.tsx docs/P2-09-10_ADMIN_PERSONAL_EXPORTS_0031.md .github/workflows/p2-10-checkpoint-browser-hash.yml
+      - name: Recompute checkpoint hashes and deny altered page content
+        run: npx tsx --test apps/web/src/lib/editorial-export-continuity.test.ts
+      - name: Verify Web TypeScript
+        run: |
+          npm run build --workspace @vns/shared
+          npm run typecheck --workspace @vns/web
