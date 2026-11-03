@@ -18,5 +18,12 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npx prettier --check scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs
+      - name: Check probe formatting and show exact diff on failure
+        run: |
+          files="scripts/p2_02_readonly_https_head_probe.mjs scripts/p2_02_readonly_https_head_probe.test.mjs"
+          if ! npx prettier --check $files; then
+            npx prettier --write $files
+            git diff -- $files
+            exit 1
+          fi
       - run: node --test scripts/p2_02_readonly_https_head_probe.test.mjs
