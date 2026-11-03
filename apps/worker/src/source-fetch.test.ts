@@ -218,7 +218,7 @@ test("Node 22 HTTPS reaches the pinned socket with lookup-all (loopback only)", 
   let connections = 0;
   const server = createServer((socket) => {
     connections += 1;
-    socket.end(); // No TLS or HTTP reply: prove only the TCP connect succeeds.
+    socket.destroy(); // Close fully; no TLS or HTTP response.
   });
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
