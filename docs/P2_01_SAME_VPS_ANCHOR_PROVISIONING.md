@@ -1,60 +1,45 @@
-# P2-01 – Kontrolierter Ein-VPS-Anker: geprüfter Operatorablauf
+# P2-01 – Ein-VPS-Anker: kontrollierte Einrichtung
 
-**Betriebsvorgabe:** Nur der vorhandene VPS, die bestehende PostgreSQL-17-
-Datenbank \`videonews\`, IONOS-Backups und Beszel. Keine zweite Instanz.
-Der Anker ist **nicht** unabhängig gegen einen vollständigen VPS-Rollback.
-Das ist die ausdrücklich gewählte geringere Schutzstufe.
+Diese Anleitung gilt ausschließlich für den bestehenden VideoNews-Studio-VPS mit PostgreSQL 17.
 
-## Code und Zustandsgrenzen
+**Risikoentscheidung:** Der lokale Anker teilt Administrator-, Backup- und Restore-Bereich mit der
+Anwendungsdatenbank. Ein vollständiger VPS-Rollback wird dadurch nicht unabhängig verhindert.
 
-\`scripts/p2_01_same_vps_anchor.py\` enthält fünf strikt getrennte Aktionen:
+## Operatorbefehle
 
-- \`--preflight\`: ausschließlich lesende Release-, Docker-, Quellen-/Hostaudit-,
-  Policy- und SQL-Abwesenheitsprüfung; erwartet den bestehenden sauberen
-  Single-Owner- und 0061-Stand.
-- \`--install\`: nur nach exakter SHA- und Operatorfreigabe. Erzeugt eine
-  private, neue LOGIN-Passwortdatei (0600, UID1000), leitet daraus einen
-  SCRAM-SHA-256-Verifier ab und installiert in **einer einzigen SQL-Transaktion**
-  vier vorhandene Authority-SQL-Dateien, einen NOLOGIN-Eigentümer,
-  einen minimalen LOGIN, den geprüften Quell-/Host-High-Water,
-  die separat persönlich bestätigte Signaturrichtlinie und zwei
-  EXECUTE-only-Rechte. Kein Reset und kein Retry.
-- \`--verify\`: kontrolliert den gespeicherten Zustand und effektive
-  SQL-Rechte ausschließlich lesend.
-- \`--handoff\`: gesondert durch \`sudo\` und ein genaues ACK autorisierte
-  einmalige Übergabe des bestehenden Passworts in ein getrenntes,
-  root-privates Verzeichnis, Datei 0400/UID10002. Bestehende
-  fünf Feed-Secrets und deren eigene Inventur werden **nicht verändert**.
-- \`--verify-handoff\`: read-only Dateirechte- und bytegenauer Abgleich;
-  keine Secrets werden ausgegeben.
+Das Skript `scripts/p2_01_same_vps_anchor.py` trennt fünf Aktionen:
 
-Alle Befehle müssen im geprüften, sauberen \`main\` ausgeführt werden.
-Vor \`--install\` den genauen Release-SHA und die aktuellen
-\`p2_01_anchor_bootstrap_candidate.mjs\`-Werte erneut vergleichen. Diese
-dürfen nicht aus einer ungeprüften Feed-Konfiguration kommen.
+- `--preflight`: Lesende Prüfung von Release, Datenbank, Quellen, Hosts und Audits.
+- `--install`: Einmalige Ankerinstallation nach expliziter Freigabe und SHA-Prüfung.
+- `--verify`: Lesende Prüfung von High-Water-Daten, Eigentümern und SQL-Rechten.
+- `--handoff`: Gesonderte root-autorisierte Übergabe des vorhandenen Passworts.
+- `--verify-handoff`: Lesender Vergleich der geschützten Laufzeitdatei.
 
-## Erste read-only Prüfung – VPS-Betreiber \`ap\`
+Vor jedem Aufruf müssen `main`, exakter Release-SHA und ein sauberes Arbeitsverzeichnis stimmen.
 
-Der folgende Block verwendet ausschließlich den zuvor am 2. November
-geprüften **Beispielkandidaten**. Bei einer zwischenzeitlichen Änderung des
-Quellenexports darf er nicht unverändert übernommen werden.
+Die zwei SHA-256-Werte müssen aus dem aktuell geprüften signierten Export stammen.
+Quellen- und Hostrevisionen müssen mit den persönlich auditierten Freigaben übereinstimmen.
 
-\`\`\`bash
+## 1. Read-only Preflight
+
+```bash
 cd /home/ap/www/videonews-studio
+
 python3 scripts/p2_01_same_vps_anchor.py --preflight \
   --expected-sha FREIGEGEBENER_MAIN_SHA \
   --source-revision 8 --host-revision 7 \
   --envelope-sha256 41206305bbdee718adf011f8faa91485e8f9bfaadbd3d9d4a776016fc9f9e6e9 \
   --policy-revision 1 \
   --policy-sha256 bc2e875d1e01d3d311587f54b1a9559a91f0b42e17a4102073babfb0912683ed
-\`\`\`
+```
 
-## Installation nur nach eigener Freigabe
+Die obenstehenden Revisionen und Digests sind **historische Prüfwerte**, keine automatischen Defaults.
 
-Nach erfolgreichem, unverändertem Preflight:
+## 2. Einmalige Installation – nur nach persönlicher Freigabe
 
-\`\`\`bash
+```bash
 cd /home/ap/www/videonews-studio
+
 VNS_P2_SAME_VPS_ANCHOR_OPERATOR_APPROVED=INSTALL_ONE_LOCAL_SOURCE_ANCHOR_ONLY \
 VNS_P2_SAME_VPS_ANCHOR_EXPECTED_SHA=FREIGEGEBENER_MAIN_SHA \
 python3 scripts/p2_01_same_vps_anchor.py --install \
@@ -63,42 +48,45 @@ python3 scripts/p2_01_same_vps_anchor.py --install \
   --envelope-sha256 41206305bbdee718adf011f8faa91485e8f9bfaadbd3d9d4a776016fc9f9e6e9 \
   --policy-revision 1 \
   --policy-sha256 bc2e875d1e01d3d311587f54b1a9559a91f0b42e17a4102073babfb0912683ed
-\`\`\`
+```
 
-\`--install\` ist ein **schreibender PostgreSQL-Sicherheitsvorgang**.
-Keine automatische Ausführung durch GitHub. Bei Fehlern oder
-unbestätigtem Commit-Status **nicht erneut ausführen**. Die getrennt
-angelegte Passwortdatei bleibt absichtlich erhalten, damit ein
-authentifizierter Betreiber ohne Rotation abgleichen kann.
+Die Installation verwendet eine SQL-Transaktion und überträgt nur einen SCRAM-Verifier.
+Passwortdateien sind privat; kein Secret wird nach GitHub oder Chat übertragen.
 
-Im Anschluss zuerst mit genau denselben Kandidaten \`--verify\` statt
-\`--preflight\` aufrufen. Nur bei PASS:
+Bei einem Fehler nach Installationsbeginn **nicht erneut installieren**.
+Vorhandene Daten, Passwortdatei und SQL-Rollen zunächst lesend abgleichen.
 
-\`\`\`bash
+## 3. Separater Nachweis und Passwortübergabe
+
+`--verify` benötigt dieselben überprüften Revisions- und Digest-Argumente wie `--preflight`.
+
+Nach dem erfolgreichen `--verify` darf der Betreiber die vorhandene Passwortdatei übergeben:
+
+```bash
 sudo python3 scripts/p2_01_same_vps_anchor.py --handoff \
   --expected-sha FREIGEGEBENER_MAIN_SHA \
   --approval HANDOFF_ONE_EXISTING_ANCHOR_PASSWORD_ONLY
 
 sudo python3 scripts/p2_01_same_vps_anchor.py --verify-handoff \
   --expected-sha FREIGEGEBENER_MAIN_SHA
-\`\`\`
+```
 
-Anschließend muss die Compose-Dateivariable
-\`VNS_P2_ANCHOR_DB_PASSWORD_FILE\` auf die
-root-private Datei \`/var/lib/videonews-studio/p2-anchor-runtime-secret/vns_feed_source_anchor_password\`
-zeigen. Es wird weder der bestehende 5-Secrets-Katalog geändert
-noch ein Ankerpasswort zu GitHub oder Chat übertragen.
+Der für Compose bereitzustellende Hostpfad ist:
 
-## Sicherheitsgrenzen und nächster Akzeptanzpunkt
+```text
+/var/lib/videonews-studio/p2-anchor-runtime-secret/vns_feed_source_anchor_password
+```
 
-Der reale Worker prüft vor einem Feedabruf wieder die eigene
-PostgreSQL-Identität, die zwei geschützten SQL-Funktionen und die
-signierte Quelle. Nach einer Datenwiederherstellung müssen lokale
-High-Water-Werte und Worker-Checkpoint persönlich abgeglichen werden;
-die gemeinsame Datenhaltung verhindert sonst keinen koordinierten
-Rollback. Der produktive Erstlauf bleibt bewusst \`single_pass\`,
-der Worker-Checkpoint darf **nur von diesem** gesetzt werden.
+Nur der Observer, Scheduler oder Consumer darf dieses Secret erhalten, niemals der Producer.
 
-Dieses Paket startet noch keine Queue, Scheduler, Consumer, HTTP-Abfrage,
-KI-Ausführung oder Veröffentlichung. Der echte E2E-Feed-Abgleich
-und Admin-Ranking gehören zur nachfolgenden Betreiberabnahme.
+## Produktionsfreigabe ist separat
+
+Ein bestandener Ankercheck startet keine Feed-Queue, kein HTTP, kein KI-Modell und keine Veröffentlichung.
+
+Erst nach Rechtenachweis, geprüftem Quellensnapshot und gesondertem Betreiber-ACK
+darf ein einzelner `single_pass`-Observer die erste Checkpoint-Datei selbst erzeugen.
+
+Nach jeder VPS-Wiederherstellung Feed-Dienste deaktiviert lassen, bis signierter Export,
+SQL-High-Water, Freigaben und Checkpoint erneut abgeglichen wurden.
+
+Die bestehenden IONOS-Backups und Beszel-Monitoringmaßnahmen bleiben unverändert.
