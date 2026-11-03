@@ -52,7 +52,7 @@ function transportFor(plan, reply) {
 
 function rss(url) {
   return (
-    "<rss version=\"2.0\"><channel><item>" +
+    '<rss version="2.0"><channel><item>' +
     "<title>Example validated science announcement</title>" +
     `<link>https://${url.hostname}/news/approved-item</link>` +
     "<pubDate>Tue, 03 Nov 2026 12:00:00 GMT</pubDate>" +
@@ -67,11 +67,10 @@ const ok = (url) => ({
 
 test("only the three currently approved source IDs, host scopes and RSS usage are admitted", () => {
   const plan = validated();
-  assert.deepEqual(plan.approved.map((source) => source.id), [
-    "nasa_news",
-    "noaa_news",
-    "usgs_news",
-  ]);
+  assert.deepEqual(
+    plan.approved.map((source) => source.id),
+    ["nasa_news", "noaa_news", "usgs_news"],
+  );
   const original = input();
   for (const invalid of [
     { ...original, extra: true },
@@ -84,21 +83,19 @@ test("only the three currently approved source IDs, host scopes and RSS usage ar
     {
       version: 1,
       sources: original.sources.map((source) =>
-        source.id === "nasa_news" ? { ...source, status: "pending" } : source
+        source.id === "nasa_news" ? { ...source, status: "pending" } : source,
       ),
     },
     {
       version: 1,
       sources: original.sources.map((source) =>
-        source.id === "nasa_news" ? { ...source, usage: "reviewed_excerpt" } : source
+        source.id === "nasa_news" ? { ...source, usage: "reviewed_excerpt" } : source,
       ),
     },
     {
       version: 1,
       sources: original.sources.map((source) =>
-        source.id === "nasa_news"
-          ? { ...source, feedUrl: "https://www.usgs.gov/rss.xml" }
-          : source
+        source.id === "nasa_news" ? { ...source, feedUrl: "https://www.usgs.gov/rss.xml" } : source,
       ),
     },
     {
@@ -106,7 +103,7 @@ test("only the three currently approved source IDs, host scopes and RSS usage ar
       sources: original.sources.map((source) =>
         source.id === "nasa_news"
           ? { ...source, feedUrl: "https://www.nasa.gov/rss.xml?secret=1" }
-          : source
+          : source,
       ),
     },
   ]) {
@@ -204,7 +201,11 @@ test("unexpected private exceptions are suppressed, never mirrored to report", a
   const plan = validated();
   const report = await runReadOnlyRssGetProbe(
     plan,
-    { async request() { throw new Error("SECRET_FROM_REMOTE"); } },
+    {
+      async request() {
+        throw new Error("SECRET_FROM_REMOTE");
+      },
+    },
     decodeApprovedFeed,
   );
   assert.equal(report.length, 3);
