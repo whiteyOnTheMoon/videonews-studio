@@ -347,6 +347,8 @@ export function independentlyReviewMockScript(
   provenance: readonly SourceProvenance[],
   now: Date,
   limits: ScriptLimits,
+  /** Independently supplied operator template; never read from the script itself. */
+  trustedScaffold?: ScriptScaffold,
 ): {
   acceptedForHumanReview: boolean;
   approvedForPublication: false;
@@ -387,6 +389,30 @@ export function independentlyReviewMockScript(
   if (script.revision < 1 || script.revision > limits.maxRevisions) {
     reasons.push("script_revision_out_of_bounds");
   }
+  // A script is an untrusted wire object even if it resembles the generator's
+  // output. Unknown fields or a wrong format must not enter review triage.
+  if (
+    script.version !== 1 ||
+    !["briefing", "analysis", "explainer"].includes(script.format) ||
+    typeof script.language !== "string" ||
+    !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(script.language) ||
+    Object.keys(script).sort().join(",") !==
+      "approvedForPublication,estimatedMicroUsd,estimatedMockTokens,eventId,format,language,provider,revision,sections,version"
+  ) {
+    reasons.push("script_envelope_invalid");
+  }
+  // Missing independently supplied scaffold is a hard review-triage hold.
+  // This is structural comparison, not source authentication or fact checking.
+  const expectedNarration = trustedScaffold?.[script.format];
+  if (
+    typeof expectedNarration !== "string" ||
+    expectedNarration.length < 20 ||
+    expectedNarration.length > 2000 ||
+    expectedNarration.trim() !== expectedNarration ||
+    Array.from(expectedNarration).some((letter) => letter.charCodeAt(0) < 32)
+  ) {
+    reasons.push("trusted_scaffold_missing_or_invalid");
+  }
   try {
     attestEditorialEventMetadata(event);
   } catch {
@@ -394,16 +420,36 @@ export function independentlyReviewMockScript(
   }
   const articleIds = new Set(event.articles.map((article) => article.id));
   const claimMap = new Map<string, ClaimCandidate>();
-  for (const claim of claims) {
-    if (claimMap.has(claim.id)) reasons.push("duplicate_claim");
-    claimMap.set(claim.id, claim);
-    if (claim.status !== "unverified") reasons.push("claim_disputed_or_rejected");
-    if (!claim.articleIds.length || claim.articleIds.some((id) => !articleIds.has(id))) {
-      reasons.push("claim_evidence_mismatch");
+  if (!Array.isArray(claims) || claims.length < 1 || claims.length > 30) {
+    reasons.push("script_claims_invalid");
+  } else {
+    for (const claim of claims) {
+      if (
+        !claim ||
+        !IDENTIFIER.test(claim.id) ||
+        typeof claim.statement !== "string" ||
+        claim.statement.length < 8 ||
+        claim.statement.length > 2000 ||
+        !Array.isArray(claim.articleIds) ||
+        claim.articleIds.length < 1 ||
+        claim.articleIds.length > 20 ||
+        new Set(claim.articleIds).size !== claim.articleIds.length
+      ) {
+        reasons.push("script_claims_invalid");
+        continue;
+      }
+      if (claimMap.has(claim.id)) reasons.push("duplicate_claim");
+      claimMap.set(claim.id, claim);
+      if (claim.status !== "unverified") reasons.push("claim_disputed_or_rejected");
+      if (claim.articleIds.some((id: string) => !articleIds.has(id))) {
+        reasons.push("claim_evidence_mismatch");
+      }
     }
   }
   const sections = Array.isArray(script.sections) ? script.sections : [];
-  if (!sections.length || sections.length > 30) reasons.push("script_sections_invalid");
+  if (!sections.length || sections.length > 30 || sections.length !== claimMap.size) {
+    reasons.push("script_sections_invalid");
+  }
   let characters = 0;
   const represented = new Set<string>();
   for (const section of sections) {
@@ -411,7 +457,9 @@ export function independentlyReviewMockScript(
       !section ||
       typeof section.narration !== "string" ||
       !Array.isArray(section.claimIds) ||
-      !section.claimIds.every((id: unknown) => typeof id === "string")
+      section.claimIds.length !== 1 ||
+      !section.claimIds.every((id: unknown) => typeof id === "string") ||
+      Object.keys(section).sort().join(",") !== "claimIds,narration"
     ) {
       reasons.push("script_sections_invalid");
       continue;
@@ -420,7 +468,11 @@ export function independentlyReviewMockScript(
     if (!section.narration.trim() || !section.claimIds.length) {
       reasons.push("unattributed_script_section");
     }
+    if (section.narration !== expectedNarration) {
+      reasons.push("script_narration_not_scaffold");
+    }
     for (const id of section.claimIds) {
+      if (represented.has(id)) reasons.push("duplicate_script_claim_reference");
       represented.add(id);
       if (!claimMap.has(id)) reasons.push("unknown_claim_reference");
     }
@@ -428,7 +480,7 @@ export function independentlyReviewMockScript(
       reasons.push("source_text_similarity_risk");
     }
   }
-  for (const claim of claims) {
+  for (const claim of claimMap.values()) {
     if (!represented.has(claim.id)) reasons.push("unrepresented_claim");
   }
   const actualTokens = Math.ceil(characters / 4);
