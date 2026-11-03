@@ -249,7 +249,11 @@ test("forged diagnostic fields are reduced to a fixed code without arbitrary tex
   );
   const report = await runReadOnlyRssGetProbe(
     plan,
-    { async request() { throw new Error("private URL, token and headers"); } },
+    {
+      async request() {
+        throw new Error("private URL, token and headers");
+      },
+    },
     decodeApprovedFeed,
     failures,
   );
