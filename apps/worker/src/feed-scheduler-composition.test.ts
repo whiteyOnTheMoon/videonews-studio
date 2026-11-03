@@ -179,6 +179,9 @@ function fixture() {
     revoke(sourceId: string) {
       currentlyApproved.delete(sourceId);
     },
+    approve(sourceId: string) {
+      currentlyApproved.add(sourceId);
+    },
     use304() {
       cached = true;
     },
@@ -336,4 +339,94 @@ test("live authority denies all sources without touching network or feed leases"
   assert.equal(f.db.size, 0);
   const seen = f.queries.filter((x) => x.sql.includes("feed_runtime_source_authorized"));
   assert.equal(seen.length, 3);
+});
+
+test("explicit NOAA-only manual canary does not claim leases or contact NASA/USGS", async () => {
+  const f = fixture();
+  f.approve("noaa_news");
+  const noaa = {
+    ...source("noaa_news", "rss/", "approved", "rss"),
+    baseUrl: "https://www.noaa.gov/",
+    feedUrl: "https://www.noaa.gov/rss.xml",
+    termsUrl: "https://www.noaa.gov/terms/",
+  };
+  const approved = [noaa, SOURCES[1]!, SOURCES[2]!, SOURCES[3]!, SOURCES[4]!];
+  const received: string[] = [];
+  const ports: OfflineFeedSchedulerPorts = {
+    ...f.ports,
+    readRegistry: () => JSON.stringify({ version: 1, sources: approved }),
+    https: {
+      resolveIPv4: async (hostname) => {
+        received.push("dns:" + hostname);
+        return ["1.1.1.1"];
+      },
+      requestPinned: async (url) => {
+        received.push("https:" + url.pathname);
+        return {
+          status: 200,
+          headers: { "content-type": "application/rss+xml" },
+          body: Buffer.from(
+            "<rss><channel><item><title>NOAA verifies a new science report</title>" +
+              "<link>https://www.noaa.gov/news/research-update</link></item></channel></rss>",
+          ),
+        };
+      },
+    },
+  };
+  const gated = {
+    ...env,
+    VNS_ALLOWED_SOURCE_HOSTS: "www.example.org,www.noaa.gov",
+    VNS_FEED_RUNTIME_ENABLED: "true",
+    VNS_FEED_RUNTIME_MODE: "single_pass",
+    VNS_FEED_SOURCE_BOOTSTRAP: "false",
+    VNS_FEED_CANARY_SOURCE_ID: "noaa_news",
+    VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+  };
+  const scheduler = createDormantFeedScheduler(gated, ports);
+  assert.deepEqual(scheduler.sourceIds, ["noaa_news", "agency_atom", "agency_json"]);
+  assert.deepEqual(await scheduler.tick(new Date(START)), [
+    { sourceId: "noaa_news", status: "ingested", newItems: 1 },
+  ]);
+  assert.deepEqual([...f.db.keys()], ["noaa_news"]);
+  assert.deepEqual(received, ["dns:www.noaa.gov", "https:/rss.xml"]);
+  assert.deepEqual([...f.saved], ["noaa_news|https://www.noaa.gov/news/research-update"]);
+  const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
+  assert.equal(auth.length, 3);
+  assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "noaa_news"));
+
+  const invalid = [
+    { VNS_FEED_CANARY_OPERATOR_ACK: "" },
+    { VNS_FEED_CANARY_SOURCE_ID: "agency_atom" },
+    { VNS_FEED_RUNTIME_MODE: "persistent_worker" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
+  ];
+  for (const change of invalid) {
+    const refused = fixture();
+    assert.throws(
+      () => createDormantFeedScheduler({ ...gated, ...change }, refused.ports),
+      /canary gate refused/,
+    );
+    assert.equal(refused.readCount, 0);
+    assert.equal(refused.queries.length, 0);
+    assert.equal(refused.requests.length, 0);
+  }
+
+  const movedHost = [SOURCES[0]!, SOURCES[1]!, SOURCES[2]!, noaa, SOURCES[4]!];
+  const movedRegistry = movedHost.map((record) =>
+    record.id === "noaa_news"
+      ? {
+          ...record,
+          baseUrl: "https://www.example.org/news/",
+          feedUrl: "https://www.example.org/rss.xml",
+        }
+      : record,
+  );
+  assert.throws(
+    () =>
+      createDormantFeedScheduler(gated, {
+        ...f.ports,
+        readRegistry: () => JSON.stringify({ version: 1, sources: movedRegistry }),
+      }),
+    /canary denied/,
+  );
 });

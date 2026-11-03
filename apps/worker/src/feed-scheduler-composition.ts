@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
 import {
   createDormantFeedPoller,
   type FeedPollFailureStage,
@@ -56,6 +57,9 @@ export function createDormantFeedScheduler(
     throw new Error("Feed scheduler requires explicit test ports");
   }
 
+  // Before loading a registry, reject unauthorized selection. The normal
+  // scheduler remains unchanged with no selector.
+  const selectedSourceId = readSingleSourceCanarySelection(env, env.VNS_FEED_RUNTIME_MODE ?? "");
   const policy = readApprovedFetchPolicy(env);
   let contents: string;
   try {
@@ -64,6 +68,20 @@ export function createDormantFeedScheduler(
     throw new Error("Reviewed feed registry unavailable");
   }
   const registry = parseReviewedSourceRegistry(contents, policy);
+  if (selectedSourceId !== null) {
+    const selected = registry.find((source) => source.id === selectedSourceId);
+    if (
+      !selected ||
+      selected.status !== "approved" ||
+      selected.access !== "rss" ||
+      selected.usage !== "metadata_only" ||
+      new URL(selected.baseUrl).hostname !== "www.noaa.gov" ||
+      new URL(selected.feedUrl ?? selected.baseUrl).hostname !== "www.noaa.gov" ||
+      approvedSourceForUrl(selected.baseUrl, registry)?.id !== selectedSourceId
+    ) {
+      throw new Error("Reviewed NOAA single-source canary denied");
+    }
+  }
   const store = new PostgresFeedPollStore(
     ports.pool,
     env.VNS_FEED_RUNTIME_ENABLED === "true"
@@ -87,7 +105,15 @@ export function createDormantFeedScheduler(
           console.log(JSON.stringify({ event: "feed_poll_failure_stage", sourceId, stage }));
         }
       : undefined;
-  const poller = createDormantFeedPoller(registry, true, store, transport, authority, onFailure);
+  const poller = createDormantFeedPoller(
+    registry,
+    true,
+    store,
+    transport,
+    authority,
+    onFailure,
+    selectedSourceId ?? undefined,
+  );
   const sourceIds = Object.freeze(
     registry
       .filter(

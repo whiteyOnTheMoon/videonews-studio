@@ -282,3 +282,52 @@ test("RSS endpoint and article scope are independent, but article links remain s
   assert.equal(rows.length, 1);
   assert.equal(rows[0]?.url, prefix + "news/research-story");
 });
+
+test("single source polling preserves complete 3-source gate and never leases other sources", async () => {
+  const f = fixture();
+  const poller = createDormantFeedPoller(
+    registry(),
+    true,
+    f.store,
+    f.transport,
+    undefined,
+    undefined,
+    "feed_rss",
+  );
+  assert.deepEqual(await poller.poll(at(0)), [
+    { sourceId: "feed_rss", status: "ingested", newItems: 1 },
+  ]);
+  assert.deepEqual([...f.claims.keys()], ["feed_rss"]);
+  assert.deepEqual(
+    f.requested.map((x) => x.id),
+    ["feed_rss"],
+  );
+  assert.equal(f.items.size, 1);
+  assert.deepEqual(await poller.poll(at(1)), []);
+  assert.throws(
+    () =>
+      createDormantFeedPoller(
+        registry(),
+        true,
+        f.store,
+        f.transport,
+        undefined,
+        undefined,
+        "feed_blocked",
+      ),
+    /not in approved registry/,
+  );
+  assert.throws(
+    () =>
+      createDormantFeedPoller(
+        registry().filter((source) => source.id !== "feed_api"),
+        true,
+        f.store,
+        f.transport,
+        undefined,
+        undefined,
+        "feed_rss",
+      ),
+    /three to five reviewed sources/,
+  );
+});
