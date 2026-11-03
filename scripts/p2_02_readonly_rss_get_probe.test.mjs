@@ -212,3 +212,52 @@ test("unexpected private exceptions are suppressed, never mirrored to report", a
   assert.ok(report.every((entry) => entry.stage === "https_or_http_refused"));
   assert.ok(!JSON.stringify(report).includes("SECRET"));
 });
+
+test("transport refusal categories and bounded HTTP status are passed through safely", async () => {
+  const plan = validated();
+  const failures = new Map();
+  const transport = createPinnedFeedHttpsTransport(plan.registry, plan.policy, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    requestPinned: async () => ({
+      status: 301,
+      headers: { location: "https://PRIVATE_SECRET.example/" },
+      body: Buffer.alloc(0),
+    }),
+    onRefusal(sourceId, refusal) {
+      failures.set(sourceId, refusal);
+    },
+  });
+  const report = await runReadOnlyRssGetProbe(plan, transport, decodeApprovedFeed, failures);
+  assert.deepEqual(
+    report.map((result) => [result.stage, result.refusal, result.httpStatus]),
+    [
+      ["https_or_http_refused", "http_status_refused", 301],
+      ["https_or_http_refused", "http_status_refused", 301],
+      ["https_or_http_refused", "http_status_refused", 301],
+    ],
+  );
+  assert.ok(!JSON.stringify(report).includes("PRIVATE_SECRET"));
+});
+
+test("forged diagnostic fields are reduced to a fixed code without arbitrary text", async () => {
+  const plan = validated();
+  const failures = new Map(
+    plan.approved.map((src) => [
+      src.id,
+      { kind: "SECRET_FROM_HTTP", httpStatus: 999, location: "PRIVATE_URL" },
+    ]),
+  );
+  const report = await runReadOnlyRssGetProbe(
+    plan,
+    {
+      async request() {
+        throw new Error("private URL, token and headers");
+      },
+    },
+    decodeApprovedFeed,
+    failures,
+  );
+  assert.ok(report.every((result) => result.refusal === "unclassified"));
+  assert.ok(report.every((result) => !("httpStatus" in result)));
+  assert.ok(!JSON.stringify(report).includes("PRIVATE"));
+});

@@ -5,6 +5,7 @@ on:
     paths:
       - "apps/worker/src/source-fetch.ts"
       - "apps/worker/src/source-fetch.test.ts"
+      - "apps/worker/src/feed-https-transport.ts"
       - "apps/worker/src/feed-https-transport.test.ts"
       - "scripts/p2_02_readonly_https_head_probe.mjs"
       - "scripts/p2_02_readonly_rss_get_probe.mjs"
