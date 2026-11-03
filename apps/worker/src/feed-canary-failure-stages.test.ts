@@ -31,33 +31,27 @@ const store: FeedPollStore = {
   },
 };
 
-test("real transport failures produce only approved IDs and fixed stage labels", async () => {
+test("transport denial reports fixed stages without raw URLs", async () => {
   const events: Array<{ id: string; stage: string }> = [];
   const transport: FeedTransport = {
     async request(source) {
       throw new Error("SECRET_TLS_DNS:" + source.baseUrl);
     },
   };
-  const poller = createDormantFeedPoller(
-    sources,
-    true,
-    store,
-    transport,
-    undefined,
-    (id, stage) => events.push({ id, stage }),
-  );
+  function report(id: string, stage: string) {
+    events.push({ id, stage });
+  }
+  const poller = createDormantFeedPoller(sources, true, store, transport, undefined, report);
   const result = await poller.poll(new Date("2026-11-03T17:00:00Z"));
-  assert.deepEqual(events, sources.map((source) => ({
-    id: source.id,
-    stage: "https_transport",
-  })));
+  const expected = sources.map((source) => ({ id: source.id, stage: "https_transport" }));
+  assert.deepEqual(events, expected);
   assert.ok(result.every((value) => value.status === "failed" && value.newItems === 0));
   assert.ok(!JSON.stringify(result).includes("stage"));
   assert.ok(!JSON.stringify(events).includes("SECRET_TLS_DNS"));
   assert.ok(!JSON.stringify(events).includes("https://"));
 });
 
-test("invalid RSS is labeled feed_decode; failed diagnostic callback cannot affect outcome", async () => {
+test("invalid RSS is labeled feed_decode; callback exceptions are harmless", async () => {
   const events: string[] = [];
   const invalid: FeedTransport = {
     async request() {
@@ -76,10 +70,8 @@ test("invalid RSS is labeled feed_decode; failed diagnostic callback cannot affe
   };
   const poller = createDormantFeedPoller(sources, true, store, invalid, undefined, reporter);
   const result = await poller.poll(new Date("2026-11-03T17:00:00Z"));
+  const expected = sources.map((source) => source.id + ":feed_decode");
   assert.equal(result.length, 3);
   assert.ok(result.every((value) => value.status === "failed"));
-  assert.deepEqual(
-    events,
-    sources.map((source) => source.id + ":feed_decode"),
-  );
+  assert.deepEqual(events, expected);
 });
