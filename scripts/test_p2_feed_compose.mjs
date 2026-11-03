@@ -132,7 +132,7 @@ export function verifySignedFeedOverlay(data) {
     observer.environment.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE,
     "/run/secrets/vns_feed_producer_redis_password",
   );
-  assert.equal(consumer.environment.VNS_FEED_REDIS_USER, observer.environment.VNS_FEED_REDIS_USER);
+  assert.equal(consumer.environment.VNS_FEED_REDIS_USER, "${VNS_FEED_CONSUMER_REDIS_USER:-}");
   assert.ok(
     !consumer.volumes.some(
       (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
