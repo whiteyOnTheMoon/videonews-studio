@@ -1,0 +1,28 @@
+name: P2-02 canary sanitized feed failure diagnostics
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-poller.ts"
+      - "apps/worker/src/feed-scheduler-composition.ts"
+      - "apps/worker/src/feed-canary-failure-stages.test.ts"
+      - "compose.feed-observation.yaml"
+      - ".github/workflows/p2-02-canary-diagnostics.yml"
+permissions:
+  contents: read
+jobs:
+  stage-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prettier --check apps/worker/src/feed-poller.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-canary-failure-stages.test.ts compose.feed-observation.yaml
+      - run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+          node --test apps/worker/dist/feed-canary-failure-stages.test.js apps/worker/dist/feed-poller.test.js apps/worker/dist/feed-scheduler-composition.test.js apps/worker/dist/feed-queue-contract.test.js
+          node --test scripts/test_p2_feed_compose.mjs

@@ -62,6 +62,17 @@ export interface PollResult {
   newItems: number;
 }
 
+/** Closed, non-sensitive stage labels. Never expose raw URLs, XML or SQL. */
+export type FeedPollFailureStage =
+  | "source_grant"
+  | "lease_claim"
+  | "lease_validation"
+  | "source_grant_before_https"
+  | "https_transport"
+  | "feed_decode"
+  | "source_grant_before_commit"
+  | "metadata_commit";
+
 const MAX_FEED_CHARS = 131072;
 const MAX_ITEMS = 20;
 
@@ -248,6 +259,7 @@ export function createDormantFeedPoller(
   store: FeedPollStore,
   transport: FeedTransport,
   authority?: FeedSourceAuthority,
+  onFailure?: (sourceId: string, stage: FeedPollFailureStage) => void,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -264,6 +276,14 @@ export function createDormantFeedPoller(
   if (new Set(sources.map((source) => source.id)).size !== sources.length) {
     throw new Error("Duplicate feed source identity");
   }
+  function failed(sourceId: string, stage: FeedPollFailureStage): PollResult {
+    try {
+      onFailure?.(sourceId, stage);
+    } catch {
+      // Diagnostics may never alter a fail-closed poll result.
+    }
+    return { sourceId, status: "failed", newItems: 0 };
+  }
   return {
     async poll(now: Date): Promise<readonly PollResult[]> {
       if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
@@ -279,7 +299,7 @@ export function createDormantFeedPoller(
               throw new Error("Source authorization rejected");
             }
           } catch {
-            results.push({ sourceId: source.id, status: "failed", newItems: 0 });
+            results.push(failed(source.id, "source_grant"));
             continue;
           }
         }
@@ -287,10 +307,11 @@ export function createDormantFeedPoller(
         try {
           lease = await store.claim(source.id, now, source.intervalMinutes);
         } catch {
-          results.push({ sourceId: source.id, status: "failed", newItems: 0 });
+          results.push(failed(source.id, "lease_claim"));
           continue;
         }
         if (!lease) continue;
+        let stage: FeedPollFailureStage = "lease_validation";
         try {
           if (
             typeof lease.token !== "string" ||
@@ -303,22 +324,27 @@ export function createDormantFeedPoller(
             lastModified: safeValidator(lease.validators.lastModified),
           };
           // A revocation may have occurred while claiming the lease.
+          stage = "source_grant_before_https";
           if (authority && !(await authority.admitted(source))) {
             throw new Error("Source authorization revoked");
           }
+          stage = "https_transport";
           const result = await transport.request(source, validators);
           if (result.status === 304) {
             if (result.body !== "") throw new Error("Not-modified payload refused");
             results.push({ sourceId: source.id, status: "not_modified", newItems: 0 });
             continue;
           }
+          stage = "feed_decode";
           const items = decodeApprovedFeed(source, registry, result);
           // Never voluntarily persist metadata after the current authority
           // has rejected this source. SQL-side atomic commit admission is a
           // separate prerequisite for a fully race-free production guarantee.
+          stage = "source_grant_before_commit";
           if (authority && !(await authority.admitted(source))) {
             throw new Error("Source authorization revoked");
           }
+          stage = "metadata_commit";
           const written = await store.commit(source.id, lease.token, items, {
             etag: safeValidator(result.etag),
             lastModified: safeValidator(result.lastModified),
@@ -329,7 +355,7 @@ export function createDormantFeedPoller(
           results.push({ sourceId: source.id, status: "ingested", newItems: written });
         } catch {
           // Suppress raw URL, XML, response and transport errors.
-          results.push({ sourceId: source.id, status: "failed", newItems: 0 });
+          results.push(failed(source.id, stage));
         }
       }
       return results;
