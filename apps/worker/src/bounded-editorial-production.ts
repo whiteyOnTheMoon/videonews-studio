@@ -441,7 +441,7 @@ export function independentlyReviewMockScript(
       if (claimMap.has(claim.id)) reasons.push("duplicate_claim");
       claimMap.set(claim.id, claim);
       if (claim.status !== "unverified") reasons.push("claim_disputed_or_rejected");
-      if (claim.articleIds.some((id) => !articleIds.has(id))) {
+      if (claim.articleIds.some((id: string) => !articleIds.has(id))) {
         reasons.push("claim_evidence_mismatch");
       }
     }
