@@ -1,0 +1,33 @@
+name: P2-05-06 canonical evidence source metadata (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/offline-evidence-gate.ts"
+      - "apps/worker/src/offline-evidence-gate.test.ts"
+      - "docs/P2-05-06_EVIDENCE_FRESHNESS_CONTRACT.md"
+      - ".github/workflows/p2-05-06-source-evidence-integrity.yml"
+permissions:
+  contents: read
+jobs:
+  offline-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Enforce formatting of changed files
+        run: |
+          npx prettier --check apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts docs/P2-05-06_EVIDENCE_FRESHNESS_CONTRACT.md .github/workflows/p2-05-06-source-evidence-integrity.yml
+      - name: Build shared contracts and worker
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Test forged metadata, duplicate citations, and stale evidence
+        run: node --test apps/worker/dist/offline-evidence-gate.test.js
