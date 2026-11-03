@@ -7,6 +7,9 @@ const APPROVED_HOSTS = Object.freeze({
   usgs_news: "www.usgs.gov",
 });
 const REFUSED = "Read-only RSS GET probe refused";
+const PHASES = new Set(["before_headers", "response_body"]);
+const BODY_SIZE_BANDS = new Set(["zero", "under_limit", "over_limit"]);
+const DECLARED_LENGTH_BANDS = new Set(["missing", "under_limit", "over_limit", "invalid"]);
 const TRANSPORT_REASONS = new Set([
   "dns_unavailable",
   "dns_address_refused",
@@ -130,11 +133,21 @@ export async function runReadOnlyRssGetProbe(
         detail.httpStatus <= 599
           ? detail.httpStatus
           : undefined;
+      const phase = PHASES.has(detail?.phase) ? detail.phase : undefined;
+      const bodySizeBand = BODY_SIZE_BANDS.has(detail?.bodySizeBand)
+        ? detail.bodySizeBand
+        : undefined;
+      const declaredLengthBand = DECLARED_LENGTH_BANDS.has(detail?.declaredLengthBand)
+        ? detail.declaredLengthBand
+        : undefined;
       report.push({
         sourceId: source.id,
         stage: "https_or_http_refused",
         refusal: kind,
         ...(httpStatus === undefined ? {} : { httpStatus }),
+        ...(phase === undefined ? {} : { phase }),
+        ...(bodySizeBand === undefined ? {} : { bodySizeBand }),
+        ...(declaredLengthBand === undefined ? {} : { declaredLengthBand }),
       });
       continue;
     }
