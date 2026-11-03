@@ -39,10 +39,7 @@ test("DNS rejects all unsafe or oversized answer sets without fallback", () => {
     forbiddenCount: 0,
   });
   assert.equal(dnsVerdict([], validIp).status, "empty_dns_response");
-  assert.equal(
-    dnsVerdict(["1.1.1.1", "127.0.0.1"], validIp).status,
-    "non_public_ipv4_in_answers",
-  );
+  assert.equal(dnsVerdict(["1.1.1.1", "127.0.0.1"], validIp).status, "non_public_ipv4_in_answers");
   assert.equal(
     dnsVerdict(Array.from({ length: 17 }, () => "8.8.8.8"), validIp).status,
     "too_many_ipv4_answers",
