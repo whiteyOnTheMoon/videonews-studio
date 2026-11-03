@@ -33,7 +33,7 @@ test("only exact NOAA source and explicit one-shot operator authorization may se
     ["VNS_FEED_CANARY_SOURCE_ID", ""],
     ["VNS_FEED_CANARY_OPERATOR_ACK", "true"],
     ["VNS_FEED_CANARY_OPERATOR_ACK", ""],
-  ]) {
+  ] as const) {
     assert.throws(
       () => readSingleSourceCanarySelection({ ...safe, [key]: invalid }, "single_pass"),
       /canary gate refused/,
