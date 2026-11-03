@@ -256,3 +256,72 @@ test("explicit source-reviewed RSS endpoint differs from article URL prefix with
   );
   assert.equal(state.calls.length, 1);
 });
+
+test("operator diagnostic classifies only fixed reasons without exposing headers or secrets", async () => {
+  const src = registry()[0]!;
+  const cases = [
+    { reply: { ...good, status: 301 }, kind: "http_status_refused", httpStatus: 301 },
+    { reply: { ...good, status: 403 }, kind: "http_status_refused", httpStatus: 403 },
+    { reply: { ...good, body: Buffer.alloc(131073) }, kind: "response_size_refused" },
+    {
+      reply: { ...good, headers: { "content-type": "text/html" } },
+      kind: "response_media_type_refused",
+    },
+    {
+      reply: { ...good, headers: { "content-encoding": "gzip" } },
+      kind: "response_compression_refused",
+    },
+    {
+      reply: { ...good, headers: { "content-length": "1" } },
+      kind: "response_framing_refused",
+    },
+    {
+      reply: { ...good, headers: { etag: "PRIVATE_SECRET\\r\\n" } },
+      kind: "response_header_refused",
+    },
+    { reply: { ...good, body: Buffer.from([0xff]) }, kind: "response_utf8_refused" },
+  ];
+  for (const item of cases) {
+    const events: Array<{ sourceId: string; refusal: unknown }> = [];
+    const transport = createPinnedFeedHttpsTransport(registry(), POLICY, {
+      ...deps({ requestPinned: async () => item.reply }).values,
+      onRefusal(sourceId, refusal) {
+        events.push({ sourceId, refusal });
+      },
+    });
+    await assert.rejects(transport.request(src, { etag: null, lastModified: null }));
+    assert.deepEqual(events, [
+      {
+        sourceId: src.id,
+        refusal: {
+          kind: item.kind,
+          ...(item.httpStatus === undefined ? {} : { httpStatus: item.httpStatus }),
+        },
+      },
+    ]);
+    assert.ok(!JSON.stringify(events).includes("PRIVATE_SECRET"));
+  }
+});
+
+test("diagnostic callbacks never change rejection and never expose raw network errors", async () => {
+  const src = registry()[0]!;
+  const events: unknown[] = [];
+  const transport = createPinnedFeedHttpsTransport(registry(), POLICY, {
+    ...deps({
+      requestPinned: async () => {
+        throw new Error("VERY_SECRET_SOURCE_URL");
+      },
+    }).values,
+    onRefusal(sourceId, refusal) {
+      events.push({ sourceId, refusal });
+      throw new Error("DIAGNOSTIC_SECRET");
+    },
+  });
+  await assert.rejects(transport.request(src, { etag: null, lastModified: null }), (error) => {
+    assert.ok(error instanceof Error);
+    assert.equal(error.message, "Feed HTTPS retrieval refused");
+    return true;
+  });
+  assert.deepEqual(events, [{ sourceId: src.id, refusal: { kind: "https_unavailable" } }]);
+  assert.equal(JSON.stringify(events).includes("SECRET"), false);
+});

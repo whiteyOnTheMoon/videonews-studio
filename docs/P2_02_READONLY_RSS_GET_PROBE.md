@@ -44,3 +44,19 @@ checkpoint/anchor admission before any production polling.
 
 No feed-canary, replay, checkpoint reset, lease reset, Redis queue
 modification or automatic scheduler action is part of this diagnostic.
+
+## Safe refusal classification
+
+When GET is refused, the optional operator-only callback now reports one
+closed, constant reason (e.g. `response_size_refused`,
+`response_media_type_refused`, `request_timeout`, `https_unavailable`).
+For `http_status_refused`, an integer HTTP status may also appear.
+No upstream error messages, headers, body bytes, Location, DNS addresses
+or untrusted strings reach the operator output. Normal worker execution
+does not configure the callback and its public error messages stay generic.
+
+The fixed 128 KiB response limit and every other transport admission rule
+remain unchanged. Do **not** increase it or admit redirects based solely
+on a failure classification; review source rights and metadata constraints
+first. In particular, the NASA feed may include long article bodies, but
+that is not evidence of which actual refusal occurred on the VPS.

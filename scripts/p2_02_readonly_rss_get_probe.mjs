@@ -7,6 +7,21 @@ const APPROVED_HOSTS = Object.freeze({
   usgs_news: "www.usgs.gov",
 });
 const REFUSED = "Read-only RSS GET probe refused";
+const TRANSPORT_REASONS = new Set([
+  "dns_unavailable",
+  "dns_address_refused",
+  "https_unavailable",
+  "request_timeout",
+  "http_status_refused",
+  "response_size_refused",
+  "response_stream_refused",
+  "response_compression_refused",
+  "response_framing_refused",
+  "response_header_refused",
+  "response_media_type_refused",
+  "response_utf8_refused",
+  "response_304_body_refused",
+]);
 const DECODE_REASONS = new Map([
   ["Feed XML unsafe", "unsafe_xml"],
   ["Feed XML envelope invalid", "xml_envelope_invalid"],
@@ -91,14 +106,36 @@ function safeDecodeReason(error) {
  * The injected transport in production is the identical pinned/no-redirect
  * HTTPS transport used by the worker. Never log feed XML, links or titles.
  */
-export async function runReadOnlyRssGetProbe(validated, transport, decodeApprovedFeed) {
+export async function runReadOnlyRssGetProbe(
+  validated,
+  transport,
+  decodeApprovedFeed,
+  failures = new Map(),
+) {
   const report = [];
   for (const source of validated.approved) {
     let response;
     try {
       response = await transport.request(source, { etag: null, lastModified: null });
     } catch {
-      report.push({ sourceId: source.id, stage: "https_or_http_refused" });
+      const detail = failures.get(source.id);
+      const kind =
+        detail && typeof detail === "object" && TRANSPORT_REASONS.has(detail.kind)
+          ? detail.kind
+          : "unclassified";
+      const httpStatus =
+        kind === "http_status_refused" &&
+        Number.isInteger(detail?.httpStatus) &&
+        detail.httpStatus >= 100 &&
+        detail.httpStatus <= 599
+          ? detail.httpStatus
+          : undefined;
+      report.push({
+        sourceId: source.id,
+        stage: "https_or_http_refused",
+        refusal: kind,
+        ...(httpStatus === undefined ? {} : { httpStatus }),
+      });
       continue;
     }
     if (response.status !== 200) {
@@ -147,8 +184,18 @@ async function main() {
     parseReviewedSourceRegistry,
     approvedSourceForUrl,
   );
-  const transport = createPinnedFeedHttpsTransport(validated.registry, validated.policy);
-  const report = await runReadOnlyRssGetProbe(validated, transport, decodeApprovedFeed);
+  const failures = new Map();
+  const transport = createPinnedFeedHttpsTransport(validated.registry, validated.policy, {
+    onRefusal(sourceId, refusal) {
+      failures.set(sourceId, refusal);
+    },
+  });
+  const report = await runReadOnlyRssGetProbe(
+    validated,
+    transport,
+    decodeApprovedFeed,
+    failures,
+  );
   for (const result of report) console.log(JSON.stringify(result));
 }
 

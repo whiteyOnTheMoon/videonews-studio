@@ -17,13 +17,38 @@ interface WireReply {
   body: Buffer;
 }
 
+/** Optional operator-only fixed-code reporting; never used for normal worker logs. */
+export type FeedHttpsRefusalKind =
+  | "dns_unavailable"
+  | "dns_address_refused"
+  | "https_unavailable"
+  | "request_timeout"
+  | "http_status_refused"
+  | "response_size_refused"
+  | "response_stream_refused"
+  | "response_compression_refused"
+  | "response_framing_refused"
+  | "response_header_refused"
+  | "response_media_type_refused"
+  | "response_utf8_refused"
+  | "response_304_body_refused";
+
+export interface FeedHttpsRefusal {
+  kind: FeedHttpsRefusalKind;
+  /** Exact numeric status only for a rejected HTTP response, never a Location header. */
+  httpStatus?: number;
+}
+
 export interface FeedHttpsDependencies {
   resolveIPv4(hostname: string): Promise<string[]>;
   requestPinned(
     url: URL,
     address: string,
     requestHeaders: Record<string, string>,
+    diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number) => void,
   ): Promise<WireReply>;
+  /** Diagnostic side channel: fixed labels only, no raw HTTP/Node errors. */
+  onRefusal?: (sourceId: string, refusal: FeedHttpsRefusal) => void;
 }
 
 const TYPES: Readonly<Record<string, readonly string[]>> = {
@@ -71,13 +96,15 @@ function requestPinned(
   url: URL,
   address: string,
   conditionalHeaders: Record<string, string>,
+  diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number) => void,
 ): Promise<WireReply> {
   return new Promise((resolve, reject) => {
     const pinned = createPinnedHttpsOptions(url, address);
     let settled = false;
-    const fail = () => {
+    const fail = (kind: FeedHttpsRefusalKind, status?: number) => {
       if (settled) return;
       settled = true;
+      diagnose?.(kind, status);
       reject(new Error("Feed HTTPS retrieval refused"));
     };
     const req = https.request(
@@ -93,7 +120,7 @@ function requestPinned(
       (res) => {
         if (res.statusCode !== 200 && res.statusCode !== 304) {
           res.destroy();
-          fail();
+          fail("http_status_refused", res.statusCode);
           return;
         }
         const chunks: Buffer[] = [];
@@ -102,12 +129,13 @@ function requestPinned(
           size += chunk.length;
           if (size > MAX_BYTES) {
             res.destroy();
-            fail();
+            fail("response_size_refused");
           } else {
             chunks.push(chunk);
           }
         });
-        res.on("error", fail);
+        res.on("error", () => fail("response_stream_refused"));
+        res.on("aborted", () => fail("response_stream_refused"));
         res.on("end", () => {
           if (settled) return;
           settled = true;
@@ -125,8 +153,13 @@ function requestPinned(
         });
       },
     );
-    req.on("timeout", () => req.destroy(new Error("Feed TLS timeout")));
-    req.on("error", fail);
+    req.on("timeout", () => {
+      fail("request_timeout");
+      req.destroy(new Error("Feed TLS timeout"));
+    });
+    req.on("error", (error: NodeJS.ErrnoException) => {
+      fail(error.code === "ABORT_ERR" ? "request_timeout" : "https_unavailable");
+    });
     req.end();
   });
 }
@@ -151,6 +184,25 @@ export function createPinnedFeedHttpsTransport(
       source: RegisteredResearchSource,
       validators: FeedValidators,
     ): Promise<FeedResponse> {
+      let reported = false;
+      const diagnose = (kind: FeedHttpsRefusalKind, httpStatus?: number): void => {
+        if (reported) return;
+        reported = true;
+        // Never expose the raw header value, URL, IP, response bytes or error.
+        const refusal: FeedHttpsRefusal =
+          kind === "http_status_refused" &&
+          Number.isInteger(httpStatus) &&
+          httpStatus !== undefined &&
+          httpStatus >= 100 &&
+          httpStatus <= 599
+            ? { kind, httpStatus }
+            : { kind };
+        try {
+          dependencies.onRefusal?.(source.id, refusal);
+        } catch {
+          // Diagnostic errors must not weaken admission or change the result.
+        }
+      };
       // Require exact registry identity and approved most-specific URL scope.
       const approved = registry.find((item) => item.id === source.id);
       if (
@@ -202,6 +254,7 @@ export function createPinnedFeedHttpsTransport(
       try {
         ips = await deadline(resolve(url.hostname));
       } catch {
+        diagnose("dns_unavailable");
         throw new Error("Feed DNS resolution refused");
       }
       if (
@@ -210,22 +263,29 @@ export function createPinnedFeedHttpsTransport(
         ips.length > 16 ||
         !ips.every((ip) => isPublicIPv4(ip))
       ) {
+        diagnose("dns_address_refused");
         throw new Error("Feed DNS address refused");
       }
       const pinned = ips[0];
-      if (!pinned) throw new Error("Feed DNS address refused");
+      if (!pinned) {
+        diagnose("dns_address_refused");
+        throw new Error("Feed DNS address refused");
+      }
       let response: WireReply;
       try {
-        response = await deadline(request(url, pinned, conditional));
+        response = await deadline(request(url, pinned, conditional, diagnose));
       } catch {
+        diagnose("https_unavailable");
         throw new Error("Feed HTTPS retrieval refused");
       }
       if (!Buffer.isBuffer(response.body) || response.body.length > MAX_BYTES) {
+        diagnose("response_size_refused");
         throw new Error("Feed response bytes refused");
       }
       const headers = response.headers;
       const encoding = headers["content-encoding"];
       if (encoding !== undefined && encoding !== "identity") {
+        diagnose("response_compression_refused");
         throw new Error("Feed response compression forbidden");
       }
       const declared = headers["content-length"];
@@ -235,12 +295,23 @@ export function createPinnedFeedHttpsTransport(
           !/^(0|[1-9][0-9]*)$/.test(declared) ||
           Number(declared) !== response.body.length)
       ) {
+        diagnose("response_framing_refused");
         throw new Error("Feed response framing refused");
       }
-      const validatorEtag = header(headers.etag);
-      const validatorModified = header(headers["last-modified"]);
+      let validatorEtag: string | null;
+      let validatorModified: string | null;
+      try {
+        validatorEtag = header(headers.etag);
+        validatorModified = header(headers["last-modified"]);
+      } catch {
+        diagnose("response_header_refused");
+        throw new Error("Feed response header refused");
+      }
       if (response.status === 304) {
-        if (response.body.length !== 0) throw new Error("Feed 304 body refused");
+        if (response.body.length !== 0) {
+          diagnose("response_304_body_refused");
+          throw new Error("Feed 304 body refused");
+        }
         return {
           status: 304,
           mediaType: null,
@@ -249,17 +320,25 @@ export function createPinnedFeedHttpsTransport(
           lastModified: validatorModified,
         };
       }
-      if (response.status !== 200) throw new Error("Feed HTTP status refused");
+      if (response.status !== 200) {
+        diagnose("http_status_refused", response.status);
+        throw new Error("Feed HTTP status refused");
+      }
       const rawType = headers["content-type"];
-      if (typeof rawType !== "string") throw new Error("Feed media type refused");
+      if (typeof rawType !== "string") {
+        diagnose("response_media_type_refused");
+        throw new Error("Feed media type refused");
+      }
       const mediaType = rawType.split(";")[0]?.trim().toLowerCase();
       if (!mediaType || !(TYPES[source.access] ?? []).includes(mediaType)) {
+        diagnose("response_media_type_refused");
         throw new Error("Feed media type refused");
       }
       let body: string;
       try {
         body = new TextDecoder("utf-8", { fatal: true }).decode(response.body);
       } catch {
+        diagnose("response_utf8_refused");
         throw new Error("Feed response UTF-8 refused");
       }
       return {
