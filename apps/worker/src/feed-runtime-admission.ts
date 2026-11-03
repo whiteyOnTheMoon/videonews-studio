@@ -135,7 +135,7 @@ export function readFeedRuntimeAdmission(
     redisUser,
     anchorHost,
     anchorUser,
-    anchorPlacement,
+    anchorPlacement: sameVpsAnchor ? "same_vps" : "separate_tls",
     anchorDatabase: sameVpsAnchor ? "videonews" : "vns_source_anchor",
     initialBootstrap: env.VNS_FEED_SOURCE_BOOTSTRAP === "true",
     trustPolicyRevision,
