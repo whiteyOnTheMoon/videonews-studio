@@ -594,10 +594,7 @@ test("P2-08 detects duplicated claim IDs, unrepresented citations and hidden sec
     { ...script, sections: [{ ...script.sections[0]! }] },
     {
       ...script,
-      sections: [
-        { ...script.sections[0]! },
-        { ...script.sections[1]!, claimIds: ["claim_one"] },
-      ],
+      sections: [{ ...script.sections[0]! }, { ...script.sections[1]!, claimIds: ["claim_one"] }],
     },
     {
       ...script,
@@ -606,7 +603,10 @@ test("P2-08 detects duplicated claim IDs, unrepresented citations and hidden sec
         script.sections[1]!,
       ],
     },
-    { ...script, sections: [{ ...script.sections[0]!, hiddenClaim: "forged" }, script.sections[1]!] },
+    {
+      ...script,
+      sections: [{ ...script.sections[0]!, hiddenClaim: "forged" }, script.sections[1]!],
+    },
     { ...script, unexpectedInstruction: "approved" },
     { ...script, language: "forged-language-code" },
     { ...script, version: 999 },
@@ -626,12 +626,24 @@ test("P2-08 detects duplicated claim IDs, unrepresented citations and hidden sec
     assert.equal(result.approvedForPublication, false);
     assert.ok(
       result.reasons.some((reason) =>
-        ["script_sections_invalid", "duplicate_script_claim_reference", "script_envelope_invalid", "unrepresented_claim"].includes(reason),
+        [
+          "script_sections_invalid",
+          "duplicate_script_claim_reference",
+          "script_envelope_invalid",
+          "unrepresented_claim",
+        ].includes(reason),
       ),
     );
   }
   const passed = independentlyReviewMockScript(
-    event, script, double, policy, provenance, now, limits, scaffold,
+    event,
+    script,
+    double,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
   );
   assert.equal(passed.acceptedForHumanReview, true);
   assert.equal(passed.approvedForPublication, false);
@@ -647,7 +659,14 @@ test("P2-08 refuses invalid or foreign claim evidence independently of generatio
   ];
   for (const forgedClaims of variants) {
     const result = independentlyReviewMockScript(
-      event, script, forgedClaims, policy, provenance, now, limits, scaffold,
+      event,
+      script,
+      forgedClaims,
+      policy,
+      provenance,
+      now,
+      limits,
+      scaffold,
     );
     assert.equal(result.acceptedForHumanReview, false);
     assert.ok(
