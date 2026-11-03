@@ -260,6 +260,7 @@ export function createDormantFeedPoller(
   transport: FeedTransport,
   authority?: FeedSourceAuthority,
   onFailure?: (sourceId: string, stage: FeedPollFailureStage) => void,
+  oneShotSourceId?: string,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -276,6 +277,9 @@ export function createDormantFeedPoller(
   if (new Set(sources.map((source) => source.id)).size !== sources.length) {
     throw new Error("Duplicate feed source identity");
   }
+  if (oneShotSourceId !== undefined && !sources.some((source) => source.id === oneShotSourceId)) {
+    throw new Error("Feed single source not in approved registry");
+  }
   function failed(sourceId: string, stage: FeedPollFailureStage): PollResult {
     try {
       onFailure?.(sourceId, stage);
@@ -291,6 +295,10 @@ export function createDormantFeedPoller(
       }
       const results: PollResult[] = [];
       for (const source of sources) {
+        // An operator-selected one-shot source is a subset of the complete,
+        // independently reviewed signed registry. Other sources get no
+        // authority query, SQL lease, DNS lookup or outbound HTTPS request.
+        if (oneShotSourceId !== undefined && source.id !== oneShotSourceId) continue;
         // Never consume a poll lease or contact HTTPS for a stale/revoked
         // snapshot. An unavailable authority is a per-source failure.
         if (authority) {

@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
 import type { Pool } from "pg";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
 import { ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
@@ -73,6 +74,8 @@ export function readFeedRuntimeAdmission(
   ) {
     throw new Error("Feed runtime mode refused");
   }
+  // Fail closed before any secrets, DNS, DB or Redis are opened.
+  readSingleSourceCanarySelection(env, expectedMode);
   if (
     REQUIRED_FLAGS.some((flag) => env[flag] !== "true") ||
     env.VNS_FEED_RUNTIME_MODE !== expectedMode ||
