@@ -16,6 +16,7 @@ import { acceptDormantSourceFile } from "./source-export-files.js";
 import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.js";
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
+import { feedAnchorPoolConfig } from "./feed-anchor-pool-config.js";
 
 import {
   readFeedSecretFile as readFeedSecret,
@@ -59,29 +60,15 @@ export async function openTrustedFeedContext(
     if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
       throw new Error("Publisher identity refused");
     }
-    // The acknowledged same-VPS mode uses SCRAM over the private backend,
-    // not verified TLS. Never silently downgrade a separate authority.
-    const anchorSsl =
-      admission.anchorPlacement === "separate_tls"
-        ? {
-            ca: readPinnedFeedTrustFile(admission.anchorCaPath),
-            rejectUnauthorized: true,
-            servername: admission.anchorHost,
-          }
-        : false;
     const anchorPassword = readFeedSecret(admission.anchorPasswordPath);
-    anchorPool = new Pool({
-      host: admission.anchorHost,
-      port: 5432,
-      database: admission.anchorDatabase,
-      user: admission.anchorUser,
-      password: anchorPassword,
-      ssl: anchorSsl,
-      max: 1,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 5000,
-      application_name: "vns_feed_anchor_guard",
-    });
+    anchorPool = new Pool(
+      feedAnchorPoolConfig(
+        admission,
+        anchorPassword,
+        readPinnedFeedTrustFile,
+        "vns_feed_anchor_guard",
+      ),
+    );
     await attestFeedSourceAnchorIdentity(anchorPool, admission.anchorUser);
     const anchor = postgresSourceRevisionAnchor({
       async query(sql, params) {

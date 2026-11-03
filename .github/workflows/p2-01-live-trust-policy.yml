@@ -12,6 +12,9 @@ on:
       - "apps/worker/src/feed-source-anchor-identity.ts"
       - "apps/worker/src/feed-source-anchor-identity.test.ts"
       - "apps/worker/src/feed-trusted-context.ts"
+      - "apps/worker/src/feed-anchor-pool-config.ts"
+      - "apps/worker/src/feed-anchor-pool-config.test.ts"
+      - "scripts/test_p2_feed_anchor_wiring.mjs"
       - "apps/worker/src/feed-observe-once.ts"
       - "apps/worker/src/feed-trust-policy-runtime.ts"
       - "apps/worker/src/feed-trust-policy-runtime.test.ts"
@@ -37,10 +40,10 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check source formatting
-        run: npx prettier --check apps/worker/src/bounded-feed-scheduler.test.ts apps/worker/src/feed-scheduler-continuous.test.ts apps/worker/src/feed-separated-roles.test.ts scripts/ci_p2_separated_ports.mjs apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-trust-policy-runtime.ts apps/worker/src/feed-trust-policy-runtime.test.ts compose.feed-observation.yaml scripts/test_p2_feed_compose.mjs docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md docs/P2_01_SAME_VPS_ANCHOR.md .github/workflows/p2-01-live-trust-policy.yml
+        run: npx prettier --check apps/worker/src/bounded-feed-scheduler.test.ts apps/worker/src/feed-scheduler-continuous.test.ts apps/worker/src/feed-separated-roles.test.ts scripts/ci_p2_separated_ports.mjs apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-source-anchor-identity.ts apps/worker/src/feed-source-anchor-identity.test.ts apps/worker/src/feed-trusted-context.ts apps/worker/src/feed-anchor-pool-config.ts apps/worker/src/feed-anchor-pool-config.test.ts apps/worker/src/feed-observe-once.ts apps/worker/src/feed-trust-policy-runtime.ts apps/worker/src/feed-trust-policy-runtime.test.ts compose.feed-observation.yaml scripts/test_p2_feed_compose.mjs scripts/test_p2_feed_anchor_wiring.mjs docs/P2_01_LIVE_TRUST_POLICY_ANCHOR.md docs/P2_01_SAME_VPS_ANCHOR.md .github/workflows/p2-01-live-trust-policy.yml
       - name: Build actual worker and execute trust admission tests
         run: |
           npm run build --workspace @vns/shared
           npm run build --workspace @vns/worker
-          node --test apps/worker/dist/feed-trust-policy-runtime.test.js apps/worker/dist/feed-runtime-admission.test.js apps/worker/dist/feed-source-anchor-identity.test.js apps/worker/dist/postgres-trust-policy-anchor.test.js
-          node --test scripts/test_p2_feed_compose.mjs
+          node --test apps/worker/dist/feed-trust-policy-runtime.test.js apps/worker/dist/feed-runtime-admission.test.js apps/worker/dist/feed-source-anchor-identity.test.js apps/worker/dist/postgres-trust-policy-anchor.test.js apps/worker/dist/feed-anchor-pool-config.test.js
+          node --test scripts/test_p2_feed_compose.mjs scripts/test_p2_feed_anchor_wiring.mjs
