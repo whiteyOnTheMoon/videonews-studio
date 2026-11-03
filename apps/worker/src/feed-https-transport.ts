@@ -163,8 +163,11 @@ function requestPinned(
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
           if (size > MAX_BYTES) {
-            res.destroy();
+            // Report the size limit before destroying the response: destroy()
+            // can synchronously emit "aborted" or "error", which must not
+            // overwrite the primary fail-closed refusal.
             fail("response_size_refused");
+            res.destroy();
           } else {
             chunks.push(chunk);
           }

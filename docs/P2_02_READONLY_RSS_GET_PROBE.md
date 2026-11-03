@@ -79,3 +79,11 @@ Content-Length is an untrusted upstream header and need not reflect the
 actual body. No raw content length, bytes, headers, URLs or upstream error
 strings are emitted. These observations must not be used to circumvent
 the byte/time or strict reviewed-source restrictions.
+
+## P2-02 stream-abort event ordering
+
+A response exceeding 128 KiB first records `response_size_refused`, **then**
+destroys the stream. This prevents a synchronous `aborted` event from
+mislabeling a size-based refusal as `response_stream_refused`. The
+unchanged buffer limit still stops and rejects the response immediately;
+it does not permit a partial feed to be decoded or persisted.
