@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { verifyCheckpointPage, verifyTimelinePage } from "../../lib/editorial-export-continuity";
+import { verifyCheckpointPageDigest, verifyTimelinePage } from "../../lib/editorial-export-continuity";
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 type Ledger = "checkpoints" | "timeline";
@@ -107,10 +107,11 @@ export default function EditorialAuditExport({ enabled }: { enabled: boolean }) 
         }
         if (collected.length > 10000) throw new Error("Audit export safety limit exceeded");
         if (kind === "checkpoints") {
-          const result = verifyCheckpointPage(
+          const result = await verifyCheckpointPageDigest(
             rows,
             { revision: nextRevision, chain: lastChain },
             raw.nextRevision,
+            id,
           );
           if (!result) throw new Error("Checkpoint page continuity invalid");
           nextRevision = result.revision;
