@@ -1,5 +1,9 @@
 import type { Pool } from "pg";
-import { createDormantFeedPoller, type PollResult } from "./feed-poller.js";
+import {
+  createDormantFeedPoller,
+  type FeedPollFailureStage,
+  type PollResult,
+} from "./feed-poller.js";
 import {
   createPinnedFeedHttpsTransport,
   type FeedHttpsDependencies,
@@ -73,7 +77,17 @@ export function createDormantFeedScheduler(
     env.VNS_FEED_RUNTIME_ENABLED === "true"
       ? new PostgresFeedSourceAuthority(ports.pool)
       : undefined;
-  const poller = createDormantFeedPoller(registry, true, store, transport, authority);
+  // Exact opt-in: only the real, manually triggered single-pass observer may
+  // log approved source IDs and fixed failure stages. Default is silent.
+  const onFailure =
+    env.VNS_FEED_POLL_STAGE_DIAGNOSTICS === "true" &&
+    env.VNS_FEED_RUNTIME_ENABLED === "true" &&
+    env.VNS_FEED_RUNTIME_MODE === "single_pass"
+      ? (sourceId: string, stage: FeedPollFailureStage) => {
+          console.log(JSON.stringify({ event: "feed_poll_failure_stage", sourceId, stage }));
+        }
+      : undefined;
+  const poller = createDormantFeedPoller(registry, true, store, transport, authority, onFailure);
   const sourceIds = Object.freeze(
     registry
       .filter(
