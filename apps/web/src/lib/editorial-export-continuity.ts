@@ -170,3 +170,56 @@ export function verifyTimelinePage(
   }
   return cursor;
 }
+
+
+/**
+ * Recompute PostgreSQL migration 0030's SHA-256 value for every editorial
+ * checkpoint, not just the previous_sha256 pointer. This catches accidentally
+ * altered checkpoint fields even if the page cursor and pointers look sound.
+ *
+ * PostgreSQL jsonb::text uses ", " between array members. The synchronous
+ * shape validator has already restricted every reason to unescaped ASCII
+ * tokens, so this representation exactly matches its SQL canonical form.
+ *
+ * Browser Web Crypto must be available (HTTPS secure context); otherwise
+ * refuse the export. This is NOT independent authenticity: a compromised
+ * database could rewrite the full chain, including its root digest.
+ */
+export async function verifyCheckpointPageDigest(
+  rows: readonly unknown[],
+  prior: CheckpointPageCursor,
+  nextRevision: unknown,
+  eventId: string,
+): Promise<CheckpointPageCursor | null> {
+  const verified = verifyCheckpointPage(rows, prior, nextRevision);
+  if (!verified || typeof eventId !== "string" || !UUID.test(eventId)) return null;
+  try {
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) return null;
+    for (const raw of rows) {
+      const entry = raw as Record<string, unknown>;
+      const codes = entry.reason_codes as string[];
+      const jsonbReasons = "[" + codes.map((code) => JSON.stringify(code)).join(", ") + "]";
+      const message = [
+        entry.previous_sha256,
+        eventId,
+        entry.revision,
+        entry.stage,
+        entry.outcome,
+        entry.actor_id,
+        entry.artifact_sha256,
+        jsonbReasons,
+        entry.score === null ? "null" : entry.score,
+      ].join(":");
+      const actual = await subtle.digest("SHA-256", new TextEncoder().encode(message));
+      const hex = Array.from(new Uint8Array(actual), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("");
+      if (hex !== entry.chain_sha256) return null;
+    }
+    return verified;
+  } catch {
+    // Missing Web Crypto and any unexpected digest failure are hard denials.
+    return null;
+  }
+}
