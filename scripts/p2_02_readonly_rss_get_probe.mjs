@@ -190,12 +190,7 @@ async function main() {
       failures.set(sourceId, refusal);
     },
   });
-  const report = await runReadOnlyRssGetProbe(
-    validated,
-    transport,
-    decodeApprovedFeed,
-    failures,
-  );
+  const report = await runReadOnlyRssGetProbe(validated, transport, decodeApprovedFeed, failures);
   for (const result of report) console.log(JSON.stringify(result));
 }
 
