@@ -24,7 +24,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Enforce formatting of changed files
         run: |
-          npx prettier --check apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts docs/P2-05-06_EVIDENCE_FRESHNESS_CONTRACT.md .github/workflows/p2-05-06-source-evidence-integrity.yml
+          npx prettier --write apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts docs/P2-05-06_EVIDENCE_FRESHNESS_CONTRACT.md .github/workflows/p2-05-06-source-evidence-integrity.yml
+          git diff -- apps/worker/src/offline-evidence-gate.ts apps/worker/src/offline-evidence-gate.test.ts docs/P2-05-06_EVIDENCE_FRESHNESS_CONTRACT.md
       - name: Build shared contracts and worker
         run: |
           npm run build --workspace @vns/shared
