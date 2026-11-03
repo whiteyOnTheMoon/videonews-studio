@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import https from "node:https";
+import { createServer } from "node:net";
 import test from "node:test";
 import {
   createPinnedHttpsOptions,
@@ -183,6 +185,69 @@ test("TLS request pins checked IP while retaining approved SNI and Host", async 
       }
     });
   });
+});
+
+test("Node 22 lookup-all mode returns only the previously approved pinned IPv4", async () => {
+  const opts = createPinnedHttpsOptions(new URL(SOURCE), GOOD_IP);
+  await new Promise<void>((resolve, reject) => {
+    opts.lookup?.(HOST, { all: true }, (error, addresses) => {
+      if (error) return reject(error);
+      try {
+        assert.deepEqual(addresses, [{ address: GOOD_IP, family: 4 }]);
+        resolve();
+      } catch (assertion) {
+        reject(assertion);
+      }
+    });
+  });
+  await new Promise<void>((resolve, reject) => {
+    opts.lookup?.("unapproved.example.org", { all: true }, (error) => {
+      try {
+        assert.match(error?.message ?? "", /Unexpected DNS hostname/);
+        resolve();
+      } catch (assertion) {
+        reject(assertion);
+      }
+    });
+  });
+});
+
+test("Node 22 HTTPS reaches the pinned socket with lookup-all (loopback only)", async () => {
+  // The local test socket is deliberately injected AFTER the public-IP policy
+  // boundary; this does not permit private addresses in production.
+  let connections = 0;
+  const server = createServer((socket) => {
+    connections += 1;
+    socket.destroy(); // Close fully; no TLS or HTTP response.
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  try {
+    const bound = server.address();
+    assert.ok(bound && typeof bound === "object");
+    const options = {
+      ...createPinnedHttpsOptions(new URL(SOURCE), "127.0.0.1"),
+      port: bound.port,
+      method: "HEAD",
+      autoSelectFamily: true,
+      signal: AbortSignal.timeout(1500),
+    };
+    const failure = await new Promise<NodeJS.ErrnoException>((resolve, reject) => {
+      const request = https.request(options, (response) => {
+        response.resume();
+        reject(new Error("Unexpected HTTPS response from test TCP server"));
+      });
+      request.once("error", resolve);
+      request.end();
+    });
+    assert.notEqual(failure.code, "ERR_INVALID_IP_ADDRESS");
+    assert.notEqual(failure.code, "ABORT_ERR");
+    assert.equal(connections, 1);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 });
 
 test("returns bounded content digest, never marks a retrieved article verified", async () => {
