@@ -16,11 +16,7 @@ const validIp = (ip) => ip === "1.1.1.1" || ip === "8.8.8.8";
 
 test("exact current source IDs, expected hostnames, no URL exploits", () => {
   const approved = validatedProbeSources(INPUT);
-  assert.deepEqual(approved.map((source) => source.id), [
-    "nasa_news",
-    "noaa_news",
-    "usgs_news",
-  ]);
+  assert.deepEqual(approved.map((source) => source.id), ["nasa_news", "noaa_news", "usgs_news"]);
   for (const mutation of [
     INPUT.slice(0, 2),
     [...INPUT, INPUT[0]],
@@ -95,7 +91,10 @@ test("unapproved DNS cannot trigger HTTPS, raw errors never reach operator repor
 });
 
 test("only exact recognized TLS/network codes may leave the process", () => {
-  assert.equal(safeErrorCode({ code: "ERR_TLS_CERT_ALTNAME_INVALID" }), "ERR_TLS_CERT_ALTNAME_INVALID");
+  assert.equal(
+    safeErrorCode({ code: "ERR_TLS_CERT_ALTNAME_INVALID" }),
+    "ERR_TLS_CERT_ALTNAME_INVALID",
+  );
   assert.equal(safeErrorCode({ code: "SECRET_TOKEN_123" }), "OTHER");
   assert.equal(safeErrorCode(new Error("SECRET")), "OTHER");
 });
