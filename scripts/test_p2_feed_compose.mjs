@@ -79,7 +79,13 @@ export function verifySignedFeedOverlay(data) {
   assert.deepEqual(continuous.networks, ["backend"]);
   assert.deepEqual(continuous.volumes, producer.volumes);
   assert.deepEqual(consumer.networks, ["backend", "feed_egress"]);
-  assert.deepEqual(consumer.volumes, observer.volumes);
+  assert.deepEqual(
+    consumer.volumes,
+    observer.volumes.filter(
+      (mount) => mount.target !== "/run/secrets/vns_feed_producer_redis_password",
+    ),
+  );
+  assert.deepEqual(scheduler.volumes, observer.volumes);
   assert.equal(producer.volumes.length, 1);
   assert.equal(producer.volumes[0].target, "/run/secrets/vns_feed_redis_password");
   assert.equal(producer.environment.VNS_FEED_RUNTIME_MODE, "bounded_producer");
@@ -117,11 +123,37 @@ export function verifySignedFeedOverlay(data) {
   ]) {
     assert.equal(continuous.environment[key], "${" + key + ":-0}");
   }
-  assert.deepEqual(scheduler.volumes, observer.volumes);
   assert.deepEqual(scheduler.depends_on, observer.depends_on);
+  assert.equal(
+    observer.environment.VNS_FEED_PRODUCER_REDIS_USER,
+    "${VNS_FEED_PRODUCER_REDIS_USER:-}",
+  );
+  assert.equal(
+    observer.environment.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE,
+    "/run/secrets/vns_feed_producer_redis_password",
+  );
+  assert.equal(consumer.environment.VNS_FEED_REDIS_USER, "${VNS_FEED_CONSUMER_REDIS_USER:-}");
+  assert.ok(
+    !consumer.volumes.some(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ),
+    "persistent consumer must not mount producer Redis credentials",
+  );
   must(!publisher.network_mode && !observer.network_mode, "unexpected network override");
   const mountTargets = (name) => services[name].volumes.map((x) => x.target);
   const signer = "/run/secrets/vns_source_export_signing_key";
+  assert.equal(
+    observer.volumes.filter(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ).length,
+    1,
+  );
+  assert.equal(
+    scheduler.volumes.filter(
+      (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+    ).length,
+    1,
+  );
   assert.deepEqual(mountTargets("source-publisher"), [
     "/var/lib/vns/source-publisher",
     "/run/secrets/vns_source_export_db_password",
@@ -281,6 +313,22 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["feed-observer"].environment.VNS_FEED_ANCHOR_PLACEMENT = "same_vps";
+    },
+    (copy) => {
+      copy.services["feed-observer"].environment.VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE =
+        "/tmp/unsafe";
+    },
+    (copy) => {
+      copy.services["feed-consumer"].volumes.push(
+        structuredClone(
+          copy.services["feed-observer"].volumes.find(
+            (mount) => mount.target === "/run/secrets/vns_feed_producer_redis_password",
+          ),
+        ),
+      );
+    },
+    (copy) => {
+      copy.services["feed-observer"].volumes.pop();
     },
     (copy) => {
       copy.services["feed-observer"].environment.VNS_FEED_SAME_VPS_RISK_ACK = "true";
