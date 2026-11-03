@@ -211,3 +211,28 @@ test("signed worker bootstrap requires a separate explicit operator acknowledgem
   assert.equal(approved.signedCheckpointDirectory, "/var/lib/vns/feed-source-checkpoint");
   assert.equal(readFeedRuntimeAdmission(env).initialBootstrap, false);
 });
+
+test("signed one-shot NOAA canary gating happens inside runtime admission", () => {
+  const selected = {
+    ...env,
+    VNS_FEED_CANARY_SOURCE_ID: "noaa_news",
+    VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+  };
+  const checked = readFeedRuntimeAdmission(selected);
+  assert.equal(checked.initialBootstrap, false);
+  assert.equal(checked.dbUser, login);
+  for (const change of [
+    { VNS_FEED_CANARY_SOURCE_ID: "nasa_news" },
+    { VNS_FEED_CANARY_OPERATOR_ACK: "" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "true", VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK: "true" },
+  ]) {
+    assert.throws(
+      () => readFeedRuntimeAdmission({ ...selected, ...change }),
+      /canary gate refused/,
+    );
+  }
+  assert.throws(
+    () => readFeedRuntimeAdmission(selected, "persistent_worker"),
+    /canary gate refused/,
+  );
+});
