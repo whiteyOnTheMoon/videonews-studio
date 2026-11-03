@@ -1,0 +1,33 @@
+name: P2-08 independent offline mock script QA (disposable)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/bounded-editorial-production.ts"
+      - "apps/worker/src/bounded-editorial-production.test.ts"
+      - "docs/P2-04-08_EDITORIAL_CHECKPOINT_INTEGRATION_0030.md"
+      - ".github/workflows/p2-08-independent-mock-qa.yml"
+permissions:
+  contents: read
+jobs:
+  mock-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check formatting
+        run: |
+          npx prettier --check apps/worker/src/bounded-editorial-production.ts apps/worker/src/bounded-editorial-production.test.ts docs/P2-04-08_EDITORIAL_CHECKPOINT_INTEGRATION_0030.md .github/workflows/p2-08-independent-mock-qa.yml
+      - name: Build shared contracts and worker
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Run independent offline QA regressions
+        run: node --test apps/worker/dist/bounded-editorial-production.test.js
