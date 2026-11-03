@@ -120,6 +120,7 @@ test("only exact recognized TLS/network codes may leave the process", () => {
     safeErrorCode({ code: "ERR_TLS_CERT_ALTNAME_INVALID" }),
     "ERR_TLS_CERT_ALTNAME_INVALID",
   );
+  assert.equal(safeErrorCode({ code: "ERR_INVALID_IP_ADDRESS" }), "ERR_INVALID_IP_ADDRESS");
   assert.equal(safeErrorCode({ code: "SECRET_TOKEN_123" }), "OTHER");
   assert.equal(safeErrorCode(new Error("SECRET")), "OTHER");
   assert.equal(

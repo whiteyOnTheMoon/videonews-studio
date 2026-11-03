@@ -155,9 +155,15 @@ export function createPinnedHttpsOptions(url: URL, address: string): https.Reque
     },
     // Network address is selected BEFORE opening the socket. TLS SNI and
     // certificate validation still target the original allowlisted hostname.
-    lookup: (host, _opts, callback) => {
+    lookup: (host, options, callback) => {
       if (host !== url.hostname) {
         callback(new Error("Unexpected DNS hostname"), "", 4);
+        return;
+      }
+      // Node.js 22's default address-family autoselection requests all:true.
+      // Return exactly the already-validated pinned IPv4 in that format.
+      if (options.all) {
+        callback(null, [{ address, family: 4 }]);
         return;
       }
       callback(null, address, 4);
