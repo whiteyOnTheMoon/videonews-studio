@@ -135,9 +135,7 @@ test("same-VPS anchor requires explicit shared-restore approval and exact Docker
       VNS_FEED_SAME_VPS_RISK_ACK: "ACCEPT_SHARED_POSTGRES_AND_RESTORE_DOMAIN",
     }),
   );
-  assert.throws(() =>
-    readFeedRuntimeAdmission({ ...env, VNS_FEED_ANCHOR_PLACEMENT: "same_vps" }),
-  );
+  assert.throws(() => readFeedRuntimeAdmission({ ...env, VNS_FEED_ANCHOR_PLACEMENT: "same_vps" }));
 });
 
 const allowed = {

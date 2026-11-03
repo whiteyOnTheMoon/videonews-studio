@@ -208,10 +208,7 @@ export function verifySignedFeedOverlay(data) {
     observer.environment.VNS_FEED_ANCHOR_PLACEMENT,
     "${VNS_FEED_ANCHOR_PLACEMENT:-separate_tls}",
   );
-  assert.equal(
-    observer.environment.VNS_FEED_SAME_VPS_RISK_ACK,
-    "${VNS_FEED_SAME_VPS_RISK_ACK:-}",
-  );
+  assert.equal(observer.environment.VNS_FEED_SAME_VPS_RISK_ACK, "${VNS_FEED_SAME_VPS_RISK_ACK:-}");
   for (const service of [scheduler, consumer]) {
     assert.equal(
       service.environment.VNS_FEED_ANCHOR_PLACEMENT,
