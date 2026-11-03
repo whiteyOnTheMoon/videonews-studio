@@ -24,8 +24,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check formatting
         run: |
-          npx prettier --write apps/worker/src/bounded-editorial-production.ts apps/worker/src/bounded-editorial-production.test.ts docs/P2-04-08_EDITORIAL_CHECKPOINT_INTEGRATION_0030.md .github/workflows/p2-08-independent-mock-qa.yml
-          git diff -- apps/worker/src/bounded-editorial-production.ts apps/worker/src/bounded-editorial-production.test.ts docs/P2-04-08_EDITORIAL_CHECKPOINT_INTEGRATION_0030.md
+          npx prettier --check apps/worker/src/bounded-editorial-production.ts apps/worker/src/bounded-editorial-production.test.ts docs/P2-04-08_EDITORIAL_CHECKPOINT_INTEGRATION_0030.md .github/workflows/p2-08-independent-mock-qa.yml
       - name: Build shared contracts and worker
         run: |
           npm run build --workspace @vns/shared
