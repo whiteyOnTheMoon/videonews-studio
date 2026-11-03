@@ -8,8 +8,7 @@ import {
 const consumer = "vns_feed_consumer_prod";
 const env: NodeJS.ProcessEnv = {
   VNS_FEED_PRODUCER_REDIS_USER: "vns_feed_producer_prod",
-  VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE:
-    "/run/secrets/vns_feed_producer_redis_password",
+  VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE: "/run/secrets/vns_feed_producer_redis_password",
 };
 
 test("single-shot admission binds two existing restricted Redis logins to exact secret", () => {
