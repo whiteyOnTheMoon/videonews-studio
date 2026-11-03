@@ -125,3 +125,56 @@ test "$(cat "$work_trust/a" "$work_trust/b" | grep -cx t)" -eq 1
 test "$(cat "$work_trust/a" "$work_trust/b" | grep -cx f)" -eq 1
 rm -rf "$work_trust"
 echo "PASS: trust policy authority concurrent admission"
+
+# Read-only external-operator audit, exercised on a disposable PG17 cluster.
+sql <<'SQL'
+SET ROLE vns_anchor_ci_owner;
+UPDATE vns_source_anchor.high_water
+   SET source_revision=12, host_approval_revision=7,
+       envelope_sha256=repeat('d',64)
+ WHERE anchor_id='source-export';
+RESET ROLE;
+SET ROLE vns_trust_ci_owner;
+UPDATE vns_source_anchor.trust_policy_high_water
+   SET policy_revision=3, policy_sha256=repeat('d',64)
+ WHERE singleton=true;
+RESET ROLE;
+SQL
+operator_attest() {
+  local envelope="${1:-$(printf 'd%.0s' {1..64})}"
+  local login="${2:-vns_anchor_login_ci_worker}"
+  docker exec -i "$name" psql -X -w -q -v ON_ERROR_STOP=1 \
+    -U postgres -d anchor_ci \
+    -v expected_database=anchor_ci \
+    -v expected_runtime_login="$login" \
+    -v expected_source_revision=12 \
+    -v expected_host_revision=7 \
+    -v expected_envelope_sha256="$envelope" \
+    -v expected_policy_revision=3 \
+    -v expected_policy_sha256="$(printf 'd%.0s' {1..64})" \
+    < "$root/db/independent-anchor/operator_readonly_attestation.sql"
+}
+passed="$(operator_attest)"
+test "$passed" = "PASS: independent authority stored state and runtime grants match expected candidate"
+if operator_attest "$(printf 'e%.0s' {1..64})" >/dev/null 2>&1; then
+  echo "FAIL: accepted mismatched source envelope SHA" >&2
+  exit 1
+fi
+if operator_attest "$(printf 'd%.0s' {1..64})" "vns_anchor_login_wrong" >/dev/null 2>&1; then
+  echo "FAIL: accepted wrong runtime identity" >&2
+  exit 1
+fi
+sql -c "GRANT UPDATE ON vns_source_anchor.high_water TO vns_anchor_login_ci_worker" >/dev/null
+if operator_attest >/dev/null 2>&1; then
+  echo "FAIL: accepted direct high-water UPDATE" >&2
+  exit 1
+fi
+sql -c "REVOKE UPDATE ON vns_source_anchor.high_water FROM vns_anchor_login_ci_worker" >/dev/null
+sql -c "GRANT vns_anchor_ci_owner TO vns_anchor_login_ci_worker WITH INHERIT FALSE, SET TRUE" >/dev/null
+if operator_attest >/dev/null 2>&1; then
+  echo "FAIL: accepted authority owner-role membership" >&2
+  exit 1
+fi
+sql -c "REVOKE vns_anchor_ci_owner FROM vns_anchor_login_ci_worker" >/dev/null
+test "$(operator_attest)" = "$passed"
+echo "PASS: operator attestation rejects mismatched hashes and unsafe runtime privileges"
