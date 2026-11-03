@@ -102,7 +102,6 @@ Worker-Adapter bleibt standardmäßig deaktiviert und muss weiterhin
 und gesonderte Freigabe betrieben werden. Keine produktive Migration,
 kein VPS-Deploy und keine Nachrichtenquellenaktivierung.
 
-
 ## P2-10: Browser berechnet die PostgreSQL-Checkpoint-Hashkette selbst nach
 
 Die bestehende Seiten- und Revisionskontrolle verglich bisher nur gespeicherte
