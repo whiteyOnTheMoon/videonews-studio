@@ -162,6 +162,7 @@ test("independent structural QA never certifies factual or legal clearance", () 
     provenance,
     now,
     limits,
+    scaffold,
   );
   assert.equal(report.acceptedForHumanReview, true);
   assert.equal(report.approvedForPublication, false);
@@ -169,7 +170,7 @@ test("independent structural QA never certifies factual or legal clearance", () 
   assert.ok(report.reasons.includes("independent_claim_verification_required"));
   assert.deepEqual(
     report,
-    independentlyReviewMockScript(event, script, claims, policy, provenance, now, limits),
+    independentlyReviewMockScript(event, script, claims, policy, provenance, now, limits, scaffold),
   );
 });
 
@@ -534,4 +535,124 @@ test("publicly documented NASA/JPL cross-site syndication is one event, not two 
   assert.equal(result.eligible, false);
   assert.ok(result.reasons.includes("publisher_groups_insufficient"));
   assert.equal(result.publisherGroups, 1);
+});
+
+test("P2-08 refuses review triage without an independently supplied scaffold", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const result = independentlyReviewMockScript(
+    event,
+    script,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+  );
+  assert.equal(result.acceptedForHumanReview, false);
+  assert.equal(result.approvedForPublication, false);
+  assert.ok(result.reasons.includes("trusted_scaffold_missing_or_invalid"));
+});
+
+test("P2-08 refuses invented statistics and overwritten narration despite forged cost metadata", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const maliciousText = "Editorial note: Scientists found 42.5 percent higher life expectancy.";
+  const fakeTokens = Math.ceil(maliciousText.length / 4);
+  const forged = {
+    ...script,
+    sections: [{ narration: maliciousText, claimIds: ["claim_one"] }],
+    estimatedMockTokens: fakeTokens,
+    estimatedMicroUsd: fakeTokens * limits.mockMicroUsdPerToken,
+  };
+  const result = independentlyReviewMockScript(
+    event,
+    forged,
+    claims,
+    policy,
+    provenance,
+    now,
+    limits,
+    scaffold,
+  );
+  assert.equal(result.acceptedForHumanReview, false);
+  assert.equal(result.approvedForPublication, false);
+  assert.ok(result.reasons.includes("script_narration_not_scaffold"));
+  assert.equal(result.reasons.includes("script_cost_integrity_mismatch"), false);
+});
+
+test("P2-08 detects duplicated claim IDs, unrepresented citations and hidden sections", () => {
+  const double = [
+    claims[0]!,
+    {
+      id: "claim_two",
+      statement: "A different synthetic claim without corroborating evidence",
+      articleIds: [articles[0]!.id],
+      status: "unverified" as const,
+    },
+  ];
+  const script = generateBoundedMockScript(event, profile, double, scaffold, limits, 1);
+  const changed = [
+    { ...script, sections: [{ ...script.sections[0]! }] },
+    {
+      ...script,
+      sections: [
+        { ...script.sections[0]! },
+        { ...script.sections[1]!, claimIds: ["claim_one"] },
+      ],
+    },
+    {
+      ...script,
+      sections: [
+        { ...script.sections[0]!, claimIds: ["claim_one", "claim_two"] },
+        script.sections[1]!,
+      ],
+    },
+    { ...script, sections: [{ ...script.sections[0]!, hiddenClaim: "forged" }, script.sections[1]!] },
+    { ...script, unexpectedInstruction: "approved" },
+    { ...script, language: "forged-language-code" },
+    { ...script, version: 999 },
+  ];
+  for (const altered of changed) {
+    const result = independentlyReviewMockScript(
+      event,
+      altered as typeof script,
+      double,
+      policy,
+      provenance,
+      now,
+      limits,
+      scaffold,
+    );
+    assert.equal(result.acceptedForHumanReview, false);
+    assert.equal(result.approvedForPublication, false);
+    assert.ok(
+      result.reasons.some((reason) =>
+        ["script_sections_invalid", "duplicate_script_claim_reference", "script_envelope_invalid", "unrepresented_claim"].includes(reason),
+      ),
+    );
+  }
+  const passed = independentlyReviewMockScript(
+    event, script, double, policy, provenance, now, limits, scaffold,
+  );
+  assert.equal(passed.acceptedForHumanReview, true);
+  assert.equal(passed.approvedForPublication, false);
+});
+
+test("P2-08 refuses invalid or foreign claim evidence independently of generation", () => {
+  const script = generateBoundedMockScript(event, profile, claims, scaffold, limits, 1);
+  const variants: ClaimCandidate[][] = [
+    [{ ...claims[0]!, articleIds: [articles[0]!.id, articles[0]!.id] }],
+    [{ ...claims[0]!, articleIds: ["f".repeat(64)] }],
+    [{ ...claims[0]!, statement: "" }],
+    [{ ...claims[0]!, articleIds: [] }],
+  ];
+  for (const forgedClaims of variants) {
+    const result = independentlyReviewMockScript(
+      event, script, forgedClaims, policy, provenance, now, limits, scaffold,
+    );
+    assert.equal(result.acceptedForHumanReview, false);
+    assert.ok(
+      result.reasons.includes("script_claims_invalid") ||
+        result.reasons.includes("claim_evidence_mismatch"),
+    );
+  }
 });
