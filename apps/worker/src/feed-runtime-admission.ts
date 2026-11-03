@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type { Pool } from "pg";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
 import { ISOLATED_FEED_QUEUE } from "./feed-queue-contract.js";
@@ -118,6 +119,7 @@ export function readFeedRuntimeAdmission(
       ? localRiskAck !== "ACCEPT_SHARED_POSTGRES_AND_RESTORE_DOMAIN" || anchorHost !== "postgres"
       : localRiskAck !== "" ||
         anchorHost.length > 253 ||
+        isIP(anchorHost) !== 0 ||
         !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(anchorHost) ||
         /[.](local|internal|localhost|onion)$/.test(anchorHost)) ||
     !/^vns_anchor_login_[a-z0-9_]{3,24}$/.test(anchorUser) ||

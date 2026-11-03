@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type { PoolConfig } from "pg";
 import type { FeedRuntimeAdmission } from "./feed-runtime-admission.js";
 
@@ -45,6 +46,7 @@ export function feedAnchorPoolConfig(
       admission.anchorDatabase !== "vns_source_anchor" ||
       typeof host !== "string" ||
       host.length > 253 ||
+      isIP(host) !== 0 ||
       !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(host) ||
       /[.](local|internal|localhost|onion)$/.test(host)
     ) {
