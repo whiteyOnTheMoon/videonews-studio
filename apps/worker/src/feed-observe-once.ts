@@ -16,6 +16,7 @@ import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 import { feedAnchorPoolConfig } from "./feed-anchor-pool-config.js";
 
 import { readFeedSecretFile, readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
+import { readOneShotFeedRedisAdmission } from "./feed-observer-redis-admission.js";
 
 export interface FeedObservationSummary {
   ok: true;
@@ -34,8 +35,15 @@ export async function observeFeedOnce(
 ): Promise<FeedObservationSummary> {
   // Zero side effects before fully validating every non-secret gate.
   const admission = readFeedRuntimeAdmission(env);
+  // The observer combines a producer and consumer ONLY for one explicit
+  // single-pass canary. It must use their existing, distinct Redis ACL users.
+  const redisAdmission = readOneShotFeedRedisAdmission(env, admission.redisUser);
   const pgPassword = readFeedSecretFile(admission.dbSecretPath);
-  const redisPassword = readFeedSecretFile(admission.redisSecretPath);
+  const producerRedisPassword = readFeedSecretFile(redisAdmission.producerSecretPath);
+  const consumerRedisPassword = readFeedSecretFile(admission.redisSecretPath);
+  if (producerRedisPassword === consumerRedisPassword) {
+    throw new Error("Feed observation Redis credentials not separated");
+  }
 
   const pool = new Pool({
     host: admission.dbHost,
@@ -115,19 +123,29 @@ export async function observeFeedOnce(
     const redisConfig = {
       host: admission.redisHost,
       port: 6379,
-      username: admission.redisUser,
-      password: redisPassword,
       enableReadyCheck: true,
       maxRetriesPerRequest: null,
       connectTimeout: 5000,
       lazyConnect: true,
       retryStrategy: () => null,
     };
-    producer = new Redis(redisConfig);
-    consumer = new Redis(redisConfig);
-    // QueueEvents performs blocking Redis reads. Never multiplex that connection
-    // with the producer: dedicated ownership makes shutdown and ACLs predictable.
-    eventsConnection = new Redis(redisConfig);
+    producer = new Redis({
+      ...redisConfig,
+      username: redisAdmission.producerUser,
+      password: producerRedisPassword,
+    });
+    consumer = new Redis({
+      ...redisConfig,
+      username: redisAdmission.consumerUser,
+      password: consumerRedisPassword,
+    });
+    // QueueEvents performs blocking Redis reads through the consumer ACL.
+    // Never grant the consumer producer rights or share its connection.
+    eventsConnection = new Redis({
+      ...redisConfig,
+      username: redisAdmission.consumerUser,
+      password: consumerRedisPassword,
+    });
     // A worker Redis failure must be an application failure, not an unhandled
     // error which prints connection/credential details to logs.
     producer.on("error", () => undefined);

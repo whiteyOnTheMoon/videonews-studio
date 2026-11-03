@@ -148,6 +148,8 @@ services:
       VNS_FEED_REDIS_HOST: redis
       VNS_FEED_DB_USER: "${VNS_FEED_DB_USER:-}"
       VNS_FEED_REDIS_USER: "${VNS_FEED_REDIS_USER:-}"
+      VNS_FEED_PRODUCER_REDIS_USER: "${VNS_FEED_PRODUCER_REDIS_USER:-}"
+      VNS_FEED_OBSERVER_PRODUCER_REDIS_PASSWORD_FILE: /run/secrets/vns_feed_producer_redis_password
     volumes:
       - type: bind
         source: ${VNS_P2_WORKER_INBOX_DIR:?Private worker inbox not provisioned}
@@ -181,6 +183,11 @@ services:
       - type: bind
         source: ${VNS_P2_FEED_REDIS_PASSWORD_FILE:?Feed Redis password not provisioned}
         target: /run/secrets/vns_feed_redis_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_FEED_PRODUCER_REDIS_PASSWORD_FILE:?Restricted producer Redis password not provisioned}
+        target: /run/secrets/vns_feed_producer_redis_password
         read_only: true
         bind: { create_host_path: false }
     depends_on:
@@ -266,6 +273,42 @@ services:
     <<: *vns-feed-observer
     profiles: [feed-consumer]
     entrypoint: ["node", "apps/worker/dist/feed-worker-persistent.js", "--persistent-worker"]
+    # This persistent consumer must never receive the producer Redis password.
+    volumes:
+      - type: bind
+        source: ${VNS_P2_WORKER_INBOX_DIR:?Private worker inbox not provisioned}
+        target: /var/lib/vns/feed-source-inbox
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_WORKER_CHECKPOINT_DIR:?Worker checkpoint not provisioned}
+        target: /var/lib/vns/feed-source-checkpoint
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_PINNED_PUBLIC_KEY_FILE:?Pinned Ed25519 public key not provisioned}
+        target: /run/secrets/vns_feed_source_public_key
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_ANCHOR_DB_PASSWORD_FILE:?Anchor login password not provisioned}
+        target: /run/secrets/vns_feed_source_anchor_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_ANCHOR_CA_FILE:?Anchor TLS CA not provisioned}
+        target: /run/secrets/vns_feed_source_anchor_ca
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_FEED_DB_PASSWORD_FILE:?Feed DB password not provisioned}
+        target: /run/secrets/vns_feed_db_password
+        read_only: true
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${VNS_P2_FEED_REDIS_PASSWORD_FILE:?Feed Redis password not provisioned}
+        target: /run/secrets/vns_feed_redis_password
+        read_only: true
+        bind: { create_host_path: false }
     healthcheck:
       test: ["CMD", "node", "apps/worker/dist/feed-consumer-healthcheck.js"]
       interval: 30s
