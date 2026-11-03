@@ -30,8 +30,8 @@ export interface TrustedFeedContext {
 }
 
 /**
- * Re-attest the actual unprivileged PostgreSQL LOGIN, independent TLS anchor,
- * signed source snapshot, monotonic revision and current allowlist every time
+ * Re-attest the actual unprivileged PostgreSQL LOGIN, configured source
+ * anchor, signed snapshot, monotonic revision and current allowlist every time
  * a durable worker processes a job. Never trust producer job data for sources.
  * Call close() in a finally block; no implicit queue or timer is constructed.
  */
@@ -59,15 +59,24 @@ export async function openTrustedFeedContext(
     if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
       throw new Error("Publisher identity refused");
     }
-    const ca = readPinnedFeedTrustFile(admission.anchorCaPath);
+    // The acknowledged same-VPS mode uses SCRAM over the private backend,
+    // not verified TLS. Never silently downgrade a separate authority.
+    const anchorSsl =
+      admission.anchorPlacement === "separate_tls"
+        ? {
+            ca: readPinnedFeedTrustFile(admission.anchorCaPath),
+            rejectUnauthorized: true,
+            servername: admission.anchorHost,
+          }
+        : false;
     const anchorPassword = readFeedSecret(admission.anchorPasswordPath);
     anchorPool = new Pool({
       host: admission.anchorHost,
       port: 5432,
-      database: "vns_source_anchor",
+      database: admission.anchorDatabase,
       user: admission.anchorUser,
       password: anchorPassword,
-      ssl: { ca, rejectUnauthorized: true, servername: admission.anchorHost },
+      ssl: anchorSsl,
       max: 1,
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 5000,

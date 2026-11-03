@@ -204,6 +204,21 @@ export function verifySignedFeedOverlay(data) {
     observer.environment.VNS_FEED_TRUST_POLICY_REVISION,
     "${VNS_FEED_TRUST_POLICY_REVISION:-0}",
   );
+  assert.equal(
+    observer.environment.VNS_FEED_ANCHOR_PLACEMENT,
+    "${VNS_FEED_ANCHOR_PLACEMENT:-separate_tls}",
+  );
+  assert.equal(observer.environment.VNS_FEED_SAME_VPS_RISK_ACK, "${VNS_FEED_SAME_VPS_RISK_ACK:-}");
+  for (const service of [scheduler, consumer]) {
+    assert.equal(
+      service.environment.VNS_FEED_ANCHOR_PLACEMENT,
+      observer.environment.VNS_FEED_ANCHOR_PLACEMENT,
+    );
+    assert.equal(
+      service.environment.VNS_FEED_SAME_VPS_RISK_ACK,
+      observer.environment.VNS_FEED_SAME_VPS_RISK_ACK,
+    );
+  }
   for (const flag of [
     "VNS_FEED_RUNTIME_ENABLED",
     "VNS_FEED_SOURCE_ANCHOR_APPROVED",
@@ -263,6 +278,12 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["feed-observer"].environment.VNS_FEED_RUNTIME_ENABLED = "true";
+    },
+    (copy) => {
+      copy.services["feed-observer"].environment.VNS_FEED_ANCHOR_PLACEMENT = "same_vps";
+    },
+    (copy) => {
+      copy.services["feed-observer"].environment.VNS_FEED_SAME_VPS_RISK_ACK = "true";
     },
     (copy) => {
       copy.services["source-publisher"].profiles = [];

@@ -30,7 +30,15 @@ const REQUIRED_FLAGS = [
 export type FeedRuntimeMode =
   "single_pass" | "bounded_producer" | "continuous_producer" | "persistent_worker";
 
+/**
+ * same_vps shares the application's PostgreSQL administration/restore domain.
+ * It preserves SQL role isolation but is not an independent anti-rollback anchor.
+ */
+export type FeedAnchorPlacement = "separate_tls" | "same_vps";
+
 export interface FeedRuntimeAdmission {
+  anchorPlacement: FeedAnchorPlacement;
+  anchorDatabase: "vns_source_anchor" | "videonews";
   dbUser: string;
   dbHost: string;
   redisHost: string;
@@ -92,6 +100,9 @@ export function readFeedRuntimeAdmission(
   const redisUser = env.VNS_FEED_REDIS_USER ?? "";
   const anchorHost = env.VNS_FEED_SOURCE_ANCHOR_HOST ?? "";
   const anchorUser = env.VNS_FEED_SOURCE_ANCHOR_USER ?? "";
+  const anchorPlacement = env.VNS_FEED_ANCHOR_PLACEMENT ?? "separate_tls";
+  const sameVpsAnchor = anchorPlacement === "same_vps";
+  const localRiskAck = env.VNS_FEED_SAME_VPS_RISK_ACK ?? "";
   // Explicit, independently approved trust-policy revision. Never default to 1:
   // a replaced public-key file with an unchanged revision must fail remotely.
   const policyRevisionText = env.VNS_FEED_TRUST_POLICY_REVISION ?? "";
@@ -102,9 +113,13 @@ export function readFeedRuntimeAdmission(
     !/^vns_feed_login_[a-z0-9_]{3,24}$/.test(dbUser) ||
     !/^vns_feed_[a-z0-9_]{3,24}$/.test(redisUser) ||
     dbUser === "vns_feed_poll_writer" ||
-    anchorHost.length > 253 ||
-    !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(anchorHost) ||
-    /[.](local|internal|localhost|onion)$/.test(anchorHost) ||
+    (anchorPlacement !== "separate_tls" && !sameVpsAnchor) ||
+    (sameVpsAnchor
+      ? localRiskAck !== "ACCEPT_SHARED_POSTGRES_AND_RESTORE_DOMAIN" || anchorHost !== "postgres"
+      : localRiskAck !== "" ||
+        anchorHost.length > 253 ||
+        !/^[a-z0-9-]+([.][a-z0-9-]+)+$/.test(anchorHost) ||
+        /[.](local|internal|localhost|onion)$/.test(anchorHost)) ||
     !/^vns_anchor_login_[a-z0-9_]{3,24}$/.test(anchorUser) ||
     !/^[1-9][0-9]{0,14}$/.test(policyRevisionText) ||
     !Number.isSafeInteger(trustPolicyRevision)
@@ -120,6 +135,8 @@ export function readFeedRuntimeAdmission(
     redisUser,
     anchorHost,
     anchorUser,
+    anchorPlacement: sameVpsAnchor ? "same_vps" : "separate_tls",
+    anchorDatabase: sameVpsAnchor ? "videonews" : "vns_source_anchor",
     initialBootstrap: env.VNS_FEED_SOURCE_BOOTSTRAP === "true",
     trustPolicyRevision,
     signedExportDirectory: FEED_SIGNED_SOURCE_INBOX,
