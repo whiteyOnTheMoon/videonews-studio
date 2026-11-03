@@ -1,25 +1,26 @@
-# P2-02 – Stage-labeled canary diagnostics
+# P2-02 – Diagnose der Feed-Fehlerphasen
 
-The first production canary accepted the signed source revision 8 / host
-revision 7 and created its valid private checkpoint. It claimed all three
-normal PostgreSQL feed leases, but inserted no candidates. The existing
-worker deliberately suppressed raw errors, so the source of failure has
-not been proven.
+Der erste Live-Canary akzeptierte Quellenrevision 8, Hostrevision 7 und den lokalen Anker. Er erstellte den richtigen Checkpoint und drei PostgreSQL-Poll-Leases, aber keine Nachrichtenkandidaten. Die Ursache ist noch unbekannt.
 
-An **optional**, side-effect-free poll callback now emits reviewed source
-IDs and closed phase labels only: `source_grant`, `lease_claim`,
-`lease_validation`, `source_grant_before_https`, `https_transport`,
-`feed_decode`, `source_grant_before_commit`, `metadata_commit`.
-No raw SQL, URLs, tokens, XML, HTTP bodies, IPs or errors appear in output.
+## Datensparsame Diagnose
 
-Enable diagnostics for a *separately approved next single-pass canary*
-with `VNS_FEED_POLL_STAGE_DIAGNOSTICS=true`. The flag is OFF by default
-and silent for offline tests, persistent consumers and producers.
-The original failed/unsuccessful outcome remains fail-closed even when
-the diagnostic callback throws.
+Der optionale Poll-Callback meldet nur geprüfte Source-IDs und feste Fehlerphasen:
 
-**Do not reset or delete** the checkpoint, the three feed leases, or
-BullMQ jobs. A future attempt must use `VNS_FEED_SOURCE_BOOTSTRAP=false`,
-wait until the existing SQL eligibility window has elapsed, use a fresh
-queue slot, and separately confirm all source approval and rights gates.
-Never describe this change as proof that HTTP or RSS works on the VPS.
+- `source_grant`: Quellenfreigabe vor dem Lease abgelehnt
+- `lease_claim`: SQL-Poll-Lease fehlgeschlagen
+- `lease_validation`: Token oder HTTP-Validator ungültig
+- `source_grant_before_https`: Freigabe vor HTTPS zurückgezogen
+- `https_transport`: DNS, TLS, HTTP, Antworttyp oder Größenlimit abgelehnt
+- `feed_decode`: RSS, Atom oder Metadaten ungültig
+- `source_grant_before_commit`: Freigabe vor SQL-Commit zurückgezogen
+- `metadata_commit`: Metadatenpersistenz abgelehnt
+
+Es werden keine URLs, Passwörter, IPs, XML-Daten, vollständigen Antworten oder SQL-Fehler ausgegeben. Fehlgeschlagene Jobs bleiben fehlgeschlagen.
+
+Die Diagnose ist standardmäßig deaktiviert. Für einen separat bestätigten, einmaligen Live-Lauf kann sie mit `VNS_FEED_POLL_STAGE_DIAGNOSTICS=true` aktiviert werden. In Offline-Tests und dauerhaften Consumern bleibt sie aus.
+
+## Nach dem ersten Canary
+
+Checkpoint, SQL-Leases und BullMQ-Jobs nicht löschen oder zurücksetzen. Ein neuer Canary darf erst nach Ablauf der bestehenden Poll-Intervalle und mit frischem Queue-Slot erfolgen. Da der Checkpoint bereits vorhanden ist, muss `VNS_FEED_SOURCE_BOOTSTRAP=false` gesetzt werden.
+
+Dieser Patch beweist weder eine funktionierende HTTPS-Verbindung noch erfolgreiche RSS-Verarbeitung auf dem VPS.
