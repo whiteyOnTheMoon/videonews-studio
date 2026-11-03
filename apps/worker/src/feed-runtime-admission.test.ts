@@ -90,6 +90,7 @@ test("refuses automatic scheduling, arbitrary endpoints and shared database user
     { VNS_FEED_SOURCE_ANCHOR_PASSWORD_FILE: "/tmp/key" },
     { VNS_FEED_SOURCE_ANCHOR_CA_FILE: "/tmp/ca" },
     { VNS_FEED_SOURCE_ANCHOR_HOST: "localhost" },
+    { VNS_FEED_SOURCE_ANCHOR_HOST: "127.0.0.1" },
     { VNS_FEED_TRUST_POLICY_REVISION: "" },
     { VNS_FEED_TRUST_POLICY_REVISION: "0" },
     { VNS_FEED_TRUST_POLICY_REVISION: "-1" },

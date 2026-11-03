@@ -13,6 +13,7 @@ import { acceptDormantSourceFile } from "./source-export-files.js";
 import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.js";
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
+import { feedAnchorPoolConfig } from "./feed-anchor-pool-config.js";
 
 import { readFeedSecretFile, readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
@@ -61,20 +62,15 @@ export async function observeFeedOnce(
     if (pinnedKey.type !== "public" || pinnedKey.asymmetricKeyType !== "ed25519") {
       throw new Error("Pinned feed publisher identity invalid");
     }
-    const ca = readPinnedFeedTrustFile(admission.anchorCaPath);
     const anchorPassword = readFeedSecretFile(admission.anchorPasswordPath);
-    anchorPool = new Pool({
-      host: admission.anchorHost,
-      port: 5432,
-      database: "vns_source_anchor",
-      user: admission.anchorUser,
-      password: anchorPassword,
-      ssl: { ca, rejectUnauthorized: true, servername: admission.anchorHost },
-      max: 1,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 5000,
-      application_name: "vns_source_anchor_observation",
-    });
+    anchorPool = new Pool(
+      feedAnchorPoolConfig(
+        admission,
+        anchorPassword,
+        readPinnedFeedTrustFile,
+        "vns_source_anchor_observation",
+      ),
+    );
     await attestFeedSourceAnchorIdentity(anchorPool, admission.anchorUser);
     const anchor = postgresSourceRevisionAnchor({
       async query(sql, params) {
@@ -82,8 +78,8 @@ export async function observeFeedOnce(
         return { rowCount: result.rowCount, rows: result.rows };
       },
     });
-    // Independently anchor the actual pinned signer and its explicit policy
-    // revision BEFORE advancing source checkpoint or starting feed transport.
+    // Enforce the pinned signer and explicit policy revision through the
+    // configured SQL gateway before checkpoint advancement or feed transport.
     await advancePinnedFeedTrustPolicy(
       {
         async query(sql, params) {
