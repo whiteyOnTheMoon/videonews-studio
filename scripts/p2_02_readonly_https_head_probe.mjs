@@ -23,6 +23,13 @@ const KNOWN_ERROR_CODES = new Set([
   "DEPTH_ZERO_SELF_SIGNED_CERT",
   "CERT_HAS_EXPIRED",
   "ERR_SSL_WRONG_VERSION_NUMBER",
+  "ERR_INVALID_ARG_TYPE",
+  "ERR_INVALID_ARG_VALUE",
+  "ERR_INVALID_PROTOCOL",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_GET_ISSUER_CERT",
+  "CERTIFICATE_VERIFY_FAILED",
 ]);
 const ALLOWED_TYPES = new Set(["application/rss+xml", "application/xml", "text/xml"]);
 const REFUSED = "Read-only feed HEAD probe refused";
@@ -94,6 +101,28 @@ export function safeErrorCode(error) {
   return typeof code === "string" && KNOWN_ERROR_CODES.has(code) ? code : "OTHER";
 }
 
+/** Closed classifications when a new Node/OpenSSL error is not yet allowlisted. */
+export function safeErrorFamily(error) {
+  const code = error && typeof error === "object" ? error.code : undefined;
+  if (typeof code !== "string") return "no_error_code";
+  if (/^ERR_SSL_[A-Z0-9_]{2,64}$/.test(code)) return "openssl_tls";
+  if (/^ERR_TLS_[A-Z0-9_]{2,64}$/.test(code)) return "node_tls";
+  if (/^ERR_[A-Z0-9_]{2,64}$/.test(code)) return "node_runtime";
+  if (/^(?:CERT_|UNABLE_TO_|DEPTH_ZERO_)[A-Z0-9_]{2,64}$/.test(code)) {
+    return "certificate";
+  }
+  if (/^E[A-Z0-9_]{2,64}$/.test(code)) return "system_or_socket";
+  return "unclassified";
+}
+
+function safeConnectionPhase(error) {
+  return error &&
+    typeof error === "object" &&
+    ["tcp_not_established", "tcp_connected", "tls_authenticated"].includes(error.connectionPhase)
+    ? error.connectionPhase
+    : "not_observed";
+}
+
 export async function runReadOnlyProbe(sources, ports) {
   const report = [];
   for (const source of sources) {
@@ -131,7 +160,9 @@ export async function runReadOnlyProbe(sources, ports) {
         sourceId: source.id,
         stage: "https_or_tls_unavailable",
         dns,
-        errorCode: safeErrorCode(error),
+        errorCode: safeErrorCode(error?.underlying ?? error),
+        errorFamily: safeErrorFamily(error?.underlying ?? error),
+        connectionPhase: safeConnectionPhase(error),
       });
     }
   }
@@ -141,6 +172,7 @@ export async function runReadOnlyProbe(sources, ports) {
 function requestHead(url, address, createPinnedHttpsOptions) {
   return new Promise((resolve, reject) => {
     const options = createPinnedHttpsOptions(url, address);
+    let connectionPhase = "tcp_not_established";
     const request = https.request({ ...options, method: "HEAD" }, (response) => {
       const header = response.headers["content-type"];
       const encoding = response.headers["content-encoding"];
@@ -151,8 +183,16 @@ function requestHead(url, address, createPinnedHttpsOptions) {
         compressed: typeof encoding === "string" && encoding.toLowerCase() !== "identity",
       });
     });
+    request.on("socket", (socket) => {
+      socket.once("connect", () => {
+        connectionPhase = "tcp_connected";
+      });
+      socket.once("secureConnect", () => {
+        connectionPhase = "tls_authenticated";
+      });
+    });
     request.on("timeout", () => request.destroy(Object.assign(new Error(), { code: "ETIMEDOUT" })));
-    request.on("error", reject);
+    request.on("error", (underlying) => reject({ underlying, connectionPhase }));
     request.end();
   });
 }

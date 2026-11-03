@@ -3,6 +3,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "apps/worker/src/source-fetch.ts"
+      - "apps/worker/src/source-fetch.test.ts"
+      - "apps/worker/src/feed-https-transport.test.ts"
       - "scripts/p2_02_readonly_https_head_probe.mjs"
       - "scripts/p2_02_readonly_https_head_probe.test.mjs"
       - ".github/workflows/p2-02-readonly-head-probe.yml"
@@ -26,4 +29,9 @@ jobs:
             git diff -- $files
             exit 1
           fi
+      - name: Build worker and exercise DNS/HTTPS guards
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+          node --test apps/worker/dist/source-fetch.test.js apps/worker/dist/feed-https-transport.test.js
       - run: node --test scripts/p2_02_readonly_https_head_probe.test.mjs

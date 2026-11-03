@@ -97,6 +97,11 @@ test("rejects loopback, link local, LAN, CGNAT, reserved and IPv6 targets", () =
     assert.equal(isPublicIPv4(ip), false, ip);
   assert.equal(isPublicIPv4(GOOD_IP), true);
   assert.equal(isPublicIPv4("8.8.8.8"), true);
+  // NASA's public 192.0.66.x CDN address must not be confused with
+  // 192.0.0.0/24 or the 192.0.2.0/24 TEST-NET-1 reservation.
+  assert.equal(isPublicIPv4("192.0.66.108"), true);
+  assert.equal(isPublicIPv4("192.0.0.1"), false);
+  assert.equal(isPublicIPv4("192.0.2.1"), false);
 });
 
 test("allowlisting precedes DNS resolution and even mock network calls", async () => {

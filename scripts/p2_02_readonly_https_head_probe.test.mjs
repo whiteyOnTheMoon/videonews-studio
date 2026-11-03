@@ -4,6 +4,7 @@ import {
   dnsVerdict,
   runReadOnlyProbe,
   safeErrorCode,
+  safeErrorFamily,
   validatedProbeSources,
 } from "./p2_02_readonly_https_head_probe.mjs";
 
@@ -92,6 +93,28 @@ test("unapproved DNS cannot trigger HTTPS, raw errors never reach operator repor
   assert.equal(JSON.stringify(report).includes("TOP_SECRET"), false);
 });
 
+test("unknown errors have only fixed categories and handshake phases", async () => {
+  const sources = validatedProbeSources(INPUT);
+  const report = await runReadOnlyProbe(sources, {
+    isPublicIPv4: validIp,
+    async resolveIPv4() {
+      return ["1.1.1.1"];
+    },
+    async requestHead() {
+      throw {
+        underlying: { code: "ERR_SSL_PRIVATE_URL_in_error", message: "SECRET_FEED_URL" },
+        connectionPhase: "tcp_connected",
+      };
+    },
+  });
+  assert.equal(report.length, 3);
+  assert.ok(report.every((item) => item.errorCode === "OTHER"));
+  assert.ok(report.every((item) => item.errorFamily === "unclassified"));
+  assert.ok(report.every((item) => item.connectionPhase === "tcp_connected"));
+  assert.ok(!JSON.stringify(report).includes("SECRET_FEED_URL"));
+  assert.ok(!JSON.stringify(report).includes("PRIVATE_URL"));
+});
+
 test("only exact recognized TLS/network codes may leave the process", () => {
   assert.equal(
     safeErrorCode({ code: "ERR_TLS_CERT_ALTNAME_INVALID" }),
@@ -99,4 +122,11 @@ test("only exact recognized TLS/network codes may leave the process", () => {
   );
   assert.equal(safeErrorCode({ code: "SECRET_TOKEN_123" }), "OTHER");
   assert.equal(safeErrorCode(new Error("SECRET")), "OTHER");
+  assert.equal(
+    safeErrorCode({ code: "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" }),
+    "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  );
+  assert.equal(safeErrorFamily({ code: "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR" }), "openssl_tls");
+  assert.equal(safeErrorFamily({ code: "ERR_INVALID_THIS" }), "node_runtime");
+  assert.equal(safeErrorFamily({ code: "SECRET_PRIVATE_KEY" }), "unclassified");
 });
