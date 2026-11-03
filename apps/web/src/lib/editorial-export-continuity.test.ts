@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
-import { verifyCheckpointPage, verifyTimelinePage } from "./editorial-export-continuity";
+import {
+  verifyCheckpointPage,
+  verifyCheckpointPageDigest,
+  verifyTimelinePage,
+} from "./editorial-export-continuity";
 
 const ACTOR = "ca310001-1111-4111-8111-111111111111";
 const EVENT_A = "ca310002-2222-4222-8222-222222222222";
@@ -142,4 +147,91 @@ test("timeline export refuses rows without full audit content or with unexpected
   ]) {
     assert.equal(verifyTimelinePage([tampered], null, cursor), null);
   }
+});
+
+
+const CHECKPOINT_EVENT_ID = "ca310009-9999-4999-8999-999999999999";
+
+function sqlCompatibleCheckpoint(
+  revision: number,
+  previous: string,
+  options: { reason_codes?: string[]; score?: number | null } = {},
+) {
+  const row = {
+    ...checkpoint(revision, previous, ZERO),
+    reason_codes: options.reason_codes ?? ["review_required"],
+    score: options.score ?? null,
+  };
+  const pgJsonbReasons = "[" + row.reason_codes.map((code) => JSON.stringify(code)).join(", ") + "]";
+  const bytes = [
+    row.previous_sha256,
+    CHECKPOINT_EVENT_ID,
+    row.revision,
+    row.stage,
+    row.outcome,
+    row.actor_id,
+    row.artifact_sha256,
+    pgJsonbReasons,
+    row.score === null ? "null" : row.score,
+  ].join(":");
+  return {
+    ...row,
+    chain_sha256: createHash("sha256").update(bytes, "utf8").digest("hex"),
+  };
+}
+
+test("browser recomputes PostgreSQL SHA-256 across checkpoint pages and exact event scope", async () => {
+  const first = sqlCompatibleCheckpoint(1, ZERO, {
+    reason_codes: ["review_required", "stale_article"],
+    score: 42,
+  });
+  const firstResult = await verifyCheckpointPageDigest(
+    [first],
+    { revision: 0, chain: null },
+    1,
+    CHECKPOINT_EVENT_ID,
+  );
+  assert.deepEqual(firstResult, { revision: 1, chain: first.chain_sha256 });
+
+  const second = sqlCompatibleCheckpoint(2, first.chain_sha256, { score: null });
+  assert.deepEqual(
+    await verifyCheckpointPageDigest([second], firstResult!, 2, CHECKPOINT_EVENT_ID),
+    { revision: 2, chain: second.chain_sha256 },
+  );
+  assert.equal(
+    await verifyCheckpointPageDigest([first], { revision: 0, chain: null }, 1,
+      "ca310008-8888-4888-8888-888888888888"),
+    null,
+  );
+});
+
+test("valid linked pointers cannot conceal altered hash-covered checkpoint fields", async () => {
+  const first = sqlCompatibleCheckpoint(1, ZERO);
+  const expected = { revision: 0, chain: null };
+  const tampered = [
+    { ...first, artifact_sha256: DIGEST_B },
+    { ...first, reason_codes: ["different_reason"] },
+    { ...first, score: 51 },
+    { ...first, stage: "claim_review" },
+    { ...first, outcome: "needs_review" },
+    { ...first, chain_sha256: DIGEST_A },
+  ];
+  for (const entry of tampered) {
+    // The old metadata verifier only checked hash-pointer continuity.
+    assert.deepEqual(verifyCheckpointPage([entry], expected, 1), {
+      revision: 1,
+      chain: entry.chain_sha256,
+    });
+    assert.equal(await verifyCheckpointPageDigest([entry], expected, 1, CHECKPOINT_EVENT_ID), null);
+  }
+  const second = sqlCompatibleCheckpoint(2, first.chain_sha256);
+  const forged = { ...second, chain_sha256: "b".repeat(64) };
+  assert.equal(
+    await verifyCheckpointPageDigest([first, forged], expected, 2, CHECKPOINT_EVENT_ID),
+    null,
+  );
+  assert.equal(
+    await verifyCheckpointPageDigest([first], expected, 1, "wrong-event-id"),
+    null,
+  );
 });
