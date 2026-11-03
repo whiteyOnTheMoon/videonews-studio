@@ -149,7 +149,6 @@ test("timeline export refuses rows without full audit content or with unexpected
   }
 });
 
-
 const CHECKPOINT_EVENT_ID = "ca310009-9999-4999-8999-999999999999";
 
 function sqlCompatibleCheckpoint(
@@ -162,7 +161,8 @@ function sqlCompatibleCheckpoint(
     reason_codes: options.reason_codes ?? ["review_required"],
     score: options.score ?? null,
   };
-  const pgJsonbReasons = "[" + row.reason_codes.map((code) => JSON.stringify(code)).join(", ") + "]";
+  const pgJsonbReasons =
+    "[" + row.reason_codes.map((code) => JSON.stringify(code)).join(", ") + "]";
   const bytes = [
     row.previous_sha256,
     CHECKPOINT_EVENT_ID,
@@ -199,8 +199,12 @@ test("browser recomputes PostgreSQL SHA-256 across checkpoint pages and exact ev
     { revision: 2, chain: second.chain_sha256 },
   );
   assert.equal(
-    await verifyCheckpointPageDigest([first], { revision: 0, chain: null }, 1,
-      "ca310008-8888-4888-8888-888888888888"),
+    await verifyCheckpointPageDigest(
+      [first],
+      { revision: 0, chain: null },
+      1,
+      "ca310008-8888-4888-8888-888888888888",
+    ),
     null,
   );
 });
@@ -230,8 +234,5 @@ test("valid linked pointers cannot conceal altered hash-covered checkpoint field
     await verifyCheckpointPageDigest([first, forged], expected, 2, CHECKPOINT_EVENT_ID),
     null,
   );
-  assert.equal(
-    await verifyCheckpointPageDigest([first], expected, 1, "wrong-event-id"),
-    null,
-  );
+  assert.equal(await verifyCheckpointPageDigest([first], expected, 1, "wrong-event-id"), null);
 });
