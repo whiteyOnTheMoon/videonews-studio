@@ -414,7 +414,11 @@ test("explicit NOAA-only manual canary does not claim leases or contact NASA/USG
   const movedHost = [SOURCES[0]!, SOURCES[1]!, SOURCES[2]!, noaa, SOURCES[4]!];
   const movedRegistry = movedHost.map((record) =>
     record.id === "noaa_news"
-      ? { ...record, baseUrl: "https://www.example.org/news/", feedUrl: "https://www.example.org/rss.xml" }
+      ? {
+          ...record,
+          baseUrl: "https://www.example.org/news/",
+          feedUrl: "https://www.example.org/rss.xml",
+        }
       : record,
   );
   assert.throws(
