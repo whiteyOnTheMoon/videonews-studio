@@ -56,14 +56,14 @@ function sources(usgsFeed) {
     },
   ];
 }
-function sealed(key, sourceRevision, feedUrl, edit) {
+function sealed(key, sourceRevision, feedUrl, edit, hostRevision = sourceRevision === 10 ? 10 : 7) {
   const entries = sources(feedUrl);
   if (sourceRevision === 10) entries[2].reviewedAt = "2026-11-04";
   if (edit) edit(entries);
   const body = {
     version: 1,
     sourceRevision,
-    hostApprovalRevision: 7,
+    hostApprovalRevision: hostRevision,
     allowedHosts: HOSTS,
     registryJson: JSON.stringify({ version: 1, sources: entries }),
   };
@@ -142,7 +142,7 @@ function fixture() {
   };
 }
 test(
-  "atomic refresh accepts only valid 8/7 -> 10/7 and preserves worker state",
+  "atomic refresh accepts only valid 8/7 -> 10/10 and preserves worker state",
   {
     skip: !ROOT_ONLY,
   },
@@ -234,6 +234,8 @@ test("wrong URL, old revision or host revision refuse refresh", { skip: !ROOT_ON
     for (const value of [
       sealed(f.keys.privateKey, 9, NEW_URL),
       sealed(f.keys.privateKey, 10, OLD_URL),
+      sealed(f.keys.privateKey, 10, NEW_URL, undefined, 7),
+      sealed(f.keys.privateKey, 10, NEW_URL, undefined, 9),
       sealed(f.keys.privateKey, 10, NEW_URL, (entries) => {
         entries[2].licenseNotes = "Altered metadata rights";
       }),
