@@ -1,0 +1,31 @@
+name: P2-01 host reconfirmation 0062 operator gate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_01_schema_0061_to_0062.py"
+      - "docs/P2_01_HOST_RECONFIRMATION_0062.md"
+      - ".github/workflows/p2-01-host-reconfirmation-0062.yml"
+permissions:
+  contents: read
+jobs:
+  operator-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate operator code and documentation
+        run: |
+          python3 -m py_compile scripts/p2_01_schema_0061_to_0062.py
+          npx prettier --check docs/P2_01_HOST_RECONFIRMATION_0062.md
+      - name: Invalid release must refuse without changing local state
+        run: |
+          if python3 scripts/p2_01_schema_0061_to_0062.py \
+            --preflight --expected-sha 0000000000000000000000000000000000000000; then
+            echo "FAIL: invalid release admitted"
+            exit 1
+          fi
