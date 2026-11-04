@@ -46,8 +46,10 @@ test("both source selectors reject cross-acknowledgement, missing rights and non
       ["VNS_FEED_CANARY_SOURCE_ID", ""],
       ["VNS_FEED_CANARY_OPERATOR_ACK", "true"],
       ["VNS_FEED_CANARY_OPERATOR_ACK", ""],
-      ["VNS_FEED_CANARY_OPERATOR_ACK",
-        valid.VNS_FEED_CANARY_SOURCE_ID === "usgs_news" ? P2_NOAA_CANARY_ACK : P2_USGS_CANARY_ACK],
+      [
+        "VNS_FEED_CANARY_OPERATOR_ACK",
+        valid.VNS_FEED_CANARY_SOURCE_ID === "usgs_news" ? P2_NOAA_CANARY_ACK : P2_USGS_CANARY_ACK,
+      ],
     ] as const) {
       assert.throws(
         () => readSingleSourceCanarySelection({ ...valid, [key]: invalid }, "single_pass"),
@@ -55,10 +57,7 @@ test("both source selectors reject cross-acknowledgement, missing rights and non
       );
     }
     for (const mode of ["persistent_worker", "bounded_producer", "continuous_producer"]) {
-      assert.throws(
-        () => readSingleSourceCanarySelection(valid, mode),
-        /canary gate refused/,
-      );
+      assert.throws(() => readSingleSourceCanarySelection(valid, mode), /canary gate refused/);
     }
   }
 });
