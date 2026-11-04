@@ -8,9 +8,7 @@ export const P2_NOAA_CANARY_ACK = "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" a
 export const P2_USGS_CANARY_SOURCE = "usgs_news" as const;
 export const P2_USGS_CANARY_ACK = "USGS_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" as const;
 
-export type P2OneShotSourceCanary =
-  | typeof P2_NOAA_CANARY_SOURCE
-  | typeof P2_USGS_CANARY_SOURCE;
+export type P2OneShotSourceCanary = typeof P2_NOAA_CANARY_SOURCE | typeof P2_USGS_CANARY_SOURCE;
 
 export function readSingleSourceCanarySelection(
   env: NodeJS.ProcessEnv,
