@@ -19,7 +19,7 @@ auch nicht ohne Selektor alle Quellen abfragen.
 ## Isolierte USGS-Selektion
 
 Nach getrennter Produktionsprüfung und ausdrücklicher Betreiberfreigabe kann
-der bestehende, *einmalige* `feed-observe-once --once` folgenden Zusatz wählen:
+der bestehende, _einmalige_ `feed-observe-once --once` folgenden Zusatz wählen:
 
 - `VNS_FEED_RUNTIME_MODE=single_pass`
 - `VNS_FEED_SOURCE_BOOTSTRAP=false` (existierender Checkpoint, niemals neu initialisieren)
@@ -46,7 +46,7 @@ weitergehenden Content-/Medienrechte und umgeht keinen PostgreSQL-Guard.
 Alle bisherigen Gating-Flags und die getrennten Source-, Anchor-,
 Feed-PostgreSQL-, Redis- und Ed25519-Prüfungen bleiben verpflichtend.
 Der bestehende One-Shot-Observer akzeptiert den signierten Export, indem er
-*vor* dem geplanten Feed-Abruf die SQL-High-Water-Funktion und danach den
+_vor_ dem geplanten Feed-Abruf die SQL-High-Water-Funktion und danach den
 Checkpoint aktualisiert. Das ist ein **persistierender, nicht atomar
 zurückrollbarer Übergang über zwei Speicherbereiche**, kein reines
 Diagnosekommando. Wenn der Canary anschließend am HTTPS, Parser, Redis
