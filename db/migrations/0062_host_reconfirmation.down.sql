@@ -153,5 +153,7 @@ BEGIN
   RETURN true;
 END;
 $approval$;
+REVOKE SELECT(revision,host,action,source_revision)
+  ON vns.admin_source_host_audit FROM vns_host_approval_executor;
 DELETE FROM vns.schema_migrations WHERE version='0062_host_reconfirmation';
 COMMIT;
