@@ -145,6 +145,13 @@ BEGIN
 END $renew$;
 RESET SESSION AUTHORIZATION;
 
+-- Synthetic CI-only diagnostics, no real source URL or secrets.
+SELECT 'ci0062_source=' || revision
+  FROM vns.admin_source_registry WHERE singleton;
+SELECT 'ci0062_hosts=' || revision || ':' || approved_hosts::text
+  FROM vns.admin_source_host_approvals WHERE singleton;
+SELECT 'ci0062_audit=' || revision || ':' || source_revision || ':' || action || ':' || host
+  FROM vns.admin_source_host_audit ORDER BY revision;
 DO $assert$
 DECLARE
   record jsonb;
