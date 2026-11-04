@@ -138,7 +138,9 @@ function canonicalArticle(
     value.includes("#") ||
     value.includes("/./") ||
     value.includes("/../")
-  ) return null;
+  ) {
+    return null;
+  }
   const matched = approvedSourceForUrl(value, registry);
   return matched?.id === source.id ? value : null;
 }
