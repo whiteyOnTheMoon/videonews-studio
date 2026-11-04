@@ -170,45 +170,11 @@ export function preflightRefresh(c = config) {
   safeEvolution(old, next);
   return { publisherBytes, oldBytes, cpBytes };
 }
-export function refreshStage(c = config) {
-  const p = paths(c);
-  const state = preflightRefresh(c);
-  const basename = ".source-export.signed." + randomBytes(12).toString("hex") + ".tmp";
-  const temporary = join(p.stage, basename);
-  let created = false;
-  try {
-    const fd = openSync(temporary,
-      constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
-    created = true;
-    try {
-      let written = 0;
-      while (written < state.publisherBytes.length) {
-        const n = writeSync(fd, state.publisherBytes, written, state.publisherBytes.length - written);
-        must(n > 0);
-        written += n;
-      }
-      fchownSync(fd, c.user.transfer, c.user.worker);
-      fchmodSync(fd, 0o640);
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
-    must(protectedBytes(temporary, c.user.transfer, c.user.worker, 0o640)
-      .equals(state.publisherBytes));
-    // Verify no unrelated service or publisher changed between preflight and rename.
-    const second = preflightRefresh(c);
-    must(second.publisherBytes.equals(state.publisherBytes) &&
-      second.oldBytes.equals(state.oldBytes) && second.cpBytes.equals(state.cpBytes));
-    // preflightRefresh forbids extra staging entries. The temporary file is deliberately
-    // removed from the listing check by using a separate targeted revalidation below.
-  } finally {
-    if (created) unlinkSync(temporary);
-  }
-}
 function atomicRefreshStage(c = config) {
   const p = paths(c);
   const state = preflightRefresh(c);
-  const temp = join(p.stage, ".source-export.signed." + randomBytes(12).toString("hex") + ".tmp");
+  const tempName = ".source-export.signed." + randomBytes(12).toString("hex") + ".tmp";
+  const temp = join(p.stage, tempName);
   let present = false;
   try {
     const fd = openSync(temp,
@@ -230,7 +196,7 @@ function atomicRefreshStage(c = config) {
     must(protectedBytes(temp, c.user.transfer, c.user.worker, 0o640).equals(state.publisherBytes));
     // A second check deliberately excludes the temp name, which only root may create.
     must(readdirSync(p.stage).sort().join("\n") ===
-      [".source-export.signed." + temp.split(".signed.")[1], "source-export.signed.json"].sort().join("\n"));
+      [tempName, "source-export.signed.json"].sort().join("\n"));
     must(inspectSource(c).equals(state.publisherBytes));
     must(protectedBytes(p.staged, c.user.transfer, c.user.worker, 0o640).equals(state.oldBytes));
     must(protectedBytes(p.imported, c.user.worker, c.user.worker, 0o600).equals(state.oldBytes));
