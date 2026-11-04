@@ -373,20 +373,31 @@ test("query-bearing and encoded links cannot abort an otherwise valid SQL metada
   ];
   const body =
     '<rss version="2.0"><channel>' +
-    links.map(
-      (link) =>
-        "<item><title>Reviewed official science bulletin</title><link>" +
-        link +
-        "</link><pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>",
-    ).join("") +
+    links
+      .map(
+        (link) =>
+          "<item><title>Reviewed official science bulletin</title><link>" +
+          link +
+          "</link><pubDate>Sun, 25 Oct 2026 09:00:00 GMT</pubDate></item>",
+      )
+      .join("") +
     "</channel></rss>";
   const f = fixture();
   f.responses.feed_rss = { ...rss, body };
 
   const entries = decodeApprovedFeed(registry()[0]!, registry(), f.responses.feed_rss);
-  assert.deepEqual(entries.map((entry) => entry.url), [prefix + "rss/accepted-update"]);
+  assert.deepEqual(
+    entries.map((entry) => entry.url),
+    [prefix + "rss/accepted-update"],
+  );
   const poller = createDormantFeedPoller(
-    registry(), true, f.store, f.transport, undefined, undefined, "feed_rss",
+    registry(),
+    true,
+    f.store,
+    f.transport,
+    undefined,
+    undefined,
+    "feed_rss",
   );
   assert.deepEqual(await poller.poll(at(0)), [
     { sourceId: "feed_rss", status: "ingested", newItems: 1 },
@@ -397,8 +408,10 @@ test("query-bearing and encoded links cannot abort an otherwise valid SQL metada
     () =>
       decodeApprovedFeed(registry()[0]!, registry(), {
         ...rss,
-        body: '<rss><channel><item><title>Rejected query-only candidate</title><link>' +
-          prefix + "rss/with-query?utm_source=official</link></item></channel></rss>",
+        body:
+          "<rss><channel><item><title>Rejected query-only candidate</title><link>" +
+          prefix +
+          "rss/with-query?utm_source=official</link></item></channel></rss>",
       }),
     /no approved metadata/,
   );
