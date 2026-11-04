@@ -21,9 +21,10 @@ jobs:
       - name: Validate operator code and documentation
         run: |
           python3 -m py_compile scripts/p2_01_schema_0061_to_0062.py
-          if ! npx prettier --check docs/P2_01_HOST_RECONFIRMATION_0062.md; then
-            npx prettier --write docs/P2_01_HOST_RECONFIRMATION_0062.md
-            git diff -- docs/P2_01_HOST_RECONFIRMATION_0062.md
+          files="docs/P2_01_HOST_RECONFIRMATION_0062.md apps/web/src/app/admin/source-host-approvals.tsx"
+          if ! npx prettier --check $files; then
+            npx prettier --write $files
+            git diff -- $files
             exit 1
           fi
       - name: Invalid release must refuse without changing local state
