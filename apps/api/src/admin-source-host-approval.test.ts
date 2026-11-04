@@ -63,7 +63,8 @@ function fixture() {
       operations++;
       if (change.expectedRevision !== current.revision) return "conflict";
       if (change.action === "grant") current.approvedHosts.push(change.host);
-      else if (change.action === "revoke") current.approvedHosts = current.approvedHosts.filter((host) => host !== change.host);
+      else if (change.action === "revoke")
+        current.approvedHosts = current.approvedHosts.filter((host) => host !== change.host);
       current.revision++;
       events.push({ actor: identity.id, host: change.host, action: change.action });
       return "saved";
