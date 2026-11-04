@@ -29,7 +29,8 @@ const REFUSED = "REFUSED: signed source stage refresh unsafe; inspect state, do 
 const APPROVAL = "REFRESH_VERIFIED_USGS_STAGE_8_TO_10_ONLY";
 const OLD = 8;
 const NEW = 10;
-const HOST = 7;
+const OLD_HOST = 7;
+const NEW_HOST = 10;
 const OLD_USGS = "https://www.usgs.gov/news/national-news-release/feed";
 const NEW_USGS = "https://www.usgs.gov/news/149248/feed";
 const APPROVED_HOSTS = ["www.nasa.gov", "www.noaa.gov", "www.usgs.gov"];
@@ -187,8 +188,8 @@ function safeEvolution(prior, current) {
   must(
     prior.sourceRevision === OLD &&
       current.sourceRevision === NEW &&
-      prior.hostApprovalRevision === HOST &&
-      current.hostApprovalRevision === HOST,
+      prior.hostApprovalRevision === OLD_HOST &&
+      current.hostApprovalRevision === NEW_HOST,
   );
   const oldEntries = registry(prior);
   const newEntries = registry(current);
@@ -222,7 +223,7 @@ function checkpoint(bytes) {
     exact(data, ["version", "sourceRevision", "hostApprovalRevision", "envelopeSha256"]) &&
       data.version === 1 &&
       data.sourceRevision === OLD &&
-      data.hostApprovalRevision === HOST &&
+      data.hostApprovalRevision === OLD_HOST &&
       typeof data.envelopeSha256 === "string" &&
       /^[a-f0-9]{64}$/.test(data.envelopeSha256),
   );
@@ -313,7 +314,7 @@ export function verifyRefreshedStage(c = config) {
   const p = paths(c);
   const key = createPublicKey(protectedBytes(p.publicKey, 0, c.user.worker, 0o440, 8192));
   const body = verifiedEnvelope(inspectSource(c), key);
-  must(body.sourceRevision === NEW && body.hostApprovalRevision === HOST);
+  must(body.sourceRevision === NEW && body.hostApprovalRevision === NEW_HOST);
 }
 function cmd(args) {
   return execFileSync(args[0], args.slice(1), {
@@ -364,13 +365,13 @@ function main(argv) {
   release(sha);
   if (action === "--preflight") {
     preflightRefresh();
-    console.log("PASS: verified publisher 10/7, old stage/inbox/checkpoint 8/7; no changes");
+    console.log("PASS: verified publisher 10/10, old stage/inbox/checkpoint 8/7; no changes");
   } else if (action === "--install") {
     atomicRefreshStage();
-    console.log("PASS: stage 10/7 atomically refreshed; inbox/checkpoint remain 8/7");
+    console.log("PASS: stage 10/10 atomically refreshed; inbox/checkpoint remain 8/7");
   } else {
     verifyRefreshedStage();
-    console.log("PASS: stage matches independently signed publisher export 10/7");
+    console.log("PASS: stage matches independently signed publisher export 10/10");
   }
   console.log("INFO: no private key reads, database writes, queue changes or feed jobs");
 }
