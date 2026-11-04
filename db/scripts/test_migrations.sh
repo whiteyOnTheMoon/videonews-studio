@@ -422,6 +422,9 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0060_named_source_host_admin_gateways.test.sql"
   sql < "$root/db/migrations/0061_single_owner_review_policy.up.sql"
   sql < "$root/db/tests/0061_single_owner_review_policy.test.sql"
+  sql < "$root/db/migrations/0062_host_reconfirmation.up.sql"
+  sql < "$root/db/tests/0062_host_reconfirmation.test.sql"
+  sql < "$root/db/migrations/0062_host_reconfirmation.down.sql"
   sql < "$root/db/migrations/0061_single_owner_review_policy.down.sql"
   sql < "$root/db/migrations/0060_named_source_host_admin_gateways.down.sql"
   sql < "$root/db/migrations/0059_canonical_event_title_fingerprint.down.sql"
@@ -489,4 +492,4 @@ for iteration in 1 2; do
     -c "SELECT count(*) FROM pg_namespace WHERE nspname='vns'")"
   test "$left" = 0 || { echo "Schema remained after down"; exit 1; }
 done
-echo "PASS: reversible 0001-0061 migrations, source authority, leases and budgets twice"
+echo "PASS: reversible 0001-0062 migrations, source authority, leases and budgets twice"
