@@ -215,7 +215,7 @@ test("RSS metadata is deduplicated and blocked article scopes are excluded", () 
   assert.equal(JSON.stringify(entries).includes("description"), false);
 });
 
-test("unsafe XML, invalid media, and unbounded feeds fail closed", () => {
+test("unsafe XML, invalid media, and oversized bodies fail closed", () => {
   const sources = registry();
   const src = sources[0]!;
   for (const body of [
@@ -228,11 +228,42 @@ test("unsafe XML, invalid media, and unbounded feeds fail closed", () => {
   }
   assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, mediaType: "text/html" }));
   assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, body: "x".repeat(131073) }));
+});
+
+test("RSS feeds with more than 20 items keep only the first 20 reviewed metadata entries", () => {
+  const sources = registry();
+  const src = sources[0]!;
+  const itemsXml = Array.from(
+    { length: 25 },
+    (_, index) =>
+      "<item><title>Approved science headline number " +
+      index +
+      "</title><link>" +
+      prefix +
+      "rss/item-" +
+      index +
+      "</link><pubDate>Tue, 03 Nov 2026 12:00:00 GMT</pubDate></item>",
+  ).join("");
+  const body = "<rss><channel>" + itemsXml + "</channel></rss>";
+  const entries = decodeApprovedFeed(src, sources, { ...rss, body });
+  assert.equal(entries.length, 20);
+  assert.equal(entries[0]?.url, prefix + "rss/item-0");
+  assert.equal(entries[19]?.url, prefix + "rss/item-19");
+  assert.ok(entries.every((entry) => entry.reviewStatus === "candidate"));
+  assert.ok(entries.every((entry) => entry.sourceId === "feed_rss"));
+  assert.equal(JSON.stringify(entries).includes("rss/item-20"), false);
+
+  // A later item cannot smuggle forbidden XML past the full-body preflight.
+  assert.throws(
+    () =>
+      decodeApprovedFeed(src, sources, {
+        ...rss,
+        body: body.replace("</channel>", "<!DOCTYPE surprise></channel>"),
+      }),
+    /XML unsafe/,
+  );
   assert.throws(() =>
-    decodeApprovedFeed(src, sources, {
-      ...rss,
-      body: "<rss>" + "<item><title>Some headline here</title></item>".repeat(21) + "</rss>",
-    }),
+    decodeApprovedFeed(src, sources, { ...rss, body: body + " ".repeat(131073) }),
   );
 });
 

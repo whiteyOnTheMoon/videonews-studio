@@ -153,7 +153,11 @@ function parseXmlItems(body: string, source: RegisteredResearchSource): unknown[
   const pattern = new RegExp("<" + token + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + token + ">", "gi");
   const records: unknown[] = [];
   for (const match of body.matchAll(pattern)) {
-    if (records.length >= MAX_ITEMS) throw new Error("Feed item limit exceeded");
+    // Keep the per-request metadata cap even when an official RSS feed lists
+    // more than 20 entries. The complete body is already byte-limited and
+    // checked for forbidden XML constructs before iterating; never fetch
+    // article bodies or silently raise the HTTPS response limit.
+    if (records.length >= MAX_ITEMS) break;
     const fragment = match[1] ?? "";
     const headline = textField(fragment, "title");
     const anchor = rss
