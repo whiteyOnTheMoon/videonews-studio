@@ -204,10 +204,10 @@ function safeEvolution(prior, current) {
           before.feedUrl === OLD_USGS &&
           after.feedUrl === NEW_USGS,
       );
-      const dropReviewFields = (item) => {
-        const { feedUrl, reviewedAt, ...unchanged } = item;
-        return unchanged;
-      };
+      const dropReviewFields = (item) =>
+        Object.fromEntries(
+          Object.entries(item).filter(([field]) => field !== "feedUrl" && field !== "reviewedAt"),
+        );
       must(
         stable(dropReviewFields(before)) === stable(dropReviewFields(after)) &&
           typeof after.reviewedAt === "string" &&
