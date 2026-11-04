@@ -3,7 +3,7 @@ import { sourceAdminProxyConfig } from "./admin-news-sources-proxy";
 import { clientEditorCookie, editorProfile } from "./editor-proxy";
 
 export interface HostApprovalCommand {
-  action: "grant" | "revoke";
+  action: "grant" | "revoke" | "renew";
   expectedRevision: number;
   expectedSourceRevision: number;
   host: string;
@@ -44,7 +44,7 @@ export function parseHostApprovalCommand(value: unknown): HostApprovalCommand | 
   if (
     !object(value) ||
     !exact(value, ["action", "expectedRevision", "expectedSourceRevision", "host", "reason"]) ||
-    (value.action !== "grant" && value.action !== "revoke") ||
+    (value.action !== "grant" && value.action !== "revoke" && value.action !== "renew") ||
     !Number.isSafeInteger(value.expectedRevision) ||
     (value.expectedRevision as number) < 0 ||
     !Number.isSafeInteger(value.expectedSourceRevision) ||

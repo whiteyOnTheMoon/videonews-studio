@@ -63,7 +63,8 @@ function fixture() {
       operations++;
       if (change.expectedRevision !== current.revision) return "conflict";
       if (change.action === "grant") current.approvedHosts.push(change.host);
-      else current.approvedHosts = current.approvedHosts.filter((host) => host !== change.host);
+      else if (change.action === "revoke")
+        current.approvedHosts = current.approvedHosts.filter((host) => host !== change.host);
       current.revision++;
       events.push({ actor: identity.id, host: change.host, action: change.action });
       return "saved";
@@ -98,6 +99,10 @@ function fixture() {
 }
 test("strict host and reason commands reject forged identities and untrusted extras", () => {
   assert.deepEqual(parseHostApprovalCommand(command), command);
+  assert.deepEqual(parseHostApprovalCommand({ ...command, action: "renew" }), {
+    ...command,
+    action: "renew",
+  });
   for (const invalid of [
     { ...command, editorId: admin.id },
     { ...command, approvedHosts: ["other.example.org"] },

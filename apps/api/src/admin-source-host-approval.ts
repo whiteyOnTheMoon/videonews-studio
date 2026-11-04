@@ -8,7 +8,7 @@ export interface HostApprovalSnapshot {
   approvedHosts: readonly string[];
 }
 export interface HostApprovalCommand {
-  action: "grant" | "revoke";
+  action: "grant" | "revoke" | "renew";
   expectedRevision: number;
   expectedSourceRevision: number;
   host: string;
@@ -68,7 +68,7 @@ export function parseHostApprovalCommand(input: unknown): HostApprovalCommand | 
     !["action", "expectedRevision", "expectedSourceRevision", "host", "reason"].every((key) =>
       Object.hasOwn(row, key),
     ) ||
-    (row.action !== "grant" && row.action !== "revoke") ||
+    (row.action !== "grant" && row.action !== "revoke" && row.action !== "renew") ||
     !Number.isSafeInteger(row.expectedRevision) ||
     (row.expectedRevision as number) < 0 ||
     !Number.isSafeInteger(row.expectedSourceRevision) ||

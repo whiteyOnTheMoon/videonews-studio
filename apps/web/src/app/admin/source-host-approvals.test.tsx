@@ -25,7 +25,7 @@ test("enabled initial render has no host controls until gated reads succeed", ()
   assert.match(html, /Lade geschützte Host-Freigaben/);
   assert.doesNotMatch(html, /<form|<input|<button|<select|news\.example\.org/);
 });
-test("only reviewed sources can be granted; previously granted hosts may be revoked", () => {
+test("approved hosts offer explicit reconfirmation and revoke actions; unreviewed do not", () => {
   const state = {
     sources: {
       revision: 4,
@@ -57,6 +57,9 @@ test("only reviewed sources can be granted; previously granted hosts may be revo
       ...state,
       hosts: { revision: 6, approvedHosts: ["news.example.org"], feedActive: false },
     }),
-    [{ host: "news.example.org", action: "revoke" }],
+    [
+      { host: "news.example.org", action: "renew" },
+      { host: "news.example.org", action: "revoke" },
+    ],
   );
 });
