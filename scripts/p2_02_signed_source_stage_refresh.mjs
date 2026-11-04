@@ -170,7 +170,7 @@ export function preflightRefresh(c = config) {
   safeEvolution(old, next);
   return { publisherBytes, oldBytes, cpBytes };
 }
-function atomicRefreshStage(c = config) {
+export function atomicRefreshStage(c = config) {
   const p = paths(c);
   const state = preflightRefresh(c);
   const tempName = ".source-export.signed." + randomBytes(12).toString("hex") + ".tmp";
