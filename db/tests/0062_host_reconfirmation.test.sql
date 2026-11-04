@@ -118,13 +118,10 @@ DECLARE
   refused boolean:=false;
 BEGIN
   SELECT approved_hosts INTO hosts_before FROM vns.named_host_read();
-  BEGIN
-    PERFORM vns.named_host_change(
-      hrev,srev-1,'renew','reconfirm.example.org',
-      'Stale source revision cannot authorize a renewed host approval.'
-    );
-  EXCEPTION WHEN OTHERS THEN refused:=true; END;
-  IF NOT refused THEN RAISE EXCEPTION 'Wrong source revision accepted'; END IF;
+  IF vns.named_host_change(
+    hrev,srev-1,'renew','reconfirm.example.org',
+    'Stale source revision cannot authorize a renewed host approval.'
+  ) THEN RAISE EXCEPTION 'Wrong source revision accepted'; END IF;
 
   IF NOT vns.named_host_change(
     hrev,srev,'renew','reconfirm.example.org',
