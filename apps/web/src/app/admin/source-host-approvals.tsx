@@ -29,7 +29,10 @@ export function reviewableHostChoices(state: ReviewState): ReviewChoice[] {
     if (!approved.has(host)) return [{ host, action: "revoke" }];
     // A current host grant can be reconfirmed after an edited source revision,
     // without revoking or changing the host list; SQL still rejects non-stale grants.
-    return [{ host, action: "renew" }, { host, action: "revoke" }];
+    return [
+      { host, action: "renew" },
+      { host, action: "revoke" },
+    ];
   });
 }
 async function loadReview(signal?: AbortSignal): Promise<ReviewState> {
