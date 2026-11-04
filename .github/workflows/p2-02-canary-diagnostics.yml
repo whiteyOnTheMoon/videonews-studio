@@ -21,7 +21,7 @@ jobs:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: |
-          files="apps/worker/src/feed-canary-source-selection.ts apps/worker/src/feed-canary-source-selection.test.ts apps/worker/src/feed-poller.ts apps/worker/src/feed-poller.test.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-scheduler-composition.test.ts apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts compose.feed-observation.yaml docs/P2_02_NOAA_SCOPED_PERSISTENCE_CANARY.md"
+          files="apps/worker/src/feed-canary-source-selection.ts apps/worker/src/feed-canary-source-selection.test.ts apps/worker/src/feed-poller.ts apps/worker/src/feed-poller.test.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-scheduler-composition.test.ts apps/worker/src/feed-runtime-admission.ts apps/worker/src/feed-runtime-admission.test.ts compose.feed-observation.yaml docs/P2_02_NOAA_SCOPED_PERSISTENCE_CANARY.md docs/P2_02_USGS_SINGLE_SOURCE_CANARY_10_10.md"
           if ! npx prettier --check $files; then
             npx prettier --write $files
             git diff -- $files

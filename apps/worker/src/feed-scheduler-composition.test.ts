@@ -430,3 +430,100 @@ test("explicit NOAA-only manual canary does not claim leases or contact NASA/USG
     /canary denied/,
   );
 });
+
+test("USGS-only manual canary reads the exact reviewed direct RSS endpoint and no other source", async () => {
+  const f = fixture();
+  f.approve("usgs_news");
+  const nasa = {
+    ...source("nasa_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.nasa.gov/",
+    feedUrl: "https://www.nasa.gov/rss.xml",
+    termsUrl: "https://www.nasa.gov/terms/",
+  };
+  const noaa = {
+    ...source("noaa_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.noaa.gov/",
+    feedUrl: "https://www.noaa.gov/rss.xml",
+    termsUrl: "https://www.noaa.gov/terms/",
+  };
+  const usgs = {
+    ...source("usgs_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.usgs.gov/news/",
+    feedUrl: "https://www.usgs.gov/news/149248/feed",
+    termsUrl:
+      "https://www.usgs.gov/about/organization/science-support/office-science-quality-and-integrity",
+  };
+  const sources = [nasa, noaa, usgs];
+  const received: string[] = [];
+  const ports: OfflineFeedSchedulerPorts = {
+    ...f.ports,
+    readRegistry: () => JSON.stringify({ version: 1, sources }),
+    https: {
+      resolveIPv4: async (hostname) => {
+        received.push("dns:" + hostname);
+        return ["1.1.1.1"];
+      },
+      requestPinned: async (url) => {
+        received.push("https:" + url.hostname + url.pathname);
+        return {
+          status: 200,
+          headers: { "content-type": "application/rss+xml" },
+          body: Buffer.from(
+            "<rss><channel><item><title>USGS documents a new geology research finding</title>" +
+              "<link>https://www.usgs.gov/news/national-news-release/example</link></item></channel></rss>",
+          ),
+        };
+      },
+    },
+  };
+  const gated: NodeJS.ProcessEnv = {
+    ...env,
+    VNS_ALLOWED_SOURCE_HOSTS: "www.nasa.gov,www.noaa.gov,www.usgs.gov",
+    VNS_FEED_RUNTIME_ENABLED: "true",
+    VNS_FEED_RUNTIME_MODE: "single_pass",
+    VNS_FEED_SOURCE_BOOTSTRAP: "false",
+    VNS_FEED_CANARY_SOURCE_ID: "usgs_news",
+    VNS_FEED_CANARY_OPERATOR_ACK: "USGS_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+  };
+  const scheduler = createDormantFeedScheduler(gated, ports);
+  assert.deepEqual(scheduler.sourceIds, ["nasa_news", "noaa_news", "usgs_news"]);
+  assert.deepEqual(await scheduler.tick(new Date(START)), [
+    { sourceId: "usgs_news", status: "ingested", newItems: 1 },
+  ]);
+  assert.deepEqual(received, ["dns:www.usgs.gov", "https:www.usgs.gov/news/149248/feed"]);
+  assert.deepEqual([...f.db.keys()], ["usgs_news"]);
+  assert.deepEqual(
+    [...f.saved],
+    ["usgs_news|https://www.usgs.gov/news/national-news-release/example"],
+  );
+  const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
+  assert.equal(auth.length, 3);
+  assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "usgs_news"));
+
+  // Refuse changes to the exact personally reviewed scope and direct RSS URL
+  // before any SQL claim, DNS lookup or HTTPS request.
+  const invalid = [
+    { baseUrl: "https://www.noaa.gov/news/" },
+    { feedUrl: "https://www.usgs.gov/news/national-news-release/feed" },
+    { feedUrl: "https://www.usgs.gov/news/149248/feed?preview=true" },
+    { access: "official_api" },
+    { usage: "full_content" },
+    { status: "blocked" },
+  ];
+  for (const patch of invalid) {
+    const denied = fixture();
+    const attempted = { ...usgs, ...patch };
+    assert.throws(() =>
+      createDormantFeedScheduler(gated, {
+        ...denied.ports,
+        readRegistry: () =>
+          JSON.stringify({
+            version: 1,
+            sources: [nasa, noaa, attempted],
+          }),
+      }),
+    );
+    assert.equal(denied.queries.length, 0);
+    assert.equal(denied.requests.length, 0);
+  }
+});
