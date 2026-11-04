@@ -196,7 +196,12 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
                 <option value="">Host auswählen</option>
                 {choices.map((item) => (
                   <option value={`${item.action}:${item.host}`} key={`${item.action}:${item.host}`}>
-                    {item.host} – {item.action === "revoke" ? "widerrufen" : item.action === "renew" ? "Freigabe für aktuelle Quellenrevision erneuern" : "freigeben"}
+                    {item.host} –{" "}
+                    {item.action === "revoke"
+                      ? "widerrufen"
+                      : item.action === "renew"
+                        ? "Freigabe für aktuelle Quellenrevision erneuern"
+                        : "freigeben"}
                   </option>
                 ))}
               </select>
