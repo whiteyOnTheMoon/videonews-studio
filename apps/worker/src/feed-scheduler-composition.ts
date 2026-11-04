@@ -70,16 +70,20 @@ export function createDormantFeedScheduler(
   const registry = parseReviewedSourceRegistry(contents, policy);
   if (selectedSourceId !== null) {
     const selected = registry.find((source) => source.id === selectedSourceId);
+    const expectedHost = selectedSourceId === "noaa_news" ? "www.noaa.gov" : "www.usgs.gov";
     if (
       !selected ||
       selected.status !== "approved" ||
       selected.access !== "rss" ||
       selected.usage !== "metadata_only" ||
-      new URL(selected.baseUrl).hostname !== "www.noaa.gov" ||
-      new URL(selected.feedUrl ?? selected.baseUrl).hostname !== "www.noaa.gov" ||
-      approvedSourceForUrl(selected.baseUrl, registry)?.id !== selectedSourceId
+      new URL(selected.baseUrl).hostname !== expectedHost ||
+      new URL(selected.feedUrl ?? selected.baseUrl).hostname !== expectedHost ||
+      approvedSourceForUrl(selected.baseUrl, registry)?.id !== selectedSourceId ||
+      (selectedSourceId === "usgs_news" &&
+        (selected.baseUrl !== "https://www.usgs.gov/news/" ||
+          selected.feedUrl !== "https://www.usgs.gov/news/149248/feed"))
     ) {
-      throw new Error("Reviewed NOAA single-source canary denied");
+      throw new Error("Reviewed single-source canary denied");
     }
   }
   const store = new PostgresFeedPollStore(
