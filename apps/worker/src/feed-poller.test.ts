@@ -230,18 +230,19 @@ test("unsafe XML, invalid media, and oversized bodies fail closed", () => {
   assert.throws(() => decodeApprovedFeed(src, sources, { ...rss, body: "x".repeat(131073) }));
 });
 
-
 test("RSS feeds with more than 20 items keep only the first 20 reviewed metadata entries", () => {
   const sources = registry();
   const src = sources[0]!;
-  const itemsXml = Array.from({ length: 25 }, (_, index) =>
-    "<item><title>Approved science headline number " +
-    index +
-    "</title><link>" +
-    prefix +
-    "rss/item-" +
-    index +
-    "</link><pubDate>Tue, 03 Nov 2026 12:00:00 GMT</pubDate></item>",
+  const itemsXml = Array.from(
+    { length: 25 },
+    (_, index) =>
+      "<item><title>Approved science headline number " +
+      index +
+      "</title><link>" +
+      prefix +
+      "rss/item-" +
+      index +
+      "</link><pubDate>Tue, 03 Nov 2026 12:00:00 GMT</pubDate></item>",
   ).join("");
   const body = "<rss><channel>" + itemsXml + "</channel></rss>";
   const entries = decodeApprovedFeed(src, sources, { ...rss, body });
@@ -254,10 +255,11 @@ test("RSS feeds with more than 20 items keep only the first 20 reviewed metadata
 
   // A later item cannot smuggle forbidden XML past the full-body preflight.
   assert.throws(
-    () => decodeApprovedFeed(src, sources, {
-      ...rss,
-      body: body.replace("</channel>", "<!DOCTYPE surprise></channel>"),
-    }),
+    () =>
+      decodeApprovedFeed(src, sources, {
+        ...rss,
+        body: body.replace("</channel>", "<!DOCTYPE surprise></channel>"),
+      }),
     /XML unsafe/,
   );
   assert.throws(() =>
