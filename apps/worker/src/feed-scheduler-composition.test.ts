@@ -450,7 +450,8 @@ test("USGS-only manual canary reads the exact reviewed direct RSS endpoint and n
     ...source("usgs_news", "news/", "approved", "rss"),
     baseUrl: "https://www.usgs.gov/news/",
     feedUrl: "https://www.usgs.gov/news/149248/feed",
-    termsUrl: "https://www.usgs.gov/about/organization/science-support/office-science-quality-and-integrity",
+    termsUrl:
+      "https://www.usgs.gov/about/organization/science-support/office-science-quality-and-integrity",
   };
   const sources = [nasa, noaa, usgs];
   const received: string[] = [];
@@ -489,14 +490,12 @@ test("USGS-only manual canary reads the exact reviewed direct RSS endpoint and n
   assert.deepEqual(await scheduler.tick(new Date(START)), [
     { sourceId: "usgs_news", status: "ingested", newItems: 1 },
   ]);
-  assert.deepEqual(received, [
-    "dns:www.usgs.gov",
-    "https:www.usgs.gov/news/149248/feed",
-  ]);
+  assert.deepEqual(received, ["dns:www.usgs.gov", "https:www.usgs.gov/news/149248/feed"]);
   assert.deepEqual([...f.db.keys()], ["usgs_news"]);
-  assert.deepEqual([...f.saved], [
-    "usgs_news|https://www.usgs.gov/news/national-news-release/example",
-  ]);
+  assert.deepEqual(
+    [...f.saved],
+    ["usgs_news|https://www.usgs.gov/news/national-news-release/example"],
+  );
   const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
   assert.equal(auth.length, 3);
   assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "usgs_news"));
@@ -514,13 +513,14 @@ test("USGS-only manual canary reads the exact reviewed direct RSS endpoint and n
   for (const patch of invalid) {
     const denied = fixture();
     const attempted = { ...usgs, ...patch };
-    assert.throws(
-      () => createDormantFeedScheduler(gated, {
+    assert.throws(() =>
+      createDormantFeedScheduler(gated, {
         ...denied.ports,
-        readRegistry: () => JSON.stringify({
-          version: 1,
-          sources: [nasa, noaa, attempted],
-        }),
+        readRegistry: () =>
+          JSON.stringify({
+            version: 1,
+            sources: [nasa, noaa, attempted],
+          }),
       }),
     );
     assert.equal(denied.queries.length, 0);
