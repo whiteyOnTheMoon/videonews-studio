@@ -115,6 +115,7 @@ DECLARE
   srev bigint:=current_setting('vns.renew_source_rev')::bigint;
   hrev bigint:=current_setting('vns.renew_host_rev')::bigint;
   hosts_before jsonb; hosts_after jsonb;
+  extra_host text;
   refused boolean:=false;
 BEGIN
   SELECT approved_hosts INTO hosts_before FROM vns.named_host_read();
@@ -142,16 +143,22 @@ BEGIN
     );
   EXCEPTION WHEN insufficient_privilege THEN refused:=true; END;
   IF NOT refused THEN RAISE EXCEPTION 'Repeated current revision renewal accepted'; END IF;
+  -- Earlier SQL migration integration fixtures may have other approved hosts
+  -- whose audit binds to an older global source revision (e.g. a race grant).
+  -- This mirrors production's need to reconfirm EVERY host, not only the
+  -- host whose feed URL changed.
+  FOR extra_host IN
+    SELECT jsonb_array_elements_text(hosts_before)
+    EXCEPT SELECT 'reconfirm.example.org'
+  LOOP
+    IF NOT vns.named_host_change(
+      (SELECT revision FROM vns.named_host_read()),srev,'renew',extra_host,
+      'Separately reviewed unchanged source rights under the latest snapshot.'
+    ) THEN RAISE EXCEPTION 'Other stale host reconfirmation failed'; END IF;
+  END LOOP;
 END $renew$;
 RESET SESSION AUTHORIZATION;
 
--- Synthetic CI-only diagnostics, no real source URL or secrets.
-SELECT 'ci0062_source=' || revision
-  FROM vns.admin_source_registry WHERE singleton;
-SELECT 'ci0062_hosts=' || revision || ':' || approved_hosts::text
-  FROM vns.admin_source_host_approvals WHERE singleton;
-SELECT 'ci0062_audit=' || revision || ':' || source_revision || ':' || action || ':' || host
-  FROM vns.admin_source_host_audit ORDER BY revision;
 DO $assert$
 DECLARE
   record jsonb;
@@ -160,7 +167,7 @@ BEGIN
   IF (record->'sourceSnapshot'->>'revision')::bigint <>
        current_setting('vns.renew_source_rev')::bigint
     OR (record->'hostApproval'->>'revision')::bigint <>
-       current_setting('vns.renew_host_rev')::bigint+1
+       (SELECT revision FROM vns.admin_source_host_approvals WHERE singleton)
   THEN RAISE EXCEPTION 'Exporter failed after renewed host grant'; END IF;
   IF NOT vns.feed_runtime_source_authorized(current_setting('vns.renew_source_item')::jsonb)
   THEN RAISE EXCEPTION 'Feed guard failed after renewed grant'; END IF;
