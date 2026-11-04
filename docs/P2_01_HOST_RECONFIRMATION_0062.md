@@ -21,7 +21,7 @@ appends a schema migration record. An explicit personal `renew` command:
 
 - Requires the unchanged current source revision and host revision (CAS),
   row locks, authenticated administrator, a reason of 20–300 characters,
-  a still-approved existing host, a strictly *older* last positive grant,
+  a still-approved existing host, a strictly _older_ last positive grant,
   and an approved source on that host.
 - Reuses the mandatory **separate human** source-reviewer check, or the
   existing explicitly DBA-authorized **single-owner physical-login** policy.
