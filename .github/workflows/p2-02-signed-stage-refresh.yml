@@ -1,0 +1,33 @@
+name: P2-02 signed source stage refresh isolated
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_signed_source_stage_refresh.mjs"
+      - "scripts/test_p2_02_signed_source_stage_refresh.mjs"
+      - "scripts/p2_01_signed_handoff_stage.mjs"
+      - "docs/P2_02_USGS_SIGNED_REVISION_REFRESH.md"
+      - ".github/workflows/p2-02-signed-stage-refresh.yml"
+permissions:
+  contents: read
+jobs:
+  signed-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: |
+          files="scripts/p2_02_signed_source_stage_refresh.mjs scripts/test_p2_02_signed_source_stage_refresh.mjs docs/P2_02_USGS_SIGNED_REVISION_REFRESH.md"
+          if ! npx prettier --check $files; then
+            npx prettier --write $files
+            git diff -- $files
+            exit 1
+          fi
+      - run: npx eslint scripts/p2_02_signed_source_stage_refresh.mjs scripts/test_p2_02_signed_source_stage_refresh.mjs
+      - run: |
+          sudo "$(command -v node)" --test \
+            scripts/test_p2_02_signed_source_stage_refresh.mjs
