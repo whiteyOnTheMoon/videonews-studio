@@ -3,6 +3,10 @@
 -- recycle a grant or change the allowed host set. The audit records a fresh
 -- `grant` action so the pre-existing export and feed runtime guards remain strict.
 BEGIN;
+-- The SECURITY DEFINER owner needs only these audit columns to reject
+-- a revoked/already-current host. The named client gains no direct read.
+GRANT SELECT(revision,host,action,source_revision)
+  ON vns.admin_source_host_audit TO vns_host_approval_executor;
 CREATE OR REPLACE FUNCTION vns.admin_change_source_host_approval(
   p_expected bigint,
   p_source_revision bigint,
