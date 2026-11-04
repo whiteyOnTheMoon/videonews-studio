@@ -126,7 +126,19 @@ function canonicalArticle(
 ): string | null {
   if (!isPlausiblePublicSourceUrl(value)) return null;
   const url = new URL(value);
-  if (url.toString() !== value || url.pathname.includes("%")) return null;
+  // The guarded PostgreSQL commit rejects query strings, percent encoding,
+  // fragments and dot segments. A single URL that passes this decoder but
+  // fails the SQL batch guard otherwise rejects every otherwise valid item.
+  // Never strip tracking parameters or rewrite unapproved links: omit them.
+  if (
+    url.toString() !== value ||
+    !value.startsWith(source.baseUrl) ||
+    value.includes("%") ||
+    value.includes("?") ||
+    value.includes("#") ||
+    value.includes("/./") ||
+    value.includes("/../")
+  ) return null;
   const matched = approvedSourceForUrl(value, registry);
   return matched?.id === source.id ? value : null;
 }
