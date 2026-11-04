@@ -2,8 +2,6 @@
 // Operator-only UPDATE of an existing signed handoff stage; never re-bootstrap.
 // This does not sign, import, update the SQL anchor, or start feed workers.
 import {
-  chmodSync,
-  chownSync,
   closeSync,
   constants,
   fchmodSync,
