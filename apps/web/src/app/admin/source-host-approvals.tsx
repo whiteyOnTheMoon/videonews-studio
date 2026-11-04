@@ -10,7 +10,7 @@ interface ReviewState {
 }
 export interface ReviewChoice {
   host: string;
-  action: "grant" | "revoke";
+  action: "grant" | "revoke" | "renew";
 }
 export function reviewableHostChoices(state: ReviewState): ReviewChoice[] {
   const approved = new Set<string>();
@@ -24,9 +24,13 @@ export function reviewableHostChoices(state: ReviewState): ReviewChoice[] {
     }
   }
   const existing = new Set(state.hosts.approvedHosts);
-  return [...new Set([...approved, ...existing])]
-    .sort()
-    .map((host) => ({ host, action: existing.has(host) ? "revoke" : "grant" }));
+  return [...new Set([...approved, ...existing])].sort().flatMap((host): ReviewChoice[] => {
+    if (!existing.has(host)) return [{ host, action: "grant" }];
+    if (!approved.has(host)) return [{ host, action: "revoke" }];
+    // A current host grant can be reconfirmed after an edited source revision,
+    // without revoking or changing the host list; SQL still rejects non-stale grants.
+    return [{ host, action: "renew" }, { host, action: "revoke" }];
+  });
 }
 async function loadReview(signal?: AbortSignal): Promise<ReviewState> {
   const options: RequestInit = {
@@ -90,7 +94,7 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
     return () => controller.abort();
   }, [enabled]);
   const choices = state ? reviewableHostChoices(state) : [];
-  const choice = choices.find((candidate) => candidate.host === host);
+  const choice = choices.find((candidate) => `${candidate.action}:${candidate.host}` === host);
   const validReason =
     reason.length >= 20 &&
     reason.length <= 300 &&
@@ -136,7 +140,7 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
       if (
         fresh.hosts.revision !== expected + 1 ||
         fresh.sources.revision !== state.sources.revision ||
-        fresh.hosts.approvedHosts.includes(choice.host) !== (choice.action === "grant")
+        fresh.hosts.approvedHosts.includes(choice.host) !== (choice.action !== "revoke")
       ) {
         throw new Error("Unexpected host approval revision");
       }
@@ -145,7 +149,7 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
       setReason("");
       setNotice("Entscheidung protokolliert. Keine Nachrichtenabrufe gestartet.");
     } catch {
-      // Uncertain outcome: never replay a host grant/revoke automatically.
+      // Uncertain outcome: never replay a grant, renewal or revoke automatically.
       setState(null);
       setHost("");
       setReason("");
@@ -191,8 +195,8 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
               >
                 <option value="">Host auswählen</option>
                 {choices.map((item) => (
-                  <option value={item.host} key={item.host}>
-                    {item.host} – {item.action === "revoke" ? "widerrufen" : "freigeben"}
+                  <option value={`${item.action}:${item.host}`} key={`${item.action}:${item.host}`}>
+                    {item.host} – {item.action === "revoke" ? "widerrufen" : item.action === "renew" ? "Freigabe für aktuelle Quellenrevision erneuern" : "freigeben"}
                   </option>
                 ))}
               </select>
@@ -208,7 +212,11 @@ export default function SourceHostApprovals({ enabled }: { enabled: boolean }) {
                 onChange={(event) => setReason(event.target.value)}
               />
               <button type="submit" disabled={busy || !choice || !validReason}>
-                {choice?.action === "revoke" ? "Freigabe widerrufen" : "Host separat freigeben"}
+                {choice?.action === "revoke"
+                  ? "Freigabe widerrufen"
+                  : choice?.action === "renew"
+                    ? "Host-Freigabe erneut prüfen und bestätigen"
+                    : "Host separat freigeben"}
               </button>
             </form>
           )}
