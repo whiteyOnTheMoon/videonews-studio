@@ -95,8 +95,10 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       item.reviewStatus !== "candidate" ||
       !/^[a-z][a-z0-9_-]{2,40}$/.test(item.sourceId) ||
       typeof item.headline !== "string" ||
+      item.headline !== item.headline.trim() ||
       item.headline.length < 8 ||
       item.headline.length > 200 ||
+      /[<>\\x00-\\x1f\\x7f]/.test(item.headline) ||
       !item.publishedAt
     ) {
       throw new Error("Article metadata invalid");
@@ -109,7 +111,12 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       url.password ||
       url.search ||
       url.hash ||
-      url.toString() !== item.url
+      url.toString() !== item.url ||
+      item.url.includes("%") ||
+      item.url.includes("?") ||
+      item.url.includes("#") ||
+      item.url.includes("/./") ||
+      item.url.includes("/../")
     ) {
       throw new Error("Article URL not canonical");
     }
