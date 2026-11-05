@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { FeedItem } from "./feed-poller.js";
+import { isPlausiblePublicSourceUrl } from "./source-policy.js";
 
 export interface EditorialProfile {
   id: string;
@@ -95,11 +96,22 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       item.reviewStatus !== "candidate" ||
       !/^[a-z][a-z0-9_-]{2,40}$/.test(item.sourceId) ||
       typeof item.headline !== "string" ||
+      item.headline !== item.headline.trim() ||
       item.headline.length < 8 ||
       item.headline.length > 200 ||
+      /[<>]/.test(item.headline) ||
+      Array.from(item.headline).some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) ||
       !item.publishedAt
     ) {
       throw new Error("Article metadata invalid");
+    }
+    // Share the live poller's public-URL admission before parsing an offline record.
+    // URL shape alone is not an approval of its source or publisher.
+    if (!isPlausiblePublicSourceUrl(item.url)) {
+      throw new Error("Article URL not canonical");
     }
     const url = new URL(item.url);
     if (
@@ -109,7 +121,12 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       url.password ||
       url.search ||
       url.hash ||
-      url.toString() !== item.url
+      url.toString() !== item.url ||
+      item.url.includes("%") ||
+      item.url.includes("?") ||
+      item.url.includes("#") ||
+      item.url.includes("/./") ||
+      item.url.includes("/../")
     ) {
       throw new Error("Article URL not canonical");
     }

@@ -13,3 +13,9 @@ Exact-title grouping now verifies metadata identities again and partitions ident
 The generated `exact-event-window-v2` IDs use the members' deterministic identities and are **not stable persisted event IDs**: they can change as members are added. SQL `research_events.event_id` remains the durable identity for live projection; this offline change does not rewrite stored rows. Synthetic tests cover recurrent titles, transitive 72-hour chains, forged IDs/hashes and a fresh headline that was previously hidden by an older exact-title match.
 
 The outstanding #18 production acceptance still requires an approved end-to-end source-to-SQL-to-Admin proof; this patch alone is not a completed newsroom deduplication system.
+
+## Canonical feed metadata parity (offline P2-03)
+
+The offline `normalizeFeedArticles` boundary now reuses the live poller's public-URL shape guard (including IP addresses, internal hostnames and nondefault ports) and rejects URL percent encoding, query strings, fragments, raw dot segments and noncanonical URL serializations, consistent with the guarded P2-02 PostgreSQL commit and the live poller's URL decoder. It also rejects leading/trailing headline whitespace, angle brackets and ASCII control characters (including DEL), consistent with live feed-title admission. These checks run before either offline exact-title or conservative lexical grouping; tests cover direct normalization and tampered records.
+
+This prevents **offline** candidate pipelines from accepting article metadata that the real feed commit would refuse. It **does not** grant source/host rights, independently confirm publisher provenance, fetch full articles, normalize away tracking URLs, or rewrite any stored evidence. Actual URL ownership and current approvals are still enforced only through the reviewed source registry and guarded PostgreSQL functions. The source-to-SQL-to-Admin production acceptance of issue #18 remains open.
