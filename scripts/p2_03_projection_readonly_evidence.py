@@ -82,7 +82,7 @@ def evidence_sql(source_id: str) -> str:
     return f"""
 WITH
 registry AS (
- SELECT entry.value AS item
+ SELECT r.revision AS source_revision, entry.value AS item
  FROM vns.admin_source_registry r
  CROSS JOIN LATERAL jsonb_array_elements(r.sources) AS entry(value)
  WHERE r.singleton=true AND entry.value->>'id'='{source_id}'
@@ -123,8 +123,33 @@ SELECT jsonb_build_object(
                         '0056_failclosed_ranked_feed_read',
                         '0059_canonical_event_title_fingerprint')),
  'source_authorized',
+   -- A read-only MVCC snapshot of the existing audited source/host state.
+   -- The runtime authorization function uses FOR SHARE and cannot be
+   -- called from default_transaction_read_only=on. This status is evidence,
+   -- NOT an authorization token or substitute for the guarded writer.
    coalesce((SELECT count(*)=1 AND bool_and(
-      vns.feed_runtime_source_authorized(item)) FROM registry),false),
+      jsonb_typeof(item)='object'
+      AND (SELECT count(*) FROM jsonb_object_keys(item))=9
+      AND item ?& ARRAY['id','baseUrl','access','intervalMinutes',
+                        'termsUrl','usage','licenseNotes','status','reviewedAt']
+      AND item->>'status'='approved'
+      AND EXISTS(
+        SELECT 1
+        FROM vns.admin_source_host_approvals h
+        JOIN LATERAL (
+          SELECT a.action,a.source_revision
+          FROM vns.admin_source_host_audit a
+          WHERE a.host=split_part(
+            split_part(registry.item->>'baseUrl','https://',2),'/',1)
+          ORDER BY a.revision DESC LIMIT 1
+        ) latest ON true
+        WHERE h.singleton=true
+          AND h.approved_hosts ? split_part(
+            split_part(registry.item->>'baseUrl','https://',2),'/',1)
+          AND latest.action='grant'
+          AND latest.source_revision=registry.source_revision
+      )
+   ) FROM registry),false),
  'feed_candidates',(SELECT count(*) FROM candidates),
  'eligible_candidates',(SELECT count(*) FROM candidates
    WHERE published_at IS NOT NULL AND published_at<=clock_timestamp()),
