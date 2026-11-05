@@ -331,10 +331,10 @@ test("an archived identical headline cannot suppress a fresh exact-title candida
   const archived = grouped.find((event) => event.articles.length === 1);
   assert.ok(fresh && archived);
   assert.notEqual(fresh.id, archived.id);
-  assert.deepEqual(
-    fresh.articles.map((article) => article.sourceId).sort(),
-    ["news_one", "news_two"],
-  );
+  assert.deepEqual(fresh.articles.map((article) => article.sourceId).sort(), [
+    "news_one",
+    "news_two",
+  ]);
   const ranked = rankOfflineEvents(grouped, profile, new Date("2026-10-26T13:00:00.000Z"));
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0]!.id, fresh.id);
