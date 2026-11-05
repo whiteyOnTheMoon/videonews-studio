@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { FeedItem } from "./feed-poller.js";
+import { isPlausiblePublicSourceUrl } from "./source-policy.js";
 
 export interface EditorialProfile {
   id: string;
@@ -102,6 +103,11 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       !item.publishedAt
     ) {
       throw new Error("Article metadata invalid");
+    }
+    // Share the live poller's public-URL admission before parsing an offline record.
+    // URL shape alone is not an approval of its source or publisher.
+    if (!isPlausiblePublicSourceUrl(item.url)) {
+      throw new Error("Article URL not canonical");
     }
     const url = new URL(item.url);
     if (
