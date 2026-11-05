@@ -26,6 +26,8 @@ class P203WitnessTests(unittest.TestCase):
         self.assertIn("vns.admin_source_host_approvals", sql)
         self.assertIn("vns.admin_source_host_audit", sql)
         self.assertIn("latest.source_revision=registry.source_revision", sql)
+        self.assertIn("jsonb_object_keys(item)) IN (9,10)", sql)
+        self.assertIn("item ? 'feedUrl'", sql)
         self.assertNotIn("vns.feed_runtime_source_authorized(", sql)
         self.assertNotIn("FOR SHARE", sql.split("SELECT jsonb_build_object(", 1)[0])
         self.assertIn("time_spread>interval '48 hours'", sql)
