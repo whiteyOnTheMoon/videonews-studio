@@ -175,7 +175,8 @@ export function groupExactHeadlineEvents(
     const matches = clusters.filter((records) =>
       records.every(
         (member) =>
-          Math.abs(Date.parse(article.publishedAt) - Date.parse(member.publishedAt)) <= windowMillis,
+          Math.abs(Date.parse(article.publishedAt) - Date.parse(member.publishedAt)) <=
+          windowMillis,
       ),
     );
     // Do not arbitrarily choose between two plausible historical events.
