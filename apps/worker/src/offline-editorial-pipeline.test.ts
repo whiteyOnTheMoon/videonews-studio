@@ -374,3 +374,55 @@ test("exact-title grouping does not chain beyond 48 hours or trust forged hashes
     assert.throws(() => groupExactHeadlineEvents([forged]), /Exact event candidate identity/);
   }
 });
+
+test("offline canonical URLs match the guarded feed commit rejection boundary", () => {
+  const invalidUrls = [
+    "https://one.example.org/news/a?tracking=1",
+    "https://one.example.org/news/a#fragment",
+    "https://one.example.org/news/a%20b",
+    "https://one.example.org/news/a%2Fb",
+    "https://one.example.org/news/./a",
+    "https://one.example.org/news/../a",
+  ];
+  for (const url of invalidUrls) {
+    assert.throws(
+      () => normalizeFeedArticles([item("news_one", url)]),
+      /Article URL not canonical/,
+      url,
+    );
+  }
+  assert.equal(
+    normalizeFeedArticles([item("news_one", "https://one.example.org/news/a-b")]).length,
+    1,
+  );
+});
+
+test("offline headline integrity matches live feed title admission", () => {
+  const invalidTitles = [
+    " Leading science update",
+    "Science update trailing ",
+    "Science <update> published",
+    "Science >update published",
+    "Science\nupdate published",
+    "Science\u0000update published",
+    "Science\u007fupdate published",
+  ];
+  for (const headline of invalidTitles) {
+    assert.throws(
+      () => normalizeFeedArticles([item("news_one", "https://one.example.org/news/a", headline)]),
+      /Article metadata invalid/,
+    );
+  }
+  const original = normalizeFeedArticles([
+    item("news_one", "https://one.example.org/news/a", "Science update published"),
+  ]);
+  const forged = { ...original[0]!, headline: "Science <update> published" };
+  assert.throws(() => groupExactHeadlineEvents([forged]), /Article metadata invalid/);
+  assert.throws(() => groupConservativeEventCandidates([forged]), /Article metadata invalid/);
+  assert.equal(
+    normalizeFeedArticles([
+      item("news_one", "https://one.example.org/news/a", "Science research update"),
+    ]).length,
+    1,
+  );
+});
