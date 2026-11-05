@@ -203,6 +203,9 @@ def validate_evidence(row: object) -> dict[str, object]:
         or row["projected_events"] > row["projected_articles"]
         or row["multi_source_events"] > row["multi_article_events"]
         or row["multi_article_events"] > row["projected_events"]
+        or row["ranked_events"] > row["projected_events"]
+        or row["event_window_violations"] > row["projected_events"]
+        or (row["publication_violations"] > 0 and row["projected_events"] == 0)
         or row["unmapped_eligible_candidates"] > row["eligible_candidates"]
         or row["immutable_metadata_conflicts"] > row["feed_candidates"]
     ):
