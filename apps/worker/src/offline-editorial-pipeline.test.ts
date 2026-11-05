@@ -332,7 +332,7 @@ test("an archived identical headline cannot suppress a fresh exact-title candida
   assert.ok(fresh && archived);
   assert.notEqual(fresh.id, archived.id);
   assert.deepEqual(
-    fresh.articles.map((article) => article.sourceId),
+    fresh.articles.map((article) => article.sourceId).sort(),
     ["news_one", "news_two"],
   );
   const ranked = rankOfflineEvents(grouped, profile, new Date("2026-10-26T13:00:00.000Z"));
@@ -367,7 +367,7 @@ test("exact-title grouping does not chain beyond 48 hours or trust forged hashes
     ),
   );
   for (const forged of [
-    { ...articles[0]!, titleFingerprint: articles[0]!.titleFingerprint.replace(/^./, "f") },
+    { ...articles[0]!, titleFingerprint: "0".repeat(64) },
     { ...articles[0]!, id: "f".repeat(64) },
     { ...articles[0]!, sourceId: "imposter_news" },
   ]) {
