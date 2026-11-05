@@ -17,7 +17,7 @@ The signed handoff succeeded before the failed poll. No checkpoint reset, anchor
 
 ## Verified contract mismatch
 
-The RSS decoder's `canonicalArticle` previously checked the approved article scope and percent-encoded *pathname* but admitted an otherwise in-scope, canonical URL containing a query such as `?utm_source=official`. The currently deployed guarded SQL function `vns.commit_feed_poll_authorized` deliberately rejects any article URL containing `?`, `#`, `%`, `/./` or `/../`, and it aborts the entire batch if **one** item fails.
+The RSS decoder's `canonicalArticle` previously checked the approved article scope and percent-encoded _pathname_ but admitted an otherwise in-scope, canonical URL containing a query such as `?utm_source=official`. The currently deployed guarded SQL function `vns.commit_feed_poll_authorized` deliberately rejects any article URL containing `?`, `#`, `%`, `/./` or `/../`, and it aborts the entire batch if **one** item fails.
 
 This is a concrete, locally demonstrated decoder/SQL mismatch. **No article URLs or database error details from the failed USGS batch were recorded**, so it remains unproven that this mismatch caused that specific live failure. SQL role, source/host guards, timestamp/validator or metadata-shape failures are still possible.
 
