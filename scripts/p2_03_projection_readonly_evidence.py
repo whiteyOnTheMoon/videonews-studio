@@ -129,10 +129,18 @@ SELECT jsonb_build_object(
    -- NOT an authorization token or substitute for the guarded writer.
    coalesce((SELECT count(*)=1 AND bool_and(
       jsonb_typeof(item)='object'
-      AND (SELECT count(*) FROM jsonb_object_keys(item))=9
+      AND (SELECT count(*) FROM jsonb_object_keys(item)) IN (9,10)
+      AND ((SELECT count(*) FROM jsonb_object_keys(item))=9
+           OR item ? 'feedUrl')
       AND item ?& ARRAY['id','baseUrl','access','intervalMinutes',
                         'termsUrl','usage','licenseNotes','status','reviewedAt']
       AND item->>'status'='approved'
+      AND (NOT (item ? 'feedUrl') OR (
+        jsonb_typeof(item->'feedUrl')='string'
+        AND item->>'feedUrl' IS DISTINCT FROM item->>'baseUrl'
+        AND split_part(split_part(item->>'feedUrl','https://',2),'/',1)
+            =split_part(split_part(item->>'baseUrl','https://',2),'/',1)
+      ))
       AND EXISTS(
         SELECT 1
         FROM vns.admin_source_host_approvals h
