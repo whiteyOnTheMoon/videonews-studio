@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -481,6 +482,33 @@ test(
         "SELECT count(*)::integer AS count FROM vns.feed_event_rankings",
       );
       assert.equal(durable.rows[0].count, 1);
+      // Exercise the *same* read-only production evidence SQL against the
+      // real disposable PostgreSQL data from the full BullMQ -> ranking path.
+      const witnessSql = spawnSync(
+        "python3",
+        [
+          "-c",
+          "from scripts.p2_03_projection_readonly_evidence import evidence_sql; print(evidence_sql('rss_feed'))",
+        ],
+        { encoding: "utf8", timeout: 10000 },
+      );
+      assert.equal(witnessSql.status, 0);
+      const witnessed = await dba.query(witnessSql.stdout);
+      assert.equal(witnessed.rows.length, 1);
+      const proof = witnessed.rows[0].jsonb_build_object;
+      assert.equal(proof.schema_ready, true);
+      assert.equal(proof.source_authorized, true);
+      assert.equal(proof.feed_candidates, 1);
+      assert.equal(proof.eligible_candidates, 1);
+      assert.equal(proof.projected_articles, 1);
+      assert.equal(proof.projected_events, 1);
+      assert.equal(proof.multi_article_events, 1);
+      assert.equal(proof.multi_source_events, 1);
+      assert.equal(proof.ranked_events, 1);
+      assert.equal(proof.unmapped_eligible_candidates, 0);
+      assert.equal(proof.immutable_metadata_conflicts, 0);
+      assert.equal(proof.event_window_violations, 0);
+      assert.equal(proof.publication_violations, 0);
       const stillCandidate = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.feed_poll_candidates WHERE review_status = 'candidate'",
       );

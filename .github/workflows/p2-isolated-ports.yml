@@ -6,6 +6,9 @@ on:
       - "apps/worker/**"
       - "db/migrations/**"
       - "scripts/ci_p2_integrated_ports.mjs"
+      - "scripts/p2_03_projection_readonly_evidence.py"
+      - "scripts/test_p2_03_projection_readonly_evidence.py"
+      - "docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md"
       - "scripts/ci_p2_named_admin_live_pg.mjs"
       - "scripts/ci_p2_web_admin_bridge.mjs"
       - "apps/web/src/lib/admin-editorial-proxy.ts"
@@ -75,6 +78,11 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
+      - name: Check P2-03 witness runbook formatting with reviewable patch
+        run: |
+          npx prettier --write docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --no-color -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --exit-code -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
       - name: Check code formatting and lint
         run: |
           npm run format:check
@@ -109,6 +117,8 @@ jobs:
             --profile data --profile feed-project --profile feed-project-continuous config --quiet
       - name: Test read-only host UID and secrets preflight with synthetic filesystem metadata
         run: python3 -m unittest discover -s scripts -p "test_p2_feed_host_preflight.py" -v
+      - name: Test read-only P2-03 witness and immutable evidence guards
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p "test_p2_03_projection_readonly_evidence.py" -v
       - name: Compile shared, worker and actual personal Admin API contracts
         run: |
           npm run build --workspace @vns/shared
