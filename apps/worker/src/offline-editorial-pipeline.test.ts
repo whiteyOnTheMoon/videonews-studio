@@ -314,3 +314,63 @@ test("lexical clustering ignores isolated one-codepoint words, including Unicode
     assert.ok(grouped.every((event) => event.reasons.includes("lexical_candidate_only")));
   }
 });
+
+test("an archived identical headline cannot suppress a fresh exact-title candidate", () => {
+  const articles = normalizeFeedArticles([
+    {
+      ...item("archive_news", "https://archive.example.org/news/old"),
+      publishedAt: "2026-10-20T12:00:00.000Z",
+    },
+    item("news_one", "https://one.example.org/news/new"),
+    item("news_two", "https://two.example.org/news/new"),
+  ]);
+  const grouped = groupExactHeadlineEvents(articles);
+  assert.equal(grouped.length, 2);
+  assert.deepEqual(groupExactHeadlineEvents([...articles].reverse()), grouped);
+  const fresh = grouped.find((event) => event.articles.length === 2);
+  const archived = grouped.find((event) => event.articles.length === 1);
+  assert.ok(fresh && archived);
+  assert.notEqual(fresh.id, archived.id);
+  assert.deepEqual(
+    fresh.articles.map((article) => article.sourceId),
+    ["news_one", "news_two"],
+  );
+  const ranked = rankOfflineEvents(grouped, profile, new Date("2026-10-26T13:00:00.000Z"));
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0]!.id, fresh.id);
+  assert.ok(ranked[0]!.reasons.includes("independent_verification_required"));
+});
+
+test("exact-title grouping does not chain beyond 48 hours or trust forged hashes", () => {
+  const articles = normalizeFeedArticles([
+    {
+      ...item("news_one", "https://one.example.org/news/old"),
+      publishedAt: "2026-10-20T00:00:00.000Z",
+    },
+    {
+      ...item("news_two", "https://two.example.org/news/mid"),
+      publishedAt: "2026-10-21T12:00:00.000Z",
+    },
+    {
+      ...item("news_three", "https://three.example.org/news/new"),
+      publishedAt: "2026-10-23T00:00:00.000Z",
+    },
+  ]);
+  const grouped = groupExactHeadlineEvents(articles);
+  assert.equal(grouped.length, 2);
+  assert.ok(
+    grouped.every(
+      (event) =>
+        Math.max(...event.articles.map((article) => Date.parse(article.publishedAt))) -
+          Math.min(...event.articles.map((article) => Date.parse(article.publishedAt))) <=
+        48 * 3600000,
+    ),
+  );
+  for (const forged of [
+    { ...articles[0]!, titleFingerprint: articles[0]!.titleFingerprint.replace(/^./, "f") },
+    { ...articles[0]!, id: "f".repeat(64) },
+    { ...articles[0]!, sourceId: "imposter_news" },
+  ]) {
+    assert.throws(() => groupExactHeadlineEvents([forged]), /Exact event candidate identity/);
+  }
+});
