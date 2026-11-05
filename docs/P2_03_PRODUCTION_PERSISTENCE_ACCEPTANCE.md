@@ -8,6 +8,8 @@ P2-03 has a CI-proven worker/PostgreSQL/Admin path for synthetic, separately rev
 
 This witness only connects to the _existing_ healthy Compose PostgreSQL using `psql` under the bounded `PGOPTIONS` flags `default_transaction_read_only=on`, `statement_timeout=10000`, and `lock_timeout=3000`. It requires the pinned clean GitHub release, `main` and operator `ap` (UID 1000), then runs **one** aggregate read. No raw article URL, article title, SQL exception, source secret, server address, personal name or publisher content is logged. It does not read private checkpoints or the Redis queue; their separate independent checks remain mandatory before any live action.
 
+The `source_authorized` flag is a **read-only snapshot comparison** against the stored 9-/10-field reviewed source and the latest matching host-grant audit. It deliberately does not call `vns.feed_runtime_source_authorized`, because that protected runtime function acquires `FOR SHARE` locks that PostgreSQL refuses in a read-only transaction. This diagnostic can never stand in for the actual locked authority checks performed by live feed commits and the projector.
+
 ## Run only after the operator installs the corresponding reviewed main release
 
 ```bash
