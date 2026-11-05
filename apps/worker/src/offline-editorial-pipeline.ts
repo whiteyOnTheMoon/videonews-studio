@@ -98,7 +98,7 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       item.headline !== item.headline.trim() ||
       item.headline.length < 8 ||
       item.headline.length > 200 ||
-      /[<>\\x00-\\x1f\\x7f]/.test(item.headline) ||
+      /[<>\x00-\x1f\x7f]/.test(item.headline) ||
       !item.publishedAt
     ) {
       throw new Error("Article metadata invalid");
