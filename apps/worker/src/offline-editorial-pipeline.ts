@@ -99,11 +99,11 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
       item.headline !== item.headline.trim() ||
       item.headline.length < 8 ||
       item.headline.length > 200 ||
-      (/[<>]/.test(item.headline) ||
-        Array.from(item.headline).some((character) => {
-          const code = character.charCodeAt(0);
-          return code < 32 || code === 127;
-        })) ||
+      /[<>]/.test(item.headline) ||
+      Array.from(item.headline).some((character) => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+      }) ||
       !item.publishedAt
     ) {
       throw new Error("Article metadata invalid");
