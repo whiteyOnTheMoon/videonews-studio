@@ -383,6 +383,9 @@ test("offline canonical URLs match the guarded feed commit rejection boundary", 
     "https://one.example.org/news/a%2Fb",
     "https://one.example.org/news/./a",
     "https://one.example.org/news/../a",
+    "https://127.0.0.1/news/a",
+    "https://one.example.local/news/a",
+    "https://one.example.org:8443/news/a",
   ];
   for (const url of invalidUrls) {
     assert.throws(
