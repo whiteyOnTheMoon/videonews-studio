@@ -137,25 +137,73 @@ export function normalizeFeedArticles(items: readonly FeedItem[]): readonly Norm
   });
 }
 
-/** Exact normalized headline fingerprint only: no claim of semantic deduplication. */
+/**
+ * Exact-title metadata candidates, bounded to a 48-hour all-member window.
+ * Identical recurring headlines across days are NOT evidence of one event.
+ * These member-derived IDs are candidate-only, not durable SQL event IDs.
+ */
 export function groupExactHeadlineEvents(
   articles: readonly NormalizedArticle[],
 ): readonly NewsEvent[] {
-  const groups = new Map<string, NormalizedArticle[]>();
-  for (const article of articles) {
-    const group = groups.get(article.titleFingerprint) ?? [];
-    group.push(article);
-    groups.set(article.titleFingerprint, group);
+  if (articles.length > 100) throw new Error("Event candidate batch exceeded");
+  const verified = normalizeFeedArticles(
+    articles.map((article) => ({
+      sourceId: article.sourceId,
+      url: article.url,
+      headline: article.headline,
+      publishedAt: article.publishedAt,
+      reviewStatus: "candidate" as const,
+    })),
+  );
+  if (
+    verified.some(
+      (article, index) =>
+        article.id !== articles[index]!.id ||
+        article.titleFingerprint !== articles[index]!.titleFingerprint,
+    )
+  ) {
+    throw new Error("Exact event candidate identity mismatch");
   }
+
+  const windowMillis = 48 * 3600000;
+  const groups = new Map<string, NormalizedArticle[][]>();
+  const ordered = [...verified].sort(
+    (a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt) || a.id.localeCompare(b.id),
+  );
+  for (const article of ordered) {
+    const clusters = groups.get(article.titleFingerprint) ?? [];
+    const matches = clusters.filter((records) =>
+      records.every(
+        (member) =>
+          Math.abs(Date.parse(article.publishedAt) - Date.parse(member.publishedAt)) <=
+          windowMillis,
+      ),
+    );
+    // Do not arbitrarily choose between two plausible historical events.
+    if (matches.length === 1) matches[0]!.push(article);
+    else clusters.push([article]);
+    groups.set(article.titleFingerprint, clusters);
+  }
+
   return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([fingerprint, records]) => ({
-      id: hash("event-v1:" + fingerprint),
-      headline: records[0]!.headline,
-      articles: records,
-      score: 0,
-      reasons: [],
-    }));
+    .flatMap(([fingerprint, clusters]) =>
+      clusters.map((records) => ({
+        id: hash(
+          "exact-event-window-v2:" +
+            fingerprint +
+            "\n" +
+            records
+              .map((record) => record.id)
+              .sort()
+              .join(":"),
+        ),
+        headline: records[0]!.headline,
+        articles: records,
+        score: 0,
+        reasons: [],
+      })),
+    )
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
