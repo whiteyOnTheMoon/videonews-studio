@@ -78,6 +78,11 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
+      - name: Check P2-03 witness runbook formatting with reviewable patch
+        run: |
+          npx prettier --write docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --no-color -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --exit-code -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
       - name: Check code formatting and lint
         run: |
           npm run format:check
