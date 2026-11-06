@@ -189,23 +189,17 @@ test("no approved USGS metadata reports bounded counts without RSS content or a 
     "<item><title>bad</title><link>" +
     "https://www.usgs.gov/news/valid-title-test</link></item>" +
     "</channel></rss>";
-  const result = await probeUsGsOneGet(
-    env,
-    approved.signed,
-    approved.checkpoint,
-    keys.publicKey,
-    {
-      resolveIPv4: async () => ["1.1.1.1"],
-      async requestPinned() {
-        requests++;
-        return {
-          status: 200,
-          headers: { "content-type": "application/rss+xml" },
-          body: Buffer.from(body),
-        };
-      },
+  const result = await probeUsGsOneGet(env, approved.signed, approved.checkpoint, keys.publicKey, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    async requestPinned() {
+      requests++;
+      return {
+        status: 200,
+        headers: { "content-type": "application/rss+xml" },
+        body: Buffer.from(body),
+      };
     },
-  );
+  });
   assert.equal(requests, 1);
   assert.deepEqual(result, {
     scope: "usgs_single_readonly_get",
