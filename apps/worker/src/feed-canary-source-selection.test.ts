@@ -48,7 +48,10 @@ test("all three source selectors reject cross-acknowledgements and non-single-pa
       ["VNS_FEED_RUNTIME_ENABLED", "false"],
       ["VNS_FEED_RUNTIME_MODE", "persistent_worker"],
       ["VNS_FEED_SOURCE_BOOTSTRAP", "true"],
-      ["VNS_FEED_CANARY_SOURCE_ID", valid.VNS_FEED_CANARY_SOURCE_ID === "nasa_news" ? "noaa_news" : "nasa_news"],
+      [
+        "VNS_FEED_CANARY_SOURCE_ID",
+        valid.VNS_FEED_CANARY_SOURCE_ID === "nasa_news" ? "noaa_news" : "nasa_news",
+      ],
       ["VNS_FEED_CANARY_SOURCE_ID", "unknown_source"],
       ["VNS_FEED_CANARY_SOURCE_ID", ""],
       ["VNS_FEED_CANARY_OPERATOR_ACK", "true"],
