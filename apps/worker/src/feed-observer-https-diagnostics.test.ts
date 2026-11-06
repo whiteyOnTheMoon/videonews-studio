@@ -143,3 +143,27 @@ test("acknowledged NOAA gets separate allowed source and failed telemetry never 
   assert.ok(throwing);
   assert.doesNotThrow(() => throwing("usgs_news", { kind: "https_unavailable" }));
 });
+
+test("NASA-only refusal logging is opt-in and excludes unrelated source IDs", () => {
+  const lines: string[] = [];
+  const reporter = oneShotFeedHttpsRefusalReporter(
+    {
+      ...base,
+      VNS_FEED_CANARY_SOURCE_ID: "nasa_news",
+      VNS_FEED_CANARY_OPERATOR_ACK: "NASA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+    },
+    (line) => lines.push(line),
+  );
+  assert.ok(reporter);
+  reporter("noaa_news", { kind: "dns_unavailable" });
+  reporter("usgs_news", { kind: "https_unavailable" });
+  reporter("nasa_news", { kind: "request_timeout", phase: "before_headers" });
+  assert.deepEqual(lines.map((line) => JSON.parse(line)), [
+    {
+      event: "feed_https_refusal",
+      sourceId: "nasa_news",
+      kind: "request_timeout",
+      phase: "before_headers",
+    },
+  ]);
+});
