@@ -88,7 +88,7 @@ class NASAQueueTests(unittest.TestCase):
                 for verb in [b"LLEN", b"ZCARD", b"SCARD", b"EXISTS"])
             for command in sock.writes[3:]
         ))
-        self.assertNotIn(b"SECRET_QUEUED_PASSWORD", json.dumps(actual))
+        self.assertNotIn("SECRET_QUEUED_PASSWORD", json.dumps(actual))
         self.assertNotIn("172.20.0.9", json.dumps(actual))
         self.assertNotIn(b"SET", b"".join(sock.writes[3:]))
         self.assertNotIn(b"EVAL", b"".join(sock.writes[3:]))
