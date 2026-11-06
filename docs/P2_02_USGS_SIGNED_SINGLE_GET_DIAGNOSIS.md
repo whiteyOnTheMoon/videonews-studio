@@ -108,4 +108,3 @@ For a separately authorized **future** diagnostic only, `rejectionCounts.linkFai
 - `other`: a rejected link did not match a narrower safe classification
 
 All counters are small integers, sum to `invalidOrBlockedLink`, and never expose URL values, headlines, dates, raw RSS, remote headers or secret material. The existing production `canonicalArticle` and `decodeApprovedFeed` checks are **unchanged**. Do not attempt a new GET under either previously consumed permission, do not broaden USGS host or article-scope approvals, and do not delete historical queue or lease evidence.
-
