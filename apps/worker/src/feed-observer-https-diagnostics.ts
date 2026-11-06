@@ -1,4 +1,4 @@
-import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
+import { readSingleSourceCanarySelection, type P2OneShotSourceCanary } from "./feed-canary-source-selection.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusalKind } from "./feed-https-transport.js";
 
 /**
@@ -29,7 +29,7 @@ export function oneShotFeedHttpsRefusalReporter(
 ): FeedHttpsDependencies["onRefusal"] | undefined {
   if (env.VNS_FEED_POLL_STAGE_DIAGNOSTICS !== "true") return undefined;
 
-  let source: "noaa_news" | "usgs_news" | null;
+  let source: P2OneShotSourceCanary | null;
   try {
     source = readSingleSourceCanarySelection(env, "single_pass");
   } catch {
@@ -41,7 +41,7 @@ export function oneShotFeedHttpsRefusalReporter(
     if (sourceId !== source || !refusal || !KINDS.has(refusal.kind)) return;
     const event: {
       event: "feed_https_refusal";
-      sourceId: "noaa_news" | "usgs_news";
+      sourceId: P2OneShotSourceCanary;
       kind: FeedHttpsRefusalKind;
       httpStatus?: number;
       phase?: "before_headers" | "response_body";
