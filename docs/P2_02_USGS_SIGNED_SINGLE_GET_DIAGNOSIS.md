@@ -148,7 +148,7 @@ The **precise existing rejection cause is a query string on all 20 USGS links**.
 For a **separately approved future** USGS-only diagnostic, and only when an actual downloaded response was rejected by the existing parser, the read-only probe also reports `rejectionCounts.trackingQueryPreview`, containing:
 
 - `inspectedQueryLinks`: bounded count of items with query strings (up to 20)
-- `recognizedKeyCounts`: _only_ fixed well-known analytic query key names and the number of items bearing each. Known names: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `utm_id`, `gclid`, `fbclid`, `mc_cid`, `mc_eid`
+- `recognizedKeyCounts`: _only_ fixed well-known analytic query key names and the number of **tracking-keys-only** items bearing each; mixed or rejected parameter sets are **not included**. Known names: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `utm_id`, `gclid`, `fbclid`, `mc_cid`, `mc_eid`
 - `trackingKeysOnly`: number of links where every query parameter uses one of these keys, with no repeated key and nonempty bounded values
 - `unknownOrMixedKeys`: count with an unrecognized, duplicate, empty or otherwise disallowed parameter
 - `malformedOrUnusableQuery`: count rejected by the HTTPS lexical/URL parsing preflight
@@ -158,3 +158,63 @@ For a **separately approved future** USGS-only diagnostic, and only when an actu
 This is **only a hypothetical calculation**: no actual production URL is rewritten, persisted, fetched again, dereferenced or published, and no source grant is expanded. No raw URL, parameter **value**, headline, publication time, article body, unknown parameter **name**, or response body is output. Even if all 20 entries have familiar tracking key names, that does **not** by itself prove those parameters are non-semantic or authorize removal. A separate publisher/source semantics review, canonicalization policy and explicit operator authorization remain necessary before changing production ingestion.
 
 Do not substitute the separately indexed `/news/all/feed` endpoint: the signed 10/10 source export authorizes **only** `/news/149248/feed`. No migration or live service start is part of this change. Historical failed jobs, leases and publisher rights must remain unchanged.
+
+## Fourth approved single USGS GET — 2026-11-06: non-tracking query blocker
+
+On pinned VPS release `b6ed820ff836fb16bc718618ef79db1c13428221`, the operator separately approved and ran **one** USGS-only read-only GET after verifying the signed 10/10 export, private checkpoint, public trust key and PostgreSQL source/policy anchor. The one-shot request returned:
+
+```json
+{
+  "scope": "usgs_single_readonly_get",
+  "sourceId": "usgs_news",
+  "stage": "metadata_refused",
+  "reason": "no_approved_metadata",
+  "rejectionCounts": {
+    "scanned": 20,
+    "outsideApprovedPrefix": 0,
+    "invalidOrBlockedLink": 20,
+    "linkFailureReasons": {
+      "missingOrUnreadable": 0,
+      "queryString": 20,
+      "fragment": 0,
+      "percentEncoded": 0,
+      "dotSegments": 0,
+      "invalidPublicUrl": 0,
+      "nonCanonical": 0,
+      "blockedOrUnapprovedScope": 0,
+      "other": 0
+    },
+    "invalidHeadline": 0,
+    "invalidPublishedAt": 0,
+    "duplicate": 0,
+    "trackingQueryPreview": {
+      "inspectedQueryLinks": 20,
+      "trackingKeysOnly": 0,
+      "unknownOrMixedKeys": 20,
+      "malformedOrUnusableQuery": 0,
+      "recognizedKeyCounts": {
+        "utm_source": 0,
+        "utm_medium": 0,
+        "utm_campaign": 0,
+        "utm_content": 0,
+        "utm_term": 0,
+        "utm_id": 0,
+        "gclid": 0,
+        "fbclid": 0,
+        "mc_cid": 0,
+        "mc_eid": 0
+      },
+      "wouldPassExistingUrlAndMetadataGuards": 0,
+      "canonicalCollisions": 0
+    }
+  }
+}
+```
+
+**Confirmed:** the bounded response passed the HTTPS transport and RSS item extractor; all 20 inspected candidate links are refused at the query-string check. None of the 20 links qualifies as **tracking-keys-only** under the conservative diagnostic allowlist. The current production parser and guarded PostgreSQL `vns.commit_feed_poll_authorized` *both* forbid query strings; ingestion did not reach the metadata commit. No candidates or projected events were recorded.
+
+**Limits of evidence:** `unknownOrMixedKeys=20` is an aggregate for unknown names, mixed names, repeated names, empty values or otherwise unsuitable parameter shapes. `recognizedKeyCounts=0` counts keys **only in fully eligible tracking-keys-only URLs** and does **not prove** that known tracking names are absent from mixed-parameter URLs. `wouldPassExistingUrlAndMetadataGuards=0` only models removing a **fully allowed** tracking-only query; it is not evidence that other parameter stripping would be safe. Zero `invalidHeadline`/`invalidPublishedAt` reflects early URL rejection, **not** title/date acceptance.
+
+**Operator decision / explicit block:** keep `usgs_news` on hold for any further live ingestion or automatic query removal. Do **not** make the TypeScript parser more permissive, bypass the PostgreSQL guard, strip arbitrary parameters, change approved article scope, add a source endpoint, replay failed BullMQ jobs, reset SQL poll leases, or start other source canaries under this diagnostic authorization. The approval for the fourth single GET is consumed. A separate editorial/operator review of official USGS article identity, query parameter semantics, source terms and exact RSS endpoint is needed before any narrowly scoped normalization proposal. If a different source/feed endpoint is eventually selected, it requires its own reviewed source/host grants, fresh signed export and monotonic anchor/checkpoint protocol. No automatic VPS actions are authorized by this documentation change.
+
+**P2-03 witness:** `feed_candidates=0`, `projected_articles=0`, `projected_events=0`, `ranked_events=0`, `publication_authorized=false`, `status=awaiting_p2_02_persistence` at the operator's read-only preflight. The one-shot diagnostics have no PostgreSQL/Redis credentials or write mounts and did not invoke the productive worker. Production completion is **not** claimed.
