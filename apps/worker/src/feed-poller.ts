@@ -416,11 +416,9 @@ export function previewRejectedFeedTrackingQueries(
     throw new Error("Feed preview scope refused");
   }
   const raw = parseXmlItems(response.body, source);
-  const keyCounts: Record<(typeof TRACKING_QUERY_KEYS)[number], number> =
-    Object.fromEntries(TRACKING_QUERY_KEYS.map((key) => [key, 0])) as Record<
-      (typeof TRACKING_QUERY_KEYS)[number],
-      number
-    >;
+  const keyCounts: Record<(typeof TRACKING_QUERY_KEYS)[number], number> = Object.fromEntries(
+    TRACKING_QUERY_KEYS.map((key) => [key, 0]),
+  ) as Record<(typeof TRACKING_QUERY_KEYS)[number], number>;
   const approvedKeys: ReadonlySet<string> = new Set(TRACKING_QUERY_KEYS);
   const result = {
     inspectedQueryLinks: 0,
@@ -438,11 +436,7 @@ export function previewRejectedFeedTrackingQueries(
     const link = entry.url;
     if (typeof link !== "string" || !link.includes("?")) continue;
     result.inspectedQueryLinks++;
-    if (
-      !isPlausiblePublicSourceUrl(link) ||
-      link.includes("#") ||
-      link.length > 512
-    ) {
+    if (!isPlausiblePublicSourceUrl(link) || link.includes("#") || link.length > 512) {
       result.malformedOrUnusableQuery++;
       continue;
     }
