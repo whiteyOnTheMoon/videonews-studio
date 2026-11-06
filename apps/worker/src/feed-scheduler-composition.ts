@@ -70,7 +70,15 @@ export function createDormantFeedScheduler(
   const registry = parseReviewedSourceRegistry(contents, policy);
   if (selectedSourceId !== null) {
     const selected = registry.find((source) => source.id === selectedSourceId);
-    const expectedHost = selectedSourceId === "noaa_news" ? "www.noaa.gov" : "www.usgs.gov";
+    // NASA is deliberately selected only with a separately signed exact
+    // feedUrl. Neither the operator nor this selector supplies a URL; all
+    // actual paths come from the pinned signed and SQL-approved source.
+    const expectedHost =
+      selectedSourceId === "nasa_news"
+        ? "www.nasa.gov"
+        : selectedSourceId === "noaa_news"
+          ? "www.noaa.gov"
+          : "www.usgs.gov";
     if (
       !selected ||
       selected.status !== "approved" ||
@@ -79,6 +87,7 @@ export function createDormantFeedScheduler(
       new URL(selected.baseUrl).hostname !== expectedHost ||
       new URL(selected.feedUrl ?? selected.baseUrl).hostname !== expectedHost ||
       approvedSourceForUrl(selected.baseUrl, registry)?.id !== selectedSourceId ||
+      (selectedSourceId === "nasa_news" && !selected.feedUrl) ||
       (selectedSourceId === "usgs_news" &&
         (selected.baseUrl !== "https://www.usgs.gov/news/" ||
           selected.feedUrl !== "https://www.usgs.gov/news/149248/feed"))

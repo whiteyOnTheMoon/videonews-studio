@@ -527,3 +527,132 @@ test("USGS-only manual canary reads the exact reviewed direct RSS endpoint and n
     assert.equal(denied.requests.length, 0);
   }
 });
+
+test("NASA one-shot canary uses only the signed same-host feed endpoint", async () => {
+  const f = fixture();
+  f.approve("nasa_news");
+  const nasa = {
+    ...source("nasa_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.nasa.gov/news/",
+    feedUrl: "https://www.nasa.gov/news-release/feed/",
+    termsUrl: "https://www.nasa.gov/terms/",
+  };
+  const noaa = {
+    ...source("noaa_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.noaa.gov/",
+    feedUrl: "https://www.noaa.gov/rss.xml",
+    termsUrl: "https://www.noaa.gov/terms/",
+  };
+  const usgs = {
+    ...source("usgs_news", "news/", "approved", "rss"),
+    baseUrl: "https://www.usgs.gov/news/",
+    feedUrl: "https://www.usgs.gov/news/149248/feed",
+    termsUrl: "https://www.usgs.gov/terms/",
+  };
+  const approved = [nasa, noaa, usgs];
+  const received: string[] = [];
+  const ports: OfflineFeedSchedulerPorts = {
+    ...f.ports,
+    readRegistry: () => JSON.stringify({ version: 1, sources: approved }),
+    https: {
+      resolveIPv4: async (hostname) => {
+        received.push("dns:" + hostname);
+        return ["1.1.1.1"];
+      },
+      requestPinned: async (url) => {
+        received.push("https:" + url.hostname + url.pathname);
+        return {
+          status: 200,
+          headers: { "content-type": "application/rss+xml" },
+          body: Buffer.from(
+            "<rss><channel><item><title>NASA publishes an independent science bulletin</title>" +
+              "<link>https://www.nasa.gov/news/science-bulletin</link></item></channel></rss>",
+          ),
+        };
+      },
+    },
+  };
+  const gated: NodeJS.ProcessEnv = {
+    ...env,
+    VNS_ALLOWED_SOURCE_HOSTS: "www.nasa.gov,www.noaa.gov,www.usgs.gov",
+    VNS_FEED_RUNTIME_ENABLED: "true",
+    VNS_FEED_RUNTIME_MODE: "single_pass",
+    VNS_FEED_SOURCE_BOOTSTRAP: "false",
+    VNS_FEED_CANARY_SOURCE_ID: "nasa_news",
+    VNS_FEED_CANARY_OPERATOR_ACK: "NASA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+  };
+  const scheduler = createDormantFeedScheduler(gated, ports);
+  assert.deepEqual(scheduler.sourceIds, ["nasa_news", "noaa_news", "usgs_news"]);
+  assert.deepEqual(await scheduler.tick(new Date(START)), [
+    { sourceId: "nasa_news", status: "ingested", newItems: 1 },
+  ]);
+  assert.deepEqual(received, ["dns:www.nasa.gov", "https:www.nasa.gov/news-release/feed/"]);
+  assert.deepEqual([...f.db.keys()], ["nasa_news"]);
+  assert.deepEqual([...f.saved], ["nasa_news|https://www.nasa.gov/news/science-bulletin"]);
+  const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
+  assert.equal(auth.length, 3);
+  assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "nasa_news"));
+
+  for (const patch of [
+    { feedUrl: undefined },
+    { feedUrl: "https://www.noaa.gov/rss.xml" },
+    { baseUrl: "https://www.usgs.gov/news/" },
+    { status: "pending" },
+    { access: "official_api" },
+    { usage: "reviewed_excerpt" },
+  ]) {
+    const denied = fixture();
+    assert.throws(() =>
+      createDormantFeedScheduler(gated, {
+        ...denied.ports,
+        readRegistry: () =>
+          JSON.stringify({
+            version: 1,
+            sources: [{ ...nasa, ...patch }, noaa, usgs],
+          }),
+      }),
+    );
+    assert.equal(denied.queries.length, 0);
+    assert.equal(denied.requests.length, 0);
+  }
+  const badAck = fixture();
+  assert.throws(
+    () =>
+      createDormantFeedScheduler(
+        { ...gated, VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" },
+        badAck.ports,
+      ),
+    /canary gate refused/,
+  );
+  assert.equal(badAck.queries.length, 0);
+  assert.equal(badAck.requests.length, 0);
+
+  // A refused NASA article link does not weaken SQL URL guards or commit.
+  const noCanonical = fixture();
+  noCanonical.approve("nasa_news");
+  const refusedRequests: string[] = [];
+  const refuseScheduler = createDormantFeedScheduler(gated, {
+    ...noCanonical.ports,
+    readRegistry: () => JSON.stringify({ version: 1, sources: approved }),
+    https: {
+      resolveIPv4: async (hostname) => {
+        refusedRequests.push(hostname);
+        return ["1.1.1.1"];
+      },
+      requestPinned: async () => ({
+        status: 200,
+        headers: { "content-type": "application/rss+xml" },
+        body: Buffer.from(
+          "<rss><channel><item><title>NASA bulletin must reject query links</title>" +
+            "<link>https://www.nasa.gov/news/query-article?item=123</link></item></channel></rss>",
+        ),
+      }),
+    },
+  });
+  assert.deepEqual(await refuseScheduler.tick(new Date(START)), [
+    { sourceId: "nasa_news", status: "failed", newItems: 0 },
+  ]);
+  assert.deepEqual(refusedRequests, ["www.nasa.gov"]);
+  assert.equal(noCanonical.saved.size, 0);
+  assert.deepEqual([...noCanonical.db.keys()], ["nasa_news"]);
+});
