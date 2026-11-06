@@ -15,8 +15,12 @@ import {
   productionFeedHttpsDependencies,
 } from "./feed-https-transport.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusal } from "./feed-https-transport.js";
-import { decodeApprovedFeed, summarizeFeedMetadataRejections } from "./feed-poller.js";
-import type { FeedLinkRejectionReasons } from "./feed-poller.js";
+import {
+  decodeApprovedFeed,
+  summarizeFeedMetadataRejections,
+  previewRejectedFeedTrackingQueries,
+} from "./feed-poller.js";
+import type { FeedLinkRejectionReasons, RejectedFeedTrackingQueryPreview } from "./feed-poller.js";
 import { readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
 const REFUSED = "USGS read-only HTTPS diagnostic refused";
@@ -70,6 +74,7 @@ type SafeReport =
         outsideApprovedPrefix: number;
         invalidOrBlockedLink: number;
         linkFailureReasons: FeedLinkRejectionReasons;
+        trackingQueryPreview?: RejectedFeedTrackingQueryPreview;
         invalidHeadline: number;
         invalidPublishedAt: number;
         duplicate: number;
@@ -240,6 +245,17 @@ export async function probeUsGsOneGet(
             invalidPublishedAt: tally.invalidPublishedAt,
             duplicate: tally.duplicate,
           };
+          if (tally.linkFailureReasons.queryString > 0) {
+            try {
+              rejectionCounts.trackingQueryPreview = previewRejectedFeedTrackingQueries(
+                source,
+                verified.sources,
+                response,
+              );
+            } catch {
+              // A preview failure cannot weaken the original refusal.
+            }
+          }
         }
       } catch {
         // No diagnostic failure may change the original fail-closed refusal.

@@ -376,6 +376,126 @@ export function summarizeFeedMetadataRejections(
   return result;
 }
 
+/**
+ * OPTIONAL, operator-only dry-run. Runs solely on an already rejected,
+ * already downloaded RSS body. This is NOT an ingestion/canonicalization
+ * policy and never mutates feed items, SQL, the source registry, or any URL.
+ *
+ * A fixed allowlist of familiar analytics parameter NAMES (not values) is
+ * shown. Unknown keys, raw URLs, query values and headlines NEVER escape.
+ */
+const TRACKING_QUERY_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "utm_id",
+  "gclid",
+  "fbclid",
+  "mc_cid",
+  "mc_eid",
+] as const;
+
+export interface RejectedFeedTrackingQueryPreview {
+  readonly inspectedQueryLinks: number;
+  readonly trackingKeysOnly: number;
+  readonly unknownOrMixedKeys: number;
+  readonly malformedOrUnusableQuery: number;
+  readonly recognizedKeyCounts: Record<(typeof TRACKING_QUERY_KEYS)[number], number>;
+  readonly wouldPassExistingUrlAndMetadataGuards: number;
+  readonly canonicalCollisions: number;
+}
+
+export function previewRejectedFeedTrackingQueries(
+  source: RegisteredResearchSource,
+  registry: readonly RegisteredResearchSource[],
+  response: FeedResponse,
+): RejectedFeedTrackingQueryPreview {
+  if (source.access !== "rss" || response.status !== 200) {
+    throw new Error("Feed preview scope refused");
+  }
+  const raw = parseXmlItems(response.body, source);
+  const keyCounts: Record<(typeof TRACKING_QUERY_KEYS)[number], number> = Object.fromEntries(
+    TRACKING_QUERY_KEYS.map((key) => [key, 0]),
+  ) as Record<(typeof TRACKING_QUERY_KEYS)[number], number>;
+  const approvedKeys: ReadonlySet<string> = new Set(TRACKING_QUERY_KEYS);
+  const result = {
+    inspectedQueryLinks: 0,
+    trackingKeysOnly: 0,
+    unknownOrMixedKeys: 0,
+    malformedOrUnusableQuery: 0,
+    recognizedKeyCounts: keyCounts,
+    wouldPassExistingUrlAndMetadataGuards: 0,
+    canonicalCollisions: 0,
+  };
+  const candidateCanonicalUrls = new Set<string>();
+  for (const value of raw) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const entry = value as Record<string, unknown>;
+    const link = entry.url;
+    if (typeof link !== "string" || !link.includes("?")) continue;
+    result.inspectedQueryLinks++;
+    if (!isPlausiblePublicSourceUrl(link) || link.includes("#") || link.length > 512) {
+      result.malformedOrUnusableQuery++;
+      continue;
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(link);
+    } catch {
+      result.malformedOrUnusableQuery++;
+      continue;
+    }
+    if (
+      parsed.toString() !== link ||
+      !parsed.search ||
+      parsed.searchParams.size < 1 ||
+      parsed.searchParams.size > 10
+    ) {
+      result.malformedOrUnusableQuery++;
+      continue;
+    }
+    const unique = new Set<string>();
+    let known = true;
+    for (const [key, value] of parsed.searchParams) {
+      if (!approvedKeys.has(key) || unique.has(key) || !value || value.length > 200) {
+        known = false;
+        continue;
+      }
+      unique.add(key);
+    }
+    if (!known || unique.size !== parsed.searchParams.size) {
+      result.unknownOrMixedKeys++;
+      continue;
+    }
+    result.trackingKeysOnly++;
+    for (const key of unique) {
+      result.recognizedKeyCounts[key as (typeof TRACKING_QUERY_KEYS)[number]]++;
+    }
+
+    // Bounded *simulation*: use existing URL, title and date gates, without
+    // publishing or returning the candidate URL. Distinct query-bearing
+    // entries may collapse to the same canonical path; count that explicitly.
+    const dryRunPath = link.slice(0, link.indexOf("?"));
+    const canonical = canonicalArticle(dryRunPath, source, registry);
+    if (
+      !canonical ||
+      !validTitle(entry.headline) ||
+      (entry.publishedAt && !publishedTime(entry.publishedAt))
+    ) {
+      continue;
+    }
+    if (candidateCanonicalUrls.has(canonical)) {
+      result.canonicalCollisions++;
+      continue;
+    }
+    candidateCanonicalUrls.add(canonical);
+    result.wouldPassExistingUrlAndMetadataGuards++;
+  }
+  return result;
+}
+
 function safeValidator(value: unknown): string | null {
   if (value === null) return null;
   if (typeof value !== "string" || value.length < 1 || value.length > 200) {

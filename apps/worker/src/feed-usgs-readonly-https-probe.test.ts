@@ -256,3 +256,43 @@ test("USGS probe emits only fixed counters when link cannot be extracted", async
   assert.equal(result.rejectionCounts?.linkFailureReasons.missingOrUnreadable, 1);
   assert.ok(!JSON.stringify(result).includes("no-article-link"));
 });
+
+test("USGS rejection preview reports no-write tracking names without values or extra fetches", async () => {
+  let requests = 0;
+  const body =
+    '<rss version="2.0"><channel>' +
+    "<item><title>Official reviewed science article alpha</title>" +
+    "<link>https://www.usgs.gov/news/article-one?utm_source=PRIVATE_VALUE</link></item>" +
+    "<item><title>Official reviewed science article alpha again</title>" +
+    "<link>https://www.usgs.gov/news/article-one?utm_source=ANOTHER_PRIVATE_VALUE</link></item>" +
+    "<item><title>Official reviewed science article beta</title>" +
+    "<link>https://www.usgs.gov/news/article-two?article_id=SECRET_ID</link></item>" +
+    "</channel></rss>";
+  const result = await probeUsGsOneGet(env, approved.signed, approved.checkpoint, keys.publicKey, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    async requestPinned() {
+      requests++;
+      return {
+        status: 200,
+        headers: { "content-type": "application/rss+xml" },
+        body: Buffer.from(body),
+      };
+    },
+  });
+  assert.equal(requests, 1);
+  assert.equal(result.stage, "metadata_refused");
+  if (result.stage !== "metadata_refused") throw new Error("unexpected result");
+  const report = result.rejectionCounts;
+  assert.equal(report?.scanned, 3);
+  assert.equal(report?.linkFailureReasons.queryString, 3);
+  assert.equal(report?.trackingQueryPreview?.inspectedQueryLinks, 3);
+  assert.equal(report?.trackingQueryPreview?.trackingKeysOnly, 2);
+  assert.equal(report?.trackingQueryPreview?.unknownOrMixedKeys, 1);
+  assert.equal(report?.trackingQueryPreview?.wouldPassExistingUrlAndMetadataGuards, 1);
+  assert.equal(report?.trackingQueryPreview?.canonicalCollisions, 1);
+  assert.equal(report?.trackingQueryPreview?.recognizedKeyCounts.utm_source, 2);
+  assert.ok(!JSON.stringify(result).includes("PRIVATE_VALUE"));
+  assert.ok(!JSON.stringify(result).includes("ANOTHER_PRIVATE"));
+  assert.ok(!JSON.stringify(result).includes("SECRET_ID"));
+  assert.ok(!JSON.stringify(result).includes("article-one"));
+});
