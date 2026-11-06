@@ -135,9 +135,7 @@ test("acknowledged NOAA gets separate allowed source and failed telemetry never 
   reporter("noaa_news", { kind: "response_size_refused" });
   assert.deepEqual(
     lines.map((line) => JSON.parse(line)),
-    [
-      { event: "feed_https_refusal", sourceId: "noaa_news", kind: "response_size_refused" },
-    ],
+    [{ event: "feed_https_refusal", sourceId: "noaa_news", kind: "response_size_refused" }],
   );
   const throwing = oneShotFeedHttpsRefusalReporter(base, () => {
     throw new Error("PRIVATE_LOGGER_ERROR");
