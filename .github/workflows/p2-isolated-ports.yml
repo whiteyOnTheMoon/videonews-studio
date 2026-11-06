@@ -83,11 +83,6 @@ jobs:
           npx prettier --write docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
           git diff --no-color -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
           git diff --exit-code -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
-      - name: Emit exact Prettier patch for NASA selector code
-        run: |
-          npx prettier --write apps/worker/src/feed-canary-source-selection.ts apps/worker/src/feed-canary-source-selection.test.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-scheduler-composition.test.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-observer-https-diagnostics.ts apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_NASA_SIGNED_SINGLE_SOURCE_CANARY.md
-          git diff --no-color -- apps/worker/src/feed-canary-source-selection.ts apps/worker/src/feed-canary-source-selection.test.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-scheduler-composition.test.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-observer-https-diagnostics.ts apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_NASA_SIGNED_SINGLE_SOURCE_CANARY.md
-          git diff --exit-code -- apps/worker/src/feed-canary-source-selection.ts apps/worker/src/feed-canary-source-selection.test.ts apps/worker/src/feed-scheduler-composition.ts apps/worker/src/feed-scheduler-composition.test.ts apps/worker/src/feed-runtime-admission.test.ts apps/worker/src/feed-observer-https-diagnostics.ts apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_NASA_SIGNED_SINGLE_SOURCE_CANARY.md
       - name: Check code formatting and lint
         run: |
           npm run format:check
