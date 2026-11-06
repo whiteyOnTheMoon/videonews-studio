@@ -13,7 +13,7 @@ observer_exit_code=1
 
 The read-only P2-03 witness still found zero persisted USGS candidates. This does **not** establish that the previous `metadata_commit` issue was resolved: the new run stopped earlier. The associated historical BullMQ job and SQL poll lease must remain unchanged. No retry is permitted under the consumed authorization.
 
-The pinned HTTPS transport already classifies a fixed set of refusals, covering DNS, TLS, timeout, response code, size, stream framing, compression, headers, MIME, UTF-8 and unexpected 304 bodies. Previously the *live one-shot observer* failed to connect this existing narrow diagnostic callback, leaving only the broad `https_transport` stage.
+The pinned HTTPS transport already classifies a fixed set of refusals, covering DNS, TLS, timeout, response code, size, stream framing, compression, headers, MIME, UTF-8 and unexpected 304 bodies. Previously the _live one-shot observer_ failed to connect this existing narrow diagnostic callback, leaving only the broad `https_transport` stage.
 
 ## Narrow operator-only visibility
 
@@ -28,7 +28,12 @@ The pinned HTTPS transport already classifies a fixed set of refusals, covering 
 The reporter emits an additional line of form:
 
 ```json
-{"event":"feed_https_refusal","sourceId":"usgs_news","kind":"request_timeout","phase":"before_headers"}
+{
+  "event": "feed_https_refusal",
+  "sourceId": "usgs_news",
+  "kind": "request_timeout",
+  "phase": "before_headers"
+}
 ```
 
 This is **an example, not the determined cause** of the recent failure. The actual classification must be observed on a separately authorized future run. The `kind`, source ID and optional phase/size bands are strictly allowlisted; an HTTP status is an integer 100–599 and appears only for `http_status_refused`. No URLs, IPs, DNS values, headers, content, exception strings, credentials or response bodies are logged. The callback cannot weaken an existing refusal, make a second HTTP request, or turn a failed job into success. Normal persistent producer/consumer and any unselected feed observation remain silent.
