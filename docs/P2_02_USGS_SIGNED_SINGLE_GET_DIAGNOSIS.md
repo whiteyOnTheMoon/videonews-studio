@@ -148,11 +148,11 @@ The **precise existing rejection cause is a query string on all 20 USGS links**.
 For a **separately approved future** USGS-only diagnostic, and only when an actual downloaded response was rejected by the existing parser, the read-only probe also reports `rejectionCounts.trackingQueryPreview`, containing:
 
 - `inspectedQueryLinks`: bounded count of items with query strings (up to 20)
-- `recognizedKeyCounts`: *only* fixed well-known analytic query key names and the number of items bearing each. Known names: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `utm_id`, `gclid`, `fbclid`, `mc_cid`, `mc_eid`
+- `recognizedKeyCounts`: _only_ fixed well-known analytic query key names and the number of items bearing each. Known names: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `utm_id`, `gclid`, `fbclid`, `mc_cid`, `mc_eid`
 - `trackingKeysOnly`: number of links where every query parameter uses one of these keys, with no repeated key and nonempty bounded values
 - `unknownOrMixedKeys`: count with an unrecognized, duplicate, empty or otherwise disallowed parameter
 - `malformedOrUnusableQuery`: count rejected by the HTTPS lexical/URL parsing preflight
-- `wouldPassExistingUrlAndMetadataGuards`: number of distinct article paths which would pass the *current* signed source-scope, title and date guards in an **in-memory simulation** if these recognized analytics-only fields were removed
+- `wouldPassExistingUrlAndMetadataGuards`: number of distinct article paths which would pass the _current_ signed source-scope, title and date guards in an **in-memory simulation** if these recognized analytics-only fields were removed
 - `canonicalCollisions`: number of otherwise valid distinct feed entries whose hypothetical canonical path would duplicate another
 
 This is **only a hypothetical calculation**: no actual production URL is rewritten, persisted, fetched again, dereferenced or published, and no source grant is expanded. No raw URL, parameter **value**, headline, publication time, article body, unknown parameter **name**, or response body is output. Even if all 20 entries have familiar tracking key names, that does **not** by itself prove those parameters are non-semantic or authorize removal. A separate publisher/source semantics review, canonicalization policy and explicit operator authorization remain necessary before changing production ingestion.
