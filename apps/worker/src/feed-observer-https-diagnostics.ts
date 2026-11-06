@@ -1,4 +1,7 @@
-import { readSingleSourceCanarySelection, type P2OneShotSourceCanary } from "./feed-canary-source-selection.js";
+import {
+  readSingleSourceCanarySelection,
+  type P2OneShotSourceCanary,
+} from "./feed-canary-source-selection.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusalKind } from "./feed-https-transport.js";
 
 /**
