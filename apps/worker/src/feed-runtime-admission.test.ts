@@ -254,10 +254,7 @@ test("NASA-only single pass requires dedicated acknowledgement before secrets or
     { VNS_FEED_CANARY_OPERATOR_ACK: "" },
     { VNS_FEED_SOURCE_BOOTSTRAP: "true", VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK: "true" },
   ]) {
-    assert.throws(
-      () => readFeedRuntimeAdmission({ ...selected, ...patch }),
-      /canary gate refused/,
-    );
+    assert.throws(() => readFeedRuntimeAdmission({ ...selected, ...patch }), /canary gate refused/);
   }
   assert.throws(
     () => readFeedRuntimeAdmission(selected, "persistent_worker"),
