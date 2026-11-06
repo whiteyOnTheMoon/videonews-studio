@@ -237,23 +237,17 @@ test("USGS probe emits only fixed counters when link cannot be extracted", async
     "<item><title>Reviewed official USGS news article headline</title>" +
     "<guid>https://www.usgs.gov/news/no-article-link</guid></item>" +
     "</channel></rss>";
-  const result = await probeUsGsOneGet(
-    env,
-    approved.signed,
-    approved.checkpoint,
-    keys.publicKey,
-    {
-      resolveIPv4: async () => ["1.1.1.1"],
-      async requestPinned() {
-        requests++;
-        return {
-          status: 200,
-          headers: { "content-type": "application/rss+xml" },
-          body: Buffer.from(body),
-        };
-      },
+  const result = await probeUsGsOneGet(env, approved.signed, approved.checkpoint, keys.publicKey, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    async requestPinned() {
+      requests++;
+      return {
+        status: 200,
+        headers: { "content-type": "application/rss+xml" },
+        body: Buffer.from(body),
+      };
     },
-  );
+  });
   assert.equal(requests, 1);
   assert.equal(result.stage, "metadata_refused");
   if (result.stage !== "metadata_refused") throw new Error("unexpected result");
