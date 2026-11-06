@@ -1,8 +1,19 @@
 import { createHash, createPublicKey, type KeyObject } from "node:crypto";
-import { constants, fstatSync, openSync, readFileSync, realpathSync, closeSync, lstatSync } from "node:fs";
+import {
+  constants,
+  fstatSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  closeSync,
+  lstatSync,
+} from "node:fs";
 import { approvedSourceForUrl } from "./source-registry.js";
 import { verifyDormantSourceSignature } from "./source-export-signature.js";
-import { createPinnedFeedHttpsTransport, productionFeedHttpsDependencies } from "./feed-https-transport.js";
+import {
+  createPinnedFeedHttpsTransport,
+  productionFeedHttpsDependencies,
+} from "./feed-https-transport.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusal } from "./feed-https-transport.js";
 import { decodeApprovedFeed } from "./feed-poller.js";
 import { readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
@@ -17,10 +28,19 @@ const USGS_FEED = "https://www.usgs.gov/news/149248/feed";
 const ACK = "ONE_READ_ONLY_USGS_HTTPS_GET_DIAGNOSTIC_ONLY";
 const SHA256 = /^[a-f0-9]{64}$/;
 const REASONS = new Set([
-  "dns_unavailable", "dns_address_refused", "https_unavailable", "request_timeout",
-  "http_status_refused", "response_size_refused", "response_stream_refused",
-  "response_compression_refused", "response_framing_refused", "response_header_refused",
-  "response_media_type_refused", "response_utf8_refused", "response_304_body_refused",
+  "dns_unavailable",
+  "dns_address_refused",
+  "https_unavailable",
+  "request_timeout",
+  "http_status_refused",
+  "response_size_refused",
+  "response_stream_refused",
+  "response_compression_refused",
+  "response_framing_refused",
+  "response_header_refused",
+  "response_media_type_refused",
+  "response_utf8_refused",
+  "response_304_body_refused",
 ]);
 const PARSER_REASONS = new Map([
   ["Feed XML unsafe", "unsafe_xml"],
@@ -33,10 +53,28 @@ const PARSER_REASONS = new Map([
 ]);
 
 type SafeReport =
-  | { scope: "usgs_single_readonly_get"; sourceId: "usgs_news"; stage: "metadata_accepted"; approvedArticleUrls: number }
-  | { scope: "usgs_single_readonly_get"; sourceId: "usgs_news"; stage: "metadata_refused"; reason: string }
-  | { scope: "usgs_single_readonly_get"; sourceId: "usgs_news"; stage: "https_or_http_refused"; refusal: string;
-      httpStatus?: number; phase?: string; bodySizeBand?: string; declaredLengthBand?: string };
+  | {
+      scope: "usgs_single_readonly_get";
+      sourceId: "usgs_news";
+      stage: "metadata_accepted";
+      approvedArticleUrls: number;
+    }
+  | {
+      scope: "usgs_single_readonly_get";
+      sourceId: "usgs_news";
+      stage: "metadata_refused";
+      reason: string;
+    }
+  | {
+      scope: "usgs_single_readonly_get";
+      sourceId: "usgs_news";
+      stage: "https_or_http_refused";
+      refusal: string;
+      httpStatus?: number;
+      phase?: string;
+      bodySizeBand?: string;
+      declaredLengthBand?: string;
+    };
 
 function admitted(env: NodeJS.ProcessEnv): void {
   if (
@@ -63,8 +101,10 @@ function fixedRefusal(detail: FeedHttpsRefusal | undefined): SafeReport {
     report.refusal === "http_status_refused" &&
     Number.isInteger(detail?.httpStatus) &&
     detail?.httpStatus !== undefined &&
-    detail.httpStatus >= 100 && detail.httpStatus <= 599
-  ) report.httpStatus = detail.httpStatus;
+    detail.httpStatus >= 100 &&
+    detail.httpStatus <= 599
+  )
+    report.httpStatus = detail.httpStatus;
   if (detail?.phase === "before_headers" || detail?.phase === "response_body") {
     report.phase = detail.phase;
   }
@@ -72,13 +112,15 @@ function fixedRefusal(detail: FeedHttpsRefusal | undefined): SafeReport {
     detail?.bodySizeBand === "zero" ||
     detail?.bodySizeBand === "under_limit" ||
     detail?.bodySizeBand === "over_limit"
-  ) report.bodySizeBand = detail.bodySizeBand;
+  )
+    report.bodySizeBand = detail.bodySizeBand;
   if (
     detail?.declaredLengthBand === "missing" ||
     detail?.declaredLengthBand === "under_limit" ||
     detail?.declaredLengthBand === "over_limit" ||
     detail?.declaredLengthBand === "invalid"
-  ) report.declaredLengthBand = detail.declaredLengthBand;
+  )
+    report.declaredLengthBand = detail.declaredLengthBand;
   return report;
 }
 
@@ -99,20 +141,26 @@ export async function probeUsGsOneGet(
   if (
     Buffer.byteLength(signedBytes, "utf8") > 49152 ||
     Buffer.byteLength(checkpointBytes, "utf8") > 49152 ||
-    signedBytes.length < 2 || checkpointBytes.length < 2
-  ) throw new Error(REFUSED);
+    signedBytes.length < 2 ||
+    checkpointBytes.length < 2
+  )
+    throw new Error(REFUSED);
 
   const signed = JSON.parse(signedBytes) as unknown;
   const check = JSON.parse(checkpointBytes) as Record<string, unknown>;
   if (
-    !check || typeof check !== "object" || Array.isArray(check) ||
+    !check ||
+    typeof check !== "object" ||
+    Array.isArray(check) ||
     Object.keys(check).length !== 4 ||
     check.version !== 1 ||
-    check.sourceRevision !== 10 || check.hostApprovalRevision !== 10 ||
+    check.sourceRevision !== 10 ||
+    check.hostApprovalRevision !== 10 ||
     typeof check.envelopeSha256 !== "string" ||
     !SHA256.test(check.envelopeSha256) ||
     check.envelopeSha256 !== createHash("sha256").update(signedBytes, "utf8").digest("hex")
-  ) throw new Error(REFUSED);
+  )
+    throw new Error(REFUSED);
 
   const policy = { enabled: true as const, hosts: [...HOSTS] };
   const verified = verifyDormantSourceSignature(signed, policy, publicKey, {
@@ -123,19 +171,23 @@ export async function probeUsGsOneGet(
     verified.sealed.export.sourceRevision !== 10 ||
     verified.sealed.export.hostApprovalRevision !== 10 ||
     verified.sources.length !== 3 ||
-    verified.sources.some((source) =>
-      !["nasa_news", "noaa_news", "usgs_news"].includes(source.id) ||
-      source.status !== "approved" || source.access !== "rss" ||
-      source.usage !== "metadata_only"
+    verified.sources.some(
+      (source) =>
+        !["nasa_news", "noaa_news", "usgs_news"].includes(source.id) ||
+        source.status !== "approved" ||
+        source.access !== "rss" ||
+        source.usage !== "metadata_only",
     )
-  ) throw new Error(REFUSED);
+  )
+    throw new Error(REFUSED);
   const source = verified.sources.find((entry) => entry.id === "usgs_news");
   if (
     !source ||
     source.baseUrl !== USGS_BASE ||
     source.feedUrl !== USGS_FEED ||
     approvedSourceForUrl(USGS_BASE, verified.sources)?.id !== "usgs_news"
-  ) throw new Error(REFUSED);
+  )
+    throw new Error(REFUSED);
 
   let refusal: FeedHttpsRefusal | undefined;
   const transport = createPinnedFeedHttpsTransport(verified.sources, policy, {
@@ -174,31 +226,42 @@ export async function probeUsGsOneGet(
 function privateRead(dir: string, name: string): string {
   const stat = lstatSync(dir);
   if (
-    !stat.isDirectory() || stat.isSymbolicLink() ||
-    stat.uid !== 10002 || stat.gid !== 10002 ||
-    (stat.mode & 0o777) !== 0o700 || realpathSync(dir) !== dir ||
-    process.getuid?.() !== 10002 || process.getgid?.() !== 10002
-  ) throw new Error(REFUSED);
+    !stat.isDirectory() ||
+    stat.isSymbolicLink() ||
+    stat.uid !== 10002 ||
+    stat.gid !== 10002 ||
+    (stat.mode & 0o777) !== 0o700 ||
+    realpathSync(dir) !== dir ||
+    process.getuid?.() !== 10002 ||
+    process.getgid?.() !== 10002
+  )
+    throw new Error(REFUSED);
   const path = dir + "/" + name;
   const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const before = fstatSync(fd);
     if (
-      !before.isFile() || before.nlink !== 1 ||
-      before.uid !== 10002 || before.gid !== 10002 ||
+      !before.isFile() ||
+      before.nlink !== 1 ||
+      before.uid !== 10002 ||
+      before.gid !== 10002 ||
       (before.mode & 0o777) !== 0o600 ||
-      before.size < 2 || before.size > 49152 ||
+      before.size < 2 ||
+      before.size > 49152 ||
       realpathSync(path) !== path
-    ) throw new Error(REFUSED);
+    )
+      throw new Error(REFUSED);
     const bytes = readFileSync(fd, "utf8");
     const after = fstatSync(fd);
     if (
       Buffer.byteLength(bytes, "utf8") !== before.size ||
-      before.dev !== after.dev || before.ino !== after.ino ||
+      before.dev !== after.dev ||
+      before.ino !== after.ino ||
       before.size !== after.size ||
       before.mtimeMs !== after.mtimeMs ||
       before.ctimeMs !== after.ctimeMs
-    ) throw new Error(REFUSED);
+    )
+      throw new Error(REFUSED);
     return bytes;
   } finally {
     closeSync(fd);
