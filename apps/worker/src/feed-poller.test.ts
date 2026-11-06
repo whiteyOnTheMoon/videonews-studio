@@ -482,7 +482,7 @@ test("count-only URL refusal subcauses are exclusive and preserve production rej
     prefix + "rss/fragment#one",
     prefix + "rss/encoded%2Fsegment",
     prefix + "rss/../rss/dot-segment",
-    prefix + "rss/line\\nbreak",
+    prefix + "rss/has space",
     prefix + "rss/café",
     prefix + "rss/private/blocked-article",
     prefix + "outside/unapproved-article",
