@@ -211,7 +211,7 @@ On pinned VPS release `b6ed820ff836fb16bc718618ef79db1c13428221`, the operator s
 }
 ```
 
-**Confirmed:** the bounded response passed the HTTPS transport and RSS item extractor; all 20 inspected candidate links are refused at the query-string check. None of the 20 links qualifies as **tracking-keys-only** under the conservative diagnostic allowlist. The current production parser and guarded PostgreSQL `vns.commit_feed_poll_authorized` *both* forbid query strings; ingestion did not reach the metadata commit. No candidates or projected events were recorded.
+**Confirmed:** the bounded response passed the HTTPS transport and RSS item extractor; all 20 inspected candidate links are refused at the query-string check. None of the 20 links qualifies as **tracking-keys-only** under the conservative diagnostic allowlist. The current production parser and guarded PostgreSQL `vns.commit_feed_poll_authorized` _both_ forbid query strings; ingestion did not reach the metadata commit. No candidates or projected events were recorded.
 
 **Limits of evidence:** `unknownOrMixedKeys=20` is an aggregate for unknown names, mixed names, repeated names, empty values or otherwise unsuitable parameter shapes. `recognizedKeyCounts=0` counts keys **only in fully eligible tracking-keys-only URLs** and does **not prove** that known tracking names are absent from mixed-parameter URLs. `wouldPassExistingUrlAndMetadataGuards=0` only models removing a **fully allowed** tracking-only query; it is not evidence that other parameter stripping would be safe. Zero `invalidHeadline`/`invalidPublishedAt` reflects early URL rejection, **not** title/date acceptance.
 
