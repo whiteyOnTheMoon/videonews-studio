@@ -263,14 +263,53 @@ export function decodeApprovedFeed(
  * predicates as decodeApprovedFeed. No raw URL, headline, date, or XML escapes.
  * Never called by a running scheduler or regular feed commit.
  */
+export interface FeedLinkRejectionReasons {
+  readonly missingOrUnreadable: number;
+  readonly queryString: number;
+  readonly fragment: number;
+  readonly percentEncoded: number;
+  readonly dotSegments: number;
+  readonly invalidPublicUrl: number;
+  readonly nonCanonical: number;
+  readonly blockedOrUnapprovedScope: number;
+  readonly other: number;
+}
+
 export interface FeedMetadataRejectionCounts {
   readonly scanned: number;
   readonly outsideApprovedPrefix: number;
   readonly invalidOrBlockedLink: number;
+  readonly linkFailureReasons: FeedLinkRejectionReasons;
   readonly invalidHeadline: number;
   readonly invalidPublishedAt: number;
   readonly duplicate: number;
   readonly accepted: number;
+}
+
+/**
+ * Exclusive, fixed-code classification of a link that the UNCHANGED
+ * canonicalArticle gate has already refused. No URL or content is returned.
+ */
+function refusedCanonicalLinkReason(
+  value: unknown,
+  source: RegisteredResearchSource,
+  registry: readonly RegisteredResearchSource[],
+): keyof FeedLinkRejectionReasons {
+  if (typeof value !== "string" || value.length === 0) return "missingOrUnreadable";
+  if (value.includes("?")) return "queryString";
+  if (value.includes("#")) return "fragment";
+  if (value.includes("%")) return "percentEncoded";
+  if (value.includes("/./") || value.includes("/../")) return "dotSegments";
+  if (!isPlausiblePublicSourceUrl(value)) return "invalidPublicUrl";
+  try {
+    if (new URL(value).toString() !== value) return "nonCanonical";
+  } catch {
+    return "invalidPublicUrl";
+  }
+  if (approvedSourceForUrl(value, registry)?.id !== source.id) {
+    return "blockedOrUnapprovedScope";
+  }
+  return "other";
 }
 
 export function summarizeFeedMetadataRejections(
@@ -286,6 +325,17 @@ export function summarizeFeedMetadataRejections(
     scanned: raw.length,
     outsideApprovedPrefix: 0,
     invalidOrBlockedLink: 0,
+    linkFailureReasons: {
+      missingOrUnreadable: 0,
+      queryString: 0,
+      fragment: 0,
+      percentEncoded: 0,
+      dotSegments: 0,
+      invalidPublicUrl: 0,
+      nonCanonical: 0,
+      blockedOrUnapprovedScope: 0,
+      other: 0,
+    },
     invalidHeadline: 0,
     invalidPublishedAt: 0,
     duplicate: 0,
@@ -303,6 +353,8 @@ export function summarizeFeedMetadataRejections(
         result.outsideApprovedPrefix++;
       } else {
         result.invalidOrBlockedLink++;
+        const reason = refusedCanonicalLinkReason(entry.url, source, registry);
+        result.linkFailureReasons[reason]++;
       }
       continue;
     }

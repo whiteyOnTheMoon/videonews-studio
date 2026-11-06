@@ -448,10 +448,88 @@ test("rejected RSS metadata diagnostic counts reasons without exposing values or
     scanned: 4,
     outsideApprovedPrefix: 1,
     invalidOrBlockedLink: 1,
+    linkFailureReasons: {
+      missingOrUnreadable: 0,
+      queryString: 1,
+      fragment: 0,
+      percentEncoded: 0,
+      dotSegments: 0,
+      invalidPublicUrl: 0,
+      nonCanonical: 0,
+      blockedOrUnapprovedScope: 0,
+      other: 0,
+    },
     invalidHeadline: 1,
     invalidPublishedAt: 1,
     duplicate: 0,
     accepted: 0,
   });
   assert.ok(!JSON.stringify(counts).includes("outside/private"));
+});
+
+test("count-only URL refusal subcauses are exclusive and preserve production rejection", () => {
+  const src = registry()[0]!;
+  const blocked = {
+    ...src,
+    id: "blocked_child",
+    baseUrl: prefix + "rss/private/",
+    status: "blocked" as const,
+  };
+  const reviewed = [...registry(), blocked];
+  const links = [
+    null,
+    prefix + "rss/with-query?utm_source=publisher",
+    prefix + "rss/fragment#one",
+    prefix + "rss/encoded%2Fsegment",
+    prefix + "rss/../rss/dot-segment",
+    prefix + "rss/has space",
+    prefix + "rss/café",
+    prefix + "rss/private/blocked-article",
+    prefix + "outside/unapproved-article",
+  ];
+  const body =
+    '<rss version="2.0"><channel>' +
+    links
+      .map(
+        (link) =>
+          "<item><title>Reviewed official geological science bulletin</title>" +
+          (link === null ? "" : "<link>" + link + "</link>") +
+          "</item>",
+      )
+      .join("") +
+    "</channel></rss>";
+  const response: FeedResponse = {
+    status: 200,
+    mediaType: "application/rss+xml",
+    body,
+    etag: null,
+    lastModified: null,
+  };
+  assert.throws(() => decodeApprovedFeed(src, reviewed, response), /no approved metadata/);
+  assert.deepEqual(summarizeFeedMetadataRejections(src, reviewed, response), {
+    scanned: 9,
+    outsideApprovedPrefix: 1,
+    invalidOrBlockedLink: 8,
+    linkFailureReasons: {
+      missingOrUnreadable: 1,
+      queryString: 1,
+      fragment: 1,
+      percentEncoded: 1,
+      dotSegments: 1,
+      invalidPublicUrl: 1,
+      nonCanonical: 1,
+      blockedOrUnapprovedScope: 1,
+      other: 0,
+    },
+    invalidHeadline: 0,
+    invalidPublishedAt: 0,
+    duplicate: 0,
+    accepted: 0,
+  });
+  const report = summarizeFeedMetadataRejections(src, reviewed, response);
+  assert.equal(
+    Object.values(report.linkFailureReasons).reduce((sum, count) => sum + count, 0),
+    report.invalidOrBlockedLink,
+  );
+  assert.equal(JSON.stringify(report).includes("unapproved-article"), false);
 });
