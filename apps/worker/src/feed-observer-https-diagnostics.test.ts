@@ -26,7 +26,10 @@ test("live refusal diagnostics require exact USGS one-shot selection and explici
   ];
   for (const env of denied) {
     const lines: string[] = [];
-    assert.equal(oneShotFeedHttpsRefusalReporter(env, (line) => lines.push(line)), undefined);
+    assert.equal(
+      oneShotFeedHttpsRefusalReporter(env, (line) => lines.push(line)),
+      undefined,
+    );
     assert.deepEqual(lines, []);
   }
 });
@@ -44,23 +47,26 @@ test("only configured USGS reason is logged with a bounded known source ID", () 
     bodySizeBand: "under_limit",
     declaredLengthBand: "missing",
   });
-  assert.deepEqual(lines.map((line) => JSON.parse(line)), [
-    { event: "feed_https_refusal", sourceId: "usgs_news", kind: "dns_unavailable" },
-    {
-      event: "feed_https_refusal",
-      sourceId: "usgs_news",
-      kind: "request_timeout",
-      phase: "before_headers",
-    },
-    {
-      event: "feed_https_refusal",
-      sourceId: "usgs_news",
-      kind: "response_stream_refused",
-      phase: "response_body",
-      bodySizeBand: "under_limit",
-      declaredLengthBand: "missing",
-    },
-  ]);
+  assert.deepEqual(
+    lines.map((line) => JSON.parse(line)),
+    [
+      { event: "feed_https_refusal", sourceId: "usgs_news", kind: "dns_unavailable" },
+      {
+        event: "feed_https_refusal",
+        sourceId: "usgs_news",
+        kind: "request_timeout",
+        phase: "before_headers",
+      },
+      {
+        event: "feed_https_refusal",
+        sourceId: "usgs_news",
+        kind: "response_stream_refused",
+        phase: "response_body",
+        bodySizeBand: "under_limit",
+        declaredLengthBand: "missing",
+      },
+    ],
+  );
 });
 
 test("HTTP status and phase fields are strictly bounded, no raw upstream data escapes", () => {
@@ -90,24 +96,27 @@ test("HTTP status and phase fields are strictly bounded, no raw upstream data es
     bodySizeBand: "over_limit",
     declaredLengthBand: "invalid",
   });
-  assert.deepEqual(lines.map((line) => JSON.parse(line)), [
-    {
-      event: "feed_https_refusal",
-      sourceId: "usgs_news",
-      kind: "http_status_refused",
-      httpStatus: 403,
-      phase: "before_headers",
-    },
-    { event: "feed_https_refusal", sourceId: "usgs_news", kind: "https_unavailable" },
-    {
-      event: "feed_https_refusal",
-      sourceId: "usgs_news",
-      kind: "response_media_type_refused",
-      phase: "response_body",
-      bodySizeBand: "over_limit",
-      declaredLengthBand: "invalid",
-    },
-  ]);
+  assert.deepEqual(
+    lines.map((line) => JSON.parse(line)),
+    [
+      {
+        event: "feed_https_refusal",
+        sourceId: "usgs_news",
+        kind: "http_status_refused",
+        httpStatus: 403,
+        phase: "before_headers",
+      },
+      { event: "feed_https_refusal", sourceId: "usgs_news", kind: "https_unavailable" },
+      {
+        event: "feed_https_refusal",
+        sourceId: "usgs_news",
+        kind: "response_media_type_refused",
+        phase: "response_body",
+        bodySizeBand: "over_limit",
+        declaredLengthBand: "invalid",
+      },
+    ],
+  );
   assert.ok(!lines.join("").includes("SECRET"));
 });
 
@@ -124,9 +133,12 @@ test("acknowledged NOAA gets separate allowed source and failed telemetry never 
   assert.ok(reporter);
   reporter("usgs_news", { kind: "https_unavailable" });
   reporter("noaa_news", { kind: "response_size_refused" });
-  assert.deepEqual(lines.map((line) => JSON.parse(line)), [
-    { event: "feed_https_refusal", sourceId: "noaa_news", kind: "response_size_refused" },
-  ]);
+  assert.deepEqual(
+    lines.map((line) => JSON.parse(line)),
+    [
+      { event: "feed_https_refusal", sourceId: "noaa_news", kind: "response_size_refused" },
+    ],
+  );
   const throwing = oneShotFeedHttpsRefusalReporter(base, () => {
     throw new Error("PRIVATE_LOGGER_ERROR");
   });
