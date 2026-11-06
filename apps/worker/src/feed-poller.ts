@@ -257,6 +257,73 @@ export function decodeApprovedFeed(
   return items;
 }
 
+/**
+ * Operator-only, in-memory explanation of an already rejected RSS response.
+ * Uses the EXACT same parser, canonicalArticle, title and date admission
+ * predicates as decodeApprovedFeed. No raw URL, headline, date, or XML escapes.
+ * Never called by a running scheduler or regular feed commit.
+ */
+export interface FeedMetadataRejectionCounts {
+  readonly scanned: number;
+  readonly outsideApprovedPrefix: number;
+  readonly invalidOrBlockedLink: number;
+  readonly invalidHeadline: number;
+  readonly invalidPublishedAt: number;
+  readonly duplicate: number;
+  readonly accepted: number;
+}
+
+export function summarizeFeedMetadataRejections(
+  source: RegisteredResearchSource,
+  registry: readonly RegisteredResearchSource[],
+  response: FeedResponse,
+): FeedMetadataRejectionCounts {
+  const raw =
+    source.access === "official_api"
+      ? parseJsonItems(response.body)
+      : parseXmlItems(response.body, source);
+  const result = {
+    scanned: raw.length,
+    outsideApprovedPrefix: 0,
+    invalidOrBlockedLink: 0,
+    invalidHeadline: 0,
+    invalidPublishedAt: 0,
+    duplicate: 0,
+    accepted: 0,
+  };
+  const seen = new Set<string>();
+  for (const value of raw) {
+    const entry =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+    const url = canonicalArticle(entry.url, source, registry);
+    if (!url) {
+      if (typeof entry.url === "string" && !entry.url.startsWith(source.baseUrl)) {
+        result.outsideApprovedPrefix++;
+      } else {
+        result.invalidOrBlockedLink++;
+      }
+      continue;
+    }
+    if (!validTitle(entry.headline)) {
+      result.invalidHeadline++;
+      continue;
+    }
+    if (seen.has(url)) {
+      result.duplicate++;
+      continue;
+    }
+    if (entry.publishedAt && !publishedTime(entry.publishedAt)) {
+      result.invalidPublishedAt++;
+      continue;
+    }
+    seen.add(url);
+    result.accepted++;
+  }
+  return result;
+}
+
 function safeValidator(value: unknown): string | null {
   if (value === null) return null;
   if (typeof value !== "string" || value.length < 1 || value.length > 200) {

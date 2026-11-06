@@ -15,7 +15,7 @@ import {
   productionFeedHttpsDependencies,
 } from "./feed-https-transport.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusal } from "./feed-https-transport.js";
-import { decodeApprovedFeed } from "./feed-poller.js";
+import { decodeApprovedFeed, summarizeFeedMetadataRejections } from "./feed-poller.js";
 import { readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
 const REFUSED = "USGS read-only HTTPS diagnostic refused";
@@ -64,6 +64,14 @@ type SafeReport =
       sourceId: "usgs_news";
       stage: "metadata_refused";
       reason: string;
+      rejectionCounts?: {
+        scanned: number;
+        outsideApprovedPrefix: number;
+        invalidOrBlockedLink: number;
+        invalidHeadline: number;
+        invalidPublishedAt: number;
+        duplicate: number;
+      };
     }
   | {
       scope: "usgs_single_readonly_get";
@@ -213,11 +221,33 @@ export async function probeUsGsOneGet(
       approvedArticleUrls: items.length,
     };
   } catch (error) {
+    const reason = PARSER_REASONS.get(error instanceof Error ? error.message : "") ?? "other";
+    // Only an already rejected response is inspected; no second HTTPS GET.
+    // The original decoder and every rejection rule are unchanged.
+    let rejectionCounts: Extract<SafeReport, { stage: "metadata_refused" }>["rejectionCounts"];
+    if (reason === "no_approved_metadata") {
+      try {
+        const tally = summarizeFeedMetadataRejections(source, verified.sources, response);
+        if (tally.scanned > 0 && tally.scanned <= 20 && tally.accepted === 0) {
+          rejectionCounts = {
+            scanned: tally.scanned,
+            outsideApprovedPrefix: tally.outsideApprovedPrefix,
+            invalidOrBlockedLink: tally.invalidOrBlockedLink,
+            invalidHeadline: tally.invalidHeadline,
+            invalidPublishedAt: tally.invalidPublishedAt,
+            duplicate: tally.duplicate,
+          };
+        }
+      } catch {
+        // No diagnostic failure may change the original fail-closed refusal.
+      }
+    }
     return {
       scope: "usgs_single_readonly_get",
       sourceId: "usgs_news",
       stage: "metadata_refused",
-      reason: PARSER_REASONS.get(error instanceof Error ? error.message : "") ?? "other",
+      reason,
+      ...(rejectionCounts === undefined ? {} : { rejectionCounts }),
     };
   }
 }

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createDormantFeedPoller,
   decodeApprovedFeed,
+  summarizeFeedMetadataRejections,
   type FeedItem,
   type FeedPollStore,
   type FeedResponse,
@@ -415,4 +416,42 @@ test("query-bearing and encoded links cannot abort an otherwise valid SQL metada
       }),
     /no approved metadata/,
   );
+});
+
+test("rejected RSS metadata diagnostic counts reasons without exposing values or accepting items", () => {
+  const src = registry()[0]!;
+  const payload =
+    '<rss version="2.0"><channel>' +
+    "<item><title>Outside approved scope item</title><link>" +
+    prefix +
+    "outside/private</link></item>" +
+    "<item><title>Noncanonical approved link</title><link>" +
+    prefix +
+    "rss/news?tracking=1</link></item>" +
+    "<item><title>bad</title><link>" +
+    prefix +
+    "rss/valid-headline-test</link></item>" +
+    "<item><title>Article with invalid publication date</title><link>" +
+    prefix +
+    "rss/invalid-date-test</link><pubDate>not-a-date</pubDate></item>" +
+    "</channel></rss>";
+  const response: FeedResponse = {
+    status: 200,
+    mediaType: "application/rss+xml",
+    body: payload,
+    etag: null,
+    lastModified: null,
+  };
+  assert.throws(() => decodeApprovedFeed(src, registry(), response), /no approved metadata/);
+  const counts = summarizeFeedMetadataRejections(src, registry(), response);
+  assert.deepEqual(counts, {
+    scanned: 4,
+    outsideApprovedPrefix: 1,
+    invalidOrBlockedLink: 1,
+    invalidHeadline: 1,
+    invalidPublishedAt: 1,
+    duplicate: 0,
+    accepted: 0,
+  });
+  assert.ok(!JSON.stringify(counts).includes("outside/private"));
 });
