@@ -158,12 +158,15 @@ test("NASA-only refusal logging is opt-in and excludes unrelated source IDs", ()
   reporter("noaa_news", { kind: "dns_unavailable" });
   reporter("usgs_news", { kind: "https_unavailable" });
   reporter("nasa_news", { kind: "request_timeout", phase: "before_headers" });
-  assert.deepEqual(lines.map((line) => JSON.parse(line)), [
-    {
-      event: "feed_https_refusal",
-      sourceId: "nasa_news",
-      kind: "request_timeout",
-      phase: "before_headers",
-    },
-  ]);
+  assert.deepEqual(
+    lines.map((line) => JSON.parse(line)),
+    [
+      {
+        event: "feed_https_refusal",
+        sourceId: "nasa_news",
+        kind: "request_timeout",
+        phase: "before_headers",
+      },
+    ],
+  );
 });
