@@ -15,7 +15,11 @@ import {
   productionFeedHttpsDependencies,
 } from "./feed-https-transport.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusal } from "./feed-https-transport.js";
-import { decodeApprovedFeed, summarizeFeedMetadataRejections, previewRejectedFeedTrackingQueries } from "./feed-poller.js";
+import {
+  decodeApprovedFeed,
+  summarizeFeedMetadataRejections,
+  previewRejectedFeedTrackingQueries,
+} from "./feed-poller.js";
 import type { FeedLinkRejectionReasons, RejectedFeedTrackingQueryPreview } from "./feed-poller.js";
 import { readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
@@ -244,7 +248,9 @@ export async function probeUsGsOneGet(
           if (tally.linkFailureReasons.queryString > 0) {
             try {
               rejectionCounts.trackingQueryPreview = previewRejectedFeedTrackingQueries(
-                source, verified.sources, response,
+                source,
+                verified.sources,
+                response,
               );
             } catch {
               // A preview failure cannot weaken the original refusal.
