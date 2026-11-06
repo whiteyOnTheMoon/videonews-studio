@@ -538,20 +538,41 @@ test("count-only URL refusal subcauses are exclusive and preserve production rej
 test("tracking-only query preview uses existing guards and identifies collisions without URL disclosure", () => {
   const src = registry()[0]!;
   const records = [
-    { path: "article-one", query: "utm_source=PRIVATE_VALUE&amp;utm_medium=rss", title: "Science bulletin alpha issued" },
-    { path: "article-one", query: "utm_source=ANOTHER_PRIVATE_VALUE", title: "Science bulletin alpha updated" },
+    {
+      path: "article-one",
+      query: "utm_source=PRIVATE_VALUE&amp;utm_medium=rss",
+      title: "Science bulletin alpha issued",
+    },
+    {
+      path: "article-one",
+      query: "utm_source=ANOTHER_PRIVATE_VALUE",
+      title: "Science bulletin alpha updated",
+    },
     { path: "article-two", query: "article_id=SECRET_ID", title: "Science bulletin beta issued" },
-    { path: "article-three", query: "utm_source=PRIVATE&amp;article_id=SECRET_ID", title: "Science bulletin gamma issued" },
+    {
+      path: "article-three",
+      query: "utm_source=PRIVATE&amp;article_id=SECRET_ID",
+      title: "Science bulletin gamma issued",
+    },
     { path: "article-four", query: "utm_campaign=PRIVATE_CAMPAIGN", title: "bad" },
     { path: "article-five", query: "utm_source=", title: "Science bulletin epsilon issued" },
   ];
   const body =
     '<rss version="2.0"><channel>' +
-    records.map(({ path, query, title }) =>
-      "<item><title>" + title + "</title><link>" +
-      prefix + "rss/" + path + "?" + query +
-      "</link></item>",
-    ).join("") +
+    records
+      .map(
+        ({ path, query, title }) =>
+          "<item><title>" +
+          title +
+          "</title><link>" +
+          prefix +
+          "rss/" +
+          path +
+          "?" +
+          query +
+          "</link></item>",
+      )
+      .join("") +
     "</channel></rss>";
   const response: FeedResponse = {
     status: 200,
@@ -571,10 +592,7 @@ test("tracking-only query preview uses existing guards and identifies collisions
   assert.equal(report.recognizedKeyCounts.utm_source, 2);
   assert.equal(report.recognizedKeyCounts.utm_medium, 1);
   assert.equal(report.recognizedKeyCounts.utm_campaign, 1);
-  assert.equal(
-    Object.keys(report.recognizedKeyCounts).length,
-    10,
-  );
+  assert.equal(Object.keys(report.recognizedKeyCounts).length, 10);
   assert.ok(!JSON.stringify(report).includes("PRIVATE"));
   assert.ok(!JSON.stringify(report).includes("SECRET_ID"));
   assert.ok(!JSON.stringify(report).includes("article-one"));
