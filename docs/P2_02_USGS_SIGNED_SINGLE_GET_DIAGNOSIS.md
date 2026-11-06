@@ -108,3 +108,53 @@ For a separately authorized **future** diagnostic only, `rejectionCounts.linkFai
 - `other`: a rejected link did not match a narrower safe classification
 
 All counters are small integers, sum to `invalidOrBlockedLink`, and never expose URL values, headlines, dates, raw RSS, remote headers or secret material. The existing production `canonicalArticle` and `decodeApprovedFeed` checks are **unchanged**. Do not attempt a new GET under either previously consumed permission, do not broaden USGS host or article-scope approvals, and do not delete historical queue or lease evidence.
+
+## Third authorized USGS GET — 2026-11-06
+
+On production-pinned release `ed42b922d49816df74459eacd0088f986dbdeb2a`, the separately approved, isolated **single** GET returned the following **observed** classification, without SQL, Redis, queue, lease or checkpoint changes:
+
+```json
+{
+  "scope": "usgs_single_readonly_get",
+  "sourceId": "usgs_news",
+  "stage": "metadata_refused",
+  "reason": "no_approved_metadata",
+  "rejectionCounts": {
+    "scanned": 20,
+    "outsideApprovedPrefix": 0,
+    "invalidOrBlockedLink": 20,
+    "linkFailureReasons": {
+      "missingOrUnreadable": 0,
+      "queryString": 20,
+      "fragment": 0,
+      "percentEncoded": 0,
+      "dotSegments": 0,
+      "invalidPublicUrl": 0,
+      "nonCanonical": 0,
+      "blockedOrUnapprovedScope": 0,
+      "other": 0
+    },
+    "invalidHeadline": 0,
+    "invalidPublishedAt": 0,
+    "duplicate": 0
+  }
+}
+```
+
+The **precise existing rejection cause is a query string on all 20 USGS links**. Their titles and published dates were not validated because link admission rejects them first. The current PostgreSQL `vns.commit_feed_poll_authorized` also rejects any `?` in a candidate URL, so simply deleting the TypeScript guard would be incorrect and may cause a rejected batch. That operator authorization has been consumed; **do not repeat the GET**.
+
+### Dormant, count-only tracking-key review and dry-run
+
+For a **separately approved future** USGS-only diagnostic, and only when an actual downloaded response was rejected by the existing parser, the read-only probe also reports `rejectionCounts.trackingQueryPreview`, containing:
+
+- `inspectedQueryLinks`: bounded count of items with query strings (up to 20)
+- `recognizedKeyCounts`: *only* fixed well-known analytic query key names and the number of items bearing each. Known names: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `utm_id`, `gclid`, `fbclid`, `mc_cid`, `mc_eid`
+- `trackingKeysOnly`: number of links where every query parameter uses one of these keys, with no repeated key and nonempty bounded values
+- `unknownOrMixedKeys`: count with an unrecognized, duplicate, empty or otherwise disallowed parameter
+- `malformedOrUnusableQuery`: count rejected by the HTTPS lexical/URL parsing preflight
+- `wouldPassExistingUrlAndMetadataGuards`: number of distinct article paths which would pass the *current* signed source-scope, title and date guards in an **in-memory simulation** if these recognized analytics-only fields were removed
+- `canonicalCollisions`: number of otherwise valid distinct feed entries whose hypothetical canonical path would duplicate another
+
+This is **only a hypothetical calculation**: no actual production URL is rewritten, persisted, fetched again, dereferenced or published, and no source grant is expanded. No raw URL, parameter **value**, headline, publication time, article body, unknown parameter **name**, or response body is output. Even if all 20 entries have familiar tracking key names, that does **not** by itself prove those parameters are non-semantic or authorize removal. A separate publisher/source semantics review, canonicalization policy and explicit operator authorization remain necessary before changing production ingestion.
+
+Do not substitute the separately indexed `/news/all/feed` endpoint: the signed 10/10 source export authorizes **only** `/news/149248/feed`. No migration or live service start is part of this change. Historical failed jobs, leases and publisher rights must remain unchanged.
