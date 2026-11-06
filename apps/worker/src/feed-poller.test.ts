@@ -423,13 +423,17 @@ test("rejected RSS metadata diagnostic counts reasons without exposing values or
   const payload =
     '<rss version="2.0"><channel>' +
     "<item><title>Outside approved scope item</title><link>" +
-    prefix + "outside/private</link></item>" +
+    prefix +
+    "outside/private</link></item>" +
     "<item><title>Noncanonical approved link</title><link>" +
-    prefix + "rss/news?tracking=1</link></item>" +
+    prefix +
+    "rss/news?tracking=1</link></item>" +
     "<item><title>bad</title><link>" +
-    prefix + "rss/valid-headline-test</link></item>" +
+    prefix +
+    "rss/valid-headline-test</link></item>" +
     "<item><title>Article with invalid publication date</title><link>" +
-    prefix + "rss/invalid-date-test</link><pubDate>not-a-date</pubDate></item>" +
+    prefix +
+    "rss/invalid-date-test</link><pubDate>not-a-date</pubDate></item>" +
     "</channel></rss>";
   const response: FeedResponse = {
     status: 200,
