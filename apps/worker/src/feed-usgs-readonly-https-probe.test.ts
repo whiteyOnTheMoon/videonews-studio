@@ -14,7 +14,9 @@ const env: NodeJS.ProcessEnv = {
   VNS_ALLOWED_SOURCE_HOSTS: HOSTS.join(","),
 };
 const source = (id: string, baseUrl: string, feedUrl: string) => ({
-  id, baseUrl, feedUrl,
+  id,
+  baseUrl,
+  feedUrl,
   access: "rss" as const,
   status: "approved" as const,
   intervalMinutes: 60,
@@ -46,7 +48,8 @@ function fixture(input = sources) {
   return { signed, checkpoint };
 }
 const approved = fixture();
-const rss = "<rss><channel><item><title>Official geological survey announcement</title>" +
+const rss =
+  "<rss><channel><item><title>Official geological survey announcement</title>" +
   "<link>https://www.usgs.gov/news/official-geological-survey-announcement</link>" +
   "</item></channel></rss>";
 
@@ -69,7 +72,11 @@ test("exactly one signed USGS GET; neither NASA nor NOAA contacted", async () =>
     },
   };
   const result = await probeUsGsOneGet(
-    env, approved.signed, approved.checkpoint, keys.publicKey, ports,
+    env,
+    approved.signed,
+    approved.checkpoint,
+    keys.publicKey,
+    ports,
   );
   assert.deepEqual(urls, ["https://www.usgs.gov/news/149248/feed"]);
   assert.deepEqual(result, {
@@ -121,15 +128,21 @@ test("signature, checkpoint and exact USGS endpoint fail closed before DNS", asy
   };
   const alteredSigned = approved.signed.replace("149248", "149249");
   const wrong = fixture(
-    sources.map((entry) => entry.id === "usgs_news"
-      ? { ...entry, feedUrl: "https://www.usgs.gov/news/other/feed" }
-      : entry),
+    sources.map((entry) =>
+      entry.id === "usgs_news"
+        ? { ...entry, feedUrl: "https://www.usgs.gov/news/other/feed" }
+        : entry,
+    ),
   );
   const otherKey = generateKeyPairSync("ed25519");
   for (const [signed, checkpoint, key] of [
     [alteredSigned, approved.checkpoint, keys.publicKey],
     [approved.signed, approved.checkpoint, otherKey.publicKey],
-    [approved.signed, JSON.stringify({ ...JSON.parse(approved.checkpoint), sourceRevision: 9 }), keys.publicKey],
+    [
+      approved.signed,
+      JSON.stringify({ ...JSON.parse(approved.checkpoint), sourceRevision: 9 }),
+      keys.publicKey,
+    ],
     [wrong.signed, wrong.checkpoint, keys.publicKey],
   ] as const) {
     await assert.rejects(probeUsGsOneGet(env, signed, checkpoint, key, ports));
@@ -138,17 +151,14 @@ test("signature, checkpoint and exact USGS endpoint fail closed before DNS", asy
 });
 
 test("denied HTTP and DNS error disclose only fixed classification", async () => {
-  const refused = await probeUsGsOneGet(
-    env, approved.signed, approved.checkpoint, keys.publicKey,
-    {
-      resolveIPv4: async () => ["1.1.1.1"],
-      requestPinned: async () => ({
-        status: 403,
-        headers: { "content-type": "text/html" },
-        body: Buffer.from("PRIVATE_UPSTREAM_BODY"),
-      }),
-    },
-  );
+  const refused = await probeUsGsOneGet(env, approved.signed, approved.checkpoint, keys.publicKey, {
+    resolveIPv4: async () => ["1.1.1.1"],
+    requestPinned: async () => ({
+      status: 403,
+      headers: { "content-type": "text/html" },
+      body: Buffer.from("PRIVATE_UPSTREAM_BODY"),
+    }),
+  });
   assert.deepEqual(refused, {
     scope: "usgs_single_readonly_get",
     sourceId: "usgs_news",
@@ -156,10 +166,11 @@ test("denied HTTP and DNS error disclose only fixed classification", async () =>
     refusal: "http_status_refused",
     httpStatus: 403,
   });
-  const failed = await probeUsGsOneGet(
-    env, approved.signed, approved.checkpoint, keys.publicKey,
-    { resolveIPv4: async () => { throw new Error("PRIVATE_DNS_DATA"); } },
-  );
+  const failed = await probeUsGsOneGet(env, approved.signed, approved.checkpoint, keys.publicKey, {
+    resolveIPv4: async () => {
+      throw new Error("PRIVATE_DNS_DATA");
+    },
+  });
   assert.deepEqual(failed, {
     scope: "usgs_single_readonly_get",
     sourceId: "usgs_news",
