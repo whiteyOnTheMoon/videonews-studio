@@ -210,6 +210,17 @@ test("no approved USGS metadata reports bounded counts without RSS content or a 
       scanned: 2,
       outsideApprovedPrefix: 1,
       invalidOrBlockedLink: 0,
+      linkFailureReasons: {
+        missingOrUnreadable: 0,
+        queryString: 0,
+        fragment: 0,
+        percentEncoded: 0,
+        dotSegments: 0,
+        invalidPublicUrl: 0,
+        nonCanonical: 0,
+        blockedOrUnapprovedScope: 0,
+        other: 0,
+      },
       invalidHeadline: 1,
       invalidPublishedAt: 0,
       duplicate: 0,
@@ -217,4 +228,37 @@ test("no approved USGS metadata reports bounded counts without RSS content or a 
   });
   assert.ok(!JSON.stringify(result).includes("private-secret-example"));
   assert.ok(!JSON.stringify(result).includes("valid-title-test"));
+});
+
+test("USGS probe emits only fixed counters when link cannot be extracted", async () => {
+  let requests = 0;
+  const body =
+    '<rss version="2.0"><channel>' +
+    "<item><title>Reviewed official USGS news article headline</title>" +
+    "<guid>https://www.usgs.gov/news/no-article-link</guid></item>" +
+    "</channel></rss>";
+  const result = await probeUsGsOneGet(
+    env,
+    approved.signed,
+    approved.checkpoint,
+    keys.publicKey,
+    {
+      resolveIPv4: async () => ["1.1.1.1"],
+      async requestPinned() {
+        requests++;
+        return {
+          status: 200,
+          headers: { "content-type": "application/rss+xml" },
+          body: Buffer.from(body),
+        };
+      },
+    },
+  );
+  assert.equal(requests, 1);
+  assert.equal(result.stage, "metadata_refused");
+  if (result.stage !== "metadata_refused") throw new Error("unexpected result");
+  assert.equal(result.rejectionCounts?.scanned, 1);
+  assert.equal(result.rejectionCounts?.invalidOrBlockedLink, 1);
+  assert.equal(result.rejectionCounts?.linkFailureReasons.missingOrUnreadable, 1);
+  assert.ok(!JSON.stringify(result).includes("no-article-link"));
 });
