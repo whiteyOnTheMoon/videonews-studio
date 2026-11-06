@@ -236,3 +236,35 @@ test("signed one-shot NOAA canary gating happens inside runtime admission", () =
     /canary gate refused/,
   );
 });
+
+test("NASA-only single pass requires dedicated acknowledgement before secrets or connections", () => {
+  const selected = {
+    ...env,
+    VNS_FEED_CANARY_SOURCE_ID: "nasa_news",
+    VNS_FEED_CANARY_OPERATOR_ACK: "NASA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+  };
+  const checked = readFeedRuntimeAdmission(selected);
+  assert.equal(checked.initialBootstrap, false);
+  assert.equal(checked.dbUser, login);
+  for (const patch of [
+    { VNS_FEED_CANARY_SOURCE_ID: "noaa_news" },
+    { VNS_FEED_CANARY_SOURCE_ID: "usgs_news" },
+    { VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" },
+    { VNS_FEED_CANARY_OPERATOR_ACK: "USGS_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" },
+    { VNS_FEED_CANARY_OPERATOR_ACK: "" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "true", VNS_FEED_SOURCE_BOOTSTRAP_OPERATOR_ACK: "true" },
+  ]) {
+    assert.throws(
+      () => readFeedRuntimeAdmission({ ...selected, ...patch }),
+      /canary gate refused/,
+    );
+  }
+  assert.throws(
+    () => readFeedRuntimeAdmission(selected, "persistent_worker"),
+    /canary gate refused/,
+  );
+  assert.throws(
+    () => readFeedRuntimeAdmission(selected, "bounded_producer"),
+    /canary gate refused/,
+  );
+});
