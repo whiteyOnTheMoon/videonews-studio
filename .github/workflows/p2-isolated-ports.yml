@@ -83,11 +83,6 @@ jobs:
           npx prettier --write docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
           git diff --no-color -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
           git diff --exit-code -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
-      - name: Show exact Prettier patch for P2-02 refusal diagnostics
-        run: |
-          npx prettier --write apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_ONE_SHOT_HTTPS_REFUSAL_DIAGNOSTICS.md
-          git diff --no-color -- apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_ONE_SHOT_HTTPS_REFUSAL_DIAGNOSTICS.md
-          git diff --exit-code -- apps/worker/src/feed-observer-https-diagnostics.test.ts docs/P2_02_ONE_SHOT_HTTPS_REFUSAL_DIAGNOSTICS.md
       - name: Check code formatting and lint
         run: |
           npm run format:check
