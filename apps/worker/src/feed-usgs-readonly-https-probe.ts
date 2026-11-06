@@ -16,6 +16,7 @@ import {
 } from "./feed-https-transport.js";
 import type { FeedHttpsDependencies, FeedHttpsRefusal } from "./feed-https-transport.js";
 import { decodeApprovedFeed, summarizeFeedMetadataRejections } from "./feed-poller.js";
+import type { FeedLinkRejectionReasons } from "./feed-poller.js";
 import { readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 
 const REFUSED = "USGS read-only HTTPS diagnostic refused";
@@ -68,6 +69,7 @@ type SafeReport =
         scanned: number;
         outsideApprovedPrefix: number;
         invalidOrBlockedLink: number;
+        linkFailureReasons: FeedLinkRejectionReasons;
         invalidHeadline: number;
         invalidPublishedAt: number;
         duplicate: number;
@@ -233,6 +235,7 @@ export async function probeUsGsOneGet(
             scanned: tally.scanned,
             outsideApprovedPrefix: tally.outsideApprovedPrefix,
             invalidOrBlockedLink: tally.invalidOrBlockedLink,
+            linkFailureReasons: tally.linkFailureReasons,
             invalidHeadline: tally.invalidHeadline,
             invalidPublishedAt: tally.invalidPublishedAt,
             duplicate: tally.duplicate,
