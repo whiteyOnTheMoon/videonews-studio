@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  P2_NASA_CANARY_ACK,
   P2_NOAA_CANARY_ACK,
   P2_USGS_CANARY_ACK,
   readSingleSourceCanarySelection,
@@ -10,6 +11,11 @@ const base = {
   VNS_FEED_RUNTIME_ENABLED: "true",
   VNS_FEED_RUNTIME_MODE: "single_pass",
   VNS_FEED_SOURCE_BOOTSTRAP: "false",
+};
+const nasa = {
+  ...base,
+  VNS_FEED_CANARY_SOURCE_ID: "nasa_news",
+  VNS_FEED_CANARY_OPERATOR_ACK: P2_NASA_CANARY_ACK,
 };
 const noaa = {
   ...base,
@@ -22,7 +28,8 @@ const usgs = {
   VNS_FEED_CANARY_OPERATOR_ACK: P2_USGS_CANARY_ACK,
 };
 
-test("independent exact NOAA and USGS one-shot acknowledgements, default no selector", () => {
+test("independent exact NASA, NOAA and USGS one-shot acknowledgements, default no selector", () => {
+  assert.equal(readSingleSourceCanarySelection(nasa, "single_pass"), "nasa_news");
   assert.equal(readSingleSourceCanarySelection(noaa, "single_pass"), "noaa_news");
   assert.equal(readSingleSourceCanarySelection(usgs, "single_pass"), "usgs_news");
   assert.equal(readSingleSourceCanarySelection({}, "single_pass"), null);
@@ -35,21 +42,20 @@ test("independent exact NOAA and USGS one-shot acknowledgements, default no sele
   );
 });
 
-test("both source selectors reject cross-acknowledgement, missing rights and non-single-pass", () => {
-  for (const valid of [noaa, usgs]) {
+test("all three source selectors reject cross-acknowledgements and non-single-pass", () => {
+  for (const valid of [nasa, noaa, usgs]) {
     for (const [key, invalid] of [
       ["VNS_FEED_RUNTIME_ENABLED", "false"],
       ["VNS_FEED_RUNTIME_MODE", "persistent_worker"],
       ["VNS_FEED_SOURCE_BOOTSTRAP", "true"],
-      ["VNS_FEED_CANARY_SOURCE_ID", "nasa_news"],
+      ["VNS_FEED_CANARY_SOURCE_ID", valid.VNS_FEED_CANARY_SOURCE_ID === "nasa_news" ? "noaa_news" : "nasa_news"],
       ["VNS_FEED_CANARY_SOURCE_ID", "unknown_source"],
       ["VNS_FEED_CANARY_SOURCE_ID", ""],
       ["VNS_FEED_CANARY_OPERATOR_ACK", "true"],
       ["VNS_FEED_CANARY_OPERATOR_ACK", ""],
-      [
-        "VNS_FEED_CANARY_OPERATOR_ACK",
-        valid.VNS_FEED_CANARY_SOURCE_ID === "usgs_news" ? P2_NOAA_CANARY_ACK : P2_USGS_CANARY_ACK,
-      ],
+      ...[P2_NASA_CANARY_ACK, P2_NOAA_CANARY_ACK, P2_USGS_CANARY_ACK]
+        .filter((ack) => ack !== valid.VNS_FEED_CANARY_OPERATOR_ACK)
+        .map((ack) => ["VNS_FEED_CANARY_OPERATOR_ACK", ack] as const),
     ] as const) {
       assert.throws(
         () => readSingleSourceCanarySelection({ ...valid, [key]: invalid }, "single_pass"),
