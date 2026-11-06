@@ -586,14 +586,9 @@ test("NASA one-shot canary uses only the signed same-host feed endpoint", async 
   assert.deepEqual(await scheduler.tick(new Date(START)), [
     { sourceId: "nasa_news", status: "ingested", newItems: 1 },
   ]);
-  assert.deepEqual(received, [
-    "dns:www.nasa.gov",
-    "https:www.nasa.gov/news-release/feed/",
-  ]);
+  assert.deepEqual(received, ["dns:www.nasa.gov", "https:www.nasa.gov/news-release/feed/"]);
   assert.deepEqual([...f.db.keys()], ["nasa_news"]);
-  assert.deepEqual([...f.saved], [
-    "nasa_news|https://www.nasa.gov/news/science-bulletin",
-  ]);
+  assert.deepEqual([...f.saved], ["nasa_news|https://www.nasa.gov/news/science-bulletin"]);
   const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
   assert.equal(auth.length, 3);
   assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "nasa_news"));
@@ -610,21 +605,23 @@ test("NASA one-shot canary uses only the signed same-host feed endpoint", async 
     assert.throws(() =>
       createDormantFeedScheduler(gated, {
         ...denied.ports,
-        readRegistry: () => JSON.stringify({
-          version: 1,
-          sources: [{ ...nasa, ...patch }, noaa, usgs],
-        }),
+        readRegistry: () =>
+          JSON.stringify({
+            version: 1,
+            sources: [{ ...nasa, ...patch }, noaa, usgs],
+          }),
       }),
     );
     assert.equal(denied.queries.length, 0);
     assert.equal(denied.requests.length, 0);
   }
   const badAck = fixture();
-  assert.throws(() =>
-    createDormantFeedScheduler(
-      { ...gated, VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" },
-      badAck.ports,
-    ),
+  assert.throws(
+    () =>
+      createDormantFeedScheduler(
+        { ...gated, VNS_FEED_CANARY_OPERATOR_ACK: "NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY" },
+        badAck.ports,
+      ),
     /canary gate refused/,
   );
   assert.equal(badAck.queries.length, 0);
