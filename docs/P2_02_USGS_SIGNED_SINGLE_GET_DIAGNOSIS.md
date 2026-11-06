@@ -77,3 +77,35 @@ If, and only if, a future operator approves another USGS-only GET, the diagnosti
 The report contains only small integer counts; it never logs actual URLs, titles, timestamps, article bodies, parsed XML or specific bad values. The existing `decodeApprovedFeed` behavior and production worker are unchanged. No extra network call is made to calculate counters; only the already received in-memory response is inspected a second time. A diagnostic failure never changes the refusal.
 
 This enhancement does not authorize a new GET and cannot retroactively identify why the last test returned `no_approved_metadata`. Do not relax source URL scope, title rules, date checks or publishers' rights to force ingestion.
+
+## Second operator result — 2026-11-06
+
+On `cd5e1cc5813a920714a9667105091601eb5aeda3`, one explicitly approved, read-only USGS GET returned `metadata_refused / no_approved_metadata`. Exactly the first 20 RSS entries were scanned:
+
+```json
+{
+  "scanned": 20,
+  "outsideApprovedPrefix": 0,
+  "invalidOrBlockedLink": 20,
+  "invalidHeadline": 0,
+  "invalidPublishedAt": 0,
+  "duplicate": 0
+}
+```
+
+Every inspected entry failed the existing URL validation or lacked an extractable link. Since link checks short-circuit title and date checks, their zero counters are **not evidence** those fields would have been valid. No HTTP retry, DB write, Redis write, checkpoint advance, projection or publishing occurred. The GET permission is consumed.
+
+For a separately authorized **future** diagnostic only, `rejectionCounts.linkFailureReasons` now divides the existing `invalidOrBlockedLink` aggregate into these mutually exclusive count-only codes:
+
+- `missingOrUnreadable`: the RSS extractor yielded no usable link text
+- `queryString`: a query is present, which is not permitted for persisted candidate URLs
+- `fragment`: a URL fragment is present
+- `percentEncoded`: percent encoding is present
+- `dotSegments`: a raw `/./` or `/../` segment appears
+- `invalidPublicUrl`: the value fails the existing public-HTTPS lexical gate
+- `nonCanonical`: parsing normalizes the URL to a different spelling
+- `blockedOrUnapprovedScope`: a canonical link is not approved for that source
+- `other`: a rejected link did not match a narrower safe classification
+
+All counters are small integers, sum to `invalidOrBlockedLink`, and never expose URL values, headlines, dates, raw RSS, remote headers or secret material. The existing production `canonicalArticle` and `decodeApprovedFeed` checks are **unchanged**. Do not attempt a new GET under either previously consumed permission, do not broaden USGS host or article-scope approvals, and do not delete historical queue or lease evidence.
+
