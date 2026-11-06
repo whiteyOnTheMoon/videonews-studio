@@ -14,6 +14,7 @@ import { postgresSourceRevisionAnchor } from "./postgres-source-revision-anchor.
 import { attestFeedSourceAnchorIdentity } from "./feed-source-anchor-identity.js";
 import { advancePinnedFeedTrustPolicy } from "./feed-trust-policy-runtime.js";
 import { feedAnchorPoolConfig } from "./feed-anchor-pool-config.js";
+import { oneShotFeedHttpsRefusalReporter } from "./feed-observer-https-diagnostics.js";
 
 import { readFeedSecretFile, readPinnedFeedTrustFile } from "./feed-runtime-protected-files.js";
 import { readOneShotFeedRedisAdmission } from "./feed-observer-redis-admission.js";
@@ -109,7 +110,12 @@ export async function observeFeedOnce(
     const verifiedRegistry = JSON.stringify({ version: 1, sources });
     const scheduler = createDormantFeedScheduler(env, {
       pool,
-      https: productionFeedHttpsDependencies(),
+      // Opt-in per-source, fixed-code HTTPS refusal classification only.
+      // The ordinary worker and persistent consumers remain unchanged.
+      https: {
+        ...productionFeedHttpsDependencies(),
+        onRefusal: oneShotFeedHttpsRefusalReporter(env),
+      },
       readRegistry(path) {
         if (path !== REVIEWED_SOURCE_REGISTRY_PATH) {
           throw new Error("Unexpected source registry");
