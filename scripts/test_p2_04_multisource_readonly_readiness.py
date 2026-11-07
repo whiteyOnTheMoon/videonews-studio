@@ -96,9 +96,11 @@ class P204ReadinessTests(unittest.TestCase):
         self.assertNotIn("FOR SHARE", sql)
         self.assertNotIn("article_url", sql.lower())
         self.assertNotIn("headline", sql.lower())
+        # Host-audit SELECT legitimately tests the string literal action='grant'.
+        # Deny executable SQL clauses, not words inside immutable evidence values.
         for word in ("INSERT", "UPDATE", "DELETE", "TRUNCATE", "ALTER", "DROP",
                      "CREATE", "LOCK", "GRANT", "REVOKE", "CALL", "EXECUTE"):
-            self.assertIsNone(re.search(r"\b" + word + r"\b", sql, re.I))
+            self.assertIsNone(re.search(r"(?m)^\s*" + word + r"\b", sql, re.I))
 
     def test_production_fixture_correctly_blocks_fresh_multisource_readiness(self):
         row = witness.validate(fixture(), IDS)
