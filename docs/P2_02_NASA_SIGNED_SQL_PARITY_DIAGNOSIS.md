@@ -96,3 +96,41 @@ temporary regular-file read regression test (previous tests mocked
 symlink and file-metadata-change checks. The same file/SQL/Redis
 read-only boundaries and separate live NASA authorization remain
 unchanged.
+
+
+## Post-canary read-only witness fix — 2026-11-06
+
+The operator ran exactly one signed, NASA-only persistence canary on release
+`72f0605a5163325d0b2c979bdef0f61d9abc8131`. Its live HTTPS transport
+refused the NASA RSS response because the received body exceeded the existing
+128-KiB cap (`response_size_refused`, `response_body`,
+`declaredLengthBand=missing`). No NASA metadata persisted. The fourth failed
+BullMQ job and the exited one-shot observer container were preserved for audit.
+
+The subsequent read-only NASA witness unexpectedly reported
+`publisher_signature_stage_valid=false`, `database_readable=false`,
+`checkpoint_matches_inbox_10_10=false`. Code inspection established a
+specific false-negative path: the witness previously delegated signature
+checking to `p2_02_signed_source_stage_refresh.mjs --verify`, whose CLI
+`release()` disallows **any existing** container labeled `feed-observer`,
+including a **stopped historical** container. The witness then skipped
+checkpoint evaluation and the SQL query entirely. Thus those reported false
+fields did **not** prove loss of signed parity, SQL access or integrity.
+
+The corrected witness now calls the already exported, pure
+`verifyRefreshedStage()` implementation from the signed refresh module via
+an isolated, fixed `node --input-type=module --eval` invocation. It still
+requires root and an exact pinned clean `main` before the verifier, and still
+validates the independently pinned Ed25519 key, publisher bytes, protected
+stage, approved revision 10/10 and equality, checkpoint, SQL grants, source
+subset and anchor/trust policy. **The staging CLI's existing conservative
+no-containers gate is not changed** and remains in effect for its own
+operations.
+
+This is a diagnosis-only change. It performs no HTTPS request, Docker
+create/start/stop/remove, queue/lease alteration, checkpoint rewrite, SQL
+mutation, source rights update or publishing. It does **not** retroactively
+establish whether the actual post-canary SQL and checkpoint are healthy:
+run the updated read-only witness after the operator updates to a clean,
+SHA-pinned release. Never delete the evidence container or replay the
+failed job to make a diagnosis pass.
