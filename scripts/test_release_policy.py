@@ -45,9 +45,28 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("packages: write", self.data)
         self.assertIn("GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}", self.data)
         self.assertNotRegex(self.data, r"(?m)^    env:\n      GHCR_TOKEN:")
-        self.assertIn("for target in web api;", self.data)
+        self.assertNotIn("for target in web api;", self.data)
+        # Build and push must use the same allowlisted, operator-selected scope.
+        self.assertEqual(self.data.count("for target in $RELEASE_TARGETS; do"), 2)
+        self.assertIn("RELEASE_TARGETS=%s", self.data)
+        self.assertIn('"$targets" >> "$GITHUB_ENV"', self.data)
         self.assertNotIn("docker system prune", self.data)
         self.assertNotIn("docker builder prune", self.data)
+
+    def test_web_only_is_default_denied_and_api_is_never_built_or_pushed(self):
+        self.assertIn("release_scope:", self.data)
+        self.assertIn("default: DO_NOT_SELECT", self.data)
+        self.assertIn("WEB_ONLY) targets=\"web\"", self.data)
+        self.assertIn("WEB_AND_API) targets=\"web api\"", self.data)
+        self.assertIn('*) echo "BLOCKED: explicit release scope required"', self.data)
+        self.assertIn("RELEASE_SCOPE: ${{ inputs.release_scope }}", self.data)
+        # An API image must only be smoked in the WEB_AND_API branch.
+        smoke = self.data.split("      - name: Verify internal HTTP endpoints", 1)[1]
+        smoke = smoke.split("      - name: Authenticate to GitHub Container Registry", 1)[0]
+        self.assertIn('if [ "$RELEASE_SCOPE" = WEB_AND_API ]; then', smoke)
+        self.assertEqual(smoke.count('if [ "$RELEASE_SCOPE" = WEB_AND_API ]; then'), 2)
+        self.assertNotIn("docker push", smoke)
+        self.assertNotIn("docker build", smoke)
 
     def test_serialization_and_no_auto_release(self):
         self.assertIn("group: vns-ghcr-manual-release", self.data)

@@ -144,3 +144,25 @@ that account can access. A truly package-isolated machine identity requires
 separately granted package access, not merely a narrower classic token scope.
 Protect the `ap` Unix account and do not paste diagnostic output from
 `docker config` or the credential helper's private protocol into chat.
+
+
+## P2-04: abgesicherte, ausschließlich Web betreffende Nachlieferung (07.11.2026)
+
+Die produktive VPS-Inventur bei Git-Checkout `c6d2a6a0772f592f560db6b37acfb12994732786` bestätigte zwei gesunde Container, beide mit OCI-Revision `8b679e89d6a4b6243acde167643f4a187d977e56`:
+
+- Web: `ghcr.io/whiteyonthemoon/videonews-studio-web@sha256:777931025f8be88787c887f1940c57dbf702427685045d580c1ca00c963f0024`
+- API: `ghcr.io/whiteyonthemoon/videonews-studio-api@sha256:856fcedb79d9b3a1fe34709406a7869e7c7e8671668ccd3bbb080f8a119b52df`
+
+Beide Container wurden mit den **fünf** bestehenden Compose-Dateien in genau dieser Reihenfolge eingerichtet: `compose.yaml`, `deploy/compose.images.yaml`, `deploy/compose.admin.yaml`, `deploy/compose.provider-admin.yaml`, `deploy/compose.personal-editorial-admin.yaml`. Sie sind über private GHCR-Digests, nicht `vns-web:local`, eingebunden. Eine Änderung am Git-Checkout ersetzt **kein** Container-Image.
+
+Der manuelle Workflow `.github/workflows/p1-04-publish-ghcr.yml` erlaubt jetzt die **explizite** Auswahl `release_scope=WEB_ONLY` (nur Web builden, intern smoke-testen und nach GHCR pushen) oder `WEB_AND_API` (bisheriger Zweierlauf). Der Standard `DO_NOT_SELECT` blockiert den Release noch **vor** Build, Registry-Login und Push. Außerdem bleiben `approval=PUBLISH_PRIVATE_IMAGES`, ein exakter, aktueller `main`-SHA als `expected_sha`, die separat geprüfte Paket-Privatsichtbarkeit und die Budgetfreigabe erforderlich. Ohne manuellen `workflow_dispatch` passiert nichts. Der Web-only-Modus darf keinen neuen API-Tag oder API-Push erzeugen.
+
+**Operatorische Trennung, kein implizites GO:**
+
+1. Nach Merge und erfolgreicher CI die neueste `main`-Revision und beide GHCR-Paket-Sichtbarkeiten sowie das Actions-Kontingent separat prüfen. Nur nach ausdrücklich freigegebenem **Web-only**-Upload den manuellen Dispatch mit `WEB_ONLY`, vollständigem `expected_sha` und den expliziten Sicherheitsbestätigungen starten.
+2. Aus dem Workflow-Ergebnis **nur den neuen Web-Digest** ablesen; `VNS_API_IMAGE` muss auf dem vorherigen unveränderten API-Digest verbleiben. Die aktuelle Web-Digest-Referenz für Rollback gesondert verwahren.
+3. Vor einem neuen VPS-Pull die vorhandene read-only GHCR-Authentifizierung/Secrets prüfen, den freien Docker-Speicher und vorhandene Image-IDs abgleichen. `scripts/vns_ghcr_pull.py` darf ausschließlich mit dem neuen freigegebenen Web-Digest und exaktem OCI-Commit verwendet werden. Kein `docker login` mit globalem Schreib-Token, kein Build auf dem VPS und kein `latest`.
+4. Vor einem **separat genehmigten** Web-Neustart den effektiven Compose-Plan mit genau obigen fünf Overlays und beiden Digest-Variablen ohne Geheimnis-Ausgabe validieren. Nur Web mit `--no-deps` und ohne Build oder Pull neu erstellen; kein Compose-Down oder API-/DB-/Redis-/Worker-Restart. Projektfremde Infrastruktur und historische Feed-Canarys nicht anfassen. Bei ausbleibender Health-, persönlicher Admin-Login- oder Ranking-GET-Prüfung anhand des alten Web-Digests gezielt auf Web zurückrollen.
+5. Die neue Web-Meldung erläutert nur, warum eine **erfolgreich leere** Rangliste trotz gespeicherter Artikel/Ereignisse korrekt sein kann. Sie ersetzt **keine** P2-03-Multisource-Deduplikations-, P2-04-Gewichtungs- oder Admin-Live-Abnahme und erlaubt niemals Veröffentlichung.
+
+Die Workflow-Änderung und Offline-Tests führen keinen Upload/Pull und keinen VPS-Rollout aus.
