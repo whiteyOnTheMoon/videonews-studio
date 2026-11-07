@@ -104,3 +104,39 @@ in classification or emission is ignored and cannot turn a refusal into
 success. This diagnostic is **only a code capability**, not authorization for
 another live NASA request. A new single-pass operator approval and complete
 preflight would be required before using it on the VPS. P2-02/P2-03 remain open.
+
+## Additional closed-count tracking-vs-unknown query preview (offline first)
+
+A second independent opt-in, `VNS_FEED_NASA_QUERY_PREVIEW_COUNTS=true`,
+requires `VNS_FEED_NASA_REJECTION_COUNTS=true` and all prior NASA-only
+512-KiB, `single_pass`, signature and failure-stage diagnostic gates.
+The flag defaults to **false** and does not enable any source or authorize
+another GET.
+
+Only after the unchanged feed decoder reports `no_approved_metadata`, the
+existing `previewRejectedFeedTrackingQueries` inspects the **same**
+bounded response in memory. The emitter validates an allowlisted,
+internally consistent object before logging counts:
+
+- `inspectedQueryLinks`: total RSS item links with `?`;
+- `trackingKeysOnly`: links containing exclusively the ten fixed
+  recognized tracking key **names** (no values);
+- `unknownOrMixedKeys`: links containing functional-looking, unknown or
+  mixed names; the names themselves are never logged;
+- `malformedOrUnusableQuery`: links excluded by preview validation;
+- `wouldPassExistingUrlAndMetadataGuards` and
+  `canonicalCollisions`: **simulation only**, not a policy grant;
+- `recognizedKeyCounts`: counts under the same ten fixed code-owned names.
+
+No individual query string, URL, title, article ID, parameter value, XML,
+secret or exception can escape. Every count is bounded by the 20-item
+decoder cap. The simulation may detect a possible collision and must never
+be interpreted as permission to strip a real-world query parameter.
+A reporter exception cannot affect the original failed poll or its
+SQL no-commit state.
+
+This allows a **future** separately authorized one-shot observation to
+return metadata refusal categories and tracking-vs-unknown query counts
+with one bounded HTTPS request, rather than spending another fetch to
+classify a suspected query rejection. It does not determine the cause of
+the three previously consumed NASA canaries.
