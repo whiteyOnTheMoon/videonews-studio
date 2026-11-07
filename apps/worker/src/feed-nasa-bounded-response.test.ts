@@ -118,32 +118,42 @@ test("HTTPS and XML decoder agree on default and exact NASA-only 512-KiB bound o
 test("512 KiB plus one byte remains refused and never results in decoded metadata", async () => {
   const body = Buffer.alloc(NASA_REVIEW_MAX_BYTES + 1, 32);
   let attempts = 0;
-  const oversized = createPinnedFeedHttpsTransport(REGISTRY, POLICY, {
-    async resolveIPv4() {
-      return ["1.1.1.1"];
+  const oversized = createPinnedFeedHttpsTransport(
+    REGISTRY,
+    POLICY,
+    {
+      async resolveIPv4() {
+        return ["1.1.1.1"];
+      },
+      async requestPinned() {
+        attempts++;
+        return {
+          status: 200,
+          headers: { "content-type": "application/rss+xml" },
+          body,
+        };
+      },
     },
-    async requestPinned() {
-      attempts++;
-      return {
-        status: 200,
-        headers: { "content-type": "application/rss+xml" },
-        body,
-      };
-    },
-  }, true);
+    true,
+  );
   await assert.rejects(
     oversized.request(SOURCE, { etag: null, lastModified: null }),
     /response bytes refused/,
   );
   assert.equal(attempts, 1);
   const changed = { ...SOURCE, feedUrl: "https://www.nasa.gov/new-feed/" };
-  const blocked = createPinnedFeedHttpsTransport(REGISTRY, POLICY, {
-    async resolveIPv4() {
-      throw new Error("Must not resolve unapproved NASA URL");
+  const blocked = createPinnedFeedHttpsTransport(
+    REGISTRY,
+    POLICY,
+    {
+      async resolveIPv4() {
+        throw new Error("Must not resolve unapproved NASA URL");
+      },
+      async requestPinned() {
+        throw new Error("Must not fetch unapproved NASA URL");
+      },
     },
-    async requestPinned() {
-      throw new Error("Must not fetch unapproved NASA URL");
-    },
-  }, true);
+    true,
+  );
   await assert.rejects(blocked.request(changed, { etag: null, lastModified: null }));
 });
