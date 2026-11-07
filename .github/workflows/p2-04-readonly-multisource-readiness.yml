@@ -1,0 +1,29 @@
+name: P2-04 read-only multisource readiness (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_03_projection_readonly_evidence.py"
+      - "scripts/p2_04_multisource_readonly_readiness.py"
+      - "scripts/test_p2_04_multisource_readonly_readiness.py"
+      - "docs/P2_04_MULTISOURCE_READINESS_WITNESS.md"
+      - ".github/workflows/p2-04-readonly-multisource-readiness.yml"
+permissions:
+  contents: read
+jobs:
+  readiness-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile offline diagnostic and tests
+        run: |
+          python3 -m py_compile \
+            scripts/p2_04_multisource_readonly_readiness.py \
+            scripts/test_p2_04_multisource_readonly_readiness.py
+      - name: Test fail-closed SQL, source validation and immutable read-only contract
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_04_multisource_readonly_readiness.py' -v
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_03_projection_readonly_evidence.py' -v
