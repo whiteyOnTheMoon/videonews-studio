@@ -89,6 +89,8 @@ jobs:
               --tag "${prefix}-${target}:${version}" .
           done
       - name: Verify internal HTTP endpoints without host exposure
+        env:
+          RELEASE_SCOPE: ${{ inputs.release_scope }}
         run: |
           set -euo pipefail
           repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
