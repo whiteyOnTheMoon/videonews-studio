@@ -73,3 +73,26 @@ does not invalidate valid signed subset parity, while an omitted
 blocked child scope, off-host approved source, altered checkpoint,
 wrong policy/anchor digest, SQL error and missing authorization do
 fail closed.
+
+## Python protected-file witness correction — 2026-11-06
+
+The first live invocation of the new read-only helper on VPS release
+`b9157b0902cc0ba75c09f27b4ab2ee588e50f7a4` crashed during the
+protected-file `fstat` check with an `AttributeError` for
+`os.stat_result.dev`. The helper had mistakenly used the unprefixed
+names `.dev`, `.ino`, `.size`, `.mtime_ns`, and `.ctime_ns` rather
+than Python's actual `st_dev`, `st_ino`, `st_size`,
+`st_mtime_ns`, and `st_ctime_ns`.
+
+**Impact:** the new helper failed before it could produce file-parity
+or SQL evidence. This is a bug in the read-only diagnostic code, not
+proof of checkpoint corruption or stale SQL anchor. The existing
+publisher-stage signature check had already passed independently.
+No Redis queue inventory or NASA GET was reached.
+
+This fix uses the correct `stat_result` attributes and adds a real
+temporary regular-file read regression test (previous tests mocked
+`protected_read` and therefore missed this bug), plus negative
+symlink and file-metadata-change checks. The same file/SQL/Redis
+read-only boundaries and separate live NASA authorization remain
+unchanged.
