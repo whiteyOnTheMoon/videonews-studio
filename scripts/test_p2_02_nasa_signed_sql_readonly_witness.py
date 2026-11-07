@@ -170,6 +170,52 @@ class ParityTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     m.protected_read(path, os.getuid(), os.getgid(), 0o600)
 
+    def test_stage_check_uses_pure_verifier_not_staging_deployment_gate(self):
+        # The former --verify CLI rejected an EXITED feed-observer container
+        # kept for forensics. This direct verifier may inspect that state.
+        with patch.object(m, "command", return_value="PASS") as run:
+            m.verify_publisher_stage_readonly()
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[:3], ["node", "--input-type=module", "--eval"])
+        self.assertIn("verifyRefreshedStage();", argv[3])
+        self.assertIn(
+            "file:///home/ap/www/videonews-studio/scripts/p2_02_signed_source_stage_refresh.mjs",
+            argv[3],
+        )
+        self.assertNotIn("--verify", argv)
+        self.assertNotIn("docker", argv)
+
+    def test_stage_check_fails_closed_and_does_not_query_sql_when_invalid(self):
+        inbox, cp, row = self.fixture()
+        with (
+            patch.object(m, "release"),
+            patch.object(m, "command", return_value="") as run,
+            patch.object(m, "protected_read", side_effect=[inbox, inbox, cp]),
+            patch.object(m, "sql_read", return_value=row) as sql,
+        ):
+            result = m.inspect("a" * 40)
+        self.assertEqual(result["status"], "blocked")
+        self.assertFalse(result["publisher_signature_stage_valid"])
+        self.assertFalse(result["database_readable"])
+        sql.assert_not_called()
+        self.assertEqual(run.call_count, 1)
+
+    def test_postcanary_stage_valid_continues_to_checkpoint_and_sql(self):
+        inbox, cp, row = self.fixture()
+        with (
+            patch.object(m, "release"),
+            patch.object(m, "command", return_value="PASS") as run,
+            patch.object(m, "protected_read", side_effect=[inbox, inbox, cp]),
+            patch.object(m, "sql_read", return_value=row) as sql,
+        ):
+            result = m.inspect("a" * 40)
+        self.assertEqual(result["status"], "parity_reviewable")
+        self.assertTrue(result["publisher_signature_stage_valid"])
+        self.assertTrue(result["checkpoint_matches_inbox_10_10"])
+        self.assertTrue(result["sql_anchor_digest_matches"])
+        self.assertEqual(run.call_count, 1)
+        sql.assert_called_once()
+
     def test_release_failure_exits_before_files_or_sql(self):
         with (
             patch.object(m, "release", side_effect=RuntimeError(m.DENIED)),
