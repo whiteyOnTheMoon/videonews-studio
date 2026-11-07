@@ -184,9 +184,7 @@ export function oneShotNasaQueryPreviewReporter(
     if (
       !numbers.every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 20) ||
       counts.inspectedQueryLinks !==
-        counts.trackingKeysOnly +
-          counts.unknownOrMixedKeys +
-          counts.malformedOrUnusableQuery ||
+        counts.trackingKeysOnly + counts.unknownOrMixedKeys + counts.malformedOrUnusableQuery ||
       counts.wouldPassExistingUrlAndMetadataGuards + counts.canonicalCollisions >
         counts.trackingKeysOnly ||
       QUERY_PREVIEW_KEYS.some((key) => known[key] > counts.trackingKeysOnly)
