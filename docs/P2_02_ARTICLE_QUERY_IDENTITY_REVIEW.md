@@ -113,7 +113,7 @@ not fetch, modify or store any source metadata.
 The prototype takes an explicitly supplied source, full current review
 registry and review-policy candidate. It **preserves the exact navigation
 URL**, and generates a separate, hypothetical identity only for explicitly
-listed, ASCII-safe, single-valued *functional* keys. A small closed list of
+listed, ASCII-safe, single-valued _functional_ keys. A small closed list of
 possible tracking keys is independently opt-in. Unknown, duplicated,
 encoded, empty, nested-URL, fragment, noncanonical, blocked-child and
 out-of-source-scope URLs fail closed. Key order is normalized only in the
