@@ -40,6 +40,12 @@ export function mayDisplayRankedCandidates(
   return enabled && !loading && error === "" && count > 0;
 }
 
+/** A valid empty ranking response is not evidence that no feed articles were persisted. */
+export const RANKED_CANDIDATE_EMPTY_EXPLANATION =
+  "Keine aktuell anzeigbaren Rankingkandidaten. Feed-Artikel und Rechercheereignisse können " +
+  "trotzdem gespeichert sein. Die Mindestzahl verschiedener Quellen-IDs, das Altersfenster, " +
+  "Sperrbegriffe oder fehlende redaktionelle Prüfungen können eine Aufnahme ins Ranking verhindern.";
+
 export default function EditorialRankedEvents({ enabled }: { enabled: boolean }) {
   const [candidates, setCandidates] = useState<readonly RankedCandidate[]>([]);
   const [loading, setLoading] = useState(enabled);
@@ -96,7 +102,7 @@ export default function EditorialRankedEvents({ enabled }: { enabled: boolean })
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {enabled && !loading && !error && candidates.length === 0 ? (
-        <p>Noch keine persistierten Rankingkandidaten vorhanden.</p>
+        <p>{RANKED_CANDIDATE_EMPTY_EXPLANATION}</p>
       ) : null}
       {mayDisplayRankedCandidates(enabled, loading, error, candidates.length) ? (
         <ol>
