@@ -137,6 +137,8 @@ services:
       # Extra NASA-only RSS body bound: OFF unless a new, separate one-shot approval.
       VNS_FEED_NASA_512K_ENABLED: "${VNS_FEED_NASA_512K_ENABLED:-false}"
       VNS_FEED_NASA_512K_OPERATOR_ACK: "${VNS_FEED_NASA_512K_OPERATOR_ACK:-}"
+      # Extra fixed-label decoder detail: independently opted in, never logs raw XML.
+      VNS_FEED_NASA_DECODE_DIAGNOSTICS: "${VNS_FEED_NASA_DECODE_DIAGNOSTICS:-false}"
       # Optional NOAA/USGS single-source canary; disabled unless separately approved.
       VNS_FEED_CANARY_SOURCE_ID: "${VNS_FEED_CANARY_SOURCE_ID:-}"
       VNS_FEED_CANARY_OPERATOR_ACK: "${VNS_FEED_CANARY_OPERATOR_ACK:-}"
