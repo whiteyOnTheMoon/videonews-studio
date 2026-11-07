@@ -141,6 +141,8 @@ services:
       VNS_FEED_NASA_DECODE_DIAGNOSTICS: "${VNS_FEED_NASA_DECODE_DIAGNOSTICS:-false}"
       # Pure count-only reasons on the already downloaded rejected NASA RSS; default off.
       VNS_FEED_NASA_REJECTION_COUNTS: "${VNS_FEED_NASA_REJECTION_COUNTS:-false}"
+      # Further fixed category counts, independently opted in; no URL/values.
+      VNS_FEED_NASA_QUERY_PREVIEW_COUNTS: "${VNS_FEED_NASA_QUERY_PREVIEW_COUNTS:-false}"
       # Optional NOAA/USGS single-source canary; disabled unless separately approved.
       VNS_FEED_CANARY_SOURCE_ID: "${VNS_FEED_CANARY_SOURCE_ID:-}"
       VNS_FEED_CANARY_OPERATOR_ACK: "${VNS_FEED_CANARY_OPERATOR_ACK:-}"

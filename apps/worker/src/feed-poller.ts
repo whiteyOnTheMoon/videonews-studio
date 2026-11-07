@@ -560,6 +560,7 @@ export function createDormantFeedPoller(
   nasaReviewEnabled = false,
   onDecodeRefusal?: (sourceId: string, kind: FeedDecodeRefusalKind) => void,
   onRejectedMetadata?: (sourceId: string, counts: FeedMetadataRejectionCounts) => void,
+  onRejectedQueryPreview?: (sourceId: string, counts: RejectedFeedTrackingQueryPreview) => void,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -657,14 +658,27 @@ export function createDormantFeedPoller(
           } catch (error) {
             // Only after the unchanged decoder rejects EVERY metadata item.
             // This reuses the response already in memory and never issues a GET.
-            if (onRejectedMetadata && classifyFeedDecodeRefusal(error) === "no_approved_metadata") {
-              try {
-                onRejectedMetadata(
-                  source.id,
-                  summarizeFeedMetadataRejections(source, registry, result),
-                );
-              } catch {
-                // Diagnostics cannot accept metadata or change the original refusal.
+            if (classifyFeedDecodeRefusal(error) === "no_approved_metadata") {
+              if (onRejectedMetadata) {
+                try {
+                  onRejectedMetadata(
+                    source.id,
+                    summarizeFeedMetadataRejections(source, registry, result),
+                  );
+                } catch {
+                  // Diagnostics cannot accept metadata or change the original refusal.
+                }
+              }
+              // Same bounded in-memory RSS; never another transport request.
+              if (onRejectedQueryPreview && source.access === "rss") {
+                try {
+                  onRejectedQueryPreview(
+                    source.id,
+                    previewRejectedFeedTrackingQueries(source, registry, result),
+                  );
+                } catch {
+                  // Query previews never alter the existing decoder rejection.
+                }
               }
             }
             throw error;

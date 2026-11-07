@@ -227,6 +227,16 @@ export function verifySignedFeedOverlay(data) {
       observer.environment.VNS_FEED_NASA_REJECTION_COUNTS,
     );
   }
+  assert.equal(
+    observer.environment.VNS_FEED_NASA_QUERY_PREVIEW_COUNTS,
+    "${VNS_FEED_NASA_QUERY_PREVIEW_COUNTS:-false}",
+  );
+  for (const service of [scheduler, consumer]) {
+    assert.equal(
+      service.environment.VNS_FEED_NASA_QUERY_PREVIEW_COUNTS,
+      observer.environment.VNS_FEED_NASA_QUERY_PREVIEW_COUNTS,
+    );
+  }
   for (const flag of ["VNS_FEED_SCHEDULER_ENABLED", "VNS_FEED_SCHEDULER_OPERATOR_ACK"]) {
     assert.equal(scheduler.environment[flag], "${" + flag + ":-false}");
   }
@@ -323,6 +333,9 @@ test("Compose safety check rejects exposure, wrong UID and writable staging", ()
     },
     (copy) => {
       copy.services["feed-observer"].environment.VNS_FEED_NASA_REJECTION_COUNTS = "true";
+    },
+    (copy) => {
+      copy.services["feed-observer"].environment.VNS_FEED_NASA_QUERY_PREVIEW_COUNTS = "true";
     },
     (copy) => {
       copy.services["feed-observer"].environment.VNS_FEED_ANCHOR_PLACEMENT = "same_vps";
