@@ -59,11 +59,11 @@ def protected_read(path: Path, uid: int, gid: int, mode: int) -> bytes:
             raise RuntimeError(DENIED)
         data = os.read(fd, MAX_BYTES + 1)
         after = os.fstat(fd)
-        if (len(data) != info.st_size or after.dev != info.dev
-                or after.ino != info.ino
-                or after.size != info.size
-                or after.mtime_ns != info.mtime_ns
-                or after.ctime_ns != info.ctime_ns):
+        if (len(data) != info.st_size or after.st_dev != info.st_dev
+                or after.st_ino != info.st_ino
+                or after.st_size != info.st_size
+                or after.st_mtime_ns != info.st_mtime_ns
+                or after.st_ctime_ns != info.st_ctime_ns):
             raise RuntimeError(DENIED)
         return data
     finally:
