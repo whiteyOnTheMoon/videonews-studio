@@ -14,6 +14,7 @@ import EditorialTimelineEntry from "./editorial-timeline-entry";
 import EditorialRankedEvents, {
   parseRankedCandidatePage,
   mayDisplayRankedCandidates,
+  RANKED_CANDIDATE_EMPTY_EXPLANATION,
 } from "./editorial-ranked-events";
 import EditorialRankingPolicy from "./editorial-ranking-policy";
 import EditorialMetadataReviews from "./editorial-metadata-reviews";
@@ -178,6 +179,14 @@ test("P2-04 ranked snapshots stay hidden until personal Admin admission", () => 
   const enabled = renderToStaticMarkup(<EditorialRankedEvents enabled />);
   assert.match(enabled, /Lade Ranking/);
   assert.doesNotMatch(enabled, /<ol/);
+});
+
+test("P2-04 empty ranking does not claim absence of persisted metadata or bypass eligibility", () => {
+  assert.match(RANKED_CANDIDATE_EMPTY_EXPLANATION, /Feed-Artikel und Rechercheereignisse/);
+  assert.match(RANKED_CANDIDATE_EMPTY_EXPLANATION, /Quellen-IDs/);
+  assert.match(RANKED_CANDIDATE_EMPTY_EXPLANATION, /Altersfenster/);
+  assert.match(RANKED_CANDIDATE_EMPTY_EXPLANATION, /Prüfungen/);
+  assert.doesNotMatch(RANKED_CANDIDATE_EMPTY_EXPLANATION, /keine Nachrichten eingegangen/i);
 });
 
 test("P2-04 Admin refuses unverifiable and publishing-enabled ranking snapshots", () => {
