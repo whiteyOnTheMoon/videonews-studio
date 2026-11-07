@@ -56,3 +56,51 @@ BullMQ one-slot gate or non-publication rules.
 start, retry, remove any container, clear jobs or reset leases. Without a fresh,
 explicit operator authorization, future work is limited to offline tests,
 read-only evidence and documented review. P2-02/P2-03 remain open.
+
+## Third canary: `no_approved_metadata` and dormant count-only review
+
+The **third** separately authorized NASA-only single-pass observer was executed
+on the VPS with pinned release `9184e896eca9f8517934ecaa1b59cd7307564c09`
+and the 512-KiB-bound image
+`sha256:b1422ee57ae49635f648d8ef27e5163dfa1bbaa86d1517feecbe10628a948f6d`.
+All 32 offline tests, signature/SQL-source parity, lease/slot and container
+checks passed. The observer emitted **`feed_decode_refusal` with
+`kind=no_approved_metadata`** and exited 1. PostgreSQL has no NASA candidates;
+the BullMQ queue contains six preserved failed jobs, one completed job and an
+occupied latest slot. No publication occurred. The third one-shot approval
+is **consumed** and none of the three historical observer containers or queue
+records may be cleared or restarted.
+
+The fixed refusal label proves that the response got through the HTTPS and
+RSS envelope/item parsers but no item met all metadata gates. It does **not**
+prove that a particular NASA URL contains tracking parameters or uses a
+different approved path. No raw feed was retained; the original item-level
+rejection classes cannot be reconstructed from those logs.
+
+The new opt-in, **default-off** diagnostic uses the already buffered,
+already rejected NASA response **without additional DNS, HTTPS or SQL**:
+
+```text
+VNS_FEED_NASA_REJECTION_COUNTS=true
+```
+
+It requires the pre-existing separately acknowledged NASA 512-KiB single-pass
+scope, `VNS_FEED_POLL_STAGE_DIAGNOSTICS=true` and
+`VNS_FEED_NASA_DECODE_DIAGNOSTICS=true`. It activates only when the existing
+decoder throws the fixed `no_approved_metadata` refusal. It then calls the
+existing `summarizeFeedMetadataRejections` helper on the same in-memory
+response. The emitted object contains fixed numeric counters, at most 20 items:
+`scanned`, `outsideApprovedPrefix`, `invalidOrBlockedLink` with exclusive
+reasons (`missingOrUnreadable`, `queryString`, `fragment`,
+`percentEncoded`, `dotSegments`, `invalidPublicUrl`, `nonCanonical`,
+`blockedOrUnapprovedScope`, `other`), `invalidHeadline`,
+`invalidPublishedAt`, `duplicate`, and `accepted=0`. Counts must be
+internally consistent; other values are discarded.
+
+No raw URL, query key/value, RSS payload, headline, publication time, error
+string or credential is emitted. The source approval, strict canonical URL,
+title/date checks and the actual no-commit result are not changed. A failure
+in classification or emission is ignored and cannot turn a refusal into
+success. This diagnostic is **only a code capability**, not authorization for
+another live NASA request. A new single-pass operator approval and complete
+preflight would be required before using it on the VPS. P2-02/P2-03 remain open.
