@@ -597,3 +597,44 @@ test("tracking-only query preview uses existing guards and identifies collisions
   assert.ok(!JSON.stringify(report).includes("SECRET_ID"));
   assert.ok(!JSON.stringify(report).includes("article-one"));
 });
+
+test("functional query IDs remain distinct and are not silently stripped or ingested", () => {
+  const sources = registry();
+  const src = sources[0]!;
+  // Synthetic identity collision counterexample; not an assertion about NASA.
+  const links = [
+    prefix + "rss/item?article_id=101",
+    prefix + "rss/item?article_id=102",
+  ];
+  assert.equal(new Set(links).size, 2);
+  assert.equal(new Set(links.map((link) => link.slice(0, link.indexOf("?")))).size, 1);
+  const body =
+    "<rss><channel>" +
+    links
+      .map(
+        (link) =>
+          "<item><title>Reviewed official science article identifier</title><link>" +
+          link +
+          "</link></item>",
+      )
+      .join("") +
+    "</channel></rss>";
+  const response: FeedResponse = {
+    status: 200,
+    mediaType: "application/rss+xml",
+    body,
+    etag: null,
+    lastModified: null,
+  };
+  assert.throws(() => decodeApprovedFeed(src, sources, response), /no approved metadata/);
+  const counts = summarizeFeedMetadataRejections(src, sources, response);
+  assert.equal(counts.scanned, 2);
+  assert.equal(counts.linkFailureReasons.queryString, 2);
+  assert.equal(counts.accepted, 0);
+  const preview = previewRejectedFeedTrackingQueries(src, sources, response);
+  assert.equal(preview.inspectedQueryLinks, 2);
+  assert.equal(preview.trackingKeysOnly, 0);
+  assert.equal(preview.unknownOrMixedKeys, 2);
+  assert.equal(preview.wouldPassExistingUrlAndMetadataGuards, 0);
+  assert.equal(JSON.stringify(preview).includes("article_id"), false);
+});
