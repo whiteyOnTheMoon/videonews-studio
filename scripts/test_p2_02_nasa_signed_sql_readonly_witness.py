@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -127,6 +130,45 @@ class ParityTests(unittest.TestCase):
         self.assertFalse(result["database_readable"])
         self.assertEqual(result["status"], "blocked")
         self.assertNotIn("SECRET_QUERY_ERROR", json.dumps(result))
+
+    def test_protected_read_real_regular_file_stat_result_uses_st_fields(self):
+        # Regression: os.stat_result has st_dev/st_ino/st_size/st_mtime_ns
+        # and st_ctime_ns, not .dev/.ino/.size/.mtime_ns/.ctime_ns.
+        # Use a REAL file; mocking protected_read used to hide the crash.
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "source-export.signed.json"
+            payload = b'{"format":"fixture","version":1}'
+            path.write_bytes(payload)
+            path.chmod(0o600)
+            self.assertEqual(
+                m.protected_read(path, os.getuid(), os.getgid(), 0o600),
+                payload,
+            )
+            with self.assertRaises(RuntimeError):
+                m.protected_read(path, os.getuid(), os.getgid(), 0o640)
+
+    def test_protected_read_rejects_symlink_and_changes_to_file_metadata(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "source-export.signed.json"
+            path.write_bytes(b'{"format":"fixture","version":1}')
+            path.chmod(0o600)
+            alias = Path(root) / "alias.signed.json"
+            alias.symlink_to(path)
+            with self.assertRaises(OSError):
+                m.protected_read(alias, os.getuid(), os.getgid(), 0o600)
+            before = os.stat(path)
+            # Keep the real first fstat; falsify the second to exercise
+            # the TOCTOU metadata check without touching any real feed.
+            real_fstat = os.fstat
+            readings = iter([before, os.stat_result([
+                before.st_mode, before.st_ino, before.st_dev,
+                before.st_nlink, before.st_uid, before.st_gid,
+                before.st_size + 1, before.st_atime, before.st_mtime,
+                before.st_ctime,
+            ])])
+            with patch.object(m.os, "fstat", side_effect=lambda fd: next(readings)):
+                with self.assertRaises(RuntimeError):
+                    m.protected_read(path, os.getuid(), os.getgid(), 0o600)
 
     def test_release_failure_exits_before_files_or_sql(self):
         with (
