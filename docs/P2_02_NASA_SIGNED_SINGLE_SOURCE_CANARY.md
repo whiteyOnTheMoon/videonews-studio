@@ -40,7 +40,6 @@ Missing or mismatched acknowledgement, bootstrap, changed host, revoked or missi
 
 This PR changes no source rights, migrations, signed export, runtime secrets, publisher key, production data or VPS processes. P2-02 and P2-03 remain open.
 
-
 ## 2026-11-06: 128-KiB live response refusal and dormant bounded review path
 
 The operator's **single explicitly approved** NASA-only canary was run once
@@ -67,7 +66,7 @@ By default, the HTTPS **and** XML-decoder response limits both remain
 limit alone would just move the refusal to `decodeApprovedFeed()`.
 
 A separately locked path allows **at most 524288 uncompressed response
-bytes** *only* when all of the existing signed-source, same-VPS anchor,
+bytes** _only_ when all of the existing signed-source, same-VPS anchor,
 rights, selected-NASA-only, restricted SQL/Redis and one-shot gates
 pass, **and** the following two extra environment variables are
 provided:
@@ -89,7 +88,7 @@ TLS/DNS pin, media type, UTF-8 and whole-document XML safety.
 The existing maximum of 20 decoded metadata items and canonical
 article URL SQL guards are unchanged.
 
-This is an *option for offline review*, **not** approval to set the new
+This is an _option for offline review_, **not** approval to set the new
 flags or repeat the live feed request. The previous one-shot image
 and retained container must stay untouched. Before any subsequent
 attempt, independently confirm the current NASA terms/exact feed URL,
