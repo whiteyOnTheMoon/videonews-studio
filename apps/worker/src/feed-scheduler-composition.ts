@@ -106,7 +106,12 @@ export function createDormantFeedScheduler(
       ? new Map(registry.map((source) => [source.id, source]))
       : undefined,
   );
-  const transport = createPinnedFeedHttpsTransport(registry, policy, ports.https, nasaReviewEnabled);
+  const transport = createPinnedFeedHttpsTransport(
+    registry,
+    policy,
+    ports.https,
+    nasaReviewEnabled,
+  );
   // The explicitly authorized live one-shot mode consults the current
   // PostgreSQL source/host grants; the offline fixture mode stays injectable.
   const authority =
