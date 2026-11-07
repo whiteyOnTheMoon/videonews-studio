@@ -1,7 +1,10 @@
 import type { Pool } from "pg";
 import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
 import { readNasaBoundedResponseGate, feedResponseMaxBytes } from "./feed-nasa-bounded-response.js";
-import { oneShotNasaDecodeRefusalReporter } from "./feed-observer-decode-diagnostics.js";
+import {
+  oneShotNasaDecodeRefusalReporter,
+  oneShotNasaMetadataRejectionReporter,
+} from "./feed-observer-decode-diagnostics.js";
 import {
   createDormantFeedPoller,
   type FeedPollFailureStage,
@@ -139,6 +142,7 @@ export function createDormantFeedScheduler(
     selectedSourceId ?? undefined,
     nasaReviewEnabled,
     oneShotNasaDecodeRefusalReporter(env),
+    oneShotNasaMetadataRejectionReporter(env),
   );
   const sourceIds = Object.freeze(
     registry
