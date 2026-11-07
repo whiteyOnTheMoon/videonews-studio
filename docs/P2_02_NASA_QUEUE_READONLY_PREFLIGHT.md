@@ -29,7 +29,7 @@ must be checked separately before any operational approval.
 `sudo python3 scripts/p2_02_nasa_queue_readonly_preflight.py
 --expected-sha <reviewed SHA>`
 
-The operator must be root for this protected-secret *read*. It requires
+The operator must be root for this protected-secret _read_. It requires
 a SHA-pinned clean `main` checkout and a verified, healthy existing
 internal Compose Redis without host port mappings. The existing
 `p2_02_live_redis_acl_readonly.py` performs all Redis user/password
