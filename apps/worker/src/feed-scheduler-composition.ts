@@ -4,6 +4,7 @@ import { readNasaBoundedResponseGate, feedResponseMaxBytes } from "./feed-nasa-b
 import {
   oneShotNasaDecodeRefusalReporter,
   oneShotNasaMetadataRejectionReporter,
+  oneShotNasaQueryPreviewReporter,
 } from "./feed-observer-decode-diagnostics.js";
 import {
   createDormantFeedPoller,
@@ -143,6 +144,7 @@ export function createDormantFeedScheduler(
     nasaReviewEnabled,
     oneShotNasaDecodeRefusalReporter(env),
     oneShotNasaMetadataRejectionReporter(env),
+    oneShotNasaQueryPreviewReporter(env),
   );
   const sourceIds = Object.freeze(
     registry
