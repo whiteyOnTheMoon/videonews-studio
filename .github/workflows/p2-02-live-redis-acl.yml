@@ -9,6 +9,8 @@ on:
       - "scripts/test_p2_02_nasa_queue_readonly_preflight.py"
       - "scripts/p2_02_nasa_signed_sql_readonly_witness.py"
       - "scripts/test_p2_02_nasa_signed_sql_readonly_witness.py"
+      - "scripts/p2_02_nasa_historical_jobs_readonly.py"
+      - "scripts/test_p2_02_nasa_historical_jobs_readonly.py"
       - ".github/workflows/p2-02-live-redis-acl.yml"
 permissions:
   contents: read
@@ -26,6 +28,8 @@ jobs:
           python3 -m py_compile scripts/p2_02_nasa_queue_readonly_preflight.py
           python3 -m unittest discover -s scripts -p 'test_p2_02_nasa_signed_sql_readonly_witness.py' -v
           python3 -m py_compile scripts/p2_02_nasa_signed_sql_readonly_witness.py
+          python3 -m unittest discover -s scripts -p 'test_p2_02_nasa_historical_jobs_readonly.py' -v
+          python3 -m py_compile scripts/p2_02_nasa_historical_jobs_readonly.py
       - name: Reject CLI without live operator sudo and pinned main
         run: |
           if python3 scripts/p2_02_live_redis_acl_readonly.py \
