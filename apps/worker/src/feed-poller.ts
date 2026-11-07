@@ -74,6 +74,43 @@ export type FeedPollFailureStage =
   | "source_grant_before_commit"
   | "metadata_commit";
 
+/** Source-code-controlled labels only: no upstream XML, URL, headline or exception. */
+export type FeedDecodeRefusalKind =
+  | "response_invalid"
+  | "media_type_refused"
+  | "xml_unsafe"
+  | "xml_envelope_invalid"
+  | "no_supported_items"
+  | "no_approved_metadata"
+  | "official_json_invalid"
+  | "official_shape_invalid"
+  | "other";
+
+/** Never export raw Error.message: compare only exact static decoder failures. */
+export function classifyFeedDecodeRefusal(reason: unknown): FeedDecodeRefusalKind {
+  const message = reason instanceof Error ? reason.message : null;
+  switch (message) {
+    case "Feed response invalid":
+      return "response_invalid";
+    case "Feed media type refused":
+      return "media_type_refused";
+    case "Feed XML unsafe":
+      return "xml_unsafe";
+    case "Feed XML envelope invalid":
+      return "xml_envelope_invalid";
+    case "Feed has no supported items":
+      return "no_supported_items";
+    case "Feed has no approved metadata":
+      return "no_approved_metadata";
+    case "Official feed JSON invalid":
+      return "official_json_invalid";
+    case "Official feed shape invalid":
+      return "official_shape_invalid";
+    default:
+      return "other";
+  }
+}
+
 const MAX_ITEMS = 20;
 
 function textField(xml: string, name: string): string | null {
@@ -521,6 +558,7 @@ export function createDormantFeedPoller(
   onFailure?: (sourceId: string, stage: FeedPollFailureStage) => void,
   oneShotSourceId?: string,
   nasaReviewEnabled = false,
+  onDecodeRefusal?: (sourceId: string, kind: FeedDecodeRefusalKind) => void,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -629,7 +667,14 @@ export function createDormantFeedPoller(
             throw new Error("Feed persistence result invalid");
           }
           results.push({ sourceId: source.id, status: "ingested", newItems: written });
-        } catch {
+        } catch (error) {
+          if (stage === "feed_decode") {
+            try {
+              onDecodeRefusal?.(source.id, classifyFeedDecodeRefusal(error));
+            } catch {
+              // Diagnostic callbacks must never change failure or persist metadata.
+            }
+          }
           // Suppress raw URL, XML, response and transport errors.
           results.push(failed(source.id, stage));
         }
