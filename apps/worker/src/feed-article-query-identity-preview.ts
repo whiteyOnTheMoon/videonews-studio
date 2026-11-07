@@ -135,9 +135,7 @@ export function previewReviewedArticleQueryIdentity(
   const originalPath = value.slice(0, value.indexOf("?"));
   const identityUrl =
     originalPath +
-    (functional.length > 0
-      ? "?" + functional.map(([key, val]) => key + "=" + val).join("&")
-      : "");
+    (functional.length > 0 ? "?" + functional.map(([key, val]) => key + "=" + val).join("&") : "");
 
   if (approvedSourceForUrl(identityUrl, registry)?.id !== source.id) return null;
   return { navigationUrl: value, identityUrl };
