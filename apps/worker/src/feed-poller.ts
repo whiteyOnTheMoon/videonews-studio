@@ -657,12 +657,12 @@ export function createDormantFeedPoller(
           } catch (error) {
             // Only after the unchanged decoder rejects EVERY metadata item.
             // This reuses the response already in memory and never issues a GET.
-            if (
-              onRejectedMetadata &&
-              classifyFeedDecodeRefusal(error) === "no_approved_metadata"
-            ) {
+            if (onRejectedMetadata && classifyFeedDecodeRefusal(error) === "no_approved_metadata") {
               try {
-                onRejectedMetadata(source.id, summarizeFeedMetadataRejections(source, registry, result));
+                onRejectedMetadata(
+                  source.id,
+                  summarizeFeedMetadataRejections(source, registry, result),
+                );
               } catch {
                 // Diagnostics cannot accept metadata or change the original refusal.
               }
