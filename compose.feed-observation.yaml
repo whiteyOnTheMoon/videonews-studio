@@ -139,6 +139,8 @@ services:
       VNS_FEED_NASA_512K_OPERATOR_ACK: "${VNS_FEED_NASA_512K_OPERATOR_ACK:-}"
       # Extra fixed-label decoder detail: independently opted in, never logs raw XML.
       VNS_FEED_NASA_DECODE_DIAGNOSTICS: "${VNS_FEED_NASA_DECODE_DIAGNOSTICS:-false}"
+      # Pure count-only reasons on the already downloaded rejected NASA RSS; default off.
+      VNS_FEED_NASA_REJECTION_COUNTS: "${VNS_FEED_NASA_REJECTION_COUNTS:-false}"
       # Optional NOAA/USGS single-source canary; disabled unless separately approved.
       VNS_FEED_CANARY_SOURCE_ID: "${VNS_FEED_CANARY_SOURCE_ID:-}"
       VNS_FEED_CANARY_OPERATOR_ACK: "${VNS_FEED_CANARY_OPERATOR_ACK:-}"
