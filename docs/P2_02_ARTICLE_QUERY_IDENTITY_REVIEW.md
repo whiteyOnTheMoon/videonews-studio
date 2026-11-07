@@ -67,7 +67,7 @@ until source-specific evidence proves otherwise.
    reviewed. A queryless legacy source remains unchanged.
 3. **Separate exact navigation and identity.** Preserve the verbatim,
    independently validated original URL for editorial navigation. Compute a
-   separate *identity* only under the signed, revision-anchored source policy.
+   separate _identity_ only under the signed, revision-anchored source policy.
    Functional parameters (such as a verified article ID) belong in the
    identity. Do not equate distinct articles merely because their paths match.
    Never follow a parameter as a redirect or turn it into a new feed endpoint.
