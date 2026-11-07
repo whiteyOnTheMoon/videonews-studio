@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { oneShotNasaDecodeRefusalReporter } from "./feed-observer-decode-diagnostics.js";
+import {
+  oneShotNasaDecodeRefusalReporter,
+  oneShotNasaMetadataRejectionReporter,
+} from "./feed-observer-decode-diagnostics.js";
 import {
   classifyFeedDecodeRefusal,
   createDormantFeedPoller,
@@ -135,4 +138,144 @@ test("poller preserves failure and no-commit semantics with offline fixed-label 
   ]);
   assert.deepEqual(emissions, [{ source: "science_news", kind: "no_supported_items" }]);
   assert.equal(calls, 1);
+});
+
+test("NASA-only metadata rejection counts are opt-in and allowlisted", () => {
+  const enabled = { ...ENV, VNS_FEED_NASA_REJECTION_COUNTS: "true" };
+  assert.equal(oneShotNasaMetadataRejectionReporter(ENV), undefined);
+  for (const patch of [
+    { VNS_FEED_NASA_REJECTION_COUNTS: "false" },
+    { VNS_FEED_POLL_STAGE_DIAGNOSTICS: "false" },
+    { VNS_FEED_NASA_DECODE_DIAGNOSTICS: "false" },
+    { VNS_FEED_NASA_512K_ENABLED: "false" },
+    { VNS_FEED_CANARY_SOURCE_ID: "noaa_news" },
+    { VNS_FEED_RUNTIME_MODE: "persistent_worker" },
+  ]) {
+    assert.equal(oneShotNasaMetadataRejectionReporter({ ...enabled, ...patch }), undefined);
+  }
+  const lines: string[] = [];
+  const reporter = oneShotNasaMetadataRejectionReporter(enabled, (line) => lines.push(line));
+  assert.ok(reporter);
+  const counts = {
+    scanned: 3,
+    outsideApprovedPrefix: 1,
+    invalidOrBlockedLink: 1,
+    linkFailureReasons: {
+      missingOrUnreadable: 0,
+      queryString: 1,
+      fragment: 0,
+      percentEncoded: 0,
+      dotSegments: 0,
+      invalidPublicUrl: 0,
+      nonCanonical: 0,
+      blockedOrUnapprovedScope: 0,
+      other: 0,
+    },
+    invalidHeadline: 1,
+    invalidPublishedAt: 0,
+    duplicate: 0,
+    accepted: 0,
+  };
+  reporter("nasa_news", counts);
+  reporter("noaa_news", counts);
+  reporter("nasa_news", { ...counts, scanned: 21 });
+  reporter("nasa_news", { ...counts, accepted: 1 });
+  reporter("nasa_news", {
+    ...counts,
+    linkFailureReasons: { ...counts.linkFailureReasons, queryString: -1 },
+  });
+  reporter("nasa_news", { ...counts, rawUrl: "SECRET_URL" } as typeof counts);
+  // The final forged object has an untrusted extra field; it may still emit
+  // the fixed allowlist but must never serialize the extra value.
+  assert.ok(lines.length >= 1);
+  assert.equal(JSON.stringify(lines).includes("SECRET_URL"), false);
+  const output = JSON.parse(lines[0]!);
+  assert.equal(output.event, "feed_rejected_metadata_counts");
+  assert.equal(output.sourceId, "nasa_news");
+  assert.deepEqual(output.counts, counts);
+  const throwing = oneShotNasaMetadataRejectionReporter(enabled, () => {
+    throw new Error("SECRET_LOGGER_EXCEPTION");
+  });
+  assert.doesNotThrow(() => throwing?.("nasa_news", counts));
+});
+
+test("count-only NASA metadata rejection is computed on one injected offline response, without SQL write", async () => {
+  const host = "https://www.example.org/";
+  const sources = ["nasa_news", "science_space", "science_weather"].map((id) => ({
+    id,
+    baseUrl: host + id + "/",
+    status: "approved",
+    access: "rss",
+    intervalMinutes: 60,
+    termsUrl: host + "terms/",
+    usage: "metadata_only",
+    licenseNotes: "Reviewed metadata only.",
+    reviewedAt: "2026-11-07",
+  }));
+  const registry = parseReviewedSourceRegistry(JSON.stringify({ version: 1, sources }), {
+    enabled: true,
+    hosts: ["www.example.org"],
+  });
+  const bad =
+    "<rss><channel>" +
+    "<item><title>Official NASA science report update</title><link>https://www.example.org/outside/report</link></item>" +
+    "<item><title>Official NASA mission report update</title><link>https://www.example.org/nasa_news/report?utm_source=secret</link></item>" +
+    "<item><title>bad</title><link>https://www.example.org/nasa_news/valid</link></item>" +
+    "</channel></rss>";
+  let requests = 0;
+  let commits = 0;
+  const lines: string[] = [];
+  const reporter = oneShotNasaMetadataRejectionReporter(
+    { ...ENV, VNS_FEED_NASA_REJECTION_COUNTS: "true" },
+    (line) => lines.push(line),
+  );
+  assert.ok(reporter);
+  const poller = createDormantFeedPoller(
+    registry,
+    true,
+    {
+      async claim() {
+        return {
+          token: "11111111-2222-4333-8444-555555555555",
+          validators: { etag: null, lastModified: null },
+        };
+      },
+      async commit() {
+        commits++;
+        return 0;
+      },
+    },
+    {
+      async request() {
+        requests++;
+        return {
+          status: 200,
+          mediaType: "application/rss+xml",
+          body: bad,
+          etag: null,
+          lastModified: null,
+        };
+      },
+    },
+    undefined,
+    undefined,
+    "nasa_news",
+    false,
+    undefined,
+    reporter,
+  );
+  assert.deepEqual(await poller.poll(new Date("2026-11-07T12:00:00Z")), [
+    { sourceId: "nasa_news", status: "failed", newItems: 0 },
+  ]);
+  assert.equal(requests, 1);
+  assert.equal(commits, 0);
+  assert.equal(lines.length, 1);
+  const observed = JSON.parse(lines[0]!);
+  assert.equal(observed.counts.scanned, 3);
+  assert.equal(observed.counts.outsideApprovedPrefix, 1);
+  assert.equal(observed.counts.linkFailureReasons.queryString, 1);
+  assert.equal(observed.counts.invalidHeadline, 1);
+  assert.equal(observed.counts.accepted, 0);
+  assert.equal(lines[0]?.includes("utm_source"), false);
+  assert.equal(lines[0]?.includes("report"), false);
 });

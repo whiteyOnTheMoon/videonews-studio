@@ -559,6 +559,7 @@ export function createDormantFeedPoller(
   oneShotSourceId?: string,
   nasaReviewEnabled = false,
   onDecodeRefusal?: (sourceId: string, kind: FeedDecodeRefusalKind) => void,
+  onRejectedMetadata?: (sourceId: string, counts: FeedMetadataRejectionCounts) => void,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -650,7 +651,24 @@ export function createDormantFeedPoller(
             continue;
           }
           stage = "feed_decode";
-          const items = decodeApprovedFeed(source, registry, result, nasaReviewEnabled);
+          let items: readonly FeedItem[];
+          try {
+            items = decodeApprovedFeed(source, registry, result, nasaReviewEnabled);
+          } catch (error) {
+            // Only after the unchanged decoder rejects EVERY metadata item.
+            // This reuses the response already in memory and never issues a GET.
+            if (onRejectedMetadata && classifyFeedDecodeRefusal(error) === "no_approved_metadata") {
+              try {
+                onRejectedMetadata(
+                  source.id,
+                  summarizeFeedMetadataRejections(source, registry, result),
+                );
+              } catch {
+                // Diagnostics cannot accept metadata or change the original refusal.
+              }
+            }
+            throw error;
+          }
           // Never voluntarily persist metadata after the current authority
           // has rejected this source. SQL-side atomic commit admission is a
           // separate prerequisite for a fully race-free production guarantee.
