@@ -92,10 +92,7 @@ test("poller preserves failure and no-commit semantics with offline fixed-label 
     reviewedAt: "2026-11-07",
   }));
   const policy = { enabled: true as const, hosts: ["www.example.org"] };
-  const registry = parseReviewedSourceRegistry(
-    JSON.stringify({ version: 1, sources }),
-    policy,
-  );
+  const registry = parseReviewedSourceRegistry(JSON.stringify({ version: 1, sources }), policy);
   const emissions: Array<{ source: string; kind: FeedDecodeRefusalKind }> = [];
   let calls = 0;
   const poller = createDormantFeedPoller(
