@@ -602,10 +602,7 @@ test("functional query IDs remain distinct and are not silently stripped or inge
   const sources = registry();
   const src = sources[0]!;
   // Synthetic identity collision counterexample; not an assertion about NASA.
-  const links = [
-    prefix + "rss/item?article_id=101",
-    prefix + "rss/item?article_id=102",
-  ];
+  const links = [prefix + "rss/item?article_id=101", prefix + "rss/item?article_id=102"];
   assert.equal(new Set(links).size, 2);
   assert.equal(new Set(links.map((link) => link.slice(0, link.indexOf("?")))).size, 1);
   const body =
