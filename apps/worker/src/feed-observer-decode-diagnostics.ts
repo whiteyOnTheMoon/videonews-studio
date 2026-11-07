@@ -1,5 +1,9 @@
 import { readNasaBoundedResponseGate } from "./feed-nasa-bounded-response.js";
-import type { FeedDecodeRefusalKind, FeedMetadataRejectionCounts } from "./feed-poller.js";
+import type {
+  FeedDecodeRefusalKind,
+  FeedMetadataRejectionCounts,
+  RejectedFeedTrackingQueryPreview,
+} from "./feed-poller.js";
 
 /** NASA-only, disabled-by-default diagnostic. Does not authorize any new GET. */
 const KINDS: ReadonlySet<FeedDecodeRefusalKind> = new Set([
@@ -127,6 +131,88 @@ export function oneShotNasaMetadataRejectionReporter(
       );
     } catch {
       // An output failure never changes the underlying feed refusal.
+    }
+  };
+}
+
+/** Exact known key names only; publisher-provided values are never logged. */
+const QUERY_PREVIEW_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "utm_id",
+  "gclid",
+  "fbclid",
+  "mc_cid",
+  "mc_eid",
+] as const;
+
+/**
+ * Additional default-off, NASA-only category counts for the SAME rejected RSS.
+ * This never grants any query parameter admission or authorizes another GET.
+ */
+export function oneShotNasaQueryPreviewReporter(
+  env: NodeJS.ProcessEnv,
+  emit: (line: string) => void = (line) => console.log(line),
+): ((sourceId: string, counts: RejectedFeedTrackingQueryPreview) => void) | undefined {
+  if (
+    env.VNS_FEED_NASA_QUERY_PREVIEW_COUNTS !== "true" ||
+    !oneShotNasaMetadataRejectionReporter(env, () => undefined)
+  ) {
+    return undefined;
+  }
+  return (sourceId, counts) => {
+    if (sourceId !== "nasa_news" || !counts || !counts.recognizedKeyCounts) return;
+    const known = counts.recognizedKeyCounts;
+    if (
+      Object.keys(known).length !== QUERY_PREVIEW_KEYS.length ||
+      !QUERY_PREVIEW_KEYS.every((key) => Object.hasOwn(known, key))
+    ) {
+      return;
+    }
+    const numbers = [
+      counts.inspectedQueryLinks,
+      counts.trackingKeysOnly,
+      counts.unknownOrMixedKeys,
+      counts.malformedOrUnusableQuery,
+      counts.wouldPassExistingUrlAndMetadataGuards,
+      counts.canonicalCollisions,
+      ...QUERY_PREVIEW_KEYS.map((key) => known[key]),
+    ];
+    if (
+      !numbers.every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 20) ||
+      counts.inspectedQueryLinks !==
+        counts.trackingKeysOnly +
+          counts.unknownOrMixedKeys +
+          counts.malformedOrUnusableQuery ||
+      counts.wouldPassExistingUrlAndMetadataGuards + counts.canonicalCollisions >
+        counts.trackingKeysOnly ||
+      QUERY_PREVIEW_KEYS.some((key) => known[key] > counts.trackingKeysOnly)
+    ) {
+      return;
+    }
+    try {
+      emit(
+        JSON.stringify({
+          event: "feed_rejected_query_preview_counts",
+          sourceId: "nasa_news",
+          counts: {
+            inspectedQueryLinks: counts.inspectedQueryLinks,
+            trackingKeysOnly: counts.trackingKeysOnly,
+            unknownOrMixedKeys: counts.unknownOrMixedKeys,
+            malformedOrUnusableQuery: counts.malformedOrUnusableQuery,
+            wouldPassExistingUrlAndMetadataGuards: counts.wouldPassExistingUrlAndMetadataGuards,
+            canonicalCollisions: counts.canonicalCollisions,
+            recognizedKeyCounts: Object.fromEntries(
+              QUERY_PREVIEW_KEYS.map((key) => [key, known[key]]),
+            ),
+          },
+        }),
+      );
+    } catch {
+      // Logging cannot change the underlying feed refusal or write SQL.
     }
   };
 }
