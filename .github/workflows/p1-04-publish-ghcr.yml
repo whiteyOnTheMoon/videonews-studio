@@ -10,6 +10,15 @@ on:
         options:
           - DO_NOT_PUBLISH
           - PUBLISH_PRIVATE_IMAGES
+      release_scope:
+        description: "Explicitly select Web-only or Web-and-API image publication"
+        required: true
+        default: DO_NOT_SELECT
+        type: choice
+        options:
+          - DO_NOT_SELECT
+          - WEB_ONLY
+          - WEB_AND_API
       expected_sha:
         description: "Full SHA (40 hex characters) of the specifically approved main commit"
         required: true
@@ -41,6 +50,7 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           VISIBILITY_CHECK: ${{ inputs.visibility_check }}
+          RELEASE_SCOPE: ${{ inputs.release_scope }}
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
@@ -53,18 +63,26 @@ jobs:
             echo "BLOCKED: operator must verify that target packages are not public" >&2
             exit 1
           fi
-          echo 'Manual package-visibility confirmation passed'
+          # Derive the allowed targets from an explicitly validated enum, never
+          # interpolate an untrusted selector into a shell command.
+          case "$RELEASE_SCOPE" in
+            WEB_ONLY) targets="web" ;;
+            WEB_AND_API) targets="web api" ;;
+            *) echo "BLOCKED: explicit release scope required" >&2; exit 1 ;;
+          esac
+          printf 'RELEASE_TARGETS=%s\n' "$targets" >> "$GITHUB_ENV"
+          echo 'Manual package-visibility and release-scope confirmation passed'
       - name: Verify package visibility with authenticated GitHub token (read only)
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/check_ghcr_visibility.sh
-      - name: Build only web and API with commit-specific tags
+      - name: Build only approved image targets with commit-specific tags
         run: |
           set -euo pipefail
           repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
           prefix="ghcr.io/$repo_lower"
           version="sha-$GITHUB_SHA"
-          for target in web api; do
+          for target in $RELEASE_TARGETS; do
             docker build --target "$target" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               --label "org.opencontainers.image.revision=$GITHUB_SHA" \
@@ -83,12 +101,18 @@ jobs:
             --tmpfs /tmp:rw,nosuid,noexec,size=32m \
             --tmpfs /workspace/apps/web/.next/cache:rw,nosuid,size=64m,uid=1000,gid=1000 \
             "${prefix}-web:${version}"
-          docker run -d --name vns-private-release-api --network none --read-only \
+          if [ "$RELEASE_SCOPE" = WEB_AND_API ]; then
+            docker run -d --name vns-private-release-api --network none --read-only \
             --cap-drop ALL --security-opt no-new-privileges --memory 192m --memory-swap 192m \
             --cpus 0.35 --pids-limit 128 --tmpfs /tmp:rw,nosuid,noexec,size=32m \
             -e API_HOST=0.0.0.0 -e API_PORT=4000 \
-            "${prefix}-api:${version}"
-          for entry in 'vns-private-release-web|http://127.0.0.1:3000/' 'vns-private-release-api|http://127.0.0.1:4000/healthz'; do
+              "${prefix}-api:${version}"
+          fi
+          checks=('vns-private-release-web|http://127.0.0.1:3000/')
+          if [ "$RELEASE_SCOPE" = WEB_AND_API ]; then
+            checks+=('vns-private-release-api|http://127.0.0.1:4000/healthz')
+          fi
+          for entry in "${checks[@]}"; do
             container="${entry%%|*}"
             url="${entry#*|}"
             healthy=false
@@ -110,17 +134,17 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - name: Publish two images and record exact digests
+      - name: Publish only approved image targets and record exact digests
         run: |
           set -euo pipefail
           repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
           prefix="ghcr.io/$repo_lower"
           version="sha-$GITHUB_SHA"
-          for target in web api; do
+          for target in $RELEASE_TARGETS; do
             image="${prefix}-${target}:${version}"
             docker push "$image"
             digest="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}')"
             test -n "$digest"
             printf '%s image: %s\n' "$target" "$digest" >> "$GITHUB_STEP_SUMMARY"
           done
-          echo "Images were published. Verify both packages remain private before any pull or deployment." >> "$GITHUB_STEP_SUMMARY"
+          echo "Selected images were published. Verify each package remains private before any pull or deployment." >> "$GITHUB_STEP_SUMMARY"
