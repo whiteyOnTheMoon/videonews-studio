@@ -164,16 +164,32 @@ SELECT jsonb_build_object(
     return row
 
 
+def verify_publisher_stage_readonly() -> None:
+    """Check pinned publisher signature + stage, including preserved old containers.
+
+    Import ONLY the existing pure verification function. The CLI entrypoint
+    adds a 'no existing feed containers' condition intended for staging writes.
+    This witness must not hide valid SQL/checkpoint evidence after a failed
+    canary whose exited container is deliberately retained for audit.
+    """
+    module = (ROOT / "scripts/p2_02_signed_source_stage_refresh.mjs").as_uri()
+    expression = (
+        f'import {{ verifyRefreshedStage }} from "{module}"; '
+        'verifyRefreshedStage(); process.stdout.write("PASS");'
+    )
+    if command(["node", "--input-type=module", "--eval", expression]) != "PASS":
+        raise RuntimeError(DENIED)
+
+
 def inspect(sha: str) -> dict[str, object]:
     release(sha)
-    # The signer and stage are independently verified before interpreting
-    # signed paths. This command has no signing private-key reads/writes.
+    # Validate the signer and stage without calling the staging/deployment
+    # CLI. That CLI rejects *all* feed-observer containers, even a stopped
+    # historical canary kept as evidence. The exported verifier is read-only;
+    # release(sha) above still enforces root, pinned clean main.
     stage_ok = True
     try:
-        command([
-            "node", str(ROOT / "scripts/p2_02_signed_source_stage_refresh.mjs"),
-            "--verify", "--expected-sha", sha,
-        ])
+        verify_publisher_stage_readonly()
     except RuntimeError:
         stage_ok = False
     report: dict[str, object] = {
