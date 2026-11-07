@@ -13,7 +13,7 @@ source, SQL anchor, lease and empty queue slot. The freshly created observer
 The sole emitted poll stage was:
 
 ```json
-{"event":"feed_poll_failure_stage","sourceId":"nasa_news","stage":"feed_decode"}
+{ "event": "feed_poll_failure_stage", "sourceId": "nasa_news", "stage": "feed_decode" }
 ```
 
 The observer exited 1. The read-only P2-03 evidence found zero NASA feed
