@@ -86,7 +86,11 @@ test("unreviewed keys, duplicates, encodings, hostile values, and fragments fail
     root + "news/item",
   ];
   for (const input of rejected) {
-    assert.equal(previewReviewedArticleQueryIdentity(input, approved, registry, policy), null, input);
+    assert.equal(
+      previewReviewedArticleQueryIdentity(input, approved, registry, policy),
+      null,
+      input,
+    );
   }
 });
 
@@ -115,10 +119,7 @@ test("invalid policies are denied; tracking removal requires source-specific exp
     }),
     null,
   );
-  assert.equal(
-    previewReviewedArticleQueryIdentity(article, registry[1]!, registry, policy),
-    null,
-  );
+  assert.equal(previewReviewedArticleQueryIdentity(article, registry[1]!, registry, policy), null);
 });
 
 test("tracking-only example is a review preview and never a persistence authorization", () => {
