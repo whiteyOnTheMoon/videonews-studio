@@ -6,9 +6,15 @@ import {
   type ApprovedFetchPolicy,
 } from "./source-fetch.js";
 import { approvedSourceForUrl, type RegisteredResearchSource } from "./source-registry.js";
+import {
+  DEFAULT_FEED_MAX_BYTES,
+  NASA_REVIEW_FEED_URL,
+  NASA_REVIEW_MAX_BYTES,
+  feedResponseMaxBytes,
+} from "./feed-nasa-bounded-response.js";
 import type { FeedResponse, FeedTransport, FeedValidators } from "./feed-poller.js";
 
-const MAX_BYTES = 131072;
+const MAX_BYTES = DEFAULT_FEED_MAX_BYTES;
 const TIMEOUT_MS = 5000;
 
 interface WireReply {
@@ -55,6 +61,7 @@ export interface FeedHttpsDependencies {
     address: string,
     requestHeaders: Record<string, string>,
     diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number, details?: StreamDetails) => void,
+    maxBytes?: number,
   ): Promise<WireReply>;
   /** Diagnostic side channel: fixed labels only, no raw HTTP/Node errors. */
   onRefusal?: (sourceId: string, refusal: FeedHttpsRefusal) => void;
@@ -106,7 +113,14 @@ function requestPinned(
   address: string,
   conditionalHeaders: Record<string, string>,
   diagnose?: (kind: FeedHttpsRefusalKind, httpStatus?: number, details?: StreamDetails) => void,
+  maxBytes: number = MAX_BYTES,
 ): Promise<WireReply> {
+  if (
+    maxBytes !== MAX_BYTES &&
+    (maxBytes !== NASA_REVIEW_MAX_BYTES || url.toString() !== NASA_REVIEW_FEED_URL)
+  ) {
+    return Promise.reject(new Error("Feed response limit refused"));
+  }
   return new Promise((resolve, reject) => {
     const pinned = createPinnedHttpsOptions(url, address);
     let settled = false;
@@ -116,7 +130,7 @@ function requestPinned(
     const phase = (): FeedHttpsFailurePhase => (headersSeen ? "response_body" : "before_headers");
     const sizeBand = (): FeedHttpsBodySizeBand => {
       if (size === 0) return "zero";
-      return size > MAX_BYTES ? "over_limit" : "under_limit";
+      return size > maxBytes ? "over_limit" : "under_limit";
     };
     const details = (): StreamDetails => ({
       phase: phase(),
@@ -151,7 +165,7 @@ function requestPinned(
             ? "missing"
             : typeof declared !== "string" || !/^(0|[1-9][0-9]*)$/.test(declared)
               ? "invalid"
-              : Number(declared) > MAX_BYTES
+              : Number(declared) > maxBytes
                 ? "over_limit"
                 : "under_limit";
         if (res.statusCode !== 200 && res.statusCode !== 304) {
@@ -162,7 +176,7 @@ function requestPinned(
         const chunks: Buffer[] = [];
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > MAX_BYTES) {
+          if (size > maxBytes) {
             // Report the size limit before destroying the response: destroy()
             // can synchronously emit "aborted" or "error", which must not
             // overwrite the primary fail-closed refusal.
@@ -213,9 +227,16 @@ export function createPinnedFeedHttpsTransport(
   registry: readonly RegisteredResearchSource[],
   policy: ApprovedFetchPolicy,
   dependencies: Partial<FeedHttpsDependencies> = {},
+  nasaReviewEnabled = false,
 ): FeedTransport {
   if (policy.enabled !== true || !Array.isArray(policy.hosts) || policy.hosts.length < 1) {
     throw new Error("Feed transport requires explicitly approved host policy");
+  }
+  if (nasaReviewEnabled) {
+    const selected = registry.find((source) => source.id === "nasa_news");
+    if (!selected || feedResponseMaxBytes(selected, true) !== NASA_REVIEW_MAX_BYTES) {
+      throw new Error("NASA extended response source unavailable");
+    }
   }
   const resolve = dependencies.resolveIPv4 ?? resolvePublic;
   const request = dependencies.requestPinned ?? requestPinned;
@@ -303,6 +324,7 @@ export function createPinnedFeedHttpsTransport(
       ) {
         throw new Error("Feed transport URL forbidden");
       }
+      const maxBytes = feedResponseMaxBytes(approved, nasaReviewEnabled);
       let etag: string | null;
       let lastModified: string | null;
       try {
@@ -338,12 +360,12 @@ export function createPinnedFeedHttpsTransport(
       }
       let response: WireReply;
       try {
-        response = await deadline(request(url, pinned, conditional, diagnose));
+        response = await deadline(request(url, pinned, conditional, diagnose, maxBytes));
       } catch {
         diagnose("https_unavailable");
         throw new Error("Feed HTTPS retrieval refused");
       }
-      if (!Buffer.isBuffer(response.body) || response.body.length > MAX_BYTES) {
+      if (!Buffer.isBuffer(response.body) || response.body.length > maxBytes) {
         diagnose("response_size_refused");
         throw new Error("Feed response bytes refused");
       }

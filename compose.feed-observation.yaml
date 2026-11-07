@@ -134,6 +134,9 @@ services:
       VNS_FEED_ANCHOR_PLACEMENT: "${VNS_FEED_ANCHOR_PLACEMENT:-separate_tls}"
       VNS_FEED_SAME_VPS_RISK_ACK: "${VNS_FEED_SAME_VPS_RISK_ACK:-}"
       VNS_FEED_POLL_STAGE_DIAGNOSTICS: "${VNS_FEED_POLL_STAGE_DIAGNOSTICS:-false}"
+      # Extra NASA-only RSS body bound: OFF unless a new, separate one-shot approval.
+      VNS_FEED_NASA_512K_ENABLED: "${VNS_FEED_NASA_512K_ENABLED:-false}"
+      VNS_FEED_NASA_512K_OPERATOR_ACK: "${VNS_FEED_NASA_512K_OPERATOR_ACK:-}"
       # Optional NOAA/USGS single-source canary; disabled unless separately approved.
       VNS_FEED_CANARY_SOURCE_ID: "${VNS_FEED_CANARY_SOURCE_ID:-}"
       VNS_FEED_CANARY_OPERATOR_ACK: "${VNS_FEED_CANARY_OPERATOR_ACK:-}"

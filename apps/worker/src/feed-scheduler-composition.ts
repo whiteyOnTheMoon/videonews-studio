@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
+import { readNasaBoundedResponseGate, feedResponseMaxBytes } from "./feed-nasa-bounded-response.js";
 import {
   createDormantFeedPoller,
   type FeedPollFailureStage,
@@ -60,6 +61,7 @@ export function createDormantFeedScheduler(
   // Before loading a registry, reject unauthorized selection. The normal
   // scheduler remains unchanged with no selector.
   const selectedSourceId = readSingleSourceCanarySelection(env, env.VNS_FEED_RUNTIME_MODE ?? "");
+  const nasaReviewEnabled = readNasaBoundedResponseGate(env);
   const policy = readApprovedFetchPolicy(env);
   let contents: string;
   try {
@@ -94,6 +96,9 @@ export function createDormantFeedScheduler(
     ) {
       throw new Error("Reviewed single-source canary denied");
     }
+    // The exception is valid only for the exact independently signed NASA
+    // news-release feed; it cannot be switched to a CLI-selected endpoint.
+    if (nasaReviewEnabled) feedResponseMaxBytes(selected, true);
   }
   const store = new PostgresFeedPollStore(
     ports.pool,
@@ -101,7 +106,12 @@ export function createDormantFeedScheduler(
       ? new Map(registry.map((source) => [source.id, source]))
       : undefined,
   );
-  const transport = createPinnedFeedHttpsTransport(registry, policy, ports.https);
+  const transport = createPinnedFeedHttpsTransport(
+    registry,
+    policy,
+    ports.https,
+    nasaReviewEnabled,
+  );
   // The explicitly authorized live one-shot mode consults the current
   // PostgreSQL source/host grants; the offline fixture mode stays injectable.
   const authority =
@@ -126,6 +136,7 @@ export function createDormantFeedScheduler(
     authority,
     onFailure,
     selectedSourceId ?? undefined,
+    nasaReviewEnabled,
   );
   const sourceIds = Object.freeze(
     registry

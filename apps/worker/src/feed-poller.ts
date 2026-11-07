@@ -1,4 +1,5 @@
 import { approvedSourceForUrl, type RegisteredResearchSource } from "./source-registry.js";
+import { feedResponseMaxBytes } from "./feed-nasa-bounded-response.js";
 import { isPlausiblePublicSourceUrl } from "./source-policy.js";
 
 export interface FeedItem {
@@ -73,7 +74,6 @@ export type FeedPollFailureStage =
   | "source_grant_before_commit"
   | "metadata_commit";
 
-const MAX_FEED_CHARS = 131072;
 const MAX_ITEMS = 20;
 
 function textField(xml: string, name: string): string | null {
@@ -212,12 +212,14 @@ export function decodeApprovedFeed(
   source: RegisteredResearchSource,
   registry: readonly RegisteredResearchSource[],
   response: FeedResponse,
+  nasaReviewEnabled = false,
 ): readonly FeedItem[] {
+  const maxBytes = feedResponseMaxBytes(source, nasaReviewEnabled);
   if (
     response.status !== 200 ||
     typeof response.body !== "string" ||
     response.body.length < 1 ||
-    Buffer.byteLength(response.body, "utf8") > MAX_FEED_CHARS
+    Buffer.byteLength(response.body, "utf8") > maxBytes
   ) {
     throw new Error("Feed response invalid");
   }
@@ -518,6 +520,7 @@ export function createDormantFeedPoller(
   authority?: FeedSourceAuthority,
   onFailure?: (sourceId: string, stage: FeedPollFailureStage) => void,
   oneShotSourceId?: string,
+  nasaReviewEnabled = false,
 ): { poll(now: Date): Promise<readonly PollResult[]> } {
   if (enabled !== true || !store || !transport) {
     throw new Error("Feed polling requires explicit offline authorization");
@@ -536,6 +539,14 @@ export function createDormantFeedPoller(
   }
   if (oneShotSourceId !== undefined && !sources.some((source) => source.id === oneShotSourceId)) {
     throw new Error("Feed single source not in approved registry");
+  }
+  if (nasaReviewEnabled) {
+    if (oneShotSourceId !== "nasa_news") {
+      throw new Error("NASA response scope requires NASA-only selection");
+    }
+    const selected = sources.find((source) => source.id === oneShotSourceId);
+    if (!selected) throw new Error("NASA response source unavailable");
+    feedResponseMaxBytes(selected, true);
   }
   function failed(sourceId: string, stage: FeedPollFailureStage): PollResult {
     try {
@@ -601,7 +612,7 @@ export function createDormantFeedPoller(
             continue;
           }
           stage = "feed_decode";
-          const items = decodeApprovedFeed(source, registry, result);
+          const items = decodeApprovedFeed(source, registry, result, nasaReviewEnabled);
           // Never voluntarily persist metadata after the current authority
           // has rejected this source. SQL-side atomic commit admission is a
           // separate prerequisite for a fully race-free production guarantee.

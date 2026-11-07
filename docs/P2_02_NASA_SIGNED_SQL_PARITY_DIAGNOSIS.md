@@ -97,7 +97,6 @@ symlink and file-metadata-change checks. The same file/SQL/Redis
 read-only boundaries and separate live NASA authorization remain
 unchanged.
 
-
 ## Post-canary read-only witness fix — 2026-11-06
 
 The operator ran exactly one signed, NASA-only persistence canary on release
