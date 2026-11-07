@@ -45,3 +45,11 @@ VPS erreicht noch eine echte Nachrichtenquelle, ein externer
 Revisionsanker oder ein persönlicher produktiver Account verwendet.
 Diese Prüfung ersetzt **nicht** die echte Browser-, VPS-, Quellenrechts-
 und Wiederanlauf-Abnahme. Sie berechtigt niemals zur Veröffentlichung.
+
+## Leere Rangliste trotz vorhandener Feed-Ereignisse
+
+Ein erfolgreicher P2-02-Feed-Commit und eine P2-03-Ereignisprojektion führen nicht zwingend zu einer Ranglistenzeile. Die bestehende SQL-Rankingfunktion prüft unter anderem die Mindestzahl verschiedener Quellen-IDs, das Altersfenster, Sperrbegriffe sowie gegebenenfalls die unabhängig erfassten Herausgeber- und Bewertungsbelege. Eine leere persönlich authentifizierte Rankingantwort darf deshalb nicht als „keine Feed-Artikel vorhanden“ interpretiert werden.
+
+Die Admin-Oberfläche erläutert diesen Unterschied jetzt ausdrücklich **nur bei erfolgreichem, leerem Ranking-GET**. Sie ermittelt keine versteckten Artikelzahlen, öffnet keine Datenbank-/Feed-Verbindung und lockert weder SQL- noch persönliche Admin-Berechtigungen. Fehler, deaktivierte Ansicht und laufende Aktualisierung zeigen weiterhin keinen früheren Snapshot und keine unbelegte Produktionsdiagnose.
+
+Produktiver Befund vom 2026-11-07 (VPS-SHA `a5c73c9ea5b8fba8a982e423c8eb5b5f42d48031`): NASA ein Artikel/ein Ereignis, NOAA zehn ältere Artikel/zehn Ereignisse, kein gemeinsames NASA-/NOAA-Ereignis oder 48-Stunden-Paar; das aktuelle Profil verlangt zwei Quellen-IDs und hat nur eine im NASA-Ereignis. Beide Quellen verfügen noch über keine Herausgeber-Provenienzreviews. Die fehlende Rankingzeile ist unter diesen Bedingungen erwartbar und darf nicht durch künstliche Quellenergänzung oder Policy-Absenkung behoben werden. Diese Dokumentation und UI-Meldung sind kein Beleg für eine später erfolgreich angezeigte Admin-Rankingzeile.
