@@ -102,3 +102,31 @@ until source-specific evidence proves otherwise.
 **Decision:** Do **not** drop `?` or globally permit query parameters now.
 Wait for validated, source-specific evidence and then implement a reviewed,
 collision-safe TS/SQL/projection change as one separately tested package.
+
+## Isolated review-only TypeScript prototype (never part of the live feed path)
+
+`apps/worker/src/feed-article-query-identity-preview.ts` contains
+`previewReviewedArticleQueryIdentity()` as an offline decision aid. Neither
+the poller nor the SQL commit path nor any live scheduler imports it. It does
+not fetch, modify or store any source metadata.
+
+The prototype takes an explicitly supplied source, full current review
+registry and review-policy candidate. It **preserves the exact navigation
+URL**, and generates a separate, hypothetical identity only for explicitly
+listed, ASCII-safe, single-valued _functional_ keys. A small closed list of
+possible tracking keys is independently opt-in. Unknown, duplicated,
+encoded, empty, nested-URL, fragment, noncanonical, blocked-child and
+out-of-source-scope URLs fail closed. Key order is normalized only in the
+hypothetical identity; all functional parameter **values** remain intact.
+The original editorial navigation link is never rewritten.
+
+The synthetic offline tests cover `article_id=101` vs `article_id=102`
+as distinct identities, changed tracking values with stable reviewed
+identity, unreviewed and mixed keys, repeated parameters, invalid values and
+blocked child scopes. Even when the preview returns an identity, **that is
+not permission to ingest the link**: existing TypeScript and PostgreSQL
+production rules still reject query-bearing candidate URLs.
+
+The prototype alone does not prove the semantics of any real publisher
+parameter and must not be connected to production without source-specific
+signed permissions, SQL/persistence/projection parity and a separate rollout.
