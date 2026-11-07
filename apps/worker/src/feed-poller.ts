@@ -1,7 +1,5 @@
 import { approvedSourceForUrl, type RegisteredResearchSource } from "./source-registry.js";
-import {
-  feedResponseMaxBytes,
-} from "./feed-nasa-bounded-response.js";
+import { feedResponseMaxBytes } from "./feed-nasa-bounded-response.js";
 import { isPlausiblePublicSourceUrl } from "./source-policy.js";
 
 export interface FeedItem {
