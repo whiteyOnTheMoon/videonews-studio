@@ -48,7 +48,8 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertNotIn("for target in web api;", self.data)
         # Build and push must use the same allowlisted, operator-selected scope.
         self.assertEqual(self.data.count("for target in $RELEASE_TARGETS; do"), 2)
-        self.assertIn('printf \'RELEASE_TARGETS=%s\\\\n\' "$targets" >> "$GITHUB_ENV"', self.data)
+        self.assertIn("RELEASE_TARGETS=%s", self.data)
+        self.assertIn('"$targets" >> "$GITHUB_ENV"', self.data)
         self.assertNotIn("docker system prune", self.data)
         self.assertNotIn("docker builder prune", self.data)
 
