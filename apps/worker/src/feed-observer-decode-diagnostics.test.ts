@@ -180,7 +180,10 @@ test("NASA-only metadata rejection counts are opt-in and allowlisted", () => {
   reporter("noaa_news", counts);
   reporter("nasa_news", { ...counts, scanned: 21 });
   reporter("nasa_news", { ...counts, accepted: 1 });
-  reporter("nasa_news", { ...counts, linkFailureReasons: { ...counts.linkFailureReasons, queryString: -1 } });
+  reporter("nasa_news", {
+    ...counts,
+    linkFailureReasons: { ...counts.linkFailureReasons, queryString: -1 },
+  });
   reporter("nasa_news", { ...counts, rawUrl: "SECRET_URL" } as typeof counts);
   // The final forged object has an untrusted extra field; it may still emit
   // the fixed allowlist but must never serialize the extra value.
@@ -209,11 +212,12 @@ test("count-only NASA metadata rejection is computed on one injected offline res
     licenseNotes: "Reviewed metadata only.",
     reviewedAt: "2026-11-07",
   }));
-  const registry = parseReviewedSourceRegistry(
-    JSON.stringify({ version: 1, sources }),
-    { enabled: true, hosts: ["www.example.org"] },
-  );
-  const bad = "<rss><channel>" +
+  const registry = parseReviewedSourceRegistry(JSON.stringify({ version: 1, sources }), {
+    enabled: true,
+    hosts: ["www.example.org"],
+  });
+  const bad =
+    "<rss><channel>" +
     "<item><title>Official NASA science report update</title><link>https://www.example.org/outside/report</link></item>" +
     "<item><title>Official NASA mission report update</title><link>https://www.example.org/nasa_news/report?utm_source=secret</link></item>" +
     "<item><title>bad</title><link>https://www.example.org/nasa_news/valid</link></item>" +
