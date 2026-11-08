@@ -23,7 +23,10 @@ export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInb
         "approvedForPublication,eventId,headline,projected,publishedAt,sourceId" ||
       typeof row.sourceId !== "string" || !SOURCE.test(row.sourceId) ||
       typeof row.headline !== "string" || row.headline.length < 8 ||
-      row.headline.length > 500 || /[<>\u0000-\u001f\u007f]/u.test(row.headline) ||
+      row.headline.length > 500 || [...row.headline].some((character) => {
+        const code = character.codePointAt(0) ?? 0;
+        return code < 32 || code === 127 || character === "<" || character === ">";
+      }) ||
       typeof row.publishedAt !== "string" ||
       !Number.isFinite(Date.parse(row.publishedAt)) ||
       new Date(row.publishedAt).toISOString() !== row.publishedAt ||
