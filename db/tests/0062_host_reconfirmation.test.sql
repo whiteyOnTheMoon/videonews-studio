@@ -38,7 +38,7 @@ BEGIN
     'usage','metadata_only',
     'licenseNotes','Synthetic metadata-only rights for reconfirmation tests.',
     'status','pending',
-    'reviewedAt','2026-11-04'
+    'reviewedAt',to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD')
   );
   IF NOT vns.named_source_commit(srev,srev+1,
       items||jsonb_build_array(article),'ci_reconfirm_source','create_pending')
