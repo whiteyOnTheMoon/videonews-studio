@@ -11,6 +11,8 @@ import EditorialAuditExport, {
 } from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
+import EditorialFeedInbox from "./editorial-feed-inbox";
+import { parseFeedInboxPage } from "../../lib/editorial-feed-inbox";
 import EditorialRankedEvents, {
   parseRankedCandidatePage,
   mayDisplayRankedCandidates,
@@ -355,4 +357,41 @@ test("review metadata snapshots remain strictly bounded and never authorize publ
     }),
     false,
   );
+});
+
+test("feed inbox stays unranked and cannot become publication approval", () => {
+  const disabled = renderToStaticMarkup(<EditorialFeedInbox enabled={false} />);
+  assert.match(disabled, /Nachrichteneingang nicht freigeschaltet/);
+  assert.doesNotMatch(disabled, /<button|<ol/);
+  const enabled = renderToStaticMarkup(<EditorialFeedInbox enabled />);
+  assert.match(enabled, /Nachrichteneingang/);
+  assert.doesNotMatch(enabled, /<ol/);
+  const entry = {
+    sourceId: "noaa_news",
+    headline: "Synthetic NOAA headline awaiting independent verification",
+    publishedAt: "2026-11-01T12:00:00.000Z",
+    projected: false,
+    eventId: null,
+    approvedForPublication: false,
+  };
+  const envelope = { metadataOnly: true, rankingApplied: false, items: [entry] };
+  assert.deepEqual(parseFeedInboxPage(envelope), [entry]);
+  for (const bad of [
+    { ...entry, approvedForPublication: true },
+    { ...entry, projected: true },
+    { ...entry, eventId: "bad" },
+    { ...entry, headline: "<script>fake</script>" },
+    { ...entry, rawUrl: "https://invalid.example/token" },
+    { ...entry, publishedAt: "invalid" },
+  ]) {
+    assert.equal(
+      parseFeedInboxPage({
+        metadataOnly: true,
+        rankingApplied: false,
+        items: [bad],
+      }),
+      null,
+    );
+  }
+  assert.equal(parseFeedInboxPage({ ...envelope, rankingApplied: true }), null);
 });

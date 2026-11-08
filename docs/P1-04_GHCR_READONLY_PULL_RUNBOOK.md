@@ -145,7 +145,6 @@ separately granted package access, not merely a narrower classic token scope.
 Protect the `ap` Unix account and do not paste diagnostic output from
 `docker config` or the credential helper's private protocol into chat.
 
-
 ## P2-04: abgesicherte, ausschließlich Web betreffende Nachlieferung (07.11.2026)
 
 Die produktive VPS-Inventur bei Git-Checkout `c6d2a6a0772f592f560db6b37acfb12994732786` bestätigte zwei gesunde Container, beide mit OCI-Revision `8b679e89d6a4b6243acde167643f4a187d977e56`:
