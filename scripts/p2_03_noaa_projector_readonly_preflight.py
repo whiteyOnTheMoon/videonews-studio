@@ -166,6 +166,17 @@ def require_inode(path: Path, uid: int, gid: int, mode: int, folder: bool) -> No
         raise RuntimeError(DENIED)
 
 
+def git_index_identity() -> tuple[int, int, int, int, int, int]:
+    index = ROOT / ".git/index"
+    meta = index.lstat()
+    if (not stat.S_ISREG(meta.st_mode) or meta.st_nlink != 1
+        or meta.st_uid != 1000 or meta.st_gid != 1000
+        or stat.S_IMODE(meta.st_mode) != 0o600):
+        raise RuntimeError(DENIED)
+    return (meta.st_dev, meta.st_ino, meta.st_mtime_ns,
+            meta.st_ctime_ns, meta.st_uid, meta.st_gid)
+
+
 def verify_release(sha: str) -> None:
     if os.geteuid() != 0 or not SHA_PATTERN.fullmatch(sha):
         raise RuntimeError(DENIED)
@@ -177,7 +188,7 @@ def verify_release(sha: str) -> None:
         or git_dir.st_uid != 1000 or git_dir.st_gid != 1000
         or stat.S_IMODE(git_dir.st_mode) & 0o002):
         raise RuntimeError(DENIED)
-    require_inode(ROOT / ".git/index", 1000, 1000, 0o600, False)
+    git_index_identity()
     git = ["git", "--no-optional-locks", "-c", "safe.directory=" + str(ROOT),
            "-C", str(ROOT)]
     if (command(git + ["branch", "--show-current"]) != "main"
@@ -275,10 +286,13 @@ def main() -> None:
     parser.add_argument("--expected-sha", required=True)
     args = parser.parse_args()
     try:
+        before_index = git_index_identity()
         verify_release(args.expected_sha)
         verify_image_and_runtime()
         verify_signed_authority(args.expected_sha)
         snapshot = verify_database()
+        if git_index_identity() != before_index:
+            raise RuntimeError(DENIED)
         print(json.dumps({
             "status": "reviewable_no_write", "source_id": "noaa_news",
             "release": args.expected_sha, "image_id": EXPECTED_IMAGE_ID,
