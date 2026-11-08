@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Static fail-closed NOAA operator-contract tests; never call Docker/SQL/HTTP."""
+from __future__ import annotations
+
+from pathlib import Path
+import re
+import subprocess
+import unittest
+
+SCRIPT = Path(__file__).with_name("p2_02_noaa_one_shot_operator.sh")
+
+
+class NOAAOneShotContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.text = SCRIPT.read_text(encoding="utf-8")
+
+    def test_shell_syntax_and_initial_guards(self):
+        process = subprocess.run(
+            ["bash", "-n", str(SCRIPT)], capture_output=True, text=True, timeout=5
+        )
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertTrue(self.text.startswith("#!/usr/bin/env bash\n"))
+        self.assertIn("set -euo pipefail", self.text)
+        self.assertIn("umask 077", self.text)
+        self.assertIn('test "$(id -u)" = "0" || refuse', self.text)
+        self.assertIn("repo_git status --porcelain", self.text)
+
+    def test_single_source_and_image_are_explicit(self):
+        self.assertIn("VNS_FEED_CANARY_SOURCE_ID=noaa_news", self.text)
+        self.assertIn(
+            "VNS_FEED_CANARY_OPERATOR_ACK=NOAA_SINGLE_SOURCE_PERSISTENCE_CANARY_ONLY",
+            self.text,
+        )
+        self.assertIn("VNS_FEED_RUNTIME_MODE=single_pass", self.text)
+        self.assertIn("VNS_FEED_SOURCE_BOOTSTRAP=false", self.text)
+        self.assertIn("VNS_FEED_NASA_512K_ENABLED=false", self.text)
+        self.assertIn("NOAA_SINGLE_METADATA_POLL_ONCE_NO_RETRY", self.text)
+        self.assertIn("https://www.noaa.gov/rss.xml", self.text)
+        self.assertIn("https://www.noaa.gov/", self.text)
+        self.assertIn('entry->>\'usage\'=\'metadata_only\'', self.text)
+        self.assertIn('entry->>\'intervalMinutes\'=\'60\'', self.text)
+        self.assertIn("a5c73c9ea5b8fba8a982e423c8eb5b5f42d48031", self.text)
+        self.assertIn(
+            "sha256:0116ba447642645ae81324347ac800fd45991fdf7006676936d7515f285a45ef",
+            self.text,
+        )
+
+    def test_no_download_build_replay_or_cleanup(self):
+        for forbidden in (
+            r"\bdocker\s+run\b",
+            r"\bdocker\s+rm\b",
+            r"\bdocker\s+pull\b",
+            r"\bdocker\s+build\b",
+            r"\bdocker\s+restart\b",
+            r"\bredis-cli\b",
+            r"\bdocker\s+compose\b",
+            r"\bsystemctl\b",
+            r"\bcurl\b",
+            r"\bwget\b",
+            r"\bchmod\b",
+            r"\bchown\b",
+        ):
+            self.assertIsNone(re.search(forbidden, self.text))
+        self.assertEqual(len(re.findall(r"^docker create\b", self.text, re.M)), 1)
+        self.assertEqual(len(re.findall(r"^docker start --attach\b", self.text, re.M)), 1)
+        self.assertEqual(len(re.findall(r"^docker network connect\b", self.text, re.M)), 1)
+        self.assertIn("if docker container inspect", self.text)
+        self.assertIn('if test "$ACTION" = "preflight"; then exit 0; fi', self.text)
+        self.assertIn('if test "$START_STATUS" != "0"', self.text)
+        self.assertIn('test "$STATE" != "exited|0|0"', self.text)
+        self.assertNotIn("--rm", self.text)
+
+    def test_only_exact_private_mounts_and_security_restrictions(self):
+        self.assertEqual(len(re.findall(r"^\s*--mount ", self.text, re.M)), 7)
+        self.assertIn("--network \"$BACKEND\"", self.text)
+        self.assertIn('docker network connect "$EGRESS" "$CONTAINER"', self.text)
+        for required in (
+            "--init", "--read-only", "--cap-drop ALL",
+            "--security-opt no-new-privileges", "--restart no", "--pull never",
+            "--user 10002:10002", "--memory 384m", "--memory-swap 384m",
+            "--pids-limit 96",
+            "vns_feed_db_password,target=/run/secrets/vns_feed_db_password,readonly",
+            "vns_feed_producer_redis_password,target=/run/secrets/vns_feed_producer_redis_password,readonly",
+            "vns_feed_consumer_redis_password,target=/run/secrets/vns_feed_redis_password,readonly",
+        ):
+            self.assertIn(required, self.text)
+        self.assertNotIn("--privileged", self.text)
+        self.assertNotIn("--publish", self.text)
+        self.assertNotIn("--net=host", self.text)
+        self.assertNotIn("--network host", self.text)
+        self.assertIn("default_transaction_read_only=on", self.text)
+        self.assertIn("status", self.text)
+
+    def test_read_only_preflights_precede_any_container_creation(self):
+        guard_part, run_part = self.text.split("docker create \\", 1)
+        self.assertIn("p2_02_nasa_signed_sql_readonly_witness.py", guard_part)
+        self.assertIn("p2_02_nasa_queue_readonly_preflight.py", guard_part)
+        self.assertIn("default_transaction_read_only=on", guard_part)
+        self.assertIn("docker image inspect", guard_part)
+        self.assertIn("docker container inspect", guard_part)
+        self.assertIn("next_eligible_at<=clock_timestamp()", guard_part)
+        self.assertIn("vns.admin_source_host_audit", guard_part)
+        self.assertIn("read_only", guard_part)
+        self.assertIn('test "$ACTION" = "preflight"', guard_part)
+        self.assertIn("node apps/worker/dist/feed-observe-once.js --once", run_part)
+
+
+if __name__ == "__main__":
+    unittest.main()
