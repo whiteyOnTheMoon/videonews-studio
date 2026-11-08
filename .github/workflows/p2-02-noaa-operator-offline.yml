@@ -1,0 +1,21 @@
+name: P2-02 NOAA single-source operator guard (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_noaa_one_shot_operator.sh"
+      - "scripts/test_p2_02_noaa_one_shot_operator.py"
+      - "docs/P2_02_NOAA_ONE_SHOT_OPERATOR_2026_11_08.md"
+      - ".github/workflows/p2-02-noaa-operator-offline.yml"
+permissions:
+  contents: read
+jobs:
+  noaa-operator-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse shell and execute strictly offline contract tests
+        run: |
+          bash -n scripts/p2_02_noaa_one_shot_operator.sh
+          python3 -m unittest discover -s scripts -p 'test_p2_02_noaa_one_shot_operator.py' -v
