@@ -192,6 +192,18 @@ def verify_image_and_runtime() -> None:
     if command(["docker", "network", "inspect",
         "videonews-studio_backend", "--format", "{{.Internal}}"]) != "true":
         raise RuntimeError(DENIED)
+    # Reject a shadow/incorrect PostgreSQL container even when its name matches.
+    database = command(["docker", "inspect", "-f",
+        '{{index .Config.Labels "com.docker.compose.project"}}|'
+        '{{index .Config.Labels "com.docker.compose.service"}}|'
+        '{{.State.Health.Status}}', "videonews-studio-postgres-1"])
+    if database != "videonews-studio|postgres|healthy":
+        raise RuntimeError(DENIED)
+    # A worker using the pinned image must not race this single-source audit.
+    running_image = command(["docker", "ps", "--filter",
+        "ancestor=" + EXPECTED_IMAGE_ID, "--format", "{{.Names}}"])
+    if running_image:
+        raise RuntimeError(DENIED)
     names = command(["docker", "ps", "-a", "--format", "{{.Names}}"]).splitlines()
     if (SINGLE_CONTAINER in names
         or any(name.startswith("vns-noaa-project-") for name in names)):
