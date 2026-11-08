@@ -63,7 +63,6 @@ No API/publishing access, unsafe feed shortcuts or source revision resets
 are included. Enabling this mode requires a separate, current
 operator-reviewed VPS command.
 
-
 ## Tatsächlicher produktiver Read-only-Status, 07.11.2026
 
 Im sauberen VPS-`main` mit SHA
@@ -71,22 +70,22 @@ Im sauberen VPS-`main` mit SHA
 Betreiber nacheinander **ohne SQL-/Redis-Schreibzugriff und ohne HTTPS-GET**
 bestätigt:
 
-| Guard / Zustand | Beobachtetes Ergebnis |
-| --- | --- |
-| Quellen-/Host-Freigaben | 10/10, `noaa_news` = approved, Host-Freigabe aktuell |
-| NOAA-Poll-Lease | 60 Minuten, `next_eligible_at=2026-11-04T00:21:23.535625+00:00`, `lease_due=true` |
-| Signatur / privater Stage-Inbox-Abgleich | gültig, identische Bytes |
-| Privater Checkpoint / signierter Umschlag | 10/10, übereinstimmend |
-| SQL-Source-Anchor / Trust Policy | Digest, Revision, Hosts und Policy korrekt |
-| `sql_full_registry_equal_signed` | `false` (zulässig: das Gesamtsystem enthält auch Quellen außerhalb der genehmigten Host-Teilmenge) |
-| `sql_approved_host_subset_equal_signed` | `true` (für die Freigabe maßgeblich) |
-| Feed-Redis-ACL | getrennte Producer-/Consumer-Anmeldungen verifiziert |
-| BullMQ derzeit | active/waiting/delayed/paused/prioritized/stalled/repeat = 0 |
-| Historische BullMQ-Jobs | failed = 6, completed = 2; **beide unverändert aufbewahren** |
-| Current-/Previous-Queue-Slot | beide ohne Job |
-| Signaturprüfung / Queue-Diagnose | `parity_reviewable` / `reviewable` |
-| Historische NOAA-Projektion | 10 Artikel / 10 Ereignisse; **0** aktuell im Profil-Altersfenster |
-| Herausgeber-Provenienzreview | **nicht** persönlich erfasst |
+| Guard / Zustand                           | Beobachtetes Ergebnis                                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Quellen-/Host-Freigaben                   | 10/10, `noaa_news` = approved, Host-Freigabe aktuell                                               |
+| NOAA-Poll-Lease                           | 60 Minuten, `next_eligible_at=2026-11-04T00:21:23.535625+00:00`, `lease_due=true`                  |
+| Signatur / privater Stage-Inbox-Abgleich  | gültig, identische Bytes                                                                           |
+| Privater Checkpoint / signierter Umschlag | 10/10, übereinstimmend                                                                             |
+| SQL-Source-Anchor / Trust Policy          | Digest, Revision, Hosts und Policy korrekt                                                         |
+| `sql_full_registry_equal_signed`          | `false` (zulässig: das Gesamtsystem enthält auch Quellen außerhalb der genehmigten Host-Teilmenge) |
+| `sql_approved_host_subset_equal_signed`   | `true` (für die Freigabe maßgeblich)                                                               |
+| Feed-Redis-ACL                            | getrennte Producer-/Consumer-Anmeldungen verifiziert                                               |
+| BullMQ derzeit                            | active/waiting/delayed/paused/prioritized/stalled/repeat = 0                                       |
+| Historische BullMQ-Jobs                   | failed = 6, completed = 2; **beide unverändert aufbewahren**                                       |
+| Current-/Previous-Queue-Slot              | beide ohne Job                                                                                     |
+| Signaturprüfung / Queue-Diagnose          | `parity_reviewable` / `reviewable`                                                                 |
+| Historische NOAA-Projektion               | 10 Artikel / 10 Ereignisse; **0** aktuell im Profil-Altersfenster                                  |
+| Herausgeber-Provenienzreview              | **nicht** persönlich erfasst                                                                       |
 
 **Diese Ergebnisse belegen eine vorbereitete technische Momentaufnahme – keine
 erlaubte Betriebsaktion.** Insbesondere berechtigt der zeitlich abgelaufene

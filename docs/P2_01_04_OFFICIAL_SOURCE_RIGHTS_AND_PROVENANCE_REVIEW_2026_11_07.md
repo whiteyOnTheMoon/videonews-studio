@@ -6,11 +6,11 @@
 
 Die read-only Mehrquellen-Diagnose auf dem VPS bei exakt `a9e48a5ea92230930fe378889024c1eb35017d0d` ergab:
 
-| Quellen-ID | Freigegebener Source-/Host-Snapshot | Persistierte Feed-Kandidaten | Projektierte Artikel / Ereignisse | Artikel innerhalb des Profil-Altersfensters | Persönlich gespeicherte Herausgeber-Provenienz |
-| --- | --- | ---: | ---: | ---: | --- |
-| `nasa_news` | ja / ja | 1 | 1 / 1 | 1 | **nein** |
-| `noaa_news` | ja / ja | 10 | 10 / 10 | 0 | **nein** |
-| `usgs_news` | ja / ja | 0 | 0 / 0 | 0 | **nein** |
+| Quellen-ID  | Freigegebener Source-/Host-Snapshot | Persistierte Feed-Kandidaten | Projektierte Artikel / Ereignisse | Artikel innerhalb des Profil-Altersfensters | Persönlich gespeicherte Herausgeber-Provenienz |
+| ----------- | ----------------------------------- | ---------------------------: | --------------------------------: | ------------------------------------------: | ---------------------------------------------- |
+| `nasa_news` | ja / ja                             |                            1 |                             1 / 1 |                                           1 | **nein**                                       |
+| `noaa_news` | ja / ja                             |                           10 |                           10 / 10 |                                           0 | **nein**                                       |
+| `usgs_news` | ja / ja                             |                            0 |                             0 / 0 |                                           0 | **nein**                                       |
 
 Außerdem: `recent_distinct_source_ids=1`, `time_compatible_cross_source_pairs=0`, `shared_events=0`, `ranked_events=0`, `publication_violations=0`. Die aktuell wirksame redaktionelle Mindestzahl von zwei Quellen-IDs darf deshalb **nicht** für den NASA-Kandidaten abgesenkt werden. Das Diagnoseergebnis ist keine neue Betriebsgenehmigung.
 

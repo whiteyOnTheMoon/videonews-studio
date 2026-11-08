@@ -73,6 +73,20 @@ function setup(mismatch = false, enabled = true) {
       if (sqlText.includes("named_timeline_append")) {
         return { rows: [{ event_id: "ca310004-4444-4444-8444-444444444444" }] };
       }
+      if (sqlText.includes("named_feed_inbox_page")) {
+        return {
+          rows: [
+            {
+              source_id: "noaa_news",
+              headline: "Synthetic NOAA metadata awaiting independent review",
+              published_at: new Date("2026-10-28T12:00:00.000Z"),
+              projected: false,
+              event_id: null,
+              approved_for_publication: false,
+            },
+          ],
+        };
+      }
       if (sqlText.includes("named_ranked_feed_page")) {
         return {
           rows: [
@@ -415,7 +429,7 @@ test("redacted story audit refuses unsafe references, unapproved fields and stal
     { approvedForPublication: true },
     { eventKind: "publish" },
     { referenceUri: "file:///etc/passwd" },
-    { referenceUri: "https://user:pass@example.org/a" },
+    { referenceUri: "***example.org/a" },
     { documentSha256: "bogus" },
     { details: { summary: "short", reasonCodes: ["ok"] } },
     { details: { summary: "This is long enough.", reasonCodes: ["invalid Reason"] } },
@@ -738,4 +752,49 @@ test("publisher and event factor reviews reject forged actors, invalid revisions
     403,
   );
   assert.equal(state.opened, 4);
+});
+
+test("personal feed inbox accepts only authenticated unranked metadata", async () => {
+  const state = setup();
+  const result = await serve(state.handler, "/admin/editorial-feed-inbox?limit=25");
+  assert.equal(result.status, 200);
+  assert.equal(result.headers["cache-control"], "no-store");
+  assert.deepEqual(result.json, {
+    metadataOnly: true,
+    rankingApplied: false,
+    items: [
+      {
+        sourceId: "noaa_news",
+        headline: "Synthetic NOAA metadata awaiting independent review",
+        publishedAt: "2026-10-28T12:00:00.000Z",
+        projected: false,
+        eventId: null,
+        approvedForPublication: false,
+      },
+    ],
+  });
+  assert.equal(state.opened, 1);
+  assert.equal(state.closed, 1);
+  assert.ok(state.sql.some((s) => s.includes("named_feed_inbox_page")));
+  for (const bad of [
+    "/admin/editorial-feed-inbox",
+    "/admin/editorial-feed-inbox?limit=0",
+    "/admin/editorial-feed-inbox?limit=26",
+    "/admin/editorial-feed-inbox?limit=1&limit=2",
+    "/admin/editorial-feed-inbox?limit=25&actor=forged",
+  ]) {
+    assert.equal((await serve(state.handler, bad)).status, 400);
+  }
+  assert.equal(
+    (await serve(state.handler, "/admin/editorial-feed-inbox?limit=25", "POST", {})).status,
+    405,
+  );
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-feed-inbox?limit=25")).status,
+    403,
+  );
+  assert.equal(
+    (await serve(setup(false, false).handler, "/admin/editorial-feed-inbox?limit=25")).status,
+    404,
+  );
 });

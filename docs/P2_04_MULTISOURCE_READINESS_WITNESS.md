@@ -15,16 +15,16 @@ Nach dem einmaligen NASA-Projektor wurden am 07.11.2026 ausschließlich
 lesend folgende Daten nachgewiesen:
 
 | Quelle | Feed-Kandidaten | Persistierte Artikel/Ereignisse | Aktuell im Profil-Altersfenster | Herausgeber-Provenienzreview |
-| --- | ---: | ---: | ---: | --- |
-| NASA | 1 | 1/1 | 1 | nein |
-| NOAA | 10 | 10/10 | 0 | nein |
-| USGS | 0 | 0/0 | 0 | nein |
+| ------ | --------------: | ------------------------------: | ------------------------------: | ---------------------------- |
+| NASA   |               1 |                             1/1 |                               1 | nein                         |
+| NOAA   |              10 |                           10/10 |                               0 | nein                         |
+| USGS   |               0 |                             0/0 |                               0 | nein                         |
 
 Das aktuelle redaktionelle Profil verlangt **mindestens zwei verschiedene
 Quellen-IDs**, doch der NASA-Artikel ist allein. Zwischen den gespeicherten
 NASA-/NOAA-Artikeln gibt es **keinen** zeitlich zulässigen Paarvergleich
 innerhalb von 48 Stunden und kein gemeinsames Ereignis. Eine solche
-Zeitnähe alleine würde *noch keine* thematische Gleichheit beweisen.
+Zeitnähe alleine würde _noch keine_ thematische Gleichheit beweisen.
 Die zehn älteren NOAA-Ereignisse dürfen nicht künstlich mit NASA
 zusammengeführt werden.
 
@@ -45,7 +45,7 @@ sauberen main-Checkout unter /home/ap/www/videonews-studio:
     )
 
 Das Skript importiert den bereits CI-getesteten P2-03-Release-Preflight:
-Betreiber ap (UID 1000), sauberes main und *exakt* erwarteter SHA
+Betreiber ap (UID 1000), sauberes main und _exakt_ erwarteter SHA
 sowie gesunder Compose-PostgreSQL-Dienst. Es verwendet nur eine
 PostgreSQL-Sitzung mit
 default_transaction_read_only=on, statement_timeout=10000 und
