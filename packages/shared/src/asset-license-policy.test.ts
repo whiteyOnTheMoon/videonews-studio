@@ -48,10 +48,7 @@ test("CC BY 4.0 with complete synthetic evidence passes only an offline precheck
 });
 
 test("CC0 1.0 is eligible for named review; no automatic render or upload", () => {
-  const cc0 = withLicense(
-    "CC0-1.0",
-    "https://creativecommons.org/publicdomain/zero/1.0/",
-  );
+  const cc0 = withLicense("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/");
   const result = precheckAssetLicense(cc0);
   assert.equal(result.status, "READY_FOR_NAMED_REVIEW");
   assert.equal(result.renderAllowed, false);
@@ -113,7 +110,10 @@ test("unknown license, alternate version, mismatch, or forged license host block
     { ...BASE, licenseCode: "CC-BY-3.0" },
     { ...BASE, licenseUrl: "https://creativecommons.org.evil.invalid/licenses/by/4.0/" },
     { ...BASE, licenseSnapshot: { ...BASE.licenseSnapshot, license_code: "CC0-1.0" } },
-    { ...BASE, licenseSnapshot: { ...BASE.licenseSnapshot, license_url: "https://example.invalid" } },
+    {
+      ...BASE,
+      licenseSnapshot: { ...BASE.licenseSnapshot, license_url: "https://example.invalid" },
+    },
   ]) {
     assert.equal(precheckAssetLicense(input).status, "BLOCKED");
   }
