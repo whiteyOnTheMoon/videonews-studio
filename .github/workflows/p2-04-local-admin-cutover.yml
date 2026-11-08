@@ -1,0 +1,21 @@
+name: P2-04 private local Web/API Admin cutover contract (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_04_local_admin_cutover.py"
+      - "scripts/test_p2_04_local_admin_cutover.py"
+      - "docs/P2_04_LOCAL_ADMIN_CUTOVER.md"
+      - ".github/workflows/p2-04-local-admin-cutover.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run fail-closed no-Docker cutover tests
+        run: |
+          python3 -m py_compile scripts/p2_04_local_admin_cutover.py
+          python3 -m unittest discover -s scripts -p test_p2_04_local_admin_cutover.py -v
