@@ -66,7 +66,10 @@ function cleanText(value: unknown, maximum: number): value is string {
     value.length >= 2 &&
     value.length <= maximum &&
     value === value.trim() &&
-    !/[\x00-\x1f\x7f]/.test(value)
+    ![...value].some((character) => {
+      const codePoint = character.codePointAt(0);
+      return codePoint !== undefined && (codePoint < 32 || codePoint === 127);
+    })
   );
 }
 
