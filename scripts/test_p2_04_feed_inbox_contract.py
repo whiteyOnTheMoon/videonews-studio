@@ -17,7 +17,7 @@ class InboxContract(unittest.TestCase):
         for fragment in (
             "SECURITY DEFINER", "session_user",
             "p.active=true", "a.active=true",
-            "p.auth_version=a.auth_version", "a.role='admin'",
+            "a.auth_version=p.auth_version", "a.role='admin'",
             "p_limit NOT BETWEEN 1 AND 25",
             "vns.feed_runtime_source_authorized(src.value)",
             "src.value->>'status'='approved'",
