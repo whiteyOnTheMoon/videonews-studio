@@ -26,6 +26,22 @@ class NOAAOneShotContractTests(unittest.TestCase):
         self.assertIn('test "$(id -u)" = "0" || refuse', self.text)
         self.assertIn("repo_git status --porcelain", self.text)
 
+    def test_root_git_checks_are_truly_readonly_and_fail_closed(self):
+        # Running git status under sudo and umask 077 can otherwise replace
+        # .git/index with a root-owned 0600 file, breaking ap's read-only checks.
+        self.assertIn("git --no-optional-locks", self.text)
+        self.assertIn('test "$INDEX_OWNER" = "1000:1" || refuse', self.text)
+        self.assertIn('case "$INDEX_MODE" in 600|640|644)', self.text)
+        self.assertIn('GIT_STATUS="$(repo_git status --porcelain 2>/dev/null)" || refuse', self.text)
+        self.assertIn('test -z "$GIT_STATUS" || refuse', self.text)
+        self.assertNotIn('must test -z "$(repo_git status --porcelain)"', self.text)
+        for helper in (
+            "p2_02_nasa_signed_sql_readonly_witness.py",
+            "p2_02_live_redis_acl_readonly.py",
+        ):
+            source = SCRIPT.with_name(helper).read_text(encoding="utf-8")
+            self.assertIn('"git", "--no-optional-locks", "-c",', source)
+
     def test_single_source_and_image_are_explicit(self):
         self.assertIn("VNS_FEED_CANARY_SOURCE_ID=noaa_news", self.text)
         self.assertIn(
