@@ -97,3 +97,28 @@ projector authorization. A successful feed poll does NOT imply matching
 NASA/NOAA events, independent publishers, current ranking rows or
 permission to publish. A future publisher provenance review and an
 authenticated Admin acceptance are distinct operator-controlled gates.
+
+## Git index ownership after a root-only test
+
+A read-only PostgreSQL witness can fail **before any SQL** with
+`fatal: .git/index: index file open failed: Permission denied`.
+The original privileged NOAA preflight executed `git status --porcelain`
+under `umask 077`. Git is permitted to refresh/replace the index even for
+`status`, potentially leaving `.git/index` owned by root with mode 0600.
+The old Bash `test -z "$(git status ...)"` also accidentally treated a
+failed Git command as an empty worktree. This does **not** mean the
+successful NOAA GET failed, and it does **not** authorize a retry.
+
+The updated root-only wrapper and its root Python helpers now use
+`git --no-optional-locks`, explicitly require an `ap`-owned single-link
+index and check Git subprocess exit codes. Root checkout inspection
+must not refresh the Git index.
+
+If the operator's read-only `stat` proves that **only** the index was
+made root-owned, repair **only that existing inode**, never the whole
+repository. Require current expected main SHA, no index symlink, regular
+single-link file, exact observed root UID/GID and mode before changing
+owner back to `ap` (UID 1000); do not alter index data or permissions.
+If any predicate differs, stop and investigate. Do not run `sudo git
+status` without `--no-optional-locks`. After correction, re-run the
+P2-03/04 read-only witnesses; **no additional NOAA container or feed GET**.
