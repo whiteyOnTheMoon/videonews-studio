@@ -1,0 +1,22 @@
+name: P2-03 NOAA projector one-shot contract (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_03_noaa_project_once_operator.sh"
+      - "scripts/test_p2_03_noaa_project_once_operator.py"
+      - ".github/workflows/p2-03-noaa-project-once-offline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static no-run one-shot safety checks
+        run: |
+          bash -n scripts/p2_03_noaa_project_once_operator.sh
+          python3 -m unittest discover -s scripts -p test_p2_03_noaa_project_once_operator.py -v
