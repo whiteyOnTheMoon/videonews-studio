@@ -19,8 +19,8 @@ als produktiv getestet ausgegeben.
 Der Test prüft die Kette unter folgenden Bedingungen:
 
 - HTTP 200 mit `no-store`, `nosniff`, `no-referrer`
-  und genau dem persistierten synthetischen Kandidaten mit drei
-  Artikeln und drei verschiedenen Quell-IDs.
+  und genau dem persistierten synthetischen Kandidaten mit vier
+  Artikeln und vier verschiedenen Quell-IDs (zwei RSS, Atom und JSON).
 - Die Web-Zwischenschicht übermittelt ausschließlich Felder des
   geprüften Kandidatenvertrags; Veröffentlichung bleibt
   `approvedForPublication=false`.
