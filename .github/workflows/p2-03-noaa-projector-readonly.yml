@@ -1,0 +1,22 @@
+name: P2-03 NOAA projector admission (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_03_noaa_projector_readonly_preflight.py"
+      - "scripts/test_p2_03_noaa_projector_readonly_preflight.py"
+      - ".github/workflows/p2-03-noaa-projector-readonly.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static Python syntax and fail-closed tests
+        run: |
+          python3 -m py_compile scripts/p2_03_noaa_projector_readonly_preflight.py
+          python3 -m unittest discover -s scripts -p test_p2_03_noaa_projector_readonly_preflight.py -v
