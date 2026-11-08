@@ -1,4 +1,5 @@
 import { isRankedFeedCandidate } from "./editorial-ranked-events";
+import { parseFeedInboxPage } from "./editorial-feed-inbox";
 import {
   validRankingPolicyCommit,
   validRankingPolicySettings,
@@ -20,6 +21,7 @@ type EditorialEndpoint =
   | "timeline"
   | "checkpoints"
   | "ranked-events"
+  | "feed-inbox"
   | "ranking-policy"
   | "publisher-review"
   | "event-factors";
@@ -28,6 +30,7 @@ const ENDPOINTS: Record<EditorialEndpoint, string> = {
   timeline: "/admin/editorial-timeline",
   checkpoints: "/admin/editorial-checkpoints",
   "ranked-events": "/admin/editorial-ranked-events",
+  "feed-inbox": "/admin/editorial-feed-inbox",
   "ranking-policy": "/admin/editorial-ranking-policy",
   "publisher-review": "/admin/editorial-publisher-review",
   "event-factors": "/admin/editorial-event-factors",
@@ -92,7 +95,7 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
       /^[a-z][a-z0-9_-]{2,40}$/.test(profileId)
     );
   }
-  if (path === "ranked-events")
+  if (path === "ranked-events" || path === "feed-inbox")
     return (
       keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50)
     );
@@ -328,6 +331,13 @@ export async function dormantEditorialAdminProxy(
         return reply(200, value);
       }
       if (!validRankingPolicyCommit(value)) return reply(503, { error: "temporarily_unavailable" });
+      return reply(200, value);
+    }
+    if (endpoint === "feed-inbox") {
+      const limit = Number(url.searchParams.get("limit"));
+      if (!parseFeedInboxPage(value, limit)) {
+        return reply(503, { error: "temporarily_unavailable" });
+      }
       return reply(200, value);
     }
     if (endpoint === "ranked-events") {

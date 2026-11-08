@@ -21,6 +21,7 @@ import EditorialAuditExport from "./editorial-audit-export";
 import EditorialCheckpointEntry from "./editorial-checkpoint-entry";
 import EditorialTimelineEntry from "./editorial-timeline-entry";
 import EditorialRankedEvents from "./editorial-ranked-events";
+import EditorialFeedInbox from "./editorial-feed-inbox";
 import EditorialRankingPolicy from "./editorial-ranking-policy";
 import EditorialMetadataReviews from "./editorial-metadata-reviews";
 
@@ -57,6 +58,7 @@ export default async function AdminPage() {
       <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
       <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
       <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
+      <EditorialFeedInbox enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialRankedEvents enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialRankingPolicy enabled={editorialAdminProxyConfig(process.env) !== null} />
       <EditorialMetadataReviews enabled={editorialAdminProxyConfig(process.env) !== null} />
