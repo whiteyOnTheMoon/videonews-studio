@@ -24,7 +24,7 @@ SINGLE_CONTAINER = "vns-noaa-project-20261108-a5c73c9"
 SECRET_DIR = Path("/var/lib/videonews-studio/p2-feed-runtime-secrets")
 SECRET = SECRET_DIR / "vns_feed_project_db_password"
 SHA_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
-LOGIN_PATTERN = re.compile(r"vns_feed_project_login_[a-z0-9_]{3,24}\Z")
+EXPECTED_PROJECTOR_LOGIN = "vns_feed_project_login_prod"
 DENIED = "REFUSED: P2-03 NOAA projection preflight unavailable; no projection permitted"
 
 SQL = r"""
@@ -166,11 +166,29 @@ def require_inode(path: Path, uid: int, gid: int, mode: int, folder: bool) -> No
         raise RuntimeError(DENIED)
 
 
+def git_index_identity() -> tuple[int, int, int, int, int, int]:
+    index = ROOT / ".git/index"
+    meta = index.lstat()
+    if (not stat.S_ISREG(meta.st_mode) or meta.st_nlink != 1
+        or meta.st_uid != 1000 or meta.st_gid != 1000
+        or stat.S_IMODE(meta.st_mode) != 0o600):
+        raise RuntimeError(DENIED)
+    return (meta.st_dev, meta.st_ino, meta.st_mtime_ns,
+            meta.st_ctime_ns, meta.st_uid, meta.st_gid)
+
+
 def verify_release(sha: str) -> None:
     if os.geteuid() != 0 or not SHA_PATTERN.fullmatch(sha):
         raise RuntimeError(DENIED)
-    require_inode(ROOT / ".git", 1000, 1000, 0o775, True)
-    require_inode(ROOT / ".git/index", 1000, 1000, 0o600, False)
+    # Real checkouts may use 0700, 0755 or 0775. Exact 0775 would reject a
+    # legitimate ap-owned repository. Reject symlinks and unsafe ownership
+    # or permissions instead; .git/index retains its observed strict 0600.
+    git_dir = (ROOT / ".git").lstat()
+    if (not stat.S_ISDIR(git_dir.st_mode)
+        or git_dir.st_uid != 1000 or git_dir.st_gid != 1000
+        or stat.S_IMODE(git_dir.st_mode) & 0o002):
+        raise RuntimeError(DENIED)
+    git_index_identity()
     git = ["git", "--no-optional-locks", "-c", "safe.directory=" + str(ROOT),
            "-C", str(ROOT)]
     if (command(git + ["branch", "--show-current"]) != "main"
@@ -248,9 +266,7 @@ def validate_snapshot(data: object) -> dict:
     if any(type(data.get(key)) is not int or data[key] != expected
            for key, expected in EXPECTED_COUNTS.items()):
         raise RuntimeError(DENIED)
-    if not isinstance(data.get("projector_login"), str) or not LOGIN_PATTERN.fullmatch(
-        data["projector_login"]
-    ):
+    if data.get("projector_login") != EXPECTED_PROJECTOR_LOGIN:
         raise RuntimeError(DENIED)
     return data
 
@@ -270,10 +286,13 @@ def main() -> None:
     parser.add_argument("--expected-sha", required=True)
     args = parser.parse_args()
     try:
+        before_index = git_index_identity()
         verify_release(args.expected_sha)
         verify_image_and_runtime()
         verify_signed_authority(args.expected_sha)
         snapshot = verify_database()
+        if git_index_identity() != before_index:
+            raise RuntimeError(DENIED)
         print(json.dumps({
             "status": "reviewable_no_write", "source_id": "noaa_news",
             "release": args.expected_sha, "image_id": EXPECTED_IMAGE_ID,

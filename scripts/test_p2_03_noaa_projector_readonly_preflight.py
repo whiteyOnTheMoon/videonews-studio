@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import unittest
+import stat
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -47,6 +48,7 @@ class PreflightContractTests(unittest.TestCase):
 
     def test_invalid_login_is_denied(self):
         for value in ("postgres", "vns_feed_project_login_", "", None,
+                      "vns_feed_project_login_ci",
                       "vns_feed_project_login_prod; DROP TABLE x"):
             row = self.valid()
             row["projector_login"] = value
@@ -60,6 +62,57 @@ class PreflightContractTests(unittest.TestCase):
         with patch.object(module.os, "geteuid", return_value=0):
             with self.assertRaises(RuntimeError):
                 module.verify_release("main")
+
+    def test_git_directory_accepts_standard_safe_mode_not_world_write(self):
+        sha = "e17bff79331840f28ceecb5afb8f2919e11d0a05"
+        def read(args, stdin=None):
+            if args[-2:] == ["branch", "--show-current"]:
+                return "main"
+            if args[-2:] == ["rev-parse", "HEAD"]:
+                return sha
+            if args[-2:] == ["status", "--porcelain"]:
+                return ""
+            if args[-3:-1] == ["rev-parse", "--verify"]:
+                return module.EXPECTED_WORKER_SHA
+            if "diff" in args and "--quiet" in args:
+                return ""
+            raise AssertionError("unexpected command")
+        index = SimpleNamespace(st_mode=stat.S_IFREG | 0o600,
+                                st_uid=1000, st_gid=1000, st_nlink=1,
+                                st_dev=1, st_ino=2, st_mtime_ns=3, st_ctime_ns=4)
+        directory = SimpleNamespace(st_mode=stat.S_IFDIR | 0o755,
+                                    st_uid=1000, st_gid=1000)
+        def lstat(path):
+            return index if path.name == "index" else directory
+        with patch.object(module.os, "geteuid", return_value=0), \
+             patch.object(module, "command", side_effect=read), \
+             patch.object(module.Path, "lstat", autospec=True, side_effect=lstat):
+            for mode in (0o700, 0o750, 0o755, 0o770, 0o775):
+                directory.st_mode = stat.S_IFDIR | mode
+                module.verify_release(sha)
+            for mode in (0o777, 0o757):
+                directory.st_mode = stat.S_IFDIR | mode
+                with self.assertRaises(RuntimeError):
+                    module.verify_release(sha)
+            directory.st_mode = stat.S_IFLNK | 0o777
+            with self.assertRaises(RuntimeError):
+                module.verify_release(sha)
+
+    def test_git_index_identity_requires_ap_owned_unlinked_stable_file(self):
+        meta = SimpleNamespace(st_mode=stat.S_IFREG | 0o600,
+                               st_uid=1000, st_gid=1000, st_nlink=1,
+                               st_dev=1, st_ino=22, st_mtime_ns=100,
+                               st_ctime_ns=101)
+        with patch.object(module.Path, "lstat", return_value=meta):
+            self.assertEqual(module.git_index_identity(),
+                             (1, 22, 100, 101, 1000, 1000))
+            for key, value in (("st_uid", 0), ("st_nlink", 2),
+                               ("st_mode", stat.S_IFREG | 0o644)):
+                previous = getattr(meta, key)
+                setattr(meta, key, value)
+                with self.subTest(key=key), self.assertRaises(RuntimeError):
+                    module.git_index_identity()
+                setattr(meta, key, previous)
 
     def test_command_fails_closed_on_nonzero_even_empty_stdout(self):
         with patch.object(module.subprocess, "run", return_value=SimpleNamespace(
