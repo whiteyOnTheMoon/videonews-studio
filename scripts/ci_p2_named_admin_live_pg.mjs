@@ -106,8 +106,8 @@ export async function verifyNamedAdminRankedFeed({ reader, dba }) {
   assert.equal(accepted.json.candidates.length, 1);
   const candidate = accepted.json.candidates[0];
   assert.equal(candidate.profileId, "science_news");
-  assert.equal(candidate.articleCount, 3);
-  assert.equal(candidate.sourceCount, 3);
+  assert.equal(candidate.articleCount, 4);
+  assert.equal(candidate.sourceCount, 4);
   assert.equal(candidate.approvedForPublication, false);
   assert.ok(candidate.reasons.includes("independent_verification_required"));
   assert.deepEqual(
