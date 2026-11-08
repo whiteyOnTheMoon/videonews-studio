@@ -1,0 +1,21 @@
+name: P2-04 bounded private local BuildKit contract
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_04_bounded_local_app_build.sh"
+      - "scripts/test_p2_04_bounded_local_app_build.py"
+      - "docs/P2_04_BOUNDED_LOCAL_APP_BUILD.md"
+      - ".github/workflows/p2-04-bounded-local-build.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline syntax and negative CLI tests; no build or upload
+        run: |
+          bash -n scripts/p2_04_bounded_local_app_build.sh
+          python3 -m unittest discover -s scripts -p 'test_p2_04_bounded_local_app_build.py' -v
