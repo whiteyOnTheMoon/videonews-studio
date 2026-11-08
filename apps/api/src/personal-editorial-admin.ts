@@ -661,7 +661,10 @@ export class DormantPersonalEditorialAdmin {
           !PROFILE_ID.test(item.source_id) ||
           typeof item.headline !== "string" ||
           item.headline.length < 8 || item.headline.length > 500 ||
-          /[<>\u0000-\u001f\u007f]/u.test(item.headline) ||
+          [...item.headline].some((character) => {
+            const code = character.codePointAt(0) ?? 0;
+            return code < 32 || code === 127 || character === "<" || character === ">";
+          }) ||
           !(item.published_at instanceof Date) ||
           !Number.isFinite(item.published_at.getTime()) ||
           item.published_at.getTime() > Date.now() ||
