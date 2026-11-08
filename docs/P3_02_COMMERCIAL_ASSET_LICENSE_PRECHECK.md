@@ -19,16 +19,16 @@ or Admin write route calls this module yet.
 
 ## Narrow, conservative allowlist
 
-| Proposed license metadata | Precheck outcome |
-| --- | --- |
-| CC0 1.0 | `READY_FOR_NAMED_REVIEW` when evidence and rights flags are complete |
-| CC BY 4.0 | `READY_FOR_NAMED_REVIEW` only with complete attribution and modification notice as needed |
-| CC BY-SA 4.0 | `REVIEW_REQUIRED` for individual share-alike compatibility review |
-| Any CC BY-NC variant | `BLOCKED` for the planned commercial-video use |
-| Any CC BY-ND variant | `BLOCKED` as a conservative project policy for video edits (not a claim that every unmodified ND use is unlawful) |
-| Unknown or unrecognized version | `BLOCKED` |
-| Editorial-only asset | `BLOCKED` |
-| Identifiable people, brands/trademarks, third-party property, unknown flags | `REVIEW_REQUIRED` unless another hard block already applies |
+| Proposed license metadata                                                   | Precheck outcome                                                                                                  |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| CC0 1.0                                                                     | `READY_FOR_NAMED_REVIEW` when evidence and rights flags are complete                                              |
+| CC BY 4.0                                                                   | `READY_FOR_NAMED_REVIEW` only with complete attribution and modification notice as needed                         |
+| CC BY-SA 4.0                                                                | `REVIEW_REQUIRED` for individual share-alike compatibility review                                                 |
+| Any CC BY-NC variant                                                        | `BLOCKED` for the planned commercial-video use                                                                    |
+| Any CC BY-ND variant                                                        | `BLOCKED` as a conservative project policy for video edits (not a claim that every unmodified ND use is unlawful) |
+| Unknown or unrecognized version                                             | `BLOCKED`                                                                                                         |
+| Editorial-only asset                                                        | `BLOCKED`                                                                                                         |
+| Identifiable people, brands/trademarks, third-party property, unknown flags | `REVIEW_REQUIRED` unless another hard block already applies                                                       |
 
 Even a CC0/CC BY precheck requires a HTTPS origin, creator, official
 license URL, recorded matching version/snapshot, timestamp, SHA-256
