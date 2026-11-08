@@ -20,7 +20,8 @@ DENIED="REFUSED: NOAA one-shot admission unavailable; inspect state read-only; d
 
 refuse() { echo "$DENIED" >&2; exit 2; }
 must() { "$@" >/dev/null 2>&1 || refuse; }
-repo_git() { git -c safe.directory="$ROOT" -C "$ROOT" "$@"; }
+# Root must NEVER refresh the operator-owned Git index under umask 077.
+repo_git() { git --no-optional-locks -c safe.directory="$ROOT" -C "$ROOT" "$@"; }
 
 # Restrict to read-only preflight, or one separately approved real execution.
 case "$#" in
@@ -38,9 +39,20 @@ esac
 SHA="$3"
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || refuse
 test "$(id -u)" = "0" || refuse
-must test "$(repo_git branch --show-current)" = "main"
-must test "$(repo_git rev-parse HEAD)" = "$SHA"
-must test -z "$(repo_git status --porcelain)"
+# Refuse a root-owned/rewritten index instead of silently treating git
+# status errors as an empty worktree. Repair is a separate operator action.
+must test -f "$ROOT/.git/index"
+must test ! -L "$ROOT/.git/index"
+INDEX_OWNER="$(stat -c '%u:%h' "$ROOT/.git/index" 2>/dev/null)" || refuse
+test "$INDEX_OWNER" = "1000:1" || refuse
+INDEX_MODE="$(stat -c '%a' "$ROOT/.git/index" 2>/dev/null)" || refuse
+case "$INDEX_MODE" in 600|640|644) ;; *) refuse ;; esac
+BRANCH="$(repo_git branch --show-current 2>/dev/null)" || refuse
+test "$BRANCH" = "main" || refuse
+ACTUAL_SHA="$(repo_git rev-parse HEAD 2>/dev/null)" || refuse
+test "$ACTUAL_SHA" = "$SHA" || refuse
+GIT_STATUS="$(repo_git status --porcelain 2>/dev/null)" || refuse
+test -z "$GIT_STATUS" || refuse
 # No credential, actual source URL, API token, private key or raw SQL rows logged.
 
 verify_dir() {
