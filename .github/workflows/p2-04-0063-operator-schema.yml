@@ -1,0 +1,21 @@
+name: P2-04 0063 operator schema gate (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_04_schema_0062_to_0063.py"
+      - "scripts/test_p2_04_schema_0062_to_0063.py"
+      - "docs/P2_04_0063_OPERATOR_ROLLOUT.md"
+      - ".github/workflows/p2-04-0063-operator-schema.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic fail-closed operator contract
+        run: |
+          python3 -m py_compile scripts/p2_04_schema_0062_to_0063.py
+          python3 -m unittest discover -s scripts -p test_p2_04_schema_0062_to_0063.py -v
