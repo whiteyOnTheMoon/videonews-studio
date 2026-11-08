@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import unittest
+import stat
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -47,6 +48,7 @@ class PreflightContractTests(unittest.TestCase):
 
     def test_invalid_login_is_denied(self):
         for value in ("postgres", "vns_feed_project_login_", "", None,
+                      "vns_feed_project_login_ci",
                       "vns_feed_project_login_prod; DROP TABLE x"):
             row = self.valid()
             row["projector_login"] = value
@@ -60,6 +62,41 @@ class PreflightContractTests(unittest.TestCase):
         with patch.object(module.os, "geteuid", return_value=0):
             with self.assertRaises(RuntimeError):
                 module.verify_release("main")
+
+    def test_git_directory_accepts_standard_safe_mode_not_world_write(self):
+        sha = "e17bff79331840f28ceecb5afb8f2919e11d0a05"
+        def read(args, stdin=None):
+            if args[-2:] == ["branch", "--show-current"]:
+                return "main"
+            if args[-2:] == ["rev-parse", "HEAD"]:
+                return sha
+            if args[-2:] == ["status", "--porcelain"]:
+                return ""
+            if args[-3:-1] == ["rev-parse", "--verify"]:
+                return module.EXPECTED_WORKER_SHA
+            if "diff" in args and "--quiet" in args:
+                return ""
+            raise AssertionError("unexpected command")
+        with patch.object(module.os, "geteuid", return_value=0), \
+             patch.object(module, "command", side_effect=read), \
+             patch.object(module, "require_inode"), \
+             patch.object(module.Path, "lstat") as lstat:
+            for mode in (0o700, 0o750, 0o755, 0o770, 0o775):
+                lstat.return_value = SimpleNamespace(
+                    st_mode=stat.S_IFDIR | mode, st_uid=1000, st_gid=1000
+                )
+                module.verify_release(sha)
+            for mode in (0o777, 0o757):
+                lstat.return_value = SimpleNamespace(
+                    st_mode=stat.S_IFDIR | mode, st_uid=1000, st_gid=1000
+                )
+                with self.assertRaises(RuntimeError):
+                    module.verify_release(sha)
+            lstat.return_value = SimpleNamespace(
+                st_mode=stat.S_IFLNK | 0o777, st_uid=1000, st_gid=1000
+            )
+            with self.assertRaises(RuntimeError):
+                module.verify_release(sha)
 
     def test_command_fails_closed_on_nonzero_even_empty_stdout(self):
         with patch.object(module.subprocess, "run", return_value=SimpleNamespace(
