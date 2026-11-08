@@ -1,0 +1,21 @@
+name: P2-04 personal feed inbox real PostgreSQL (disposable)
+on:
+  pull_request:
+    paths:
+      - "db/migrations/0063_named_feed_inbox.*"
+      - "db/tests/0063_named_feed_inbox.test.sql"
+      - "scripts/ci_p2_0063_feed_inbox_pg.sh"
+      - ".github/workflows/p2-04-feed-inbox-real-pg.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-pg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify synthetic full schema on offline PostgreSQL 17
+        run: |
+          bash -n scripts/ci_p2_0063_feed_inbox_pg.sh
+          CI=true bash scripts/ci_p2_0063_feed_inbox_pg.sh
