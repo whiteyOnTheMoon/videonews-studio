@@ -249,7 +249,8 @@ def validate_compose(records: dict[str, dict],
             v.get("target") for v in item.get("volumes") or []
         }
         requested.update({
-            s.get("target") or "/run/secrets/" + s.get("source", "")
+            (s.get("target") if str(s.get("target") or "").startswith("/")
+             else "/run/secrets/" + str(s.get("target") or s.get("source") or ""))
             for s in item.get("secrets") or []
         })
         if old_mounts != requested:
