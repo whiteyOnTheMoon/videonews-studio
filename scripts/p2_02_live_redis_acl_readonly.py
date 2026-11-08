@@ -45,7 +45,7 @@ def run(argv: list[str]) -> str:
 def verify_release(expected_sha: str) -> None:
     if os.geteuid() != 0 or not SHA.fullmatch(expected_sha):
         raise RuntimeError(DENIED)
-    git = ["git", "-c", "safe.directory=" + str(ROOT), "-C", str(ROOT)]
+    git = ["git", "--no-optional-locks", "-c", "safe.directory=" + str(ROOT), "-C", str(ROOT)]
     if (run(git + ["branch", "--show-current"]) != "main"
             or run(git + ["rev-parse", "HEAD"]) != expected_sha
             or run(git + ["status", "--porcelain"])):
