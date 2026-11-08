@@ -258,6 +258,30 @@ def validate_compose(records: dict[str, dict],
         })
         if old_mounts != requested:
             raise RuntimeError(DENIED)
+        # Destination-only matching is insufficient: preserve each *source*
+        # too. This prevents substituting a different host secret while
+        # keeping the familiar path inside the replacement container.
+        active_sources = {
+            m.get("Destination"): os.path.normpath(m.get("Source") or "")
+            for m in records[service].get("Mounts") or []
+            if m.get("Type") == "bind"
+        }
+        requested_sources = {}
+        for bind in item.get("volumes") or []:
+            requested_sources[bind.get("target")] = os.path.normpath(
+                bind.get("source") or ""
+            )
+        for mounted in item.get("secrets") or []:
+            name = mounted.get("source")
+            location = mounted.get("target") or name
+            if not str(location).startswith("/"):
+                location = "/run/secrets/" + str(location)
+            secret = (conf.get("secrets") or {}).get(name) or {}
+            requested_sources[location] = os.path.normpath(
+                secret.get("file") or ""
+            )
+        if requested_sources != active_sources:
+            raise RuntimeError(DENIED)
     # No service other than API/Web can be brought up by the selected call,
     # because --no-deps and exact service names are mandatory below.
 
