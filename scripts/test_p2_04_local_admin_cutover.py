@@ -105,6 +105,9 @@ class LocalAdminCutover(unittest.TestCase):
         live = fixture()
         conf = {
             "name": "videonews-studio",
+            "secrets": {"postgres_password": {
+                "file": "/var/lib/videonews-studio/private-ci-file"
+            }},
             "services": {
                 "web": {
                     "image": m.NEW["web"][0], "pull_policy": "never",
@@ -148,6 +151,11 @@ class LocalAdminCutover(unittest.TestCase):
             m.validate_compose(live, {})
         bad = json.loads(json.dumps(conf))
         bad["services"]["api"]["secrets"] = []
+        with patch.object(m, "run", return_value=json.dumps(bad)), \
+                self.assertRaises(RuntimeError):
+            m.validate_compose(live, {})
+        bad = json.loads(json.dumps(conf))
+        bad["secrets"]["postgres_password"]["file"] = "/different/secret"
         with patch.object(m, "run", return_value=json.dumps(bad)), \
                 self.assertRaises(RuntimeError):
             m.validate_compose(live, {})
