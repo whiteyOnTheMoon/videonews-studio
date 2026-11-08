@@ -17,7 +17,7 @@ fragt nach der Projektierung die reale persistierte Rangliste über
 Der Test kontrolliert insbesondere:
 
 - HTTP-Antwort 200 und `Cache-Control: no-store`, genau einen
-  synthetischen Ereigniskandidaten mit drei Artikeln und drei Quellen.
+  synthetischen Ereigniskandidaten mit vier Artikeln und vier Quellen (zwei RSS, Atom und JSON).
 - Streng beschränkte Felder, ausschließlich Metadaten und
   `approvedForPublication=false`.
 - Verbotene Schreibmethode und fehlende persönliche Anmeldung ohne
