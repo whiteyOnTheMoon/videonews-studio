@@ -18,8 +18,8 @@ BEGIN
   WHERE storage_key='p3/legacy-cleared';
   IF legacy IS NULL THEN RAISE EXCEPTION 'legacy setup missing'; END IF;
 
-  SELECT render_allowed,reason INTO denied,reason
-  FROM vns.asset_rights_readiness WHERE asset_id=legacy;
+  SELECT r.render_allowed,r.reason INTO denied,reason
+  FROM vns.asset_rights_readiness r WHERE asset_id=legacy;
   IF denied IS DISTINCT FROM false OR reason<>'missing_provenance' THEN
     RAISE EXCEPTION 'legacy cleared asset was grandfathered';
   END IF;
@@ -79,8 +79,8 @@ BEGIN
     '{"commercial_use":"unreviewed"}'::jsonb
   ) RETURNING id INTO complete_asset;
 
-  SELECT render_allowed,reason INTO denied,reason
-  FROM vns.asset_rights_readiness WHERE asset_id=complete_asset;
+  SELECT r.render_allowed,r.reason INTO denied,reason
+  FROM vns.asset_rights_readiness r WHERE asset_id=complete_asset;
   IF denied IS DISTINCT FROM false OR reason<>'license_policy_pending' THEN
     RAISE EXCEPTION 'complete metadata bypassed P3-02 policy';
   END IF;
