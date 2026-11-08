@@ -172,8 +172,11 @@ def environment(records: dict[str, dict]) -> dict[str, str]:
             or editor[0].get("RW") is not False):
         raise RuntimeError(DENIED)
     source = editor[0].get("Source")
+    # The root-owned credential mount can be deliberately unstatable by ap.
+    # Trust only the already active Docker bind identity; Compose's
+    # create_host_path:false prevents synthesizing a replacement directory.
     if (not isinstance(source, str) or not source.startswith("/")
-            or not Path(source).is_dir() or Path(source).is_symlink()):
+            or source in ("/", "/tmp", "/run", "/var/lib")):
         raise RuntimeError(DENIED)
 
     result = dict(os.environ)
