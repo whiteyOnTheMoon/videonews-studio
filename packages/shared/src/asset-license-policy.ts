@@ -6,10 +6,7 @@
  * Human provenance checks and a real entrypoint gate remain separate.
  */
 
-export type AssetLicensePrecheckStatus =
-  | "BLOCKED"
-  | "REVIEW_REQUIRED"
-  | "READY_FOR_NAMED_REVIEW";
+export type AssetLicensePrecheckStatus = "BLOCKED" | "REVIEW_REQUIRED" | "READY_FOR_NAMED_REVIEW";
 
 export type AssetLicensePrecheckReason =
   | "invalid_input"
@@ -125,7 +122,12 @@ function decision(
   status: AssetLicensePrecheckStatus,
   reasons: readonly AssetLicensePrecheckReason[],
 ): AssetLicensePrecheck {
-  return { status, reasons: Object.freeze([...reasons]), renderAllowed: false, uploadAllowed: false };
+  return {
+    status,
+    reasons: Object.freeze([...reasons]),
+    renderAllowed: false,
+    uploadAllowed: false,
+  };
 }
 
 /**
@@ -177,8 +179,10 @@ export function precheckAssetLicense(input: unknown): AssetLicensePrecheck {
     ) {
       blocked.push("license_reference_mismatch");
     }
-    if (typeof licenseCode === "string" && licenseCode.includes("-NC")) blocked.push("noncommercial_license");
-    if (typeof licenseCode === "string" && licenseCode.includes("-ND")) blocked.push("no_derivatives_license");
+    if (typeof licenseCode === "string" && licenseCode.includes("-NC"))
+      blocked.push("noncommercial_license");
+    if (typeof licenseCode === "string" && licenseCode.includes("-ND"))
+      blocked.push("no_derivatives_license");
     if (licenseCode === "CC-BY-SA-4.0") review.push("sharealike_individual_review");
   }
 
@@ -204,8 +208,7 @@ export function precheckAssetLicense(input: unknown): AssetLicensePrecheck {
     if (
       !cleanText(asset.changeNotice, 300) ||
       (licenseCode !== "CC0-1.0" &&
-        (typeof asset.attribution !== "string" ||
-          !asset.attribution.includes(asset.changeNotice)))
+        (typeof asset.attribution !== "string" || !asset.attribution.includes(asset.changeNotice)))
     ) {
       blocked.push("missing_modification_notice");
     }
@@ -214,7 +217,12 @@ export function precheckAssetLicense(input: unknown): AssetLicensePrecheck {
   if (!flags) {
     review.push("third_party_rights_unknown");
   } else {
-    for (const key of ["identifiablePeople", "visibleTrademarks", "thirdPartyProperty", "editorialOnly"]) {
+    for (const key of [
+      "identifiablePeople",
+      "visibleTrademarks",
+      "thirdPartyProperty",
+      "editorialOnly",
+    ]) {
       if (!rightsFlag(flags[key])) {
         review.push("third_party_rights_unknown");
         break;
