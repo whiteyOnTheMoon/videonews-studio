@@ -349,6 +349,7 @@ export class DormantPersonalEditorialAdmin {
         "/admin/editorial-timeline",
         "/admin/editorial-checkpoints",
         "/admin/editorial-ranked-events",
+        "/admin/editorial-feed-inbox",
         "/admin/editorial-ranking-policy",
         "/admin/editorial-publisher-review",
         "/admin/editorial-event-factors",
@@ -359,7 +360,7 @@ export class DormantPersonalEditorialAdmin {
       respond(res, 404, { error: "not_found" });
       return true;
     }
-    if (path === "/admin/editorial-ranked-events" && req.method !== "GET") {
+    if (["/admin/editorial-ranked-events", "/admin/editorial-feed-inbox"].includes(path) && req.method !== "GET") {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
     }
@@ -639,6 +640,49 @@ export class DormantPersonalEditorialAdmin {
           if (!rows.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
           else respond(res, 200, { saved: true, approvedForPublication: false });
         }
+
+      } else if (path === "/admin/editorial-feed-inbox") {
+        // Independent from ranking; only previously persisted candidate metadata.
+        const keys = [...uri.searchParams.keys()];
+        const limit = boundedInt(uri.searchParams.get("limit"), 1, 25);
+        if (keys.length !== 1 || keys[0] !== "limit" || limit === null) {
+          respond(res, 400, { error: "invalid_request" });
+          return true;
+        }
+        const inbox = await session.query<{
+          source_id: string;
+          headline: string;
+          published_at: Date;
+          projected: boolean;
+          event_id: string | null;
+          approved_for_publication: boolean;
+        }>("SELECT * FROM vns.named_feed_inbox_page($1::integer)", [limit]);
+        if (inbox.rows.length > limit || inbox.rows.some((item) =>
+          !PROFILE_ID.test(item.source_id) ||
+          typeof item.headline !== "string" ||
+          item.headline.length < 8 || item.headline.length > 500 ||
+          /[<>\u0000-\u001f\u007f]/u.test(item.headline) ||
+          !(item.published_at instanceof Date) ||
+          !Number.isFinite(item.published_at.getTime()) ||
+          item.published_at.getTime() > Date.now() ||
+          typeof item.projected !== "boolean" ||
+          (item.event_id !== null && (typeof item.event_id !== "string" ||
+            !UUID.test(item.event_id))) ||
+          item.projected !== (item.event_id !== null) ||
+          item.approved_for_publication !== false
+        )) throw new Error("Personal feed inbox invalid");
+        respond(res, 200, {
+          items: inbox.rows.map((item) => ({
+            sourceId: item.source_id,
+            headline: item.headline,
+            publishedAt: item.published_at.toISOString(),
+            projected: item.projected,
+            eventId: item.event_id,
+            approvedForPublication: false,
+          })),
+          metadataOnly: true,
+          rankingApplied: false,
+        });
       } else if (path === "/admin/editorial-ranked-events") {
         // Read-only SQL projection. The DB, not the API, chooses which
         // personally authenticated actor is permitted to read ranking.
