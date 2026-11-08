@@ -14,13 +14,13 @@ weiter; es gibt keine Veröffentlichung.
 
 ## MVP-Nachweise
 
-| Teil | Stand |
-| --- | --- |
-| Echte RSS-/PostgreSQL-Metadaten | Laut Betreiber NASA 1 und NOAA 18 gespeicherte und projizierte Kandidaten; persönliche Inbox aktiv. Keine neue Live-Abfrage. |
-| Echte produktive Mehrquellenrangliste | Nicht vorhanden; das aktuelle Profil verlangt zwei Quellen-IDs innerhalb der Altersgrenze und ein gemeinsames Ereignis. |
-| Technischer Mehrquellenrangtest | `scripts/ci_p2_integrated_ports.mjs` verarbeitet zwei synthetische RSS-Quellen und je eine Atom-/JSON-Quelle über den bestehenden isolierten Redis/BullMQ- und PostgreSQL-Pfad. Nach nur einer Quelle ist die Rangliste leer; nach zwei RSS-Quellen existiert höchstens ein Metadaten-Ranking, das keine unabhängige Bestätigung behauptet. |
-| Persönlicher Admin-Endpunkt und Web-Parser | `scripts/ci_p2_named_admin_live_pg.mjs` und `scripts/ci_p2_web_admin_bridge.mjs` prüfen den tatsächlich persistierten isolierten Rankingdatensatz, Autorisierung, Widerruf und `approvedForPublication=false`. |
-| Verhalten ohne Ranking | `apps/web/src/app/admin/editorial-ranked-events.tsx` erläutert auf eine gültige leere Antwort die bestehenden möglichen Filter. Keine Behauptung über konkrete ungeprüfte Quellen. |
+| Teil                                       | Stand                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Echte RSS-/PostgreSQL-Metadaten            | Laut Betreiber NASA 1 und NOAA 18 gespeicherte und projizierte Kandidaten; persönliche Inbox aktiv. Keine neue Live-Abfrage.                                                                                                                                                                                                                |
+| Echte produktive Mehrquellenrangliste      | Nicht vorhanden; das aktuelle Profil verlangt zwei Quellen-IDs innerhalb der Altersgrenze und ein gemeinsames Ereignis.                                                                                                                                                                                                                     |
+| Technischer Mehrquellenrangtest            | `scripts/ci_p2_integrated_ports.mjs` verarbeitet zwei synthetische RSS-Quellen und je eine Atom-/JSON-Quelle über den bestehenden isolierten Redis/BullMQ- und PostgreSQL-Pfad. Nach nur einer Quelle ist die Rangliste leer; nach zwei RSS-Quellen existiert höchstens ein Metadaten-Ranking, das keine unabhängige Bestätigung behauptet. |
+| Persönlicher Admin-Endpunkt und Web-Parser | `scripts/ci_p2_named_admin_live_pg.mjs` und `scripts/ci_p2_web_admin_bridge.mjs` prüfen den tatsächlich persistierten isolierten Rankingdatensatz, Autorisierung, Widerruf und `approvedForPublication=false`.                                                                                                                              |
+| Verhalten ohne Ranking                     | `apps/web/src/app/admin/editorial-ranked-events.tsx` erläutert auf eine gültige leere Antwort die bestehenden möglichen Filter. Keine Behauptung über konkrete ungeprüfte Quellen.                                                                                                                                                          |
 
 Die vollständige integrierte CI muss auf dem PR-Commit erfolgreich
 gelaufen sein, bevor der neue Zwei-RSS-Nachweis als **bestanden**

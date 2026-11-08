@@ -51,7 +51,7 @@ Before any DB-only projector start, independently attest the actual compiled
 image entrypoint, current source/host authority and role/secret custody, exact
 requested source and limit, absence of competing projectors, backup/rollback
 readiness, and a named operator's ONE explicit write approval. Any execution
-must use the *immutable image ID*, UID 10004, readonly rootfs, internal backend
+must use the _immutable image ID_, UID 10004, readonly rootfs, internal backend
 only, no host ports, bounded resources, mounted existing projector secret,
 and no HTTP/Redis/Publisher credentials. Preserve any failed audit container;
 no blind retry or projector replay.

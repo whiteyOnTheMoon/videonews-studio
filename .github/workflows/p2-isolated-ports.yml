@@ -78,10 +78,11 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Show targeted Prettier diff to repair baseline Markdown
+      - name: Check P2-03 witness runbook formatting with reviewable patch
         run: |
-          npx prettier --write docs/P2_03_NOAA_PROJECTOR_READONLY_PREFLIGHT_2026_11_08.md docs/P2_04_LOCAL_ADMIN_CUTOVER.md docs/P2_MVP_ABNAHME_2026_11_08.md
-          git diff --no-color -- docs/P2_03_NOAA_PROJECTOR_READONLY_PREFLIGHT_2026_11_08.md docs/P2_04_LOCAL_ADMIN_CUTOVER.md docs/P2_MVP_ABNAHME_2026_11_08.md
+          npx prettier --write docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --no-color -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
+          git diff --exit-code -- docs/P2_03_PRODUCTION_PERSISTENCE_ACCEPTANCE.md
       - name: Check code formatting and lint
         run: |
           npm run format:check
