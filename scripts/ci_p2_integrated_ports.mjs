@@ -46,12 +46,12 @@ const host = "news.example.org";
 const base = "https://" + host + "/";
 const now = new Date();
 const publishedAt = new Date(now.getTime() - 600000).toISOString();
-const sourceIds = ["rss_feed", "atom_feed", "json_feed"];
+const sourceIds = ["rss_feed", "rss_second", "atom_feed", "json_feed"];
 const sources = sourceIds.map((id, index) => ({
   id,
-  baseUrl: base + ["rss/", "atom/", "json/"][index],
+  baseUrl: base + ["rss/", "rss-b/", "atom/", "json/"][index],
   status: "approved",
-  access: ["rss", "atom", "official_api"][index],
+  access: ["rss", "rss", "atom", "official_api"][index],
   intervalMinutes: 60,
   termsUrl: base + "terms/",
   usage: "metadata_only",
@@ -141,7 +141,7 @@ async function seedReviewedSyntheticSources(dba) {
 }
 
 test(
-  "real isolated Redis/BullMQ delivery persists feed metadata to PostgreSQL and never publishes",
+  "isolated two-RSS-source handoff reaches PostgreSQL, event ranking and Admin without publication",
   { timeout: 60000 },
   async () => {
     const sql = new Pool({
@@ -201,6 +201,15 @@ test(
           "<rss><channel><item><title>Public science research update</title><link>" +
           base +
           "rss/story</link><pubDate>" +
+          publishedAt +
+          "</pubDate></item></channel></rss>",
+      },
+      "/rss-b/": {
+        type: "application/rss+xml",
+        body:
+          "<rss><channel><item><title>Public science research update</title><link>" +
+          base +
+          "rss-b/story</link><pubDate>" +
           publishedAt +
           "</pubDate></item></channel></rss>",
       },
@@ -309,15 +318,15 @@ test(
       const result = await job.waitUntilFinished(events, 30000);
       assert.deepEqual(result, {
         ok: true,
-        sourcesExamined: 3,
-        candidatesAdded: 3,
+        sourcesExamined: 4,
+        candidatesAdded: 4,
         notModified: 0,
       });
-      assert.equal(attemptedExternalRequests, 3);
+      assert.equal(attemptedExternalRequests, 4);
       const count = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.feed_poll_candidates",
       );
-      assert.equal(count.rows[0].count, 3);
+      assert.equal(count.rows[0].count, 4);
       const acl = await dba.query(
         "SELECT has_function_privilege('vns_feed_login_ciunit','vns.project_feed_candidates(text,integer)','EXECUTE') AS allowed",
       );
@@ -336,6 +345,12 @@ test(
         publishedAt: new Date(row.published_at).toISOString(),
         reviewStatus: "candidate",
       }));
+      // Both RSS fixtures reached the isolated database through the
+      // existing signed registry, real queue and feed parser.
+      assert.deepEqual(
+        rows.rows.filter((row) => row.source_id.startsWith("rss_")).map((row) => row.source_id),
+        ["rss_feed", "rss_second"],
+      );
       const normalized = normalizeFeedArticles(articles);
       const eventsForReview = groupConservativeEventCandidates(normalized);
       assert.equal(eventsForReview.length, 1);
@@ -421,17 +436,35 @@ test(
           );
           assert.equal(projected, 1);
           cycles++;
+          if (cycles === 1) {
+            // One RSS source cannot meet the unchanged two-source profile.
+            const premature = await dba.query(
+              "SELECT count(*)::integer AS count FROM vns.feed_event_rankings",
+            );
+            assert.equal(premature.rows[0].count, 0);
+          }
+          if (cycles === 2) {
+            // A ranking from two RSS IDs is metadata-only, not a publisher
+            // independence or publication attestation.
+            const twoRss = await dba.query(
+              "SELECT source_count,reasons,approved_for_publication FROM vns.feed_event_rankings",
+            );
+            assert.equal(twoRss.rows.length, 1);
+            assert.equal(twoRss.rows[0].source_count, 2);
+            assert.ok(twoRss.rows[0].reasons.includes("independent_verification_required"));
+            assert.equal(twoRss.rows[0].approved_for_publication, false);
+          }
         },
         async (duration) => {
           assert.equal(duration, 900000);
           stopper.abort();
         },
       );
-      assert.equal(cycles, 3);
+      assert.equal(cycles, 4);
       const projection = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.research_event_articles",
       );
-      assert.equal(projection.rows[0].count, 3);
+      assert.equal(projection.rows[0].count, 4);
       const ranks = await dba.query(
         `SELECT profile_id,profile_revision,score,article_count,source_count,
                 reasons,approved_for_publication
@@ -440,8 +473,8 @@ test(
       assert.equal(ranks.rows.length, 1);
       assert.equal(ranks.rows[0].profile_id, "science_news");
       assert.equal(Number(ranks.rows[0].profile_revision), 1);
-      assert.equal(ranks.rows[0].article_count, 3);
-      assert.equal(ranks.rows[0].source_count, 3);
+      assert.equal(ranks.rows[0].article_count, 4);
+      assert.equal(ranks.rows[0].source_count, 4);
       assert.equal(ranks.rows[0].approved_for_publication, false);
       assert.ok(ranks.rows[0].reasons.includes("independent_verification_required"));
       const reader = new Pool({
@@ -458,7 +491,7 @@ test(
           [25],
         );
         assert.equal(viewed.rows.length, 1);
-        assert.equal(viewed.rows[0].source_count, 3);
+        assert.equal(viewed.rows[0].source_count, 4);
         assert.equal(viewed.rows[0].approved_for_publication, false);
         // Keep all producer/consumer/projector data and exercise the actual
         // personally authenticated Admin API against this same SQL session.
@@ -512,7 +545,7 @@ test(
       const stillCandidate = await dba.query(
         "SELECT count(*)::integer AS count FROM vns.feed_poll_candidates WHERE review_status = 'candidate'",
       );
-      assert.equal(stillCandidate.rows[0].count, 3);
+      assert.equal(stillCandidate.rows[0].count, 4);
     } finally {
       await bridge?.close().catch(() => undefined);
       await events.close().catch(() => undefined);

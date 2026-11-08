@@ -88,8 +88,8 @@ export async function verifyWebRankedFeedBridge(handler, expectedStatus = 200) {
     const displayed = parseRankedCandidatePage(body);
     assert.ok(displayed && displayed.length === 1);
     assert.equal(displayed[0].profileId, "science_news");
-    assert.equal(displayed[0].articleCount, 3);
-    assert.equal(displayed[0].sourceCount, 3);
+    assert.equal(displayed[0].articleCount, 4);
+    assert.equal(displayed[0].sourceCount, 4);
     assert.equal(displayed[0].approvedForPublication, false);
     assert.ok(displayed[0].reasons.includes("independent_verification_required"));
   } else {

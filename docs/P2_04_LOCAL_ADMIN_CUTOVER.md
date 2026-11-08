@@ -37,7 +37,7 @@ publisher job, media upload, registry push or public routing change.
 - Active feature flags, existing exact HTTPS Admin origin and the
   root-owned personal credential directory are taken from the current
   running containers, **never copied into Git, a new .env file or output**.
-  The rendered Compose environment and bind/secret mount *destinations*
+  The rendered Compose environment and bind/secret mount _destinations_
   must match the existing runtime configuration. Secret contents are not
   inspected or printed.
 - The preview Compose call is restricted to named API and Web services,
