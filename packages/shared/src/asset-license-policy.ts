@@ -76,6 +76,7 @@ function httpsUrl(value: unknown): value is string {
     value.length < 12 ||
     value.length > 2048 ||
     value !== value.trim() ||
+    !value.startsWith("https://") ||
     /[\s\\]/.test(value)
   ) {
     return false;
@@ -138,6 +139,9 @@ export function precheckAssetLicense(input: unknown): AssetLicensePrecheck {
   if (!asset) return decision("BLOCKED", ["invalid_input"]);
   if (asset.rightsStatus === "blocked") {
     return decision("BLOCKED", ["explicitly_blocked"]);
+  }
+  if (asset.rightsStatus !== "unreviewed" && asset.rightsStatus !== "cleared") {
+    return decision("BLOCKED", ["invalid_input"]);
   }
 
   const blocked: AssetLicensePrecheckReason[] = [];
