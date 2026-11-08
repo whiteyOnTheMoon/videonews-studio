@@ -360,7 +360,10 @@ export class DormantPersonalEditorialAdmin {
       respond(res, 404, { error: "not_found" });
       return true;
     }
-    if (["/admin/editorial-ranked-events", "/admin/editorial-feed-inbox"].includes(path) && req.method !== "GET") {
+    if (
+      ["/admin/editorial-ranked-events", "/admin/editorial-feed-inbox"].includes(path) &&
+      req.method !== "GET"
+    ) {
       respond(res, 405, { error: "method_not_allowed" });
       return true;
     }
@@ -640,7 +643,6 @@ export class DormantPersonalEditorialAdmin {
           if (!rows.rows[0].saved) respond(res, 409, { error: "revision_conflict" });
           else respond(res, 200, { saved: true, approvedForPublication: false });
         }
-
       } else if (path === "/admin/editorial-feed-inbox") {
         // Independent from ranking; only previously persisted candidate metadata.
         const keys = [...uri.searchParams.keys()];
@@ -657,23 +659,29 @@ export class DormantPersonalEditorialAdmin {
           event_id: string | null;
           approved_for_publication: boolean;
         }>("SELECT * FROM vns.named_feed_inbox_page($1::integer)", [limit]);
-        if (inbox.rows.length > limit || inbox.rows.some((item) =>
-          !PROFILE_ID.test(item.source_id) ||
-          typeof item.headline !== "string" ||
-          item.headline.length < 8 || item.headline.length > 500 ||
-          [...item.headline].some((character) => {
-            const code = character.codePointAt(0) ?? 0;
-            return code < 32 || code === 127 || character === "<" || character === ">";
-          }) ||
-          !(item.published_at instanceof Date) ||
-          !Number.isFinite(item.published_at.getTime()) ||
-          item.published_at.getTime() > Date.now() ||
-          typeof item.projected !== "boolean" ||
-          (item.event_id !== null && (typeof item.event_id !== "string" ||
-            !UUID.test(item.event_id))) ||
-          item.projected !== (item.event_id !== null) ||
-          item.approved_for_publication !== false
-        )) throw new Error("Personal feed inbox invalid");
+        if (
+          inbox.rows.length > limit ||
+          inbox.rows.some(
+            (item) =>
+              !PROFILE_ID.test(item.source_id) ||
+              typeof item.headline !== "string" ||
+              item.headline.length < 8 ||
+              item.headline.length > 500 ||
+              [...item.headline].some((character) => {
+                const code = character.codePointAt(0) ?? 0;
+                return code < 32 || code === 127 || character === "<" || character === ">";
+              }) ||
+              !(item.published_at instanceof Date) ||
+              !Number.isFinite(item.published_at.getTime()) ||
+              item.published_at.getTime() > Date.now() ||
+              typeof item.projected !== "boolean" ||
+              (item.event_id !== null &&
+                (typeof item.event_id !== "string" || !UUID.test(item.event_id))) ||
+              item.projected !== (item.event_id !== null) ||
+              item.approved_for_publication !== false,
+          )
+        )
+          throw new Error("Personal feed inbox invalid");
         respond(res, 200, {
           items: inbox.rows.map((item) => ({
             sourceId: item.source_id,

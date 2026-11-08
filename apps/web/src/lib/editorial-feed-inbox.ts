@@ -13,17 +13,29 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInboxItem[] | null {
-  if (!object(value) || Object.keys(value).sort().join(",") !==
-      "items,metadataOnly,rankingApplied" ||
-    value.metadataOnly !== true || value.rankingApplied !== false ||
-    !Number.isSafeInteger(limit) || limit < 1 || limit > 25 ||
-    !Array.isArray(value.items) || value.items.length > limit) return null;
+  if (
+    !object(value) ||
+    Object.keys(value).sort().join(",") !== "items,metadataOnly,rankingApplied" ||
+    value.metadataOnly !== true ||
+    value.rankingApplied !== false ||
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > 25 ||
+    !Array.isArray(value.items) ||
+    value.items.length > limit
+  )
+    return null;
   for (const row of value.items) {
-    if (!object(row) || Object.keys(row).sort().join(",") !==
+    if (
+      !object(row) ||
+      Object.keys(row).sort().join(",") !==
         "approvedForPublication,eventId,headline,projected,publishedAt,sourceId" ||
-      typeof row.sourceId !== "string" || !SOURCE.test(row.sourceId) ||
-      typeof row.headline !== "string" || row.headline.length < 8 ||
-      row.headline.length > 500 || [...row.headline].some((character) => {
+      typeof row.sourceId !== "string" ||
+      !SOURCE.test(row.sourceId) ||
+      typeof row.headline !== "string" ||
+      row.headline.length < 8 ||
+      row.headline.length > 500 ||
+      [...row.headline].some((character) => {
         const code = character.codePointAt(0) ?? 0;
         return code < 32 || code === 127 || character === "<" || character === ">";
       }) ||
@@ -31,10 +43,11 @@ export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInb
       !Number.isFinite(Date.parse(row.publishedAt)) ||
       new Date(row.publishedAt).toISOString() !== row.publishedAt ||
       typeof row.projected !== "boolean" ||
-      (row.eventId !== null && (typeof row.eventId !== "string" ||
-        !UUID.test(row.eventId))) ||
+      (row.eventId !== null && (typeof row.eventId !== "string" || !UUID.test(row.eventId))) ||
       row.projected !== (row.eventId !== null) ||
-      row.approvedForPublication !== false) return null;
+      row.approvedForPublication !== false
+    )
+      return null;
   }
   return value.items as FeedInboxItem[];
 }

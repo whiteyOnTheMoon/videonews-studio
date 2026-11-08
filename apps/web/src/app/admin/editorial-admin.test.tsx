@@ -384,9 +384,14 @@ test("feed inbox stays unranked and cannot become publication approval", () => {
     { ...entry, rawUrl: "https://invalid.example/token" },
     { ...entry, publishedAt: "invalid" },
   ]) {
-    assert.equal(parseFeedInboxPage({
-      metadataOnly: true, rankingApplied: false, items: [bad],
-    }), null);
+    assert.equal(
+      parseFeedInboxPage({
+        metadataOnly: true,
+        rankingApplied: false,
+        items: [bad],
+      }),
+      null,
+    );
   }
   assert.equal(parseFeedInboxPage({ ...envelope, rankingApplied: true }), null);
 });

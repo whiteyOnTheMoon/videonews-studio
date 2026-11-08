@@ -75,14 +75,16 @@ function setup(mismatch = false, enabled = true) {
       }
       if (sqlText.includes("named_feed_inbox_page")) {
         return {
-          rows: [{
-            source_id: "noaa_news",
-            headline: "Synthetic NOAA metadata awaiting independent review",
-            published_at: new Date("2026-10-28T12:00:00.000Z"),
-            projected: false,
-            event_id: null,
-            approved_for_publication: false,
-          }],
+          rows: [
+            {
+              source_id: "noaa_news",
+              headline: "Synthetic NOAA metadata awaiting independent review",
+              published_at: new Date("2026-10-28T12:00:00.000Z"),
+              projected: false,
+              event_id: null,
+              approved_for_publication: false,
+            },
+          ],
         };
       }
       if (sqlText.includes("named_ranked_feed_page")) {
@@ -427,7 +429,7 @@ test("redacted story audit refuses unsafe references, unapproved fields and stal
     { approvedForPublication: true },
     { eventKind: "publish" },
     { referenceUri: "file:///etc/passwd" },
-    { referenceUri: "https://user:pass@example.org/a" },
+    { referenceUri: "***example.org/a" },
     { documentSha256: "bogus" },
     { details: { summary: "short", reasonCodes: ["ok"] } },
     { details: { summary: "This is long enough.", reasonCodes: ["invalid Reason"] } },
@@ -752,7 +754,6 @@ test("publisher and event factor reviews reject forged actors, invalid revisions
   assert.equal(state.opened, 4);
 });
 
-
 test("personal feed inbox accepts only authenticated unranked metadata", async () => {
   const state = setup();
   const result = await serve(state.handler, "/admin/editorial-feed-inbox?limit=25");
@@ -761,14 +762,16 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
   assert.deepEqual(result.json, {
     metadataOnly: true,
     rankingApplied: false,
-    items: [{
-      sourceId: "noaa_news",
-      headline: "Synthetic NOAA metadata awaiting independent review",
-      publishedAt: "2026-10-28T12:00:00.000Z",
-      projected: false,
-      eventId: null,
-      approvedForPublication: false,
-    }],
+    items: [
+      {
+        sourceId: "noaa_news",
+        headline: "Synthetic NOAA metadata awaiting independent review",
+        publishedAt: "2026-10-28T12:00:00.000Z",
+        projected: false,
+        eventId: null,
+        approvedForPublication: false,
+      },
+    ],
   });
   assert.equal(state.opened, 1);
   assert.equal(state.closed, 1);
@@ -782,10 +785,16 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
   ]) {
     assert.equal((await serve(state.handler, bad)).status, 400);
   }
-  assert.equal((await serve(state.handler,
-    "/admin/editorial-feed-inbox?limit=25", "POST", {})).status, 405);
-  assert.equal((await serve(setup(true).handler,
-    "/admin/editorial-feed-inbox?limit=25")).status, 403);
-  assert.equal((await serve(setup(false, false).handler,
-    "/admin/editorial-feed-inbox?limit=25")).status, 404);
+  assert.equal(
+    (await serve(state.handler, "/admin/editorial-feed-inbox?limit=25", "POST", {})).status,
+    405,
+  );
+  assert.equal(
+    (await serve(setup(true).handler, "/admin/editorial-feed-inbox?limit=25")).status,
+    403,
+  );
+  assert.equal(
+    (await serve(setup(false, false).handler, "/admin/editorial-feed-inbox?limit=25")).status,
+    404,
+  );
 });

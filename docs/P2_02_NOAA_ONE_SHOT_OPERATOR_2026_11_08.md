@@ -46,7 +46,7 @@ no new license assertion, no profile threshold change and no publication.
 
 From a clean VPS main checkout, replace REVIEWED_SHA below with the exact
 40-character newly merged commit. The protected checks run as root using
-interactively authorized sudo. Run the *read-only* preflight first:
+interactively authorized sudo. Run the _read-only_ preflight first:
 
     sudo bash scripts/p2_02_noaa_one_shot_operator.sh \
       --preflight --expected-sha REVIEWED_SHA

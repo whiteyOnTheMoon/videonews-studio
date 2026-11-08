@@ -662,17 +662,23 @@ test("feed inbox BFF enforces personal GET, strict page and no-store", async () 
       return Response.json({ username: "ci_admin", role: "admin" });
     calls++;
     return Response.json({
-      items: [item], metadataOnly: true, rankingApplied: false,
+      items: [item],
+      metadataOnly: true,
+      rankingApplied: false,
     });
   }) as typeof fetch;
   const result = await dormantEditorialAdminProxy(
     request("/api/admin/editorial-feed-inbox?limit=25"),
-    "feed-inbox", config, upstream,
+    "feed-inbox",
+    config,
+    upstream,
   );
   assert.equal(result.status, 200);
   assert.equal(result.headers.get("cache-control"), "no-store");
   assert.deepEqual(await result.json(), {
-    items: [item], metadataOnly: true, rankingApplied: false,
+    items: [item],
+    metadataOnly: true,
+    rankingApplied: false,
   });
   for (const bad of [
     "/api/admin/editorial-feed-inbox",
@@ -680,14 +686,22 @@ test("feed inbox BFF enforces personal GET, strict page and no-store", async () 
     "/api/admin/editorial-feed-inbox?limit=1&limit=2",
     "/api/admin/editorial-feed-inbox?limit=25&actor=forged",
   ]) {
-    assert.equal((await dormantEditorialAdminProxy(
-      request(bad), "feed-inbox", config, upstream,
-    )).status, 400);
+    assert.equal(
+      (await dormantEditorialAdminProxy(request(bad), "feed-inbox", config, upstream)).status,
+      400,
+    );
   }
-  assert.equal((await dormantEditorialAdminProxy(
-    request("/api/admin/editorial-feed-inbox?limit=25", "POST", {}),
-    "feed-inbox", config, upstream,
-  )).status, 405);
+  assert.equal(
+    (
+      await dormantEditorialAdminProxy(
+        request("/api/admin/editorial-feed-inbox?limit=25", "POST", {}),
+        "feed-inbox",
+        config,
+        upstream,
+      )
+    ).status,
+    405,
+  );
   assert.equal(calls, 1);
 });
 
@@ -697,13 +711,17 @@ test("feed inbox BFF refuses publishing flags and unexpected fields", async () =
       sourceId: "noaa_news",
       headline: "Synthetic NOAA headline awaiting independent verification",
       publishedAt: "2026-11-01T12:00:00.000Z",
-      projected: false, eventId: null, approvedForPublication: true,
+      projected: false,
+      eventId: null,
+      approvedForPublication: true,
     },
     {
       sourceId: "noaa_news",
       headline: "Synthetic NOAA headline awaiting independent verification",
       publishedAt: "2026-11-01T12:00:00.000Z",
-      projected: false, eventId: null, approvedForPublication: false,
+      projected: false,
+      eventId: null,
+      approvedForPublication: false,
       sourceUrl: "https://noaa.gov/secret",
     },
   ]) {
@@ -711,12 +729,16 @@ test("feed inbox BFF refuses publishing flags and unexpected fields", async () =
       if (String(resource).endsWith("/editor/me"))
         return Response.json({ username: "ci_admin", role: "admin" });
       return Response.json({
-        items: [bad], metadataOnly: true, rankingApplied: false,
+        items: [bad],
+        metadataOnly: true,
+        rankingApplied: false,
       });
     }) as typeof fetch;
     const result = await dormantEditorialAdminProxy(
       request("/api/admin/editorial-feed-inbox?limit=25"),
-      "feed-inbox", config, upstream,
+      "feed-inbox",
+      config,
+      upstream,
     );
     assert.equal(result.status, 503);
   }

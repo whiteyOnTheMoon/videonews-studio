@@ -14,8 +14,11 @@ export default function EditorialFeedInbox({ enabled }: { enabled: boolean }) {
     setError("");
     try {
       const response = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
-        method: "GET", credentials: "same-origin", cache: "no-store",
-        redirect: "error", ...(signal ? { signal } : {}),
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+        ...(signal ? { signal } : {}),
       });
       if (!response.ok) throw new Error("Feed inbox unavailable");
       const page = parseFeedInboxPage((await response.json()) as unknown);
@@ -42,8 +45,8 @@ export default function EditorialFeedInbox({ enabled }: { enabled: boolean }) {
     <section className="jobs-section" aria-labelledby="feed-inbox-heading">
       <h2 id="feed-inbox-heading">Nachrichteneingang (ungeprüfte Metadaten)</h2>
       <p>
-        Bereits gespeicherte Nachrichten unabhängig vom Ranking.
-        Kein Live-Abruf, keine Tatsachenprüfung und keine Veröffentlichungsfreigabe.
+        Bereits gespeicherte Nachrichten unabhängig vom Ranking. Kein Live-Abruf, keine
+        Tatsachenprüfung und keine Veröffentlichungsfreigabe.
       </p>
       {!enabled ? <p role="status">Nachrichteneingang nicht freigeschaltet.</p> : null}
       {enabled ? (
@@ -53,16 +56,23 @@ export default function EditorialFeedInbox({ enabled }: { enabled: boolean }) {
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {enabled && !loading && !error && items.length === 0 ? (
-        <p>Keine aktuell zugelassenen Metadaten anzeigbar. Dies ist kein Nachweis einer leeren Datenbank.</p>
+        <p>
+          Keine aktuell zugelassenen Metadaten anzeigbar. Dies ist kein Nachweis einer leeren
+          Datenbank.
+        </p>
       ) : null}
       {enabled && !loading && !error && items.length > 0 ? (
         <ol>
           {items.map((item, index) => (
             <li key={item.sourceId + ":" + item.publishedAt + ":" + index}>
               <strong>{item.headline}</strong>
-              <p>Quelle: {item.sourceId} · {item.projected
-                ? "Als Rechercheereignis erfasst" : "Noch nicht projiziert"}</p>
-              <p>Veröffentlicht: <time dateTime={item.publishedAt}>{item.publishedAt}</time></p>
+              <p>
+                Quelle: {item.sourceId} ·{" "}
+                {item.projected ? "Als Rechercheereignis erfasst" : "Noch nicht projiziert"}
+              </p>
+              <p>
+                Veröffentlicht: <time dateTime={item.publishedAt}>{item.publishedAt}</time>
+              </p>
               <p>Unverifiziert · Kein Ranking-Score · Keine Veröffentlichungsfreigabe</p>
             </li>
           ))}
