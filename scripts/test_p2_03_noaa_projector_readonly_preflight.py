@@ -93,7 +93,7 @@ class PreflightContractTests(unittest.TestCase):
                 return ""
             raise AssertionError(joined)
 
-        with patch.object(module, "command", side_effect=read) as command, \\
+        with patch.object(module, "command", side_effect=read) as command, \
                 patch.object(module, "require_inode"):
             module.verify_image_and_runtime()
             self.assertTrue(any(
@@ -105,7 +105,7 @@ class PreflightContractTests(unittest.TestCase):
             if argv[:3] == ["docker", "image", "inspect"]:
                 return "sha256:not-the-reviewed-image|" + module.EXPECTED_WORKER_SHA
             return read(argv, stdin)
-        with patch.object(module, "command", side_effect=bad_image), \\
+        with patch.object(module, "command", side_effect=bad_image), \
                 patch.object(module, "require_inode"):
             with self.assertRaises(RuntimeError):
                 module.verify_image_and_runtime()
@@ -114,7 +114,7 @@ class PreflightContractTests(unittest.TestCase):
             if argv[:3] == ["docker", "inspect", "-f"]:
                 return "unknown|postgres|healthy"
             return read(argv, stdin)
-        with patch.object(module, "command", side_effect=bad_db), \\
+        with patch.object(module, "command", side_effect=bad_db), \
                 patch.object(module, "require_inode"):
             with self.assertRaises(RuntimeError):
                 module.verify_image_and_runtime()
@@ -123,7 +123,7 @@ class PreflightContractTests(unittest.TestCase):
             if argv[:3] == ["docker", "ps", "--filter"]:
                 return "parallel-worker"
             return read(argv, stdin)
-        with patch.object(module, "command", side_effect=competing_worker), \\
+        with patch.object(module, "command", side_effect=competing_worker), \
                 patch.object(module, "require_inode"):
             with self.assertRaises(RuntimeError):
                 module.verify_image_and_runtime()
