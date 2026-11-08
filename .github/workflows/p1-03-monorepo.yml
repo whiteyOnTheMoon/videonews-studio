@@ -50,11 +50,6 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: P3-02 temporary formatter diagnostics (must be removed)
-        run: |
-          npx prettier --write docs/P3_02_COMMERCIAL_ASSET_LICENSE_PRECHECK.md packages/shared/src/asset-license-policy.ts packages/shared/src/asset-license-policy.test.ts
-          git diff -- docs/P3_02_COMMERCIAL_ASSET_LICENSE_PRECHECK.md packages/shared/src/asset-license-policy.ts packages/shared/src/asset-license-policy.test.ts
-          exit 1
       - name: Compile workspace applications
         run: npm run build
       - name: Type-check all workspaces
