@@ -174,8 +174,8 @@ export function precheckAssetLicense(input: unknown): AssetLicensePrecheck {
     ) {
       blocked.push("license_reference_mismatch");
     }
-    if (licenseCode.includes("-NC")) blocked.push("noncommercial_license");
-    if (licenseCode.includes("-ND")) blocked.push("no_derivatives_license");
+    if (typeof licenseCode === "string" && licenseCode.includes("-NC")) blocked.push("noncommercial_license");
+    if (typeof licenseCode === "string" && licenseCode.includes("-ND")) blocked.push("no_derivatives_license");
     if (licenseCode === "CC-BY-SA-4.0") review.push("sharealike_individual_review");
   }
 
