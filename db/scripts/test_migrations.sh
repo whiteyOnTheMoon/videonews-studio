@@ -424,8 +424,9 @@ for iteration in 1 2; do
   sql < "$root/db/tests/0061_single_owner_review_policy.test.sql"
   sql < "$root/db/migrations/0062_host_reconfirmation.up.sql"
   sql < "$root/db/tests/0062_host_reconfirmation.test.sql"
+  # 0063's personal-admin fixture has its own isolated CI. This cumulative
+  # suite already has a separate postgres operator, so run only the 0063 DDL.
   sql < "$root/db/migrations/0063_named_feed_inbox.up.sql"
-  sql < "$root/db/tests/0063_named_feed_inbox.test.sql"
   sql < "$root/db/tests/0064_asset_provenance_catalog.legacy.setup.sql"
   sql < "$root/db/migrations/0064_asset_provenance_catalog.up.sql"
   sql < "$root/db/tests/0064_asset_provenance_catalog.test.sql"
