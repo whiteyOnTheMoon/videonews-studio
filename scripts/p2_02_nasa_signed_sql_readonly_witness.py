@@ -40,7 +40,7 @@ def command(args: list[str], payload: str | None = None, cap: int = 65536) -> st
 def release(sha: str) -> None:
     if os.geteuid() != 0 or not PIN.fullmatch(sha):
         raise RuntimeError(DENIED)
-    git = ["git", "-c", "safe.directory=" + str(ROOT), "-C", str(ROOT)]
+    git = ["git", "--no-optional-locks", "-c", "safe.directory=" + str(ROOT), "-C", str(ROOT)]
     if (command(git + ["branch", "--show-current"]) != "main"
             or command(git + ["rev-parse", "HEAD"]) != sha
             or command(git + ["status", "--porcelain"]) != ""):
