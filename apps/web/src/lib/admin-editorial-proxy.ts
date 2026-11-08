@@ -97,7 +97,9 @@ function validQuery(path: EditorialEndpoint, url: URL): boolean {
   }
   if (path === "ranked-events" || path === "feed-inbox")
     return (
-      keys.length === 1 && keys[0] === "limit" && numeric(url.searchParams.get("limit"), 1, 50)
+      keys.length === 1 &&
+      keys[0] === "limit" &&
+      numeric(url.searchParams.get("limit"), 1, path === "feed-inbox" ? 25 : 50)
     );
   if (path === "checkpoints") {
     const eventId = url.searchParams.get("eventId");
