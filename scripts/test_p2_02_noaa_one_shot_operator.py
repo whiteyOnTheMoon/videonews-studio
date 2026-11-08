@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import unittest
 
 SCRIPT = Path(__file__).with_name("p2_02_noaa_one_shot_operator.sh")
@@ -41,6 +42,35 @@ class NOAAOneShotContractTests(unittest.TestCase):
         ):
             source = SCRIPT.with_name(helper).read_text(encoding="utf-8")
             self.assertIn('"git", "--no-optional-locks", "-c",', source)
+
+    def test_git_no_optional_locks_does_not_replace_index_in_dirty_checkout(self):
+        # Git can refresh the index as a side effect of status. Prove that
+        # the chosen global switch keeps its inode/mtime unchanged even
+        # when tracked-file metadata has changed (no network/root needed).
+        with tempfile.TemporaryDirectory(prefix="vns-index-test-") as temp:
+            worktree = Path(temp)
+            subprocess.run(
+                ["git", "init", "-q", "-b", "main"],
+                cwd=worktree, check=True, capture_output=True, timeout=10,
+            )
+            tracked = worktree / "notice.txt"
+            tracked.write_text("before\\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", "notice.txt"],
+                cwd=worktree, check=True, capture_output=True, timeout=10,
+            )
+            index = worktree / ".git" / "index"
+            before = index.stat()
+            tracked.write_text("after\\n", encoding="utf-8")
+            check = subprocess.run(
+                ["git", "--no-optional-locks", "status", "--porcelain"],
+                cwd=worktree, check=True, capture_output=True, text=True, timeout=10,
+            )
+            after = index.stat()
+            self.assertIn("notice.txt", check.stdout)
+            self.assertEqual(before.st_ino, after.st_ino)
+            self.assertEqual(before.st_mtime_ns, after.st_mtime_ns)
+            self.assertEqual(before.st_uid, after.st_uid)
 
     def test_single_source_and_image_are_explicit(self):
         self.assertIn("VNS_FEED_CANARY_SOURCE_ID=noaa_news", self.text)
