@@ -57,7 +57,7 @@ class BoundedBuildAdmission(unittest.TestCase):
             'docker image inspect "$WEB"',
             'docker inspect --format',
             'State.StartedAt',
-            'GIT_OPTIONAL_LOCKS=0',
+            'git --no-optional-locks status --porcelain',
             "'1000:1000:600:1:regular file'",
             'git rev-parse HEAD',
             'docker info --format',
