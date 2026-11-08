@@ -4,6 +4,12 @@ CREATE ROLE ci_inbox_admin LOGIN INHERIT;
 CREATE ROLE ci_inbox_reviewer LOGIN INHERIT;
 CREATE ROLE ci_inbox_unknown LOGIN INHERIT;
 GRANT vns_p2_named_client TO ci_inbox_admin,ci_inbox_reviewer,ci_inbox_unknown;
+-- Account lifecycle trigger requires an individually audited DB operator.
+-- This mapping exists solely in disposable CI and is rolled back.
+INSERT INTO vns.editor_operator_registry(
+ login_role,operator_id,operator_label,active)
+VALUES (session_user,'fa630004-4444-4444-8444-444444444444',
+ 'Synthetic CI inbox migration operator',true);
 
 INSERT INTO vns.editor_accounts(id,username,display_name,role,password_hash,active)
 VALUES
