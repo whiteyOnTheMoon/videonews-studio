@@ -36,10 +36,10 @@ def fixture():
                 "Image": m.OLD["web"][1]},
         "api": {"Config": {"Env": api_env, "Image": m.OLD["api"][0],
                             "Labels": {}}, "Mounts": [{
-                    "Type": "bind", "RW": False, "Source": "/tmp",
+                    "Type": "bind", "RW": False, "Source": "/var/lib/videonews-studio/private-ci-fixture",
                     "Destination": "/run/secrets/vns_editor_credentials",
                 }, {
-                    "Type": "bind", "RW": False, "Source": "/tmp/file",
+                    "Type": "bind", "RW": False, "Source": "/var/lib/videonews-studio/private-ci-file",
                     "Destination": "/run/secrets/postgres_password",
                 }], "Image": m.OLD["api"][1]},
     }
@@ -71,7 +71,7 @@ class LocalAdminCutover(unittest.TestCase):
         self.assertEqual(value["VNS_ADMIN_ORIGIN"],
                          "https://studio.example.org")
         self.assertEqual(
-            value["VNS_P2_EDITORIAL_PERSONAL_CREDENTIALS_DIR"], "/tmp"
+            value["VNS_P2_EDITORIAL_PERSONAL_CREDENTIALS_DIR"], "/var/lib/videonews-studio/private-ci-fixture"
         )
         self.assertEqual(value["VNS_P2_SOURCE_ADMIN_OPERATOR_ACK"], "true")
         self.assertEqual(value["VNS_WEB_HOST_APPROVAL_ENABLED"], "false")
@@ -124,7 +124,7 @@ class LocalAdminCutover(unittest.TestCase):
                     },
                     "networks": {"frontend": None, "backend": None},
                     "volumes": [{
-                        "source": "/tmp", "target":
+                        "source": "/var/lib/videonews-studio/private-ci-fixture", "target":
                         "/run/secrets/vns_editor_credentials"
                     }],
                     "secrets": [{
