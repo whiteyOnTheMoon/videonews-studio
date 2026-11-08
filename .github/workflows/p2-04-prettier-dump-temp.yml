@@ -1,0 +1,52 @@
+name: P2-04 temporary formatter snapshot
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/p2-04-prettier-dump-temp.yml"
+permissions:
+  contents: read
+jobs:
+  format-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install locked formatter
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Format and emit reviewed source snapshots
+        run: |
+          npx prettier --write \
+            apps/api/src/personal-editorial-admin.test.ts \
+            apps/api/src/personal-editorial-admin.ts \
+            apps/web/src/app/admin/editorial-admin.test.tsx \
+            apps/web/src/app/admin/editorial-feed-inbox.tsx \
+            apps/web/src/lib/admin-editorial-proxy.test.ts \
+            apps/web/src/lib/admin-editorial-proxy.ts \
+            apps/web/src/lib/editorial-feed-inbox.ts \
+            docs/P1-04_GHCR_READONLY_PULL_RUNBOOK.md \
+            docs/P2_01_04_OFFICIAL_SOURCE_RIGHTS_AND_PROVENANCE_REVIEW_2026_11_07.md \
+            docs/P2_02_NOAA_ONE_SHOT_OPERATOR_2026_11_08.md \
+            docs/P2_02_NOAA_SCOPED_PERSISTENCE_CANARY.md \
+            docs/P2_04_MULTISOURCE_READINESS_WITNESS.md >/dev/null
+          node - <<'JS'
+          const fs = require("node:fs");
+          const files = [
+            "apps/api/src/personal-editorial-admin.test.ts",
+            "apps/api/src/personal-editorial-admin.ts",
+            "apps/web/src/app/admin/editorial-admin.test.tsx",
+            "apps/web/src/app/admin/editorial-feed-inbox.tsx",
+            "apps/web/src/lib/admin-editorial-proxy.test.ts",
+            "apps/web/src/lib/admin-editorial-proxy.ts",
+            "apps/web/src/lib/editorial-feed-inbox.ts",
+            "docs/P1-04_GHCR_READONLY_PULL_RUNBOOK.md",
+            "docs/P2_01_04_OFFICIAL_SOURCE_RIGHTS_AND_PROVENANCE_REVIEW_2026_11_07.md",
+            "docs/P2_02_NOAA_ONE_SHOT_OPERATOR_2026_11_08.md",
+            "docs/P2_02_NOAA_SCOPED_PERSISTENCE_CANARY.md",
+            "docs/P2_04_MULTISOURCE_READINESS_WITNESS.md",
+          ];
+          for (const path of files) {
+            process.stdout.write("VNS_FMT_JSON:" + JSON.stringify({
+              path, content: fs.readFileSync(path, "utf8"),
+            }) + "\n");
+          }
+          JS
