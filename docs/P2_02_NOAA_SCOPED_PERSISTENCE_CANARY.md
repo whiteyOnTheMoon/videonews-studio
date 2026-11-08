@@ -38,11 +38,12 @@ checkpoint to force a retry. No AI research or publication is enabled.
 
 ## Operator review before permission to run
 
-1. Verify the exact release SHA, current signed source revision 8, approved
-   host revision 7, pinned trust policy revision, checkpoint state and the
-   independently approved NOAA rights and URL. Reconcile any revisions
-   that changed since the last operator inventory; do not blindly assume
-   that old revisions remain current.
+1. Verify the exact clean `main` release SHA, **current** signed source
+   revision and Host grant (the latest audited production snapshot was
+   **10/10** on 2026-11-07), pinned trust-policy revision, checkpoint state
+   and the separately documented NOAA rights and exact feed URL. Never
+   reuse stale 8/7 assumptions from older canary runs, and never trust this
+   10/10 snapshot if any source/host approval has subsequently changed.
 2. Read the pre-existing NOAA Poll-Lease and verify that it is eligible.
    Check isolated feed BullMQ queue status and reject if a current or
    failed job would conflict with the intended one-shot 15-minute slot.
@@ -61,3 +62,71 @@ Do not run this from CI or with an unsigned/fabricated source snapshot.
 No API/publishing access, unsafe feed shortcuts or source revision resets
 are included. Enabling this mode requires a separate, current
 operator-reviewed VPS command.
+
+
+## Tatsächlicher produktiver Read-only-Status, 07.11.2026
+
+Im sauberen VPS-`main` mit SHA
+`40f8d3a83864472fe08f4624fb69a7c456c4d340` hat der
+Betreiber nacheinander **ohne SQL-/Redis-Schreibzugriff und ohne HTTPS-GET**
+bestätigt:
+
+| Guard / Zustand | Beobachtetes Ergebnis |
+| --- | --- |
+| Quellen-/Host-Freigaben | 10/10, `noaa_news` = approved, Host-Freigabe aktuell |
+| NOAA-Poll-Lease | 60 Minuten, `next_eligible_at=2026-11-04T00:21:23.535625+00:00`, `lease_due=true` |
+| Signatur / privater Stage-Inbox-Abgleich | gültig, identische Bytes |
+| Privater Checkpoint / signierter Umschlag | 10/10, übereinstimmend |
+| SQL-Source-Anchor / Trust Policy | Digest, Revision, Hosts und Policy korrekt |
+| `sql_full_registry_equal_signed` | `false` (zulässig: das Gesamtsystem enthält auch Quellen außerhalb der genehmigten Host-Teilmenge) |
+| `sql_approved_host_subset_equal_signed` | `true` (für die Freigabe maßgeblich) |
+| Feed-Redis-ACL | getrennte Producer-/Consumer-Anmeldungen verifiziert |
+| BullMQ derzeit | active/waiting/delayed/paused/prioritized/stalled/repeat = 0 |
+| Historische BullMQ-Jobs | failed = 6, completed = 2; **beide unverändert aufbewahren** |
+| Current-/Previous-Queue-Slot | beide ohne Job |
+| Signaturprüfung / Queue-Diagnose | `parity_reviewable` / `reviewable` |
+| Historische NOAA-Projektion | 10 Artikel / 10 Ereignisse; **0** aktuell im Profil-Altersfenster |
+| Herausgeber-Provenienzreview | **nicht** persönlich erfasst |
+
+**Diese Ergebnisse belegen eine vorbereitete technische Momentaufnahme – keine
+erlaubte Betriebsaktion.** Insbesondere berechtigt der zeitlich abgelaufene
+SQL-Lease **nicht** zu einem neuen HTTP-Abruf, Redis-Job oder
+PostgreSQL-Commit. Die bisherigen erfolgreichen Einzelprüfungen wurden
+mit der Quellcodebasis dieses SHAs und nicht mit einem neuen Worker-Image
+durchgeführt.
+
+### Noch offen vor einem ausdrücklich autorisierten NOAA-Einzelabruf
+
+1. Betreiber prüft die genaue NOAA-RSS-URL sowie aktuelle
+   Nutzungsbedingungen/Metadatenrechte erneut und attestiert den
+   quellenspezifischen zulässigen Umfang. Herausgeber-/Syndikationsprüfung
+   ist eine **andere** Aufgabe und wird durch technische Host-Freigaben
+   nicht vorweggenommen.
+2. Operator bestätigt den **exakten** zu startenden Worker-Image-Digest,
+   die eingebettete OCI-Revision, den vorhandenen unveränderten
+   `single_pass`-NOAA-Selector und die Ressourcen-/Isolationseigenschaften
+   der dedizierten Compose-Ausführung. Kein lokaler Build oder ungeprüfter
+   `latest`-Pull und keine automatische Aktivierung.
+3. Direkt vor dem Start erneut 10/10 oder die dann **aktuelle**
+   monotone Signed-Source-/SQL-Anchor-/Checkpoint-Parität, aktuelle
+   NOAA-Host-Audit-Freigabe, Poll-Lease, Feed-Queue-Slot und ruhende
+   Feed-Dienste **ausschließlich lesend** kontrollieren. Die zeitlichen
+   Snapshots von 07.11.2026 sind nicht übertragbar.
+4. Nur nach **separater ausdrücklicher Erlaubnis** für genau einen
+   `noaa_news`-Metadaten-GET mit dem bestehenden 60-Minuten-Intervall,
+   einem einzigen Queue-Tick, maximal 20 zugelassenen RSS-Kandidaten
+   pro Antwort, ohne Bootstrap, ohne einen zweiten Feed, ohne
+   Dauer-Producer/Consumer und ohne Publikation darf ein
+   dedizierter one-shot-Betriebsbefehl vorbereitet werden. Dieser Abruf
+   kann einen SQL-Poll-Lease und einen BullMQ-Job erzeugen und ist
+   daher **kein** read-only Test.
+5. Bei Timeout, unklarem Resultat oder Null Kandidaten: **nicht wiederholen**,
+   nicht die Lease-/Queue-Daten manipulieren und nicht die historischen
+   6 Fehljobs oder 2 abgeschlossenen Jobs löschen. Erst einen neuen
+   lesenden SQL-/Redis-Witness ausführen. Bei Erfolg müssen frische
+   Artikel zunächst getrennt projektions- und revisionssicher bestätigt
+   werden; erst echte, unabhängige passende Mehrquellenereignisse dürfen
+   den bestehenden Mindestquellen-/Publisher-Review-Gate passieren.
+
+Die Quellcode-Synchronisierung des Runbooks, ein grüner GitHub-PR und ein
+`reviewable`-Status **autorisieren keinen neuen Feed-Lauf**.
