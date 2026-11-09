@@ -7,6 +7,7 @@
 The mandatory seven-part script order is documented in [EXPLAINED_SCRIPT_STRUCTURE_V1.md](EXPLAINED_SCRIPT_STRUCTURE_V1.md): The Hook → The Basics → What Happened? → Why Is It Happening? → Why It Matters → What's Next? → The Takeaway. The illustrative timestamps are **guidelines, not per-section quotas**.
 
 The curated, manually authored script lives at `content/news/ozone-2026-explained-en.json` and contains **1,264 spoken English words and 19 original graphic beats**. Its six source records are:
+
 - [NOAA/NASA joint analysis, 2026-11-04](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole) – seasonal mean 25 million km² (Sep 7–Oct 13, 2026), seventh-largest out of 48 years, peak day 27.1 million km² on September 18, South Pole ozone minimum 105 DU on October 17 (versus 92 DU in October 2006).
 - [NASA Earth Observatory, 2026-11-09](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/) – shared NASA/NOAA measurement story **not a second independent confirmation**.
 - [Copernicus CAMS, 2026-09-16](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) – separate European monitoring.
@@ -14,7 +15,7 @@ The curated, manually authored script lives at `content/news/ozone-2026-explaine
 - [US EPA, ozone science](https://www.epa.gov/ozone-layer-protection/basic-ozone-layer-science) – educational background.
 - [UNEP Ozone Secretariat](https://ozone.unep.org/facts-and-figures-ozone-protection) – long-term recovery context and conditional projections.
 
-These are *manual provenance notes*, not live source ingestion or editorial fact-check clearance.
+These are _manual provenance notes_, not live source ingestion or editorial fact-check clearance.
 
 ## Technical implementation
 
@@ -27,7 +28,7 @@ These are *manual provenance notes*, not live source ingestion or editorial fact
 
 ## Historical CI evidence (superseded operation)
 
-The earlier CI-only experiment at commit `184625e1056780427cb5b083165add96e8d452a7` rendered and ffprobe-verified a 570.958-second/9:31 H264/AAC file with 19 scenes and 1,264 spoken words. It was *deleted* as temporary runner output. Its success demonstrated the media code path, **not** that VPS rendering has been deployed or tested. In response to the updated operator decision, real MP4 generation in GitHub is discontinued for this preview.
+The earlier CI-only experiment at commit `184625e1056780427cb5b083165add96e8d452a7` rendered and ffprobe-verified a 570.958-second/9:31 H264/AAC file with 19 scenes and 1,264 spoken words. It was _deleted_ as temporary runner output. Its success demonstrated the media code path, **not** that VPS rendering has been deployed or tested. In response to the updated operator decision, real MP4 generation in GitHub is discontinued for this preview.
 
 ## Not yet done
 
