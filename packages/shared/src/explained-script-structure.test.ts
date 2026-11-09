@@ -54,9 +54,7 @@ test("rejects blank narration and wrong language", () => {
   const blank = validDraft();
   blank.sections[1] = { ...blank.sections[1]!, narration: "  " };
   assert.throws(() => assertEarthClimateExplainedStructure(blank));
-  assert.throws(() =>
-    assertEarthClimateExplainedStructure({ ...validDraft(), language: "de-DE" }),
-  );
+  assert.throws(() => assertEarthClimateExplainedStructure({ ...validDraft(), language: "de-DE" }));
 });
 
 test("rejects non-object and malformed sections", () => {
