@@ -57,3 +57,13 @@ export type {
   CommonsFileCandidate,
   CommonsInspectionResult,
 } from "./commons-offline-imageinfo.js";
+
+export {
+  EARTH_CLIMATE_EXPLAINED_SECTION_IDS,
+  assertEarthClimateExplainedStructure,
+} from "./explained-script-structure.js";
+export type {
+  EarthClimateExplainedSectionId,
+  EarthClimateExplainedSection,
+  EarthClimateExplainedScript,
+} from "./explained-script-structure.js";
