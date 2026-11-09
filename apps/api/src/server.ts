@@ -9,6 +9,7 @@ import { DormantNamedSourceAdmin } from "./admin-source-registry.js";
 import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
 import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
 import { DormantPersonalSourceHostAdmin } from "./personal-source-host-admin.js";
+import { PrivatePreviewService } from "./private-previews.js";
 
 export function createApiServer(
   options: {
@@ -20,6 +21,7 @@ export function createApiServer(
     hostApprovals?: DormantNamedHostApproval;
     personalEditorial?: DormantPersonalEditorialAdmin;
     personalSourceHost?: DormantPersonalSourceHostAdmin;
+    privatePreviews?: PrivatePreviewService;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -57,6 +59,10 @@ export function createApiServer(
     throw new Error("Personal source/host requires named editor login");
   if (options.personalSourceHost && (options.sourceRegistry || options.hostApprovals))
     throw new Error("Conflicting legacy source/host handlers forbidden");
+  if (options.privatePreviews && !(options.privatePreviews instanceof PrivatePreviewService))
+    throw new Error("Private previews require a valid named session service");
+  if (options.privatePreviews && (!options.auth || !options.editor))
+    throw new Error("Private previews require both admin and named editor auth");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -68,6 +74,21 @@ export function createApiServer(
     if (request.method === "GET" && request.url === "/healthz") {
       response.writeHead(200);
       response.end(JSON.stringify(createHealth("api")));
+      return;
+    }
+
+    // Default OFF: operator preview listing/streaming and one-shot render are
+    // identity-bound, protected and require separate explicit VPS activation.
+    if (request.url?.startsWith("/admin/private-previews") && options.privatePreviews) {
+      void options.privatePreviews.handle(request, response).then((handled) => {
+        if (!handled && !response.writableEnded) {
+          response.writeHead(404);
+          response.end(JSON.stringify({ error: "not_found" }));
+        }
+      }).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded) response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+      });
       return;
     }
 
