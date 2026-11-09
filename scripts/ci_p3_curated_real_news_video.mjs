@@ -61,7 +61,9 @@ function safeText(value, max) {
     value === value.trim() &&
     ![...value].some((character) => {
       const code = character.codePointAt(0);
-      return code !== undefined && (code < 32 || code === 127 || character === "<" || character === ">");
+      return (
+        code !== undefined && (code < 32 || code === 127 || character === "<" || character === ">")
+      );
     })
   );
 }
@@ -106,9 +108,18 @@ function preflight(news) {
   }
   // NASA and NOAA describe a joint seasonal analysis. DLR and CAMS
   // provide different observational context, NOT an invented 4-way vote.
-  assert.equal(sources.get("NOAA_2026_11_04").evidenceGroup, sources.get("NASA_2026_11_09").evidenceGroup);
-  assert.notEqual(sources.get("CAMS_2026_09_16").evidenceGroup, sources.get("NOAA_2026_11_04").evidenceGroup);
-  assert.notEqual(sources.get("DLR_2026_10_26").evidenceGroup, sources.get("NOAA_2026_11_04").evidenceGroup);
+  assert.equal(
+    sources.get("NOAA_2026_11_04").evidenceGroup,
+    sources.get("NASA_2026_11_09").evidenceGroup,
+  );
+  assert.notEqual(
+    sources.get("CAMS_2026_09_16").evidenceGroup,
+    sources.get("NOAA_2026_11_04").evidenceGroup,
+  );
+  assert.notEqual(
+    sources.get("DLR_2026_10_26").evidenceGroup,
+    sources.get("NOAA_2026_11_04").evidenceGroup,
+  );
 
   const facts = new Map();
   for (const fact of news.facts) {
@@ -244,102 +255,109 @@ async function main() {
       await writeFile(svg, frame.svg, { encoding: "utf8", mode: 0o600, flag: "wx" });
       command("rsvg-convert", ["--output", png, svg], 30000);
       assert.equal((await readFile(png)).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
-      command("espeak-ng", [
-        "-v",
-        "de",
-        "-s",
-        "145",
-        "-w",
-        wav,
-        news.scenes[frame.index].narration,
-      ], 30000);
-      const duration = Number(command("ffprobe", [
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=nk=1:nw=1",
-        wav,
-      ]));
+      command(
+        "espeak-ng",
+        ["-v", "de", "-s", "145", "-w", wav, news.scenes[frame.index].narration],
+        30000,
+      );
+      const duration = Number(
+        command("ffprobe", [
+          "-v",
+          "error",
+          "-show_entries",
+          "format=duration",
+          "-of",
+          "default=nk=1:nw=1",
+          wav,
+        ]),
+      );
       assert.ok(duration >= 2 && duration <= 35);
       const clipSeconds = (Math.ceil((duration + 0.5) * 24) / 24).toFixed(3);
-      command("ffmpeg", [
+      command(
+        "ffmpeg",
+        [
+          "-hide_banner",
+          "-loglevel",
+          "error",
+          "-nostdin",
+          "-y",
+          "-protocol_whitelist",
+          "file,pipe",
+          "-loop",
+          "1",
+          "-framerate",
+          "24",
+          "-i",
+          png,
+          "-protocol_whitelist",
+          "file,pipe",
+          "-i",
+          wav,
+          "-af",
+          "aresample=48000,apad=pad_dur=1",
+          "-t",
+          clipSeconds,
+          "-r",
+          "24",
+          "-c:v",
+          "libx264",
+          "-preset",
+          "ultrafast",
+          "-crf",
+          "30",
+          "-pix_fmt",
+          "yuv420p",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ac",
+          "1",
+          mp4,
+        ],
+        120000,
+      );
+      segmentPaths.push(mp4);
+    }
+    const list = join(folder, "concat.txt");
+    await writeFile(list, segmentPaths.map((path) => "file '" + path + "'").join("\n") + "\n", {
+      mode: 0o600,
+      flag: "wx",
+    });
+    const output = join(folder, "REAL_NEWS_REVIEW_REQUIRED_NOT_PUBLISHABLE.mp4");
+    command(
+      "ffmpeg",
+      [
         "-hide_banner",
         "-loglevel",
         "error",
         "-nostdin",
         "-y",
-        "-protocol_whitelist",
-        "file,pipe",
-        "-loop",
-        "1",
-        "-framerate",
-        "24",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
         "-i",
-        png,
-        "-protocol_whitelist",
-        "file,pipe",
-        "-i",
-        wav,
-        "-af",
-        "aresample=48000,apad=pad_dur=1",
-        "-t",
-        clipSeconds,
-        "-r",
-        "24",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "ultrafast",
-        "-crf",
-        "30",
-        "-pix_fmt",
-        "yuv420p",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "96k",
-        "-ac",
-        "1",
-        mp4,
-      ], 120000);
-      segmentPaths.push(mp4);
-    }
-    const list = join(folder, "concat.txt");
-    await writeFile(
-      list,
-      segmentPaths.map((path) => "file '" + path + "'").join("\n") + "\n",
-      { mode: 0o600, flag: "wx" },
+        list,
+        "-c",
+        "copy",
+        "-movflags",
+        "+faststart",
+        output,
+      ],
+      120000,
     );
-    const output = join(folder, "REAL_NEWS_REVIEW_REQUIRED_NOT_PUBLISHABLE.mp4");
-    command("ffmpeg", [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-nostdin",
-      "-y",
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      list,
-      "-c",
-      "copy",
-      "-movflags",
-      "+faststart",
-      output,
-    ], 120000);
-    const info = JSON.parse(command("ffprobe", [
-      "-v",
-      "error",
-      "-show_entries",
-      "format=duration:stream=codec_name,codec_type,width,height,nb_frames",
-      "-of",
-      "json",
-      output,
-    ]));
+    const info = JSON.parse(
+      command("ffprobe", [
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration:stream=codec_name,codec_type,width,height,nb_frames",
+        "-of",
+        "json",
+        output,
+      ]),
+    );
     const video = info.streams.find((stream) => stream.codec_type === "video");
     const audio = info.streams.find((stream) => stream.codec_type === "audio");
     assert.equal(video.codec_name, "h264");
@@ -350,7 +368,9 @@ async function main() {
     assert.ok(Number(info.format.duration) > 35 && Number(info.format.duration) < 220);
     const byteSize = (await stat(output)).size;
     assert.ok(byteSize > 5000 && byteSize < 30 * 1024 * 1024);
-    const sha256 = createHash("sha256").update(await readFile(output)).digest("hex");
+    const sha256 = createHash("sha256")
+      .update(await readFile(output))
+      .digest("hex");
     assert.equal(news.editorialApproved, false);
     assert.equal(news.publicationAllowed, false);
     assert.equal(rights.renderAllowed, false);
