@@ -21,6 +21,11 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: P3-DEMO TEMP Prettier diagnostics (remove before acceptance)
+        run: |
+          npx prettier --write scripts/ci_p3_synthetic_mp4_demo.mjs
+          git diff -- scripts/ci_p3_synthetic_mp4_demo.mjs
+          exit 1
       - name: Install open-source FFmpeg and SVG renderer on ephemeral runner only
         run: |
           sudo apt-get update -qq
