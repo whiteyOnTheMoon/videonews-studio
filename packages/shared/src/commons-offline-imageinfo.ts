@@ -210,6 +210,7 @@ function parsePage(value: unknown, key: string): CommonsFileCandidate | CommonsI
     (typeof image.mime !== "string" || !ALLOWED_MIMES.has(image.mime)) ||
     image.descriptionurl !== expectedPageUrl ||
     canonicalUrl(image.descriptionurl, "commons.wikimedia.org") === null ||
+    typeof image.url !== "string" ||
     canonicalUrl(image.url, "upload.wikimedia.org") === null ||
     !image.url.startsWith("https://upload.wikimedia.org/wikipedia/commons/") ||
     typeof image.timestamp !== "string" ||
