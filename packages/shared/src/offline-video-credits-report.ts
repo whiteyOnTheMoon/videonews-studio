@@ -110,9 +110,7 @@ function reasonsUnique(
 export function buildOfflineVideoCreditsReport(input: unknown): OfflineVideoCreditsReport {
   const request = object(input);
   const videoId =
-    typeof request?.videoId === "string" && UUID.test(request.videoId)
-      ? request.videoId
-      : null;
+    typeof request?.videoId === "string" && UUID.test(request.videoId) ? request.videoId : null;
   const assets = request?.assets;
   const reasons: AssetCreditsBlockReason[] = [];
   const entries: OfflineAssetCreditEntry[] = [];
@@ -127,9 +125,7 @@ export function buildOfflineVideoCreditsReport(input: unknown): OfflineVideoCred
     for (const item of assets) {
       const asset = object(item);
       const assetId =
-        typeof asset?.assetId === "string" && UUID.test(asset.assetId)
-          ? asset.assetId
-          : null;
+        typeof asset?.assetId === "string" && UUID.test(asset.assetId) ? asset.assetId : null;
       const precheck = precheckAssetLicense(asset);
       const entryReasons: AssetCreditsBlockReason[] = [];
       if (!assetId) entryReasons.push("invalid_asset_record");
