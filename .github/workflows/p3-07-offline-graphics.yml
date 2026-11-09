@@ -1,0 +1,32 @@
+name: P3-07 isolated synthetic SVG storyboard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/shared/src/offline-storyboard-graphics.ts"
+      - "packages/shared/src/offline-storyboard-graphics.test.ts"
+      - "packages/shared/src/index.ts"
+      - "scripts/ci_p3_07_offline_svg_storyboard.mjs"
+      - "docs/P3_07_OFFLINE_GRAPHICS_FALLBACK.md"
+      - ".github/workflows/p3-07-offline-graphics.yml"
+permissions:
+  contents: read
+jobs:
+  synthetic-svg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build shared graphics module
+        run: npm run build --workspace @vns/shared
+      - name: Test safe graphics validation
+        run: node --test packages/shared/dist/offline-storyboard-graphics.test.js
+      - name: Generate and discard five SVG files in isolated CI only
+        run: node scripts/ci_p3_07_offline_svg_storyboard.mjs
