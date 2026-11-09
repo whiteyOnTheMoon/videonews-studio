@@ -395,3 +395,228 @@ p {
     max-width: 100%;
   }
 }
+
+/* Owner-only Studio: the two primary actions and private media stay prominent. */
+.studio-shell {
+  max-width: 1060px;
+  padding-top: clamp(3.5rem, 8vh, 7rem);
+}
+.studio-shell > h1 {
+  font-size: clamp(2.4rem, 5vw, 3.7rem);
+  letter-spacing: -0.035em;
+  margin-bottom: 0.6rem;
+}
+.studio-layout {
+  margin-top: 2.5rem;
+}
+.studio-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #34465e;
+  padding-bottom: 0.6rem;
+}
+.studio-tabs button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #b5c6e1;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.78rem 1.15rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.studio-tabs button[aria-selected="true"] {
+  color: #fff;
+  background: #203852;
+  border-color: #5c8fc5;
+}
+.studio-tabs button:hover {
+  background: #1b3049;
+}
+.studio-layout :is(button, a, input, select):focus-visible {
+  outline: 3px solid #b0d7ff;
+  outline-offset: 3px;
+}
+.studio-panel {
+  display: grid;
+  gap: 1.35rem;
+  padding: clamp(1.25rem, 3vw, 2.1rem);
+  margin-top: 1.5rem;
+  background: linear-gradient(145deg, #14243a, #111e30 64%, #11263b);
+  border: 1px solid #355475;
+  border-radius: 18px;
+  min-width: 0;
+}
+.studio-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.studio-heading h2 {
+  font-size: clamp(1.55rem, 3.6vw, 2.2rem);
+  line-height: 1.18;
+  margin: 0.5rem 0;
+  letter-spacing: -0.02em;
+}
+.studio-heading p {
+  margin: 0;
+}
+.studio-kicker {
+  color: #81c8e9;
+  font-size: 0.73rem;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+}
+.studio-tag {
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid #476585;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  color: #b8d7ed;
+  background: #1d354b;
+}
+.studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+.studio-actions button,
+.studio-heading button,
+.studio-download {
+  min-height: 3rem;
+  padding: 0.82rem 1.35rem;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.studio-primary {
+  background: #82d4f4;
+  color: #061929;
+  border: 1px solid #82d4f4;
+}
+.studio-secondary {
+  background: #1e3651;
+  color: #e4f1ff;
+  border: 1px solid #6288ac;
+}
+.studio-actions button:disabled,
+.studio-heading button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.studio-explanation {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #bdcadb;
+}
+.studio-picker {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.studio-picker legend {
+  padding: 0 0 0.75rem;
+  font-weight: 800;
+}
+.studio-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  background: #0d1c2e;
+  border: 1px solid #39536d;
+  border-radius: 10px;
+  cursor: pointer;
+  min-width: 0;
+}
+.studio-choice:has(input:checked) {
+  border-color: #81caeb;
+  background: #142b45;
+}
+.studio-choice input {
+  margin-top: 0.25rem;
+  accent-color: #81caeb;
+}
+.studio-choice span {
+  min-width: 0;
+}
+.studio-choice small {
+  display: block;
+  margin-top: 0.3rem;
+  color: #b1c0d4;
+  line-height: 1.55;
+}
+.studio-feedback {
+  margin: 0;
+  background: #1c3850;
+  border: 1px solid #527c9a;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+.studio-video-select {
+  display: grid;
+  gap: 0.65rem;
+  font-weight: 700;
+}
+.studio-video-select select {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  background: #10243a;
+  border: 1px solid #557b9a;
+  border-radius: 10px;
+  color: white;
+  padding: 0.85rem;
+  font: inherit;
+}
+.studio-player {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #050c14;
+  border-radius: 12px;
+  border: 1px solid #41546a;
+}
+.studio-video-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #c3d0dc;
+  font-size: 0.9rem;
+}
+.studio-download {
+  text-decoration: none;
+  background: #82d4f4;
+  border: 1px solid #82d4f4;
+  color: #061929;
+}
+.studio-settings {
+  max-width: 800px;
+  padding-top: 1.2rem;
+}
+.studio-settings > p {
+  max-width: 660px;
+}
+@media (max-width: 620px) {
+  .studio-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .studio-tabs button {
+    font-size: 0.85rem;
+    padding: 0.72rem 0.3rem;
+  }
+  .studio-actions button {
+    width: 100%;
+  }
+}
