@@ -41,7 +41,9 @@ if (
   process.getuid() === 0 ||
   userInfo().username !== "ap"
 ) {
-  throw new Error("REFUSED: preview may only run by explicit ap operator approval on VPS, never in CI");
+  throw new Error(
+    "REFUSED: preview may only run by explicit ap operator approval on VPS, never in CI",
+  );
 }
 
 const STORY_PATH = new URL("../content/news/ozone-2026-explained-en.json", import.meta.url);
@@ -399,7 +401,8 @@ async function main() {
       .update(await readFile(movie.output))
       .digest("hex");
     const stamp = new Date().toISOString().replace(/[-:.]/g, "").replace("T", "-").slice(0, 15);
-    const base = "earth-climate-explained-ozone-2026-en-" + stamp + "-" + randomBytes(4).toString("hex");
+    const base =
+      "earth-climate-explained-ozone-2026-en-" + stamp + "-" + randomBytes(4).toString("hex");
     const tempOut = join(privateRoot, "." + base + ".partial");
     const finalOut = join(privateRoot, base + ".mp4");
     try {
