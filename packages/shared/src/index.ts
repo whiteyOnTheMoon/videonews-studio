@@ -48,3 +48,12 @@ export type {
   PexelsDiscoveryCandidate,
   PexelsDiscoveryResult,
 } from "./pexels-offline-discovery.js";
+
+export { inspectOfflineCommonsImageInfo } from "./commons-offline-imageinfo.js";
+export type {
+  CommonsLicenseCode,
+  CommonsInspectionFailure,
+  CommonsManualReviewReason,
+  CommonsFileCandidate,
+  CommonsInspectionResult,
+} from "./commons-offline-imageinfo.js";
