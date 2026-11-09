@@ -174,10 +174,12 @@ async function main() {
   const { storyboard, report, rights } = syntheticStoryboard();
   command("ffmpeg", ["-hide_banner", "-version"], 5000);
   command("ffprobe", ["-hide_banner", "-version"], 5000);
+  command("rsvg-convert", ["--version"], 5000);
 
   const dir = await mkdtemp(join(tmpdir(), "vns-p3-synthetic-mp4-"));
   try {
     const paths = [];
+    const pngPaths = [];
     for (const frame of storyboard.frames) {
       assert.ok(frame.svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"'));
       assert.ok(frame.svg.includes("VORSCHAU – NICHT ZUR VERÖFFENTLICHUNG"));
@@ -185,10 +187,16 @@ async function main() {
       const path = join(dir, "scene-" + (frame.index + 1) + ".svg");
       await writeFile(path, frame.svg, { encoding: "utf8", mode: 0o600, flag: "wx" });
       paths.push(path);
+      const png = join(dir, "scene-" + (frame.index + 1) + ".png");
+      command("rsvg-convert", ["--output", png, path], 30000);
+      const signature = (await readFile(png)).subarray(0, 8);
+      assert.equal(signature.toString("hex"), "89504e470d0a1a0a");
+      pngPaths.push(png);
     }
     assert.equal(paths.length, 5);
+    assert.equal(pngPaths.length, 5);
 
-    const inputArgs = paths.flatMap((path) => [
+    const inputArgs = pngPaths.flatMap((path) => [
       "-protocol_whitelist",
       "file,pipe",
       "-loop",
@@ -200,10 +208,10 @@ async function main() {
       "-i",
       path,
     ]);
-    const inputs = paths
+    const inputs = pngPaths
       .map((_, i) => "[" + i + ":v]setpts=PTS-STARTPTS,format=yuv420p[v" + i + "]")
       .join(";");
-    const sources = paths.map((_, i) => "[v" + i + "]").join("");
+    const sources = pngPaths.map((_, i) => "[v" + i + "]").join("");
     const filters = inputs + ";" + sources + "concat=n=5:v=1:a=0[outv]";
     const mp4 = join(dir, "SYNTHETIC_DO_NOT_PUBLISH.mp4");
 
