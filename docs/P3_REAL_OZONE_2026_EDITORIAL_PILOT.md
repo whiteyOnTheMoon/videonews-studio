@@ -15,12 +15,12 @@ konkreten Quellen.
 
 ## Öffentliche, recherchierte Belege
 
-| Quelle | Datum | Inhalt und Rolle |
-| --- | --- | --- |
-| [NOAA](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole) | 04.11.2026 | Gemeinsame NASA/NOAA-Messauswertung: Saisonmittel 25 Mio. km² vom 07.09. bis 13.10., Platz 7 von 48 Jahren, Tagesmaximum 27,1 Mio. km² am 18.09.; 105 DU Südpolminimum 2026 und 92 DU im Oktober 2006 |
-| [NASA Earth Observatory](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/) | 09.11.2026 | Darstellung der Ozonloch-Ausdehnung und des Wetterzusammenhangs, teilweise dieselben Messungen wie NOAA |
-| [Copernicus CAMS](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) | 16.09.2026 | Unabhängige europäische Überwachung und Beobachtung überdurchschnittlich großer September-Fläche |
-| [DLR](https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years) | 26.10.2026 | Eigenständige europäische Satellitenanalyse sowie Kontext zum Polarwirbel und zur Größe/Tiefe |
+| Quelle                                                                                                                                            | Datum      | Inhalt und Rolle                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [NOAA](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole)                                                       | 04.11.2026 | Gemeinsame NASA/NOAA-Messauswertung: Saisonmittel 25 Mio. km² vom 07.09. bis 13.10., Platz 7 von 48 Jahren, Tagesmaximum 27,1 Mio. km² am 18.09.; 105 DU Südpolminimum 2026 und 92 DU im Oktober 2006 |
+| [NASA Earth Observatory](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/)                                   | 09.11.2026 | Darstellung der Ozonloch-Ausdehnung und des Wetterzusammenhangs, teilweise dieselben Messungen wie NOAA                                                                                               |
+| [Copernicus CAMS](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) | 16.09.2026 | Unabhängige europäische Überwachung und Beobachtung überdurchschnittlich großer September-Fläche                                                                                                      |
+| [DLR](https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years)                                                     | 26.10.2026 | Eigenständige europäische Satellitenanalyse sowie Kontext zum Polarwirbel und zur Größe/Tiefe                                                                                                         |
 
 **Wichtig:** NASA und NOAA beziehen sich auf eine gemeinsame
 Analyse. Die beiden Webseiten sind **nicht** zwei unabhängig
