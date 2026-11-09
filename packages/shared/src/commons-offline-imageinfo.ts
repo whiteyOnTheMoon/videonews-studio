@@ -209,7 +209,8 @@ function parsePage(value: unknown, key: string): CommonsFileCandidate | CommonsI
   if (
     !image ||
     image.mediatype !== "BITMAP" ||
-    (typeof image.mime !== "string" || !ALLOWED_MIMES.has(image.mime)) ||
+    typeof image.mime !== "string" ||
+    !ALLOWED_MIMES.has(image.mime) ||
     image.descriptionurl !== expectedPageUrl ||
     canonicalUrl(image.descriptionurl, "commons.wikimedia.org") === null ||
     typeof image.url !== "string" ||
@@ -248,12 +249,11 @@ function parsePage(value: unknown, key: string): CommonsFileCandidate | CommonsI
   const hasCustomAttribution =
     typeof customAttribution === "string" && customAttribution.trim() !== "";
   const restrictions = metadataValue(extmetadata, "Restrictions");
-  const hasRestrictions =
-    Array.isArray(restrictions)
-      ? restrictions.length > 0
-      : typeof restrictions === "string"
-        ? restrictions.trim() !== ""
-        : restrictions !== undefined && restrictions !== null;
+  const hasRestrictions = Array.isArray(restrictions)
+    ? restrictions.length > 0
+    : typeof restrictions === "string"
+      ? restrictions.trim() !== ""
+      : restrictions !== undefined && restrictions !== null;
 
   const reviewReasons: CommonsManualReviewReason[] = [
     "api_metadata_is_unverified",
