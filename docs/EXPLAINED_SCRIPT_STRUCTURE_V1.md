@@ -6,15 +6,15 @@
 
 Eine Episode erklärt **ein** aktuelles Thema zu Erde, Klima oder Umweltwissenschaft. Sie erzählt eine nachvollziehbare Geschichte für ein allgemein interessiertes Publikum, statt Nachrichten bloß vorzulesen. Alle sieben Abschnitte sind **Pflicht und in der folgenden Reihenfolge** zu liefern. Die Zeitfenster sind **redaktionelle Orientierungswerte für einen beispielhaften 9-Minuten-Film**, keine fest einprogrammierten Abschnittsdauern.
 
-| Reihenfolge | Stabile Abschnitts-ID | Sichtbarer Titel | Unverbindliches Zeitfenster | Redaktionelle Funktion |
-| --- | --- | --- | --- | --- |
-| 1 | `hook` | The Hook | 0:00–0:20 | Überraschende belegte Tatsache oder spannende Leitfrage; Titel-/Thumbnail-Versprechen unmittelbar einlösen |
-| 2 | `basics` | The Basics | 0:20–1:05 | Nötiges Vorwissen und neue Begriffe leicht verständlich erklären |
-| 3 | `what-happened` | What Happened? | 1:05–3:30 | Die aktuellen Nachrichten, Beobachtungen und präzise benannten Messwerte |
-| 4 | `why-is-it-happening` | Why Is It Happening? | 3:30–5:45 | Wissenschaftliche Mechanismen, Ursachen und Unsicherheiten |
-| 5 | `why-it-matters` | Why It Matters | 5:45–7:30 | Auswirkungen, Relevanz und Einordnung; nicht mehr behaupten als die Quellen tragen |
-| 6 | `whats-next` | What's Next? | 7:30–8:40 | Was Forschende erwarten; Prognosen, Grenzen und offene Fragen kennzeichnen |
-| 7 | `takeaway` | The Takeaway | 8:40–9:00 | Eine klare Kernerkenntnis und ein kurzer Schluss ohne Wiederholungsfüller |
+| Reihenfolge | Stabile Abschnitts-ID | Sichtbarer Titel     | Unverbindliches Zeitfenster | Redaktionelle Funktion                                                                                     |
+| ----------- | --------------------- | -------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1           | `hook`                | The Hook             | 0:00–0:20                   | Überraschende belegte Tatsache oder spannende Leitfrage; Titel-/Thumbnail-Versprechen unmittelbar einlösen |
+| 2           | `basics`              | The Basics           | 0:20–1:05                   | Nötiges Vorwissen und neue Begriffe leicht verständlich erklären                                           |
+| 3           | `what-happened`       | What Happened?       | 1:05–3:30                   | Die aktuellen Nachrichten, Beobachtungen und präzise benannten Messwerte                                   |
+| 4           | `why-is-it-happening` | Why Is It Happening? | 3:30–5:45                   | Wissenschaftliche Mechanismen, Ursachen und Unsicherheiten                                                 |
+| 5           | `why-it-matters`      | Why It Matters       | 5:45–7:30                   | Auswirkungen, Relevanz und Einordnung; nicht mehr behaupten als die Quellen tragen                         |
+| 6           | `whats-next`          | What's Next?         | 7:30–8:40                   | Was Forschende erwarten; Prognosen, Grenzen und offene Fragen kennzeichnen                                 |
+| 7           | `takeaway`            | The Takeaway         | 8:40–9:00                   | Eine klare Kernerkenntnis und ein kurzer Schluss ohne Wiederholungsfüller                                  |
 
 ### Verbindlich vs. flexibel
 
