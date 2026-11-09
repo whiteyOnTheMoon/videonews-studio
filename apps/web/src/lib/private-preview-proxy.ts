@@ -1,4 +1,4 @@
-import { adminProxyConfig, clientAdminCookie, isAdminAuthorized, type AdminProxyConfig } from "./admin-proxy";
+import { clientAdminCookie, isAdminAuthorized, type AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 const FILE = /^earth-climate-explained-ozone-2026-en-\d{8}-\d{6}-[a-f0-9]{8}\.mp4$/;
@@ -26,30 +26,38 @@ function reply(status: number, body: object): Response {
 function validListing(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const object = value as Record<string, unknown>;
-  return Object.keys(object).sort().join(",") === "files,private" &&
+  return (
+    Object.keys(object).sort().join(",") === "files,private" &&
     object.private === true &&
     Array.isArray(object.files) &&
     object.files.length <= 50 &&
     object.files.every((entry: unknown) => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
       const row = entry as Record<string, unknown>;
-      return Object.keys(row).sort().join(",") ===
-        "bytes,file,modifiedAt,publishingAllowed,reviewRequired" &&
-        typeof row.file === "string" && FILE.test(row.file) &&
-        typeof row.bytes === "number" && Number.isSafeInteger(row.bytes) &&
-        row.bytes > 100000 && row.bytes <= MAX_BYTES &&
+      return (
+        Object.keys(row).sort().join(",") ===
+          "bytes,file,modifiedAt,publishingAllowed,reviewRequired" &&
+        typeof row.file === "string" &&
+        FILE.test(row.file) &&
+        typeof row.bytes === "number" &&
+        Number.isSafeInteger(row.bytes) &&
+        row.bytes > 100000 &&
+        row.bytes <= MAX_BYTES &&
         typeof row.modifiedAt === "string" &&
         Number.isFinite(Date.parse(row.modifiedAt)) &&
         new Date(row.modifiedAt).toISOString() === row.modifiedAt &&
-        row.reviewRequired === true && row.publishingAllowed === false;
-    });
+        row.reviewRequired === true &&
+        row.publishingAllowed === false
+      );
+    })
+  );
 }
 
 function validStatus(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
-  return Object.keys(row).sort().join(",") ===
-      "file,finishedAt,id,publishingAllowed,startedAt,state" &&
+  return (
+    Object.keys(row).sort().join(",") === "file,finishedAt,id,publishingAllowed,startedAt,state" &&
     row.publishingAllowed === false &&
     ["idle", "running", "completed", "failed"].includes(row.state as string) &&
     typeof row.id === "string" &&
@@ -57,7 +65,8 @@ function validStatus(value: unknown): boolean {
     typeof row.startedAt === "string" &&
     (row.startedAt === "" || Number.isFinite(Date.parse(row.startedAt))) &&
     (row.finishedAt === null || typeof row.finishedAt === "string") &&
-    (row.file === null || typeof row.file === "string" && FILE.test(row.file));
+    (row.file === null || (typeof row.file === "string" && FILE.test(row.file)))
+  );
 }
 
 export async function privatePreviewProxy(
@@ -96,10 +105,14 @@ export async function privatePreviewProxy(
     return reply(403, { error: "render_disabled" });
   }
 
-  const path = action === "list" ? "/admin/private-previews"
-    : action === "status" ? "/admin/private-previews/status"
-    : action === "render" ? "/admin/private-previews/render"
-    : "/admin/private-previews/" + file + url.search;
+  const path =
+    action === "list"
+      ? "/admin/private-previews"
+      : action === "status"
+        ? "/admin/private-previews/status"
+        : action === "render"
+          ? "/admin/private-previews/render"
+          : "/admin/private-previews/" + file + url.search;
   const headers: Record<string, string> = { Cookie: editorCookie };
   if (action === "render") {
     headers.Origin = config.origin;
@@ -114,7 +127,9 @@ export async function privatePreviewProxy(
     const upstream = await fetcher(config.api + path, {
       method,
       headers,
-      ...(action === "render" ? { body: JSON.stringify({ storyId: "ozone-2026-explained-en" }) } : {}),
+      ...(action === "render"
+        ? { body: JSON.stringify({ storyId: "ozone-2026-explained-en" }) }
+        : {}),
       cache: "no-store",
       redirect: "manual",
       signal: AbortSignal.timeout(action === "file" ? 30_000 : 5000),
@@ -123,15 +138,16 @@ export async function privatePreviewProxy(
       return reply(upstream.status, { error: "request_refused" });
     }
     if (action === "file") {
-      if (![200, 206].includes(upstream.status) ||
-          upstream.headers.get("content-type") !== "video/mp4" ||
-          !upstream.body) {
+      if (
+        ![200, 206].includes(upstream.status) ||
+        upstream.headers.get("content-type") !== "video/mp4" ||
+        !upstream.body
+      ) {
         await upstream.body?.cancel();
         return reply(503, { error: "temporarily_unavailable" });
       }
       const length = upstream.headers.get("content-length");
-      if (!length || !/^\d+$/.test(length) || Number(length) < 1 ||
-          Number(length) > MAX_BYTES) {
+      if (!length || !/^\d+$/.test(length) || Number(length) < 1 || Number(length) > MAX_BYTES) {
         await upstream.body.cancel();
         return reply(503, { error: "temporarily_unavailable" });
       }
@@ -142,8 +158,8 @@ export async function privatePreviewProxy(
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
-        "Content-Disposition": (url.search === "?download=1" ? "attachment" : "inline") +
-          '; filename="' + file + '"',
+        "Content-Disposition":
+          (url.search === "?download=1" ? "attachment" : "inline") + '; filename="' + file + '"',
       });
       if (upstream.status === 206) {
         const contentRange = upstream.headers.get("content-range");
@@ -160,15 +176,25 @@ export async function privatePreviewProxy(
     const raw = await upstream.text();
     if (raw.length > 20_000) return reply(503, { error: "temporarily_unavailable" });
     const value: unknown = JSON.parse(raw);
-    if (action === "list" && !validListing(value)) return reply(503, { error: "temporarily_unavailable" });
-    if (action === "status" && !validStatus(value)) return reply(503, { error: "temporarily_unavailable" });
-    if (action === "render" && (
-      !value || typeof value !== "object" || Array.isArray(value) ||
-      Object.keys(value).sort().join(",") !== "accepted,jobId,publishingAllowed" ||
-      !("accepted" in value) || value.accepted !== true ||
-      !("publishingAllowed" in value) || value.publishingAllowed !== false ||
-      !("jobId" in value) || typeof value.jobId !== "string" || !/^[a-f0-9-]{36}$/.test(value.jobId)
-    )) return reply(503, { error: "temporarily_unavailable" });
+    if (action === "list" && !validListing(value))
+      return reply(503, { error: "temporarily_unavailable" });
+    if (action === "status" && !validStatus(value))
+      return reply(503, { error: "temporarily_unavailable" });
+    if (
+      action === "render" &&
+      (!value ||
+        typeof value !== "object" ||
+        Array.isArray(value) ||
+        Object.keys(value).sort().join(",") !== "accepted,jobId,publishingAllowed" ||
+        !("accepted" in value) ||
+        value.accepted !== true ||
+        !("publishingAllowed" in value) ||
+        value.publishingAllowed !== false ||
+        !("jobId" in value) ||
+        typeof value.jobId !== "string" ||
+        !/^[a-f0-9-]{36}$/.test(value.jobId))
+    )
+      return reply(503, { error: "temporarily_unavailable" });
     return reply(status, value as object);
   } catch {
     return reply(503, { error: "temporarily_unavailable" });
