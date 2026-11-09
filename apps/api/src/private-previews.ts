@@ -4,7 +4,7 @@
  * the fixed, unpublishable English pilot. Never serves a public static path.
  */
 import { randomUUID } from "node:crypto";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { constants as fileConstants, createReadStream } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -19,7 +19,6 @@ const MAX_BYTES = 80 * 1024 * 1024;
 const MIN_BYTES = 100000;
 const MAX_CAPTURE = 8192;
 const MAX_RENDER_MS = 12 * 60 * 1000;
-const RECHECK_DELAY_MS = 1000;
 const MIN_RENDER_INTERVAL_MS = 60 * 1000;
 
 interface PrivatePreviewRow {
@@ -118,7 +117,7 @@ export class PrivatePreviewService {
     finishedAt: null,
     file: null,
   };
-  private child: ChildProcessWithoutNullStreams | null = null;
+  private child: ChildProcess | null = null;
   private lastStartedMs = 0;
 
   constructor(
@@ -159,8 +158,8 @@ export class PrivatePreviewService {
       outputSize += chunk.byteLength;
       if (outputSize <= MAX_CAPTURE) output += chunk.toString("utf8");
     };
-    child.stdout.on("data", capture);
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stdout?.on("data", capture);
+    child.stderr?.on("data", (chunk: Buffer) => {
       outputSize += chunk.byteLength;
     });
     const deadline = setTimeout(() => child.kill("SIGTERM"), MAX_RENDER_MS);
