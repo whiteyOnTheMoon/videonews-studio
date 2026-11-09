@@ -80,15 +80,19 @@ export function createApiServer(
     // Default OFF: operator preview listing/streaming and one-shot render are
     // identity-bound, protected and require separate explicit VPS activation.
     if (request.url?.startsWith("/admin/private-previews") && options.privatePreviews) {
-      void options.privatePreviews.handle(request, response).then((handled) => {
-        if (!handled && !response.writableEnded) {
-          response.writeHead(404);
-          response.end(JSON.stringify({ error: "not_found" }));
-        }
-      }).catch(() => {
-        if (!response.headersSent) response.writeHead(503);
-        if (!response.writableEnded) response.end(JSON.stringify({ error: "temporarily_unavailable" }));
-      });
+      void options.privatePreviews
+        .handle(request, response)
+        .then((handled) => {
+          if (!handled && !response.writableEnded) {
+            response.writeHead(404);
+            response.end(JSON.stringify({ error: "not_found" }));
+          }
+        })
+        .catch(() => {
+          if (!response.headersSent) response.writeHead(503);
+          if (!response.writableEnded)
+            response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        });
       return;
     }
 
