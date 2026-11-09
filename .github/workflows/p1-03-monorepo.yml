@@ -50,11 +50,6 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: P3-03 TEMP formatting diagnostics (remove before merge)
-        run: |
-          npx prettier --write docs/P3_03_PEXELS_OFFLINE_API_BOUNDARY.md packages/shared/src/pexels-offline-discovery.ts
-          git diff -- docs/P3_03_PEXELS_OFFLINE_API_BOUNDARY.md packages/shared/src/pexels-offline-discovery.ts
-          exit 1
       - name: Compile workspace applications
         run: npm run build
       - name: Type-check all workspaces
