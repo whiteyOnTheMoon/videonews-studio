@@ -67,3 +67,11 @@ export type {
   EarthClimateExplainedSection,
   EarthClimateExplainedScript,
 } from "./explained-script-structure.js";
+
+export { buildNarrationTimeline } from "./narration-timeline.js";
+export type {
+  NarrationTimingInput,
+  VisualBeatTiming,
+  NarrationSectionTiming,
+  NarrationTimeline,
+} from "./narration-timeline.js";
