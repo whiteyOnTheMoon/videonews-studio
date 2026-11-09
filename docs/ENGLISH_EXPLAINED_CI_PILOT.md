@@ -1,58 +1,41 @@
-# Earth & Climate Explained — erster englischer 8–10-Minuten-CI-Pilot
+# Earth & Climate Explained — English 8–10 minute VPS preview (P4-01/#480, #482)
 
-**Stand: 9. November 2026.** Bezug #480, PR #481; basiert auf der seit P3-07 bereits vorhandenen Offline-SVG-Funktion. Diese Datei beschreibt einen **rein technischen, nicht veröffentlichbaren** Proof of Concept und keine fertig freigegebene YouTube-Folge.
+**Decision updated 2026-11-09:** The operator requires all real test videos to be generated and kept on the **existing VPS**, not in GitHub Actions. See [VPS_PRIVATE_PREVIEW_RUNBOOK.md](VPS_PRIVATE_PREVIEW_RUNBOOK.md). This is a **private, editor-unapproved, nonpublishable** technical preview, not a YouTube-ready production video.
 
-## Redaktionelles Format
+## Editorial format and current source package
 
-Die verbindliche Struktur steht in [EXPLAINED_SCRIPT_STRUCTURE_V1.md](EXPLAINED_SCRIPT_STRUCTURE_V1.md): **The Hook → The Basics → What Happened? → Why Is It Happening? → Why It Matters → What's Next? → The Takeaway**. Abschnittszeiten sind _keine_ festen Werte. Der Generator muss langfristig inhaltlich sinnvoll mit dieser Reihenfolge arbeiten, statt Zeiten mit Standbildern aufzufüllen.
+The mandatory seven-part script order is documented in [EXPLAINED_SCRIPT_STRUCTURE_V1.md](EXPLAINED_SCRIPT_STRUCTURE_V1.md): The Hook → The Basics → What Happened? → Why Is It Happening? → Why It Matters → What's Next? → The Takeaway. The illustrative timestamps are **guidelines, not per-section quotas**.
 
-Die manuell kuratierte englische Episode `content/news/ozone-2026-explained-en.json` umfasst sieben originale englische Sprecherabschnitte (etwa 1264 Wörter) und 19 eigene grafische Visual-Beats. Alle Abschnitts- und Grafiktexte sind Englisch. Das Material basiert auf öffentlich dokumentierten Messungen vom November 2026 und erklärt:
+The curated, manually authored script lives at `content/news/ozone-2026-explained-en.json` and contains **1,264 spoken English words and 19 original graphic beats**. Its six source records are:
+- [NOAA/NASA joint analysis, 2026-11-04](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole) – seasonal mean 25 million km² (Sep 7–Oct 13, 2026), seventh-largest out of 48 years, peak day 27.1 million km² on September 18, South Pole ozone minimum 105 DU on October 17 (versus 92 DU in October 2006).
+- [NASA Earth Observatory, 2026-11-09](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/) – shared NASA/NOAA measurement story **not a second independent confirmation**.
+- [Copernicus CAMS, 2026-09-16](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) – separate European monitoring.
+- [DLR, 2026-10-26](https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years) – independent satellite/meteorological context, not interchangeable measurements.
+- [US EPA, ozone science](https://www.epa.gov/ozone-layer-protection/basic-ozone-layer-science) – educational background.
+- [UNEP Ozone Secretariat](https://ozone.unep.org/facts-and-figures-ozone-protection) – long-term recovery context and conditional projections.
 
-- Was mit Ozonloch, Dobson-Einheit und Stratosphäre gemeint ist.
-- Saisonmittel der Ozonlochfläche: **25 Mio. km²** (7. September bis 13. Oktober, 2026), Platz sieben in 48 Jahren (gemeinsame NASA-/NOAA-Auswertung).
-- Tagesmaximum: **27,1 Mio. km²** am 18. September 2026; **kein** saisonaler Mittelwert.
-- Südpol-Spaltenminimum: **105 DU** am 17. Oktober 2026, verglichen mit historischem Südpolminimum **92 DU** im Oktober 2006; **nicht** Flächenmessungen.
-- Starker Polarwirbel als Hauptgrund für die ungewöhnliche Ausdehnung; langfristige Erholung unter dem Montrealer Protokoll.
-- **Unterschiedliche Projektionen:** NASA/NOAA sprechen von den 2070ern; UNEP zitiert eine Einschätzung für etwa 2066 unter fortgesetzter Einhaltung der Abkommen. Beides sind Modellprojektionen, keine Jahresgarantie.
+These are *manual provenance notes*, not live source ingestion or editorial fact-check clearance.
 
-### Quellen / Beleggruppen
+## Technical implementation
 
-- [NOAA/NASA gemeinsame Auswertung, 4.11.2026](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole)
-- [NASA Earth Observatory, 9.11.2026](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/) – dieselbe US-Auswertung, **nicht als unabhängige zweite Prüfung zählen**.
-- [Copernicus CAMS, 16.9.2026](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) – eigenständige europäische Beobachtung, kein austauschbarer Messdatensatz.
-- [DLR, 26.10.2026](https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years) – TROPOMI/Sentinel-5P, keine Vermischung der instrumentabhängigen Tageswerte.
-- [US EPA – Basiswissenschaft](https://www.epa.gov/ozone-layer-protection/basic-ozone-layer-science) – Chemie und UV-Schutz.
-- [UNEP Ozone Secretariat – Fakten und Projektionen](https://ozone.unep.org/facts-and-figures-ozone-protection) – langfristige Prognosebedingungen.
+- The shared seven-section assertion verifies format metadata, declared `en-US` language, complete order and nonempty narration; it does **not** verify actual English or claims.
+- The shared frame timeline derives variable scene lengths from measured WAV durations and pads only the end of individual sections; there are no rigid section timing slots.
+- `scripts/vps_p3_explained_preview.mjs` only runs after an explicit operator opt-in, as local `ap`, outside CI. It synthesizes a temporary low-quality English eSpeak narration, constructs **one continuous PCM master**, and encodes AAC **once**. It uses the P3-07 original graphics generator, localized English PREVIEW watermarks, `rsvg-convert`, `ffmpeg` and `ffprobe`.
+- A successful run requires 8:00–10:00 measured final duration and correct H264/AAC codecs, video frame count, sound length and input/source guards.
+- Upon success, it saves a **private persistent MP4** in `/home/ap/videonews-previews`, not inside `www`. The temporary runner directory is still removed. No automated upload or network transfer exists.
+- GitHub Actions now builds, checks and tests **code only**, rejecting execution of the VPS renderer; no GitHub Actions video-rendering steps remain in this new preview workflow.
 
-Diese expliziten Quellenlinks sind **redaktionelle Verweise und offline im Manifest festgehalten**, aber der CI-Runner lädt keine Quellen ab. Ein separater unabhängiger Faktencheck, individuelle Freigabe, Aktualitätskontrolle und Prüfprotokolle bleiben erforderlich.
+## Historical CI evidence (superseded operation)
 
-## Tatsächlich implementierter technischer Pfad (noch zu prüfen)
+The earlier CI-only experiment at commit `184625e1056780427cb5b083165add96e8d452a7` rendered and ffprobe-verified a 570.958-second/9:31 H264/AAC file with 19 scenes and 1,264 spoken words. It was *deleted* as temporary runner output. Its success demonstrated the media code path, **not** that VPS rendering has been deployed or tested. In response to the updated operator decision, real MP4 generation in GitHub is discontinued for this preview.
 
-1. `assertEarthClimateExplainedStructure` erzwingt die sieben Abschnitts-IDs in der festgelegten Reihenfolge und die deklarierte Sprache `en-US`. Ein Sprachlabel ersetzt keine echte Sprach- und Inhaltsprüfung.
-2. `buildNarrationTimeline` berechnet aus den **mit ffprobe gemessenen** Sprecher-WAV-Dauern und einer kurzen definierten Pause eine fortlaufende, 24-fps-genaue Timeline. Visual-Beats pro Abschnitt verteilen sich auf die tatsächlich verfügbare Zeit. Keine festen Abschnittsquoten.
-3. `espeak-ng` erzeugt nur für die isolierte CI **eine kostenlose, deutlich als technisch minderwertig markierte Computerstimme**. Dies ist **keine** fertig ausgewählte professionelle Sprecherstimme. Der Run darf die Geschwindigkeit nur in einem begrenzten Bereich anpassen und akzeptiert ausschließlich eine tatsächlich gemessene 8–10-Minuten-Folge; ansonsten scheitert er.
-4. Für jede Grafikeinblendung erstellt die vorhandene P3-07-Funktion eine eigene SVG-Datei, jetzt mit englischer Vorschau-Beschriftung; `rsvg-convert` erzeugt PNGs. Die Grafiken verwenden **keine fremden Bilder, NASA-Karten oder Drittanbieter-Videos**.
-5. FFmpeg importiert die sieben **unkomprimierten** WAVs in eindeutiger Reihenfolge, normalisiert auf 48 kHz Mono, ergänzt **nur am Ende jedes Abschnitts** Stille, fügt sie zu **einer einzigen WAV-Tonspur** zusammen und kodiert die gesamte Episode **einmal** als AAC. Anders als der frühere deutsche Pilot gibt es **keine eigenständig AAC-komprimierten, aneinanderkopierten Sprecherszenen**.
-6. Der isolierte Renderer legt 19 selbst erzeugte Bilder auf die gemessene Audio-Timeline und erstellt ein H.264/AAC-Preview mit 1280×720/24 fps. `ffprobe` prüft Codec, Streams, tatsächliche Dauer und Videoframes. Jede 8–10-Minuten-Abweichung wird abgelehnt.
+## Not yet done
 
-## Qualitätsgrenzen
+1. Manual approval and review of the new PR head, VPS resource/tool check and explicitly authorized deployment.
+2. First actual VPS render, operator listening/review, persistent file retention check.
+3. Authenticated admin download endpoint and private preview list; until this exists, operator-only SSH/SFTP transfer is the download method.
+4. Secure connector or uploaded file for **direct ChatGPT sandbox attachment**; a VPS filesystem path cannot itself produce a valid chat link.
+5. Professional natural English TTS voice, improved visualization and subtitles.
+6. Separate factual verification, content rights, commercial rights, independent human editorial decision, production render/upload gates and YouTube release readiness.
 
-- **Noch keine echte Profi-Stimme:** eSpeak ist ausschließlich ein technischer Testersatz. Nächster P4-Schritt: zwei zulässige englische TTS-Stimmen/Provider anhand identischer Proben bewerten; Lizenz, Kosten und Genehmigung vor Einrichtung prüfen (#35/#36).
-- **Noch keine vollständige YouTube-Videogestaltung:** 19 textbasierte Originalgrafiken sind besser als sieben statische Folien, aber keine finalen bewegten Satellitenbilder/Animationen. Für Serienqualität braucht es weitere Visual-Regeln und barrierefreie EN-Untertitel (#37–#42).
-- **Noch kein produktiver Skriptgenerator:** diese eine englische Folge ist **redaktionell von Hand kuratiert**, nicht automatisch aus live eingespeisten Nachrichten generiert. Die eigentliche P2-Integration (#22/#23/#24) ist offen.
-- **Noch keine Prüfung einer fertig hörbaren Datei durch die Redaktion:** Automatiktests können hörbare Artefakte, Aussprache und Dramaturgie nicht allein abnehmen.
-- **Kein Garant für YouTube-Monetarisierung:** Länge, Eigenleistung, Rechte, Plattformregeln und Aufnahme ins Partnerprogramm sind getrennte Themen.
-
-## Sicherheits- und Betriebsgrenzen
-
-Der Workflow `.github/workflows/english-explained-offline-preview.yml` läuft nur auf einem kurzlebigen GitHub-Actions-Runner. Der Medien-Entrypoint verweigert alle Ausführungen ohne `GITHUB_ACTIONS=true` und `CI=true`. Quellen werden nicht live abgerufen und keine Bilder, Stimm-Modelle oder kostenpflichtigen API-Dienste heruntergeladen. Sämtliche SVG/PNG/WAV/MP4-Dateien verbleiben in einem privaten Runner-Temporärverzeichnis und werden selbst bei Fehlern im `finally` entfernt. Es gibt keine öffentliche Datei, GitHub-Medien-Artefakte, VPS-Migrationen, DB-/VPS-Änderungen oder Uploads.
-
-Unverändert müssen gelten: `editorialApproved=false`, `rightsApproved=false`, `renderAllowed=false`, `uploadAllowed=false`, `publicationAllowed=false`. Der Film ist eine **nicht publizierbare Demonstration**, und der vorhandene P3-08-Deny-Only-Bericht bleibt `BLOCKED`.
-
-## Abnahme
-
-- [ ] CI-Workflow auf dem **konkreten finalen PR-Commit** erfolgreich: Build/Typecheck/Lint/Prettier/Tests, CI-Refusal-Test, echter 8–10-Minuten-H.264/AAC-Render, Dauer- und Frame-Abgleich.
-- [ ] Tatsächliche englische Original-Narration und wissenschaftliche Aussagen menschlich geprüft.
-- [ ] Sauber hörbare Sprechergliederung und vollständige Tonspur manuell geprüft.
-- [ ] CI und unabhängiger Review oder eine ausschließlich für diesen PR dokumentierte Sonderfreigabe.
-- [ ] Keine Rechte- und Publikationsfreigaben verändert.
+All editorial/asset/production/upload/publication approvals remain false. No code or documentation change here authorizes public publication.
