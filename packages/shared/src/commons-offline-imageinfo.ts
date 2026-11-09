@@ -207,7 +207,7 @@ function parsePage(value: unknown, key: string): CommonsFileCandidate | CommonsI
   if (
     !image ||
     image.mediatype !== "BITMAP" ||
-    !ALLOWED_MIMES.has(image.mime) ||
+    (typeof image.mime !== "string" || !ALLOWED_MIMES.has(image.mime)) ||
     image.descriptionurl !== expectedPageUrl ||
     canonicalUrl(image.descriptionurl, "commons.wikimedia.org") === null ||
     canonicalUrl(image.url, "upload.wikimedia.org") === null ||
@@ -233,7 +233,7 @@ function parsePage(value: unknown, key: string): CommonsFileCandidate | CommonsI
   if (typeof shortName !== "string" || typeof licenseUrl !== "string") {
     return "invalid_license_metadata";
   }
-  const matched = LICENSES[shortName];
+  const matched = Object.hasOwn(LICENSES, shortName) ? LICENSES[shortName] : undefined;
   if (!matched) return "unsupported_or_ambiguous_license";
   if (licenseUrl !== matched.url) return "invalid_license_metadata";
 
