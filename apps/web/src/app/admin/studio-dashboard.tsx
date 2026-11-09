@@ -77,12 +77,16 @@ function NewsSelector({
         setMessage("Es läuft bereits eine Videoerstellung. Unter Videos den Status prüfen.");
         openVideos();
       } else if (response.status === 401 || response.status === 403) {
-        setMessage("Videostart nicht freigegeben. Bitte die persönliche Anmeldung und VPS-Freigaben prüfen.");
+        setMessage(
+          "Videostart nicht freigegeben. Bitte die persönliche Anmeldung und VPS-Freigaben prüfen.",
+        );
       } else {
         setMessage("VPS-Renderstart nicht bestätigt. Es wurde keine Fertigstellung behauptet.");
       }
     } catch {
-      setMessage("Verbindung unterbrochen. Bitte zuerst unter Videos nach dem Auftragsstatus sehen.");
+      setMessage(
+        "Verbindung unterbrochen. Bitte zuerst unter Videos nach dem Auftragsstatus sehen.",
+      );
     } finally {
       setBusy(false);
     }
@@ -95,16 +99,28 @@ function NewsSelector({
         <div>
           <span className="studio-kicker">EARTH & CLIMATE EXPLAINED</span>
           <h2 id="studio-create-heading">Neues Video erstellen</h2>
-          <p>Wähle ein Thema. Die Folge nutzt sieben feste Kapitel und eine flexible Laufzeit von 8–10 Minuten.</p>
+          <p>
+            Wähle ein Thema. Die Folge nutzt sieben feste Kapitel und eine flexible Laufzeit von
+            8–10 Minuten.
+          </p>
         </div>
         <span className="studio-tag">Private Vorschau</span>
       </div>
       <div className="studio-actions">
-        <button type="button" className="studio-secondary" onClick={() => void research()} disabled={!enabled || loading}>
+        <button
+          type="button"
+          className="studio-secondary"
+          onClick={() => void research()}
+          disabled={!enabled || loading}
+        >
           {loading ? "Suche gespeicherte News …" : "News recherchieren"}
         </button>
-        <button type="button" className="studio-primary" onClick={() => void createVideo()}
-          disabled={!renderEnabled || busy || !curated}>
+        <button
+          type="button"
+          className="studio-primary"
+          onClick={() => void createVideo()}
+          disabled={!renderEnabled || busy || !curated}
+        >
           {busy ? "Starte Vorschau …" : "Video erstellen"}
         </button>
       </div>
@@ -115,18 +131,38 @@ function NewsSelector({
       <fieldset className="studio-picker">
         <legend>Welche Nachricht soll erklärt werden?</legend>
         <label className="studio-choice">
-          <input type="radio" name="studio-news" value={PILOT} checked={selected === PILOT}
-            onChange={() => setSelected(PILOT)} />
-          <span><strong>{PILOT_LABEL}</strong><small>Vorbereitetes, noch ungeprüftes Quellenskript · 9-Minuten-Testziel</small></span>
+          <input
+            type="radio"
+            name="studio-news"
+            value={PILOT}
+            checked={selected === PILOT}
+            onChange={() => setSelected(PILOT)}
+          />
+          <span>
+            <strong>{PILOT_LABEL}</strong>
+            <small>Vorbereitetes, noch ungeprüftes Quellenskript · 9-Minuten-Testziel</small>
+          </span>
         </label>
         {news.map((item, index) => {
           const value = "feed:" + index;
           return (
-            <label className="studio-choice" key={item.sourceId + ":" + item.publishedAt + ":" + index}>
-              <input type="radio" name="studio-news" value={value} checked={selected === value}
-                onChange={() => setSelected(value)} />
-              <span><strong>{item.headline}</strong>
-                <small>{item.sourceId} · {new Date(item.publishedAt).toLocaleDateString("de-DE")} · Quellenprüfung erforderlich</small>
+            <label
+              className="studio-choice"
+              key={item.sourceId + ":" + item.publishedAt + ":" + index}
+            >
+              <input
+                type="radio"
+                name="studio-news"
+                value={value}
+                checked={selected === value}
+                onChange={() => setSelected(value)}
+              />
+              <span>
+                <strong>{item.headline}</strong>
+                <small>
+                  {item.sourceId} · {new Date(item.publishedAt).toLocaleDateString("de-DE")} ·
+                  Quellenprüfung erforderlich
+                </small>
               </span>
             </label>
           );
@@ -140,11 +176,18 @@ function NewsSelector({
       ) : null}
       {!renderEnabled ? (
         <p className="studio-explanation" role="status">
-          VPS-Videostart ist noch nicht aktiv. Die technische Vorbereitung läuft; es wird kein Video im Hintergrund erzeugt.
+          VPS-Videostart ist noch nicht aktiv. Die technische Vorbereitung läuft; es wird kein Video
+          im Hintergrund erzeugt.
         </p>
       ) : null}
-      {!enabled ? <p className="studio-explanation">Die Rechercheansicht ist noch nicht freigeschaltet.</p> : null}
-      {message ? <p className="studio-feedback" role="status" aria-live="polite">{message}</p> : null}
+      {!enabled ? (
+        <p className="studio-explanation">Die Rechercheansicht ist noch nicht freigeschaltet.</p>
+      ) : null}
+      {message ? (
+        <p className="studio-feedback" role="status" aria-live="polite">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -160,26 +203,45 @@ function PrivateVideos({ enabled }: { enabled: boolean }) {
     try {
       const [listRes, statusRes] = await Promise.all([
         fetch("/api/admin/private-previews", { cache: "no-store", credentials: "same-origin" }),
-        fetch("/api/admin/private-previews/status", { cache: "no-store", credentials: "same-origin" }),
+        fetch("/api/admin/private-previews/status", {
+          cache: "no-store",
+          credentials: "same-origin",
+        }),
       ]);
       if (!listRes.ok || !statusRes.ok) throw new Error("Private preview not accessible");
       const list: unknown = await listRes.json();
       const status: unknown = await statusRes.json();
-      if (!list || typeof list !== "object" || !("files" in list) || !Array.isArray(list.files) ||
-        !status || typeof status !== "object" || !("state" in status) ||
-        !["idle", "running", "completed", "failed"].includes(status.state as string)) {
+      if (
+        !list ||
+        typeof list !== "object" ||
+        !("files" in list) ||
+        !Array.isArray(list.files) ||
+        !status ||
+        typeof status !== "object" ||
+        !("state" in status) ||
+        !["idle", "running", "completed", "failed"].includes(status.state as string)
+      ) {
         throw new Error("Unexpected preview response");
       }
       const rows = list.files as PreviewFile[];
       setFiles(rows);
       setJob(status.state as RenderState);
-      setSelected((previous) => rows.some((row) => row.file === previous) ? previous : (rows[0]?.file ?? ""));
-      setNotice(status.state === "running" ? "Das Video wird auf deinem VPS erzeugt." :
-        status.state === "failed" ? "Letzter Testauftrag fehlgeschlagen. Bitte Serverprotokolle prüfen." : "");
+      setSelected((previous) =>
+        rows.some((row) => row.file === previous) ? previous : (rows[0]?.file ?? ""),
+      );
+      setNotice(
+        status.state === "running"
+          ? "Das Video wird auf deinem VPS erzeugt."
+          : status.state === "failed"
+            ? "Letzter Testauftrag fehlgeschlagen. Bitte Serverprotokolle prüfen."
+            : "",
+      );
     } catch {
       setFiles([]);
       setSelected("");
-      setNotice("Private Videodateien sind derzeit nicht erreichbar. Persönliche Anmeldung und VPS-Anbindung prüfen.");
+      setNotice(
+        "Private Videodateien sind derzeit nicht erreichbar. Persönliche Anmeldung und VPS-Anbindung prüfen.",
+      );
     } finally {
       setLoading(false);
     }
@@ -193,37 +255,79 @@ function PrivateVideos({ enabled }: { enabled: boolean }) {
   }, [enabled, refresh]);
 
   const current = files.find((file) => file.file === selected);
-  const previewUrl = current ? "/api/admin/private-previews/" + encodeURIComponent(current.file) : "";
+  const previewUrl = current
+    ? "/api/admin/private-previews/" + encodeURIComponent(current.file)
+    : "";
   return (
     <section className="studio-panel" aria-labelledby="studio-videos-heading">
       <div className="studio-heading">
         <div>
           <span className="studio-kicker">PRIVATE MEDIATHEK</span>
           <h2 id="studio-videos-heading">Deine Videos</h2>
-          <p>Fertige Testdateien direkt vom VPS ansehen oder herunterladen. Keine öffentliche Veröffentlichung.</p>
+          <p>
+            Fertige Testdateien direkt vom VPS ansehen oder herunterladen. Keine öffentliche
+            Veröffentlichung.
+          </p>
         </div>
-        <button type="button" className="studio-secondary" disabled={!enabled || loading} onClick={() => void refresh()}>
+        <button
+          type="button"
+          className="studio-secondary"
+          disabled={!enabled || loading}
+          onClick={() => void refresh()}
+        >
           Aktualisieren
         </button>
       </div>
       {!enabled ? <p role="status">Die private VPS-Mediathek ist noch nicht angebunden.</p> : null}
       {enabled && loading ? <p role="status">Lade deine Vorschauen …</p> : null}
-      {enabled && job === "running" ? <p role="status" className="studio-feedback">Video wird erstellt. Dieser Bereich prüft den Status automatisch.</p> : null}
-      {notice ? <p role="status" className="studio-feedback">{notice}</p> : null}
-      {enabled && !loading && files.length === 0 ? <p>Noch keine privaten Videos gefunden.</p> : null}
+      {enabled && job === "running" ? (
+        <p role="status" className="studio-feedback">
+          Video wird erstellt. Dieser Bereich prüft den Status automatisch.
+        </p>
+      ) : null}
+      {notice ? (
+        <p role="status" className="studio-feedback">
+          {notice}
+        </p>
+      ) : null}
+      {enabled && !loading && files.length === 0 ? (
+        <p>Noch keine privaten Videos gefunden.</p>
+      ) : null}
       {current ? (
         <>
-          <label className="studio-video-select" htmlFor="studio-video-choice">Video auswählen
-            <select id="studio-video-choice" value={selected} onChange={(e) => setSelected(e.target.value)}>
-              {files.map((file) => <option key={file.file} value={file.file}>{file.file}</option>)}
+          <label className="studio-video-select" htmlFor="studio-video-choice">
+            Video auswählen
+            <select
+              id="studio-video-choice"
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+            >
+              {files.map((file) => (
+                <option key={file.file} value={file.file}>
+                  {file.file}
+                </option>
+              ))}
             </select>
           </label>
-          <video className="studio-player" key={previewUrl} controls playsInline preload="metadata" src={previewUrl}>
+          <video
+            className="studio-player"
+            key={previewUrl}
+            controls
+            playsInline
+            preload="metadata"
+            src={previewUrl}
+          >
             Dein Browser unterstützt HTML5-Videos nicht.
           </video>
           <div className="studio-video-meta">
-            <span>Nur Vorschau · nicht veröffentlicht · {(current.bytes / 1048576).toFixed(1)} MB</span>
-            <a className="studio-download" href={previewUrl + "?download=1"} download={current.file}>
+            <span>
+              Nur Vorschau · nicht veröffentlicht · {(current.bytes / 1048576).toFixed(1)} MB
+            </span>
+            <a
+              className="studio-download"
+              href={previewUrl + "?download=1"}
+              download={current.file}
+            >
               MP4 herunterladen
             </a>
           </div>
@@ -254,18 +358,27 @@ export default function StudioDashboard({
     <div className="studio-layout">
       <div className="studio-tabs" role="tablist" aria-label="Studio-Bereiche">
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" role="tab" id={"studio-tab-" + tab.id}
-            aria-selected={active === tab.id} aria-controls={"studio-pane-" + tab.id}
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={"studio-tab-" + tab.id}
+            aria-selected={active === tab.id}
+            aria-controls={"studio-pane-" + tab.id}
             tabIndex={active === tab.id ? 0 : -1}
-            onClick={() => setActive(tab.id)}>
+            onClick={() => setActive(tab.id)}
+          >
             {tab.title}
           </button>
         ))}
       </div>
       <div role="tabpanel" id={"studio-pane-" + active} aria-labelledby={"studio-tab-" + active}>
         {active === "create" ? (
-          <NewsSelector enabled={newsEnabled} renderEnabled={renderEnabled}
-            openVideos={() => setActive("videos")} />
+          <NewsSelector
+            enabled={newsEnabled}
+            renderEnabled={renderEnabled}
+            openVideos={() => setActive("videos")}
+          />
         ) : active === "videos" ? (
           <PrivateVideos enabled={previewEnabled} />
         ) : (
