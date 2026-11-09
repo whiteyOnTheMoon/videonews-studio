@@ -34,6 +34,53 @@ jobs:
           node-version: "22"
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Temporary formatter capture for Studio changes (no media)
+        run: |
+          npx prettier --write \
+            apps/api/src/private-previews.ts \
+            apps/api/src/private-previews.test.ts \
+            apps/api/src/server.ts \
+            apps/api/src/index.ts \
+            apps/web/src/app/admin/studio-dashboard.tsx \
+            apps/web/src/app/admin/studio-dashboard.test.tsx \
+            apps/web/src/app/admin/page.tsx \
+            apps/web/src/app/globals.css \
+            apps/web/src/lib/private-preview-proxy.ts \
+            apps/web/src/lib/private-preview-proxy.test.ts \
+            apps/web/src/app/api/admin/private-previews/route.ts \
+            apps/web/src/app/api/admin/private-previews/status/route.ts \
+            apps/web/src/app/api/admin/private-previews/render/route.ts \
+            'apps/web/src/app/api/admin/private-previews/[file]/route.ts' \
+            apps/web/package.json \
+            docs/STUDIO_SIMPLIFIED_UI.md
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const paths = [
+            "apps/api/src/private-previews.ts",
+            "apps/api/src/private-previews.test.ts",
+            "apps/api/src/server.ts",
+            "apps/api/src/index.ts",
+            "apps/web/src/app/admin/studio-dashboard.tsx",
+            "apps/web/src/app/admin/studio-dashboard.test.tsx",
+            "apps/web/src/app/admin/page.tsx",
+            "apps/web/src/app/globals.css",
+            "apps/web/src/lib/private-preview-proxy.ts",
+            "apps/web/src/lib/private-preview-proxy.test.ts",
+            "apps/web/src/app/api/admin/private-previews/route.ts",
+            "apps/web/src/app/api/admin/private-previews/status/route.ts",
+            "apps/web/src/app/api/admin/private-previews/render/route.ts",
+            "apps/web/src/app/api/admin/private-previews/[file]/route.ts",
+            "apps/web/package.json",
+            "docs/STUDIO_SIMPLIFIED_UI.md",
+          ];
+          for (const path of paths) {
+            const b64 = readFileSync(path).toString("base64");
+            for (let i = 0; i < Math.ceil(b64.length / 2000); i++) {
+              console.log("VNS_STUDIO_FORMAT|" + path + "|" + i + "|" +
+                Math.ceil(b64.length / 2000) + "|" + b64.slice(i * 2000, (i + 1) * 2000));
+            }
+          }
+          NODE
       - name: Test source code and structures without creating any video
         run: |
           npm run build --workspace @vns/shared
