@@ -286,15 +286,16 @@ export class PrivatePreviewService {
         "Content-Security-Policy": "default-src 'none'; sandbox",
         "Content-Disposition": (url.endsWith("?download=1") ? "attachment" : "inline") + '; filename="' + raw + '"',
       });
+      const streamHandle = handle;
       const video = createReadStream(join(ROOT, raw), {
-        fd: handle.fd,
+        fd: streamHandle.fd,
         autoClose: false,
         start,
         end,
       });
       video.on("error", () => res.destroy());
       res.on("close", () => video.destroy());
-      video.on("close", () => void handle.close().catch(() => undefined));
+      video.on("close", () => void streamHandle.close().catch(() => undefined));
       video.pipe(res);
     } catch {
       if (handle) await handle.close().catch(() => undefined);
