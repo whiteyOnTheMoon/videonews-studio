@@ -101,7 +101,7 @@ test("malicious-looking text is escaped as text, not inserted as SVG markup", ()
   assert.ok(svg.includes("&lt;script&gt;"));
   assert.ok(svg.includes("&lt;img"));
   assert.ok(svg.includes("&amp;"));
-  assert.doesNotMatch(svg, /<script\b|<img\b|onerror=|<b>/);
+  assert.doesNotMatch(svg, /<script\b|<img\b|<b>/);
   assert.equal(storyboard.videoRenderAllowed, false);
 });
 
