@@ -19,3 +19,10 @@ export type { ReviewSourceKind } from "./provider-pricing-provenance.js";
 
 export { sealProviderPrompt, openProviderPrompt } from "./provider-encrypted-prompt.js";
 export type { EncryptedProviderPrompt } from "./provider-encrypted-prompt.js";
+
+export { precheckAssetLicense } from "./asset-license-policy.js";
+export type {
+  AssetLicensePrecheck,
+  AssetLicensePrecheckStatus,
+  AssetLicensePrecheckReason,
+} from "./asset-license-policy.js";
