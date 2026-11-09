@@ -248,7 +248,7 @@ export class PrivatePreviewService {
       reply(res, 503, { error: "temporarily_unavailable" });
       return true;
     }
-    let handle;
+    let handle: Awaited<ReturnType<typeof open>> | undefined;
     try {
       handle = await open(join(ROOT, raw), fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW);
       const info = await handle.stat();
