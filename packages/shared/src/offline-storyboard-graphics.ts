@@ -39,7 +39,7 @@ function record(value: unknown): RecordValue | null {
 }
 
 function safeText(value: unknown, max: number): value is string {
-  if (typeof value !== "string" || value.length < 2 || value.length > max) return false;
+  if (typeof value !== "string" || value.length < 1 || value.length > max) return false;
   if (value !== value.trim()) return false;
   return ![...value].some((character) => {
     const code = character.codePointAt(0);
