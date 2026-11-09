@@ -50,11 +50,6 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: P3-05 TEMP formatter diff (remove before acceptance)
-        run: |
-          npx prettier --write packages/shared/src/commons-offline-imageinfo.ts packages/shared/src/commons-offline-imageinfo.test.ts
-          git diff -- packages/shared/src/commons-offline-imageinfo.ts packages/shared/src/commons-offline-imageinfo.test.ts
-          exit 1
       - name: Compile workspace applications
         run: npm run build
       - name: Type-check all workspaces
