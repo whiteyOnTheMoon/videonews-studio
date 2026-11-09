@@ -166,7 +166,10 @@ test("mismatched Commons origins, mime types, URLs and timestamps are rejected",
   const original = file();
   const image = original.imageinfo[0]!;
   for (const changed of [
-    { descriptionurl: "https://commons.wikimedia.org.evil.invalid/wiki/File:Synthetic_landscape.jpg" },
+    {
+      descriptionurl:
+        "https://commons.wikimedia.org.evil.invalid/wiki/File:Synthetic_landscape.jpg",
+    },
     { descriptionurl: "http://commons.wikimedia.org/wiki/File:Synthetic_landscape.jpg" },
     { descriptionurl: DESCRIPTION + "?download=1" },
     { url: "https://upload.wikimedia.org.evil.invalid/wikipedia/commons/a/ab/file.jpg" },
@@ -227,10 +230,13 @@ test("no pages, invalid response, and too many entries fail closed", () => {
     { query: { pages: {} } },
     { query: { pages: [] } },
     { query: { pages: { "-1": { missing: true } } } },
-    { query: { pages: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [
-      String(i + 1),
-      file(i + 1),
-    ])) } },
+    {
+      query: {
+        pages: Object.fromEntries(
+          Array.from({ length: 11 }, (_, i) => [String(i + 1), file(i + 1)]),
+        ),
+      },
+    },
   ]) {
     const result = inspectOfflineCommonsImageInfo(input);
     assert.equal(result.status, "REJECTED", JSON.stringify(input));
