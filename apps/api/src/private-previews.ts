@@ -189,7 +189,7 @@ export class PrivatePreviewService {
     const render = url === "/admin/private-previews/render";
     const match = /^\/admin\/private-previews\/([^/?]+)(?:\?download=1)?$/.exec(url);
     if (!list && !status && !render && !match) return false;
-    if ((list || status || match) && req.method !== "GET") {
+    if ((list || status || (match && !render)) && req.method !== "GET") {
       reply(res, 405, { error: "method_not_allowed" });
       return true;
     }
