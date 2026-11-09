@@ -132,7 +132,9 @@ function validTitle(value: unknown): value is string {
   const name = value.slice("File:".length);
   return (
     name === name.trim() &&
-    !/[<>|#?%[\]{}\/\\]/.test(name) &&
+    !["<", ">", "|", "#", "?", "%", "[", "]", "{", "}", "/", "\\"].some((char) =>
+      name.includes(char),
+    ) &&
     ![...name].some((character) => {
       const code = character.codePointAt(0);
       return code !== undefined && (code < 32 || code === 127);
