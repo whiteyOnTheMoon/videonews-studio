@@ -1,0 +1,54 @@
+name: English Earth & Climate Explained offline preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "content/news/ozone-2026-explained-en.json"
+      - "scripts/ci_p3_explained_english_video.mjs"
+      - "packages/shared/src/explained-script-structure.ts"
+      - "packages/shared/src/explained-script-structure.test.ts"
+      - "packages/shared/src/narration-timeline.ts"
+      - "packages/shared/src/narration-timeline.test.ts"
+      - "packages/shared/src/offline-storyboard-graphics.ts"
+      - "packages/shared/src/offline-storyboard-graphics-en.test.ts"
+      - "packages/shared/src/index.ts"
+      - ".github/workflows/english-explained-offline-preview.yml"
+      - "docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md"
+      - "docs/ENGLISH_EXPLAINED_CI_PILOT.md"
+
+permissions:
+  contents: read
+
+jobs:
+  english-explained-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install local-only audio and video tools on disposable runner
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin espeak-ng
+      - name: Build and run repository quality gates
+        run: |
+          npm run build --workspace @vns/shared
+          npm run typecheck
+          npm run lint
+          npm run format:check
+          npm test
+      - name: Verify refusal outside CI
+        run: |
+          if GITHUB_ACTIONS=false node scripts/ci_p3_explained_english_video.mjs; then
+            echo "ERROR: English video proof unexpectedly ran outside CI"
+            exit 1
+          fi
+      - name: Encode English original-news video in private ephemeral runner directory
+        run: node scripts/ci_p3_explained_english_video.mjs
