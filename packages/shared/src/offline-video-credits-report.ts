@@ -150,6 +150,11 @@ export function buildOfflineVideoCreditsReport(input: unknown): OfflineVideoCred
         precheck.status !== "BLOCKED" && boundedCredit(asset?.attribution)
           ? asset.attribution
           : null;
+      const candidateTermsHash = object(asset?.licenseSnapshot)?.terms_sha256;
+      const termsSha256 =
+        typeof candidateTermsHash === "string" && DIGEST.test(candidateTermsHash)
+          ? candidateTermsHash
+          : null;
       entries.push({
         assetId,
         proposedCredit,
@@ -160,11 +165,7 @@ export function buildOfflineVideoCreditsReport(input: unknown): OfflineVideoCred
           typeof asset?.contentSha256 === "string" && DIGEST.test(asset.contentSha256)
             ? asset.contentSha256
             : null,
-        termsSha256:
-          typeof object(asset?.licenseSnapshot)?.terms_sha256 === "string" &&
-          DIGEST.test(object(asset?.licenseSnapshot)!.terms_sha256 as string)
-            ? (object(asset?.licenseSnapshot)!.terms_sha256 as string)
-            : null,
+        termsSha256,
         downloadEvidence: receiptValid ? "RECORDED_UNVERIFIED" : "MISSING_OR_MISMATCHED",
         licensePrecheck: precheck,
         reasons: reasonsUnique(entryReasons),
