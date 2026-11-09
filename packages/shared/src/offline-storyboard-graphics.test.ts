@@ -61,13 +61,10 @@ test("creates five real SVG preview frames from fully synthetic input without fo
   assert.equal(storyboard.storyId, STORY);
   assert.deepEqual(storyboard.errors, []);
   assert.equal(storyboard.frames.length, 5);
-  assert.deepEqual(storyboard.frames.map((frame) => frame.kind), [
-    "text-card",
-    "table",
-    "timeline",
-    "chart",
-    "map",
-  ]);
+  assert.deepEqual(
+    storyboard.frames.map((frame) => frame.kind),
+    ["text-card", "table", "timeline", "chart", "map"],
+  );
   for (const [index, frame] of storyboard.frames.entries()) {
     assert.equal(frame.index, index);
     assert.equal(frame.sourceCount, 1);
@@ -112,7 +109,10 @@ test("rejects invalid story identity and unknown unsupported graphic kind atomic
     { storyId: "not-a-uuid", scenes: sceneSet },
     { storyId: STORY, scenes: [] },
     { storyId: STORY, scenes: Array.from({ length: 9 }, () => sceneSet[0]) },
-    { storyId: STORY, scenes: [sceneSet[0], { kind: "video", title: "No render", sourceUrls: sources }] },
+    {
+      storyId: STORY,
+      scenes: [sceneSet[0], { kind: "video", title: "No render", sourceUrls: sources }],
+    },
     { storyId: STORY, scenes: [null] },
   ]) {
     const result = makeOfflineGraphicStoryboard(input);
@@ -150,9 +150,27 @@ test("invalid metrics, point coordinates, and narrative details are rejected", (
     { ...sceneSet[1], rows: [["Only one"]] },
     { ...sceneSet[1], rows: [["A", "B"]] },
     { ...sceneSet[2], entries: [{ label: "Only one", detail: "Missing second" }] },
-    { ...sceneSet[3], bars: [{ label: "A", value: 2 }, { label: "B", value: -1 }] },
-    { ...sceneSet[3], bars: [{ label: "A", value: 2 }, { label: "B", value: Number.NaN }] },
-    { ...sceneSet[3], bars: [{ label: "A", value: 2 }, { label: "B", value: Number.POSITIVE_INFINITY }] },
+    {
+      ...sceneSet[3],
+      bars: [
+        { label: "A", value: 2 },
+        { label: "B", value: -1 },
+      ],
+    },
+    {
+      ...sceneSet[3],
+      bars: [
+        { label: "A", value: 2 },
+        { label: "B", value: Number.NaN },
+      ],
+    },
+    {
+      ...sceneSet[3],
+      bars: [
+        { label: "A", value: 2 },
+        { label: "B", value: Number.POSITIVE_INFINITY },
+      ],
+    },
     { ...sceneSet[4], locations: [{ label: "A", x: 101, y: 30 }] },
     { ...sceneSet[4], locations: [{ label: "A", x: 50, y: -5 }] },
     { ...sceneSet[0], body: "x".repeat(221) },
