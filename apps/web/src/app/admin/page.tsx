@@ -54,8 +54,8 @@ export default async function AdminPage() {
         settings={
           <>
             <p>
-              Erweiterte Werkzeuge, Anmeldungen, Quellenprüfungen und Anbieter-Konfiguration.
-              Keine dieser Funktionen veröffentlicht Inhalte automatisch.
+              Erweiterte Werkzeuge, Anmeldungen, Quellenprüfungen und Anbieter-Konfiguration. Keine
+              dieser Funktionen veröffentlicht Inhalte automatisch.
             </p>
             <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
             <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
