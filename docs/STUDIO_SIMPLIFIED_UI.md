@@ -16,19 +16,20 @@ Unter `https://studio.ap-pixels.com/admin` soll der angemeldete Betreiber künft
 
 Der Web-BFF hat folgende Routen. Alle sind standardmäßig `404` und benötigen die bisherige gültige **Admin-Sitzung plus aktive persönliche Admin-Editor-Sitzung**, deren Zustand serverseitig wieder geprüft wird.
 
-| Route | Zweck |
-| --- | --- |
-| `GET /api/admin/private-previews` | Liste der privaten MP4s |
-| `GET /api/admin/private-previews/status` | VPS-Renderstatus im API-Prozess |
-| `POST /api/admin/private-previews/render` | Einzelnen Ozonloch-Preview-Auftrag starten; zusätzlich exakte Same-Origin-CSRF-Prüfung |
-| `GET /api/admin/private-previews/[file]` | Privat streamen, Byte-Range für HTML5-Video |
-| `GET /api/admin/private-previews/[file]?download=1` | Authentifizierter Download mit `Content-Disposition: attachment` |
+| Route                                               | Zweck                                                                                  |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `GET /api/admin/private-previews`                   | Liste der privaten MP4s                                                                |
+| `GET /api/admin/private-previews/status`            | VPS-Renderstatus im API-Prozess                                                        |
+| `POST /api/admin/private-previews/render`           | Einzelnen Ozonloch-Preview-Auftrag starten; zusätzlich exakte Same-Origin-CSRF-Prüfung |
+| `GET /api/admin/private-previews/[file]`            | Privat streamen, Byte-Range für HTML5-Video                                            |
+| `GET /api/admin/private-previews/[file]?download=1` | Authentifizierter Download mit `Content-Disposition: attachment`                       |
 
 Der API-Dienst kann nach separatem explizitem Operator-Opt-in `/admin/private-previews` bedienen. Der lokale Speicherpfad **`/home/ap/videonews-previews`** ist fest vorgegeben und liegt außerhalb `www`. Filename-Allowlist, `O_NOFOLLOW`, Eigentümer-/Dateiberechtigungen, maximale Dateigröße, `private, no-store`, `nosniff` und Browser-Same-Origin werden geprüft. Stream- und Downloadzugriff werden bei jedem Request erneut authorisiert; lediglich ausgewählte Header werden im BFF weitergereicht.
 
 Ein VPS-Render nutzt nur den **fest verdrahteten** `ozone-2026-explained-en`-Pilot, den bereits vorhandenen streng begrenzten lokalen Renderer und kein durch die UI übergebenes Shellkommando. Ein einzelner Auftrag gleichzeitig, Mindestabstand zwischen Starts, keine Hintergrund-Feed-Veröffentlichung. Die Sprachtechnik bleibt ein technischer eSpeak-Platzhalter. Der Renderjobzustand ist **nur im API-Prozess gehalten** und nach einem Neustart nicht persistent; bereits erzeugte MP4s bleiben auf Platte. Diese Einschränkung muss für eine spätere Produktions-Queue behoben werden.
 
 ### Default-off Konfiguration – keine automatische Aktivierung
+
 - `VNS_PRIVATE_PREVIEWS_API_ENABLED=true`: API-Studio-Videodienst überhaupt erst injizieren (benötigt Editor-Auth und Admin-Auth).
 - `VNS_PRIVATE_PREVIEWS_ROOT=/home/ap/videonews-previews`: exakt erwartetes privates Verzeichnis; darf kein Symlink sein; Verzeichnisberechtigung `0700`, Videodateien `0600`.
 - `VNS_PRIVATE_PREVIEWS_RENDER_ENABLED=true`: Renderbutton im API nur, wenn der Prozess als VPS-Benutzer `ap` läuft und die lokalen Medienwerkzeuge bereits geprüft sind.
@@ -40,6 +41,7 @@ Ein VPS-Render nutzt nur den **fest verdrahteten** `ozone-2026-explained-en`-Pil
 Auch die Behauptung, `studio.ap-pixels.com` sei „nur für mich ersichtlich“, muss **am bestehenden TLS-/Ingress-/Auth-Setup überprüft** werden. Die Anwendung darf nicht als öffentlich lesbare Medienroute freigeschaltet werden. Die zusätzliche Editor-Sitzung ist momentan in den Einstellungen zugänglich; eine gemeinsame, einfache Single-Sign-On-Oberfläche wird später separat umgesetzt, ohne die Personalisierung der Freigaben zu schwächen.
 
 ## Abnahme
+
 - [ ] PR-CI Build/Tests/TypeScript/Lint/Prettier bestanden
 - [ ] Sicherheitstests: kein Zugriff ohne gültige Rollen, kein Pfad-Traversal/irregulärer MIME-Typ, keine ungeprüfte Fremd-News-Renderfreigabe, keine öffentliche URL
 - [ ] Unabhängiger Review / ausdrücklich PR-spezifisch freigegebene Ausnahme dokumentiert
