@@ -34,6 +34,29 @@ jobs:
           node-version: "22"
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Temporary exact formatter output for code-only review
+        run: |
+          npx prettier --write \
+            scripts/vps_p3_explained_preview.mjs \
+            docs/ENGLISH_EXPLAINED_CI_PILOT.md \
+            docs/VPS_PRIVATE_PREVIEW_RUNBOOK.md \
+            docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const paths = [
+            "scripts/vps_p3_explained_preview.mjs",
+            "docs/ENGLISH_EXPLAINED_CI_PILOT.md",
+            "docs/VPS_PRIVATE_PREVIEW_RUNBOOK.md",
+            "docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md",
+          ];
+          for (const path of paths) {
+            const b64 = readFileSync(path).toString("base64");
+            for (let i = 0; i < Math.ceil(b64.length / 2000); i++) {
+              console.log("VNS_VPS_FORMAT|" + path + "|" + i + "|" +
+                Math.ceil(b64.length / 2000) + "|" + b64.slice(i * 2000, (i + 1) * 2000));
+            }
+          }
+          NODE
       - name: Test source code and structures without creating any video
         run: |
           npm run build --workspace @vns/shared
