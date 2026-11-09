@@ -15,7 +15,7 @@ function actor(allowed: boolean): EditorAuth {
       allowed
         ? { id: "00000000-0000-4000-8000-000000000123", username: "operator", role: "admin", authVersion: 1 }
         : null,
-  } as EditorAuth;
+  } as unknown as EditorAuth;
 }
 
 async function request(
