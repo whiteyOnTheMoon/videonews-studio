@@ -68,10 +68,19 @@ async function readFileRows(): Promise<PrivatePreviewRow[]> {
   for (const entry of entries) {
     if (!entry.isFile() || !FILE.test(entry.name)) continue;
     try {
-      const handle = await open(join(ROOT, entry.name), fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW);
+      const handle = await open(
+        join(ROOT, entry.name),
+        fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW,
+      );
       try {
         const info = await handle.stat();
-        if (!info.isFile() || info.size < MIN_BYTES || info.size > MAX_BYTES || (info.mode & 0o077) !== 0) continue;
+        if (
+          !info.isFile() ||
+          info.size < MIN_BYTES ||
+          info.size > MAX_BYTES ||
+          (info.mode & 0o077) !== 0
+        )
+          continue;
         rows.push({
           file: entry.name,
           bytes: info.size,
@@ -91,7 +100,11 @@ async function readFileRows(): Promise<PrivatePreviewRow[]> {
 }
 
 async function readBody(req: IncomingMessage): Promise<boolean> {
-  if (req.headers["content-type"]?.split(";")[0]?.trim() !== "application/json" || req.headers["content-encoding"]) return false;
+  if (
+    req.headers["content-type"]?.split(";")[0]?.trim() !== "application/json" ||
+    req.headers["content-encoding"]
+  )
+    return false;
   let length = 0;
   const chunks: Buffer[] = [];
   for await (const part of req) {
@@ -102,8 +115,14 @@ async function readBody(req: IncomingMessage): Promise<boolean> {
   }
   try {
     const row: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-    return typeof row === "object" && row !== null && !Array.isArray(row) &&
-      Object.keys(row).length === 1 && "storyId" in row && row.storyId === "ozone-2026-explained-en";
+    return (
+      typeof row === "object" &&
+      row !== null &&
+      !Array.isArray(row) &&
+      Object.keys(row).length === 1 &&
+      "storyId" in row &&
+      row.storyId === "ozone-2026-explained-en"
+    );
   } catch {
     return false;
   }
@@ -170,7 +189,9 @@ export class PrivatePreviewService {
       settled = true;
       clearTimeout(deadline);
       this.child = null;
-      const result = /VNS_PRIVATE_PREVIEW_PATH=\/home\/ap\/videonews-previews\/([^\n\r]+)/.exec(output);
+      const result = /VNS_PRIVATE_PREVIEW_PATH=\/home\/ap\/videonews-previews\/([^\n\r]+)/.exec(
+        output,
+      );
       this.job = {
         ...this.job,
         state: success && result && FILE.test(result[1] ?? "") ? "completed" : "failed",
@@ -252,7 +273,12 @@ export class PrivatePreviewService {
     try {
       handle = await open(join(ROOT, raw), fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW);
       const info = await handle.stat();
-      if (!info.isFile() || info.size < MIN_BYTES || info.size > MAX_BYTES || (info.mode & 0o077) !== 0) {
+      if (
+        !info.isFile() ||
+        info.size < MIN_BYTES ||
+        info.size > MAX_BYTES ||
+        (info.mode & 0o077) !== 0
+      ) {
         await handle.close();
         reply(res, 404, { error: "not_found" });
         return true;
@@ -269,7 +295,13 @@ export class PrivatePreviewService {
         }
         start = Number(parsed[1]);
         end = parsed[2] === "" ? end : Number(parsed[2]);
-        if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= info.size || end >= info.size) {
+        if (
+          !Number.isSafeInteger(start) ||
+          !Number.isSafeInteger(end) ||
+          start > end ||
+          start >= info.size ||
+          end >= info.size
+        ) {
           await handle.close();
           reply(res, 416, { error: "invalid_range" });
           return true;
@@ -284,7 +316,8 @@ export class PrivatePreviewService {
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
         "Content-Security-Policy": "default-src 'none'; sandbox",
-        "Content-Disposition": (url.endsWith("?download=1") ? "attachment" : "inline") + '; filename="' + raw + '"',
+        "Content-Disposition":
+          (url.endsWith("?download=1") ? "attachment" : "inline") + '; filename="' + raw + '"',
       });
       const streamHandle = handle;
       const video = createReadStream(join(ROOT, raw), {
@@ -313,8 +346,10 @@ export function privatePreviewServiceFromEnv(
   if (env.VNS_PRIVATE_PREVIEWS_API_ENABLED !== "true" || !editor) return undefined;
   if (env.VNS_PRIVATE_PREVIEWS_ROOT !== ROOT) return undefined;
   if (!env.VNS_ADMIN_ORIGIN) return undefined;
-  const createEnabled = env.VNS_PRIVATE_PREVIEWS_RENDER_ENABLED === "true" &&
-    typeof process.getuid === "function" && process.getuid() !== 0 &&
+  const createEnabled =
+    env.VNS_PRIVATE_PREVIEWS_RENDER_ENABLED === "true" &&
+    typeof process.getuid === "function" &&
+    process.getuid() !== 0 &&
     process.env.USER === "ap";
   return new PrivatePreviewService(editor, env.VNS_ADMIN_ORIGIN, createEnabled);
 }
