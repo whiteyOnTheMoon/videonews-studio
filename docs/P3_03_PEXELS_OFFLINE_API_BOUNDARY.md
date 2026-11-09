@@ -59,7 +59,7 @@ immer `rightsStatus = blocked`, `contentSha256 = null`,
 **Besonders wichtig:** Die Pexels-Lizenz ist eine eigene
 Anbieterlizenz, nicht CC0/CC BY. P3-02 kann sie deshalb nicht als
 erlaubte Creative-Commons-Lizenz klassifizieren. Selbst vollständige
-API-Metadaten sind *keine* rechtssichere Freigabe des konkreten Assets.
+API-Metadaten sind _keine_ rechtssichere Freigabe des konkreten Assets.
 
 ## Grenzen bis zur P3-Funktionsabnahme
 
