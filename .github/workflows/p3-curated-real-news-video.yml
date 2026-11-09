@@ -22,11 +22,6 @@ jobs:
           node-version: "22"
       - name: Install locked Node dependencies
         run: npm ci --no-audit --no-fund
-      - name: P3-07 TEMP Prettier diagnostics (remove before review)
-        run: |
-          npx prettier --write content/news/ozone-2026-antarktis-de.json docs/P3_REAL_OZONE_2026_EDITORIAL_PILOT.md scripts/ci_p3_curated_real_news_video.mjs
-          git diff -- content/news/ozone-2026-antarktis-de.json docs/P3_REAL_OZONE_2026_EDITORIAL_PILOT.md scripts/ci_p3_curated_real_news_video.mjs
-          exit 1
       - name: Install open-source local-only media tools on disposable runner
         run: |
           sudo apt-get update -qq
