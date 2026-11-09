@@ -20,7 +20,7 @@ test("accepts all seven canonical sections with no fixed duration fields", () =>
   const draft = validDraft();
   assert.doesNotThrow(() => assertEarthClimateExplainedStructure(draft));
   assert.equal(draft.sections.length, 7);
-  assert.equal(Object.hasOwn(draft.sections[0], "seconds"), false);
+  assert.equal(Object.hasOwn(draft.sections[0]!, "seconds"), false);
 });
 
 test("rejects missing or additional sections", () => {
