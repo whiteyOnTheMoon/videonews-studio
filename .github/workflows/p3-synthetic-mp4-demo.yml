@@ -1,0 +1,40 @@
+name: P3 synthetic offline MP4 proof
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/ci_p3_synthetic_mp4_demo.mjs"
+      - ".github/workflows/p3-synthetic-mp4-demo.yml"
+      - "docs/P3_SYNTHETIC_MP4_PROTOTYPE.md"
+permissions:
+  contents: read
+jobs:
+  synthetic-mp4:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build existing shared and worker modules
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Reject non-CI execution before creating output
+        run: |
+          if GITHUB_ACTIONS=false node scripts/ci_p3_synthetic_mp4_demo.mjs; then
+            echo "ERROR: MP4 demo ran without the GitHub Actions gate"
+            exit 1
+          fi
+      - name: Check locally installed ffmpeg and ffprobe
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -hide_banner -version | head -n 1
+      - name: Generate actual playable MP4 and securely remove temporary files
+        run: node scripts/ci_p3_synthetic_mp4_demo.mjs
