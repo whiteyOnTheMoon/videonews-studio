@@ -1,4 +1,7 @@
-import { privatePreviewProxy, privatePreviewProxyConfig } from "../../../../lib/private-preview-proxy";
+import {
+  privatePreviewProxy,
+  privatePreviewProxyConfig,
+} from "../../../../lib/private-preview-proxy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
