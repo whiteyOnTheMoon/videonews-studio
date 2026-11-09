@@ -19,3 +19,10 @@ export type { ReviewSourceKind } from "./provider-pricing-provenance.js";
 
 export { sealProviderPrompt, openProviderPrompt } from "./provider-encrypted-prompt.js";
 export type { EncryptedProviderPrompt } from "./provider-encrypted-prompt.js";
+
+export { makeOfflineGraphicStoryboard } from "./offline-storyboard-graphics.js";
+export type {
+  OfflineGraphicKind,
+  OfflineGraphicFrame,
+  OfflineGraphicStoryboard,
+} from "./offline-storyboard-graphics.js";
