@@ -137,10 +137,7 @@ function sourceList(value: unknown): value is string[] {
 
 function validTuple(value: unknown, max: number): value is [string, string] {
   return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    safeText(value[0], max) &&
-    safeText(value[1], max)
+    Array.isArray(value) && value.length === 2 && safeText(value[0], max) && safeText(value[1], max)
   );
 }
 
@@ -189,12 +186,7 @@ function validateScene(scene: RecordValue): scene is RecordValue {
       scene.locations.length <= 6 &&
       scene.locations.every((item) => {
         const point = record(item);
-        return (
-          point &&
-          safeText(point.label, 32) &&
-          finite(point.x, 100) &&
-          finite(point.y, 100)
-        );
+        return point && safeText(point.label, 32) && finite(point.x, 100) && finite(point.y, 100);
       })
     );
   }
@@ -242,7 +234,9 @@ function graphicsFor(scene: RecordValue): string[] {
       const y = 215 + index * 66;
       const width = Math.round((bar.value / maximum) * 650);
       result.push(textAt(92, y + 24, bar.label, 22));
-      result.push('<rect x="460" y="' + y + '" width="' + width + '" height="35" rx="5" fill="#64d8cb"/>');
+      result.push(
+        '<rect x="460" y="' + y + '" width="' + width + '" height="35" rx="5" fill="#64d8cb"/>',
+      );
       result.push(textAt(1140, y + 25, bar.value.toFixed(0), 22, "#bfe8ff"));
     }
     return result;
@@ -253,7 +247,9 @@ function graphicsFor(scene: RecordValue): string[] {
     result.push('<path d="M ' + (90 + x * 183) + ' 198 V 594" stroke="#27445b" stroke-width="1"/>');
   }
   for (let y = 1; y <= 3; y++) {
-    result.push('<path d="M 96 ' + (190 + y * 102) + ' H 1184" stroke="#27445b" stroke-width="1"/>');
+    result.push(
+      '<path d="M 96 ' + (190 + y * 102) + ' H 1184" stroke="#27445b" stroke-width="1"/>',
+    );
   }
   for (const point of points) {
     const x = Math.round(122 + (point.x / 100) * 970);
@@ -261,7 +257,9 @@ function graphicsFor(scene: RecordValue): string[] {
     result.push('<circle cx="' + x + '" cy="' + y + '" r="9" fill="#64d8cb"/>');
     result.push(textAt(Math.min(x + 15, 1030), y - 15, point.label, 18));
   }
-  result.push(textAt(96, 630, "Schematische Positionsskizze – keine verifizierte GIS-Karte", 18, "#bfe8ff"));
+  result.push(
+    textAt(96, 630, "Schematische Positionsskizze – keine verifizierte GIS-Karte", 18, "#bfe8ff"),
+  );
   return result;
 }
 
@@ -297,9 +295,7 @@ function makeFrame(scene: RecordValue, index: number): OfflineGraphicFrame {
 export function makeOfflineGraphicStoryboard(input: unknown): OfflineGraphicStoryboard {
   const request = record(input);
   const storyId =
-    typeof request?.storyId === "string" && UUID.test(request.storyId)
-      ? request.storyId
-      : null;
+    typeof request?.storyId === "string" && UUID.test(request.storyId) ? request.storyId : null;
   const errors: string[] = [];
   if (!storyId) errors.push("invalid_story_id");
   if (!request || !Array.isArray(request.scenes)) {
