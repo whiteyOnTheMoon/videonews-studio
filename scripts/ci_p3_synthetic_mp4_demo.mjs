@@ -119,8 +119,7 @@ function syntheticStoryboard() {
       {
         kind: "text-card",
         title: draft.headline,
-        body:
-          "Demo mit erfundenen Daten. Zwei Quellen-IDs sind kein Beweis unabhängiger Recherche. Alle Aussagen bleiben ungeprüft.",
+        body: "Demo mit erfundenen Daten. Zwei Quellen-IDs sind kein Beweis unabhängiger Recherche. Alle Aussagen bleiben ungeprüft.",
         sourceUrls,
       },
       {
@@ -270,7 +269,9 @@ async function main() {
     assert.equal(Number(probe.format.duration), 5 * SECONDS_PER_SCENE);
     const size = (await stat(mp4)).size;
     assert.ok(size > 2000 && size < 15 * 1024 * 1024);
-    const digest = createHash("sha256").update(await readFile(mp4)).digest("hex");
+    const digest = createHash("sha256")
+      .update(await readFile(mp4))
+      .digest("hex");
 
     assert.equal(report.approvedForPublication, false);
     assert.equal(rights.renderAllowed, false);
