@@ -147,8 +147,7 @@ function validImageReference(value: unknown, kind: PexelsMediaType, id: number):
   // Official Pexels CDN thumbnails may carry bounded resizing queries.
   const url = canonicalPexelsUrl(value, "images.pexels.com", true);
   return (
-    url !== null &&
-    url.pathname.startsWith((kind === "photo" ? "/photos/" : "/videos/") + id + "/")
+    url !== null && url.pathname.startsWith((kind === "photo" ? "/photos/" : "/videos/") + id + "/")
   );
 }
 
@@ -192,11 +191,7 @@ function parseItem(
     licenseCode: "PEXELS-CUSTOM",
     licenseUrl: LICENSE,
     attribution:
-      (type === "photo" ? "Photo" : "Video") +
-      " by " +
-      creator +
-      " on Pexels — " +
-      originUrl,
+      (type === "photo" ? "Photo" : "Video") + " by " + creator + " on Pexels — " + originUrl,
     providerAttribution: ATTRIBUTION,
     rightsStatus: "blocked",
     rightsFlags: {
