@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "id": "ozone-2026-explained-en",
+  "asOf": "2026-11-09",
+  "format": "earth-climate-explained",
+  "language": "en-US",
+  "headline": "The Antarctic Ozone Hole Grew Huge in 2026. Is the Ozone Layer Still Healing?",
+  "editorialStatus": "REVIEW_REQUIRED",
+  "sourceStatus": "manually_curated_public_reports_not_live_ingestion",
+  "editorialApproved": false,
+  "rightsApproved": false,
+  "renderAllowed": false,
+  "uploadAllowed": false,
+  "publicationAllowed": false,
+  "sources": [
+    {
+      "id": "noaa-2026",
+      "publisher": "NOAA",
+      "publishedAt": "2026-11-04",
+      "url": "https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole",
+      "evidenceGroup": "joint-nasa-noaa-2026"
+    },
+    {
+      "id": "nasa-2026",
+      "publisher": "NASA Earth Observatory",
+      "publishedAt": "2026-11-09",
+      "url": "https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/",
+      "evidenceGroup": "joint-nasa-noaa-2026"
+    },
+    {
+      "id": "cams-2026",
+      "publisher": "Copernicus CAMS",
+      "publishedAt": "2026-09-16",
+      "url": "https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026",
+      "evidenceGroup": "cams-2026"
+    },
+    {
+      "id": "dlr-2026",
+      "publisher": "DLR",
+      "publishedAt": "2026-10-26",
+      "url": "https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years",
+      "evidenceGroup": "dlr-2026"
+    },
+    {
+      "id": "epa-science",
+      "publisher": "US Environmental Protection Agency",
+      "publishedAt": null,
+      "url": "https://www.epa.gov/ozone-layer-protection/basic-ozone-layer-science",
+      "evidenceGroup": "epa-ozone-science"
+    },
+    {
+      "id": "unep-facts",
+      "publisher": "UNEP Ozone Secretariat",
+      "publishedAt": null,
+      "url": "https://ozone.unep.org/facts-and-figures-ozone-protection",
+      "evidenceGroup": "unep-ozone-assessment"
+    }
+  ],
+  "sections": [
+    {
+      "id": "hook",
+      "title": "A Giant Ozone Hole. A Healing Atmosphere?",
+      "sourceIds": [
+        "noaa-2026",
+        "nasa-2026"
+      ],
+      "narration": "The ozone hole over Antarctica grew unusually large in 2026. In fact, measured by its average size during the peak season, it ranked seventh among forty-eight years of observations. That sounds like terrible news. But NASA and NOAA say the ozone layer is still recovering. How can a record-setting-looking year and a long-term success story both be true? The answer reveals something important about how our planet works.",
+      "visuals": [
+        {
+          "kind": "text-card",
+          "title": "The 2026 Ozone Paradox",
+          "body": "A very large Antarctic ozone hole, and a long-term recovery. How can both be true?"
+        },
+        {
+          "kind": "text-card",
+          "title": "One Year Is Not a Trend",
+          "body": "Seventh-largest seasonal mean area in forty-eight years. Recovery is still a long-term scientific finding."
+        }
+      ]
+    },
+    {
+      "id": "basics",
+      "title": "The Basics: What Is the Ozone Hole?",
+      "sourceIds": [
+        "nasa-2026",
+        "epa-science"
+      ],
+      "narration": "First, what do scientists actually mean by the ozone hole? High above Earth, in a layer of the atmosphere called the stratosphere, ozone molecules absorb much of the Sun's harmful ultraviolet radiation. That protective layer reduces the amount of damaging ultraviolet light reaching life at the surface. The ozone hole is not an empty opening in the sky. It is a region, usually over Antarctica in southern spring, where the total amount of ozone falls below a scientific threshold of two hundred and twenty Dobson units. A Dobson unit measures the amount of ozone above a location, through a column of air. The hole can be wide without being equally deep everywhere. That distinction will matter when we look at the numbers. And stratospheric ozone is different from ground-level ozone, which can be an air pollutant. The same molecule can play very different roles depending on where it is.",
+      "visuals": [
+        {
+          "kind": "text-card",
+          "title": "Earth's UV Shield",
+          "body": "Stratospheric ozone absorbs harmful ultraviolet radiation. It is not a solid shell around the planet."
+        },
+        {
+          "kind": "text-card",
+          "title": "Not a Literal Hole",
+          "body": "The scientific ozone-hole boundary is an atmospheric column below 220 Dobson units."
+        },
+        {
+          "kind": "table",
+          "title": "Two Different Ozone Stories",
+          "columns": [
+            "High in the sky",
+            "Near the ground"
+          ],
+          "rows": [
+            [
+              "UV protection",
+              "Air pollutant"
+            ],
+            [
+              "Stratosphere",
+              "Lower atmosphere"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-happened",
+      "title": "What Happened in 2026?",
+      "sourceIds": [
+        "noaa-2026",
+        "nasa-2026",
+        "cams-2026",
+        "dlr-2026"
+      ],
+      "narration": "Now to the observations. NOAA and NASA examined the Antarctic ozone hole during the peak depletion period from September seventh to October thirteenth, twenty twenty-six. Over those weeks, its average area was about twenty-five million square kilometres. Their joint analysis ranked that seasonal average seventh-largest in forty-eight years of monitoring. Notice the words seasonal average. We are not talking about the biggest single day. On September eighteenth, the hole reached its maximum daily area for the year, approximately twenty-seven point one million square kilometres. Both numbers describe area, but one averages a period and the other describes one date. They cannot be swapped without changing the story. There is another measurement as well: how much ozone remained inside the depleted region. Instruments over the South Pole measured a minimum of one hundred and five Dobson units on October seventeenth. For comparison, the lowest South Pole value in the NOAA record was ninety-two units in October two thousand and six. That does not mean every part of the atmosphere is recovering at the same rate. It does show why the area of the hole and the severity of depletion must be considered separately. European observers saw the unusual season too. In mid-September, Copernicus reported that the hole had already grown beyond its typical area for that stage of the year. Germany's DLR used a different satellite instrument to describe the season as unusually large. These independent monitoring perspectives add context, but their measurements should not simply be mixed into one chart. And because the November NASA story and the NOAA announcement describe the same joint scientific analysis, they are not two independent confirmations of one result. Good science reporting keeps that distinction visible.",
+      "visuals": [
+        {
+          "kind": "table",
+          "title": "What NASA and NOAA Measured",
+          "columns": [
+            "Measurement",
+            "2026 result"
+          ],
+          "rows": [
+            [
+              "Seasonal mean area",
+              "25 million km2"
+            ],
+            [
+              "One-day peak area",
+              "27.1 million km2"
+            ],
+            [
+              "South Pole minimum",
+              "105 Dobson units"
+            ]
+          ]
+        },
+        {
+          "kind": "chart",
+          "title": "South Pole Column Ozone",
+          "bars": [
+            {
+              "label": "2006 minimum",
+              "value": 92
+            },
+            {
+              "label": "2026 minimum",
+              "value": 105
+            }
+          ]
+        },
+        {
+          "kind": "text-card",
+          "title": "Different Measures, Different Stories",
+          "body": "A seasonal area average, a daily area peak and a local ozone minimum answer three distinct questions."
+        }
+      ]
+    },
+    {
+      "id": "why-is-it-happening",
+      "title": "Why Was the Hole So Large?",
+      "sourceIds": [
+        "noaa-2026",
+        "nasa-2026",
+        "epa-science",
+        "dlr-2026"
+      ],
+      "narration": "To understand this season, imagine a vast ring of winds circling Antarctica high above the ground. Scientists call it the polar vortex. When it becomes strong and persistent, it can isolate extremely cold air over the continent. Those cold conditions help create special clouds in the stratosphere. The clouds are not themselves the main source of the problem. Instead, chemical reactions on their surfaces prepare chlorine and bromine compounds to destroy ozone when sunlight returns after the polar winter. Some of those compounds came from chemicals widely used in older refrigeration systems, aerosol products and industrial applications. Many of these substances can survive for a very long time in the atmosphere, travel upward, and release reactive atoms when exposed to intense ultraviolet radiation. A single reactive atom can take part in repeated ozone-destroying reactions. So the damage can continue even after emissions start to decline. In twenty twenty-six, atmospheric conditions helped keep the Antarctic vortex unusually powerful. NOAA researchers pointed to weaker large-scale waves that would normally disrupt the vortex during August and September. That helped maintain cold conditions across a broad area, creating more opportunity for ozone depletion. Here is the key: the weather of the stratosphere changes from year to year, while the global concentration of long-lived ozone-destroying substances changes much more slowly. An exceptionally cold, persistent vortex can produce a large hole even during an era when humanity is steadily reducing the chemicals responsible. Weather explains much of the jump in a particular season. Chemical policy helps explain the long-term direction.",
+      "visuals": [
+        {
+          "kind": "text-card",
+          "title": "The Polar Vortex",
+          "body": "A strong ring of winds can isolate cold Antarctic air, helping ozone-depleting reactions develop."
+        },
+        {
+          "kind": "timeline",
+          "title": "How Depletion Develops",
+          "entries": [
+            {
+              "label": "Polar winter",
+              "detail": "Very cold isolated air"
+            },
+            {
+              "label": "Cloud chemistry",
+              "detail": "Reactive chlorine and bromine"
+            },
+            {
+              "label": "Spring sunlight",
+              "detail": "Rapid ozone loss"
+            }
+          ]
+        },
+        {
+          "kind": "text-card",
+          "title": "Weather Versus Long-Term Chemistry",
+          "body": "Year-to-year stratospheric weather changes the size of the hole. Long-lived chemicals shape the recovery trend."
+        }
+      ]
+    },
+    {
+      "id": "why-it-matters",
+      "title": "Why Does This Matter?",
+      "sourceIds": [
+        "nasa-2026",
+        "noaa-2026",
+        "epa-science",
+        "unep-facts"
+      ],
+      "narration": "This story matters for more than a single dramatic map. The ozone layer protects living things by absorbing harmful ultraviolet radiation. Too much ultraviolet exposure can damage biological material, and it raises risks for people and ecosystems. That is why scientists and governments have tracked changes in stratospheric ozone for decades. The Antarctic ozone hole also became one of the clearest examples of humans changing the chemistry of the atmosphere on a planetary scale. Researchers connected the losses to chemicals released by everyday technologies, not to a mysterious natural opening in the sky. The response was international. In nineteen eighty-seven, countries agreed on the Montreal Protocol, which established controls on ozone-depleting substances. Since then, those controls have reduced the amount of damaging chemicals entering the atmosphere. But old emissions do not vanish immediately. Many compounds persist for decades, so recovery is a slow process. That is why scientists compare many years of measurements rather than judging success or failure from one dramatic season. Consider the twenty twenty-six headline again. The ozone hole was very large in area, but the deepest ozone loss was not comparable to the most depleted historical years. Without separating size from depth, audiences could reach the wrong conclusion. There is also an important journalism lesson here: scientific monitoring uses different satellites, ground instruments, time windows and definitions. Good evidence is not just a big number. It is a number with a date, a unit, a method and a clear explanation of what was measured.",
+      "visuals": [
+        {
+          "kind": "timeline",
+          "title": "A Long-Term Response",
+          "entries": [
+            {
+              "label": "1980s",
+              "detail": "Scientists identify severe depletion"
+            },
+            {
+              "label": "1987",
+              "detail": "Montreal Protocol adopted"
+            },
+            {
+              "label": "Today",
+              "detail": "Monitoring and gradual recovery"
+            }
+          ]
+        },
+        {
+          "kind": "text-card",
+          "title": "Why the Ozone Layer Matters",
+          "body": "Stratospheric ozone absorbs harmful UV radiation. Recovery protects ecosystems and people."
+        },
+        {
+          "kind": "table",
+          "title": "How to Read a Measurement",
+          "columns": [
+            "Always ask",
+            "Example"
+          ],
+          "rows": [
+            [
+              "What is measured?",
+              "Area or ozone depth"
+            ],
+            [
+              "When?",
+              "Day or season"
+            ],
+            [
+              "How?",
+              "Satellite or ground"
+            ],
+            [
+              "Compared with?",
+              "Consistent baseline"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "whats-next",
+      "title": "What Happens Next?",
+      "sourceIds": [
+        "noaa-2026",
+        "nasa-2026",
+        "unep-facts",
+        "cams-2026"
+      ],
+      "narration": "So what should we expect in the coming years? Not a perfectly smooth line. Some Antarctic springs will bring unusually large ozone holes, and others will bring smaller ones. The polar vortex, stratospheric temperatures and atmospheric circulation can change the result from one year to the next. Scientists therefore watch several indicators together: how wide the depleted region becomes, how low the ozone measurements fall, how long the hole persists, and whether ozone-destroying chemicals keep declining. NASA and NOAA describe the long-term Antarctic recovery as progressing, while cautioning that the process takes decades. Their reporting discusses a return toward nineteen eighty conditions in the twenty seventies. A separate international scientific assessment has used a different central estimate, around twenty sixty-six, under continued compliance with ozone-protection agreements. Those dates are projections from different assessments, not promises about one specific future season. What matters is the direction of the evidence and whether the conditions behind each estimate remain true. Future monitoring will show whether the recovery continues as expected and how much year-to-year weather changes individual ozone-hole seasons. The useful question is not simply whether next year's hole looks large. It is whether the long-term chemistry and measurements are moving toward sustained protection.",
+      "visuals": [
+        {
+          "kind": "chart",
+          "title": "Why One Season Is Not Enough",
+          "bars": [
+            {
+              "label": "2006 low DU",
+              "value": 92
+            },
+            {
+              "label": "2026 low DU",
+              "value": 105
+            }
+          ]
+        },
+        {
+          "kind": "text-card",
+          "title": "Recovery Is a Projection",
+          "body": "NASA/NOAA: 2070s outlook. UNEP assessment: around 2066 under continued compliance. Different estimates, not guarantees."
+        },
+        {
+          "kind": "text-card",
+          "title": "What Scientists Will Watch",
+          "body": "Area, ozone concentration, duration, stratospheric conditions and the decline of harmful chemicals."
+        }
+      ]
+    },
+    {
+      "id": "takeaway",
+      "title": "The Takeaway",
+      "sourceIds": [
+        "noaa-2026",
+        "nasa-2026"
+      ],
+      "narration": "Here is the takeaway. The twenty twenty-six Antarctic ozone hole was unusually wide, largely because of the weather high above the South Pole. That does not overturn the evidence for a slow, human-driven recovery of the ozone layer. To understand the science, look past the largest number, ask what it measures, and follow the long-term trend. This is Earth and Climate Explained.",
+      "visuals": [
+        {
+          "kind": "text-card",
+          "title": "The 2026 Takeaway",
+          "body": "A large ozone hole in one year does not erase decades of evidence for gradual recovery."
+        },
+        {
+          "kind": "text-card",
+          "title": "Earth & Climate Explained",
+          "body": "Follow the evidence. Separate short-term variability from long-term change."
+        }
+      ]
+    }
+  ]
+}
