@@ -20,6 +20,20 @@ export type { ReviewSourceKind } from "./provider-pricing-provenance.js";
 export { sealProviderPrompt, openProviderPrompt } from "./provider-encrypted-prompt.js";
 export type { EncryptedProviderPrompt } from "./provider-encrypted-prompt.js";
 
+export { precheckAssetLicense } from "./asset-license-policy.js";
+export type {
+  AssetLicensePrecheck,
+  AssetLicensePrecheckStatus,
+  AssetLicensePrecheckReason,
+} from "./asset-license-policy.js";
+
+export { buildOfflineVideoCreditsReport } from "./offline-video-credits-report.js";
+export type {
+  AssetCreditsBlockReason,
+  OfflineAssetCreditEntry,
+  OfflineVideoCreditsReport,
+} from "./offline-video-credits-report.js";
+
 export { makeOfflineGraphicStoryboard } from "./offline-storyboard-graphics.js";
 export type {
   OfflineGraphicKind,
