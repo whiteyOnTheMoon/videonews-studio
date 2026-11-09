@@ -5,8 +5,12 @@ import StudioDashboard from "./studio-dashboard";
 
 test("owner studio has two primary actions and a three-tab information architecture", () => {
   const rendered = renderToStaticMarkup(
-    <StudioDashboard newsEnabled={false} previewEnabled={false} renderEnabled={false}
-      settings={<p>Advanced controls</p>} />,
+    <StudioDashboard
+      newsEnabled={false}
+      previewEnabled={false}
+      renderEnabled={false}
+      settings={<p>Advanced controls</p>}
+    />,
   );
   assert.match(rendered, />News recherchieren</);
   assert.match(rendered, />Video erstellen</);
@@ -22,8 +26,12 @@ test("owner studio has two primary actions and a three-tab information architect
 
 test("source candidates cannot start rendering when video render gate is disabled", () => {
   const rendered = renderToStaticMarkup(
-    <StudioDashboard newsEnabled previewEnabled renderEnabled={false}
-      settings={<p>Admin tools</p>} />,
+    <StudioDashboard
+      newsEnabled
+      previewEnabled
+      renderEnabled={false}
+      settings={<p>Admin tools</p>}
+    />,
   );
   assert.match(rendered, /Video erstellen<\/button>/);
   assert.match(rendered, /disabled=""/);
