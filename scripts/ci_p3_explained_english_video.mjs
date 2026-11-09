@@ -45,8 +45,11 @@ function command(name, args, timeout = 120000) {
   });
   if (result.error || result.status !== 0) {
     throw new Error(
-      name + " failed: " + (result.error?.code ?? result.status) +
-        " " + (result.stderr ?? "").slice(-900),
+      name +
+        " failed: " +
+        (result.error?.code ?? result.status) +
+        " " +
+        (result.stderr ?? "").slice(-900),
     );
   }
   return result.stdout;
@@ -54,11 +57,19 @@ function command(name, args, timeout = 120000) {
 
 function probe(path) {
   return JSON.parse(
-    command("ffprobe", [
-      "-v", "error",
-      "-show_entries", "format=duration:stream=codec_name,codec_type,width,height,nb_frames,sample_rate,channels",
-      "-of", "json", path,
-    ], 10000),
+    command(
+      "ffprobe",
+      [
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration:stream=codec_name,codec_type,width,height,nb_frames,sample_rate,channels",
+        "-of",
+        "json",
+        path,
+      ],
+      10000,
+    ),
   );
 }
 
@@ -69,13 +80,19 @@ function validateStory(story) {
   assert.equal(story.editorialStatus, "REVIEW_REQUIRED");
   assert.equal(story.sourceStatus, "manually_curated_public_reports_not_live_ingestion");
   for (const field of [
-    "editorialApproved", "rightsApproved", "renderAllowed",
-    "uploadAllowed", "publicationAllowed",
+    "editorialApproved",
+    "rightsApproved",
+    "renderAllowed",
+    "uploadAllowed",
+    "publicationAllowed",
   ]) {
     assert.equal(story[field], false, "Never bypass publication gate: " + field);
   }
   assertEarthClimateExplainedStructure(story);
-  assert.deepEqual(story.sections.map((section) => section.id), EARTH_CLIMATE_EXPLAINED_SECTION_IDS);
+  assert.deepEqual(
+    story.sections.map((section) => section.id),
+    EARTH_CLIMATE_EXPLAINED_SECTION_IDS,
+  );
   assert.equal(story.sources.length, Object.keys(SOURCE_HOSTS).length);
   const sources = new Map();
   for (const source of story.sources) {
@@ -98,12 +115,17 @@ function validateStory(story) {
     assert.ok(section.sourceIds.length >= 1 && section.sourceIds.length <= 4);
     assert.equal(new Set(section.sourceIds).size, section.sourceIds.length);
     assert.ok(section.sourceIds.every((id) => sources.has(id)));
-    assert.ok(Array.isArray(section.visuals) && section.visuals.length >= 2 && section.visuals.length <= 4);
+    assert.ok(
+      Array.isArray(section.visuals) && section.visuals.length >= 2 && section.visuals.length <= 4,
+    );
     assert.ok(section.visuals.every((visual) => visual && typeof visual.kind === "string"));
     assert.ok(!/[<>]/.test(section.narration) && !/[\r\n]/.test(section.narration));
     return sum + (section.narration.match(/[\w'-]+/g) ?? []).length;
   }, 0);
-  assert.ok(totalWords >= 1150 && totalWords <= 1550, "English narration wordcount out of editorial pilot bounds");
+  assert.ok(
+    totalWords >= 1150 && totalWords <= 1550,
+    "English narration wordcount out of editorial pilot bounds",
+  );
   return { sources, totalWords };
 }
 
@@ -112,9 +134,11 @@ async function synthesizeSections(story, directory, speed) {
   const timings = [];
   for (const [index, section] of story.sections.entries()) {
     const path = join(directory, "speech-" + index + ".wav");
-    command("espeak-ng", [
-      "-v", "en-us", "-s", String(speed), "-w", path, section.narration,
-    ], 30000);
+    command(
+      "espeak-ng",
+      ["-v", "en-us", "-s", String(speed), "-w", path, section.narration],
+      30000,
+    );
     const details = probe(path);
     const stream = details.streams.find((value) => value.codec_type === "audio");
     assert.equal(stream?.codec_name, "pcm_s16le");
@@ -122,7 +146,11 @@ async function synthesizeSections(story, directory, speed) {
     const seconds = Number(details.format.duration);
     assert.ok(Number.isFinite(seconds) && seconds > 3 && seconds < 240);
     paths.push(path);
-    timings.push({ sectionId: section.id, audioSeconds: seconds, beatCount: section.visuals.length });
+    timings.push({
+      sectionId: section.id,
+      audioSeconds: seconds,
+      beatCount: section.visuals.length,
+    });
   }
   return { paths, plan: buildNarrationTimeline(timings, 0.7) };
 }
@@ -164,27 +192,57 @@ async function assembleAudio(speechPaths, plan, directory) {
   const filters = plan.sections.map((section, index) => {
     const seconds = (section.frames / FPS).toFixed(9);
     return (
-      "[" + index + ":a]aresample=48000," +
+      "[" +
+      index +
+      ":a]aresample=48000," +
       "aformat=sample_fmts=s16:channel_layouts=mono," +
-      "apad=whole_dur=" + seconds + "," +
-      "atrim=duration=" + seconds + ",asetpts=PTS-STARTPTS[a" + index + "]"
+      "apad=whole_dur=" +
+      seconds +
+      "," +
+      "atrim=duration=" +
+      seconds +
+      ",asetpts=PTS-STARTPTS[a" +
+      index +
+      "]"
     );
   });
-  filters.push(plan.sections.map((_, index) => "[a" + index + "]").join("") +
-    "concat=n=" + plan.sections.length + ":v=0:a=1[outa]");
-  command("ffmpeg", [
-    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    ...speechPaths.flatMap((path) => ["-protocol_whitelist", "file,pipe", "-i", path]),
-    "-filter_complex", filters.join(";"),
-    "-map", "[outa]", "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "1",
-    output,
-  ], 120000);
+  filters.push(
+    plan.sections.map((_, index) => "[a" + index + "]").join("") +
+      "concat=n=" +
+      plan.sections.length +
+      ":v=0:a=1[outa]",
+  );
+  command(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-y",
+      ...speechPaths.flatMap((path) => ["-protocol_whitelist", "file,pipe", "-i", path]),
+      "-filter_complex",
+      filters.join(";"),
+      "-map",
+      "[outa]",
+      "-c:a",
+      "pcm_s16le",
+      "-ar",
+      "48000",
+      "-ac",
+      "1",
+      output,
+    ],
+    120000,
+  );
   const details = probe(output);
   assert.equal(details.streams.length, 1);
   assert.equal(details.streams[0].codec_name, "pcm_s16le");
   assert.equal(details.streams[0].sample_rate, "48000");
-  assert.ok(Math.abs(Number(details.format.duration) - plan.totalSeconds) <= 0.05,
-    "One continuous audio master must match frame-aligned narration duration");
+  assert.ok(
+    Math.abs(Number(details.format.duration) - plan.totalSeconds) <= 0.05,
+    "One continuous audio master must match frame-aligned narration duration",
+  );
   return output;
 }
 
@@ -202,18 +260,56 @@ async function renderMovie(pngPaths, audioPath, plan, directory) {
   const framesFile = join(directory, "frames.ffconcat");
   await writeFile(framesFile, lines.join("\n") + "\n", { mode: 0o600, flag: "wx" });
   const output = join(directory, "ENGLISH_REVIEW_REQUIRED_NOT_FOR_PUBLICATION.mp4");
-  command("ffmpeg", [
-    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    "-protocol_whitelist", "file,pipe", "-f", "concat", "-safe", "0", "-i", framesFile,
-    "-protocol_whitelist", "file,pipe", "-i", audioPath,
-    "-map", "0:v:0", "-map", "1:a:0",
-    "-vf", "fps=24,format=yuv420p", "-t", plan.totalSeconds.toFixed(6),
-    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
-    "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "1",
-    "-movflags", "+faststart",
-    "-metadata", "title=EARTH AND CLIMATE EXPLAINED - REVIEW REQUIRED",
-    output,
-  ], 480000);
+  command(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-y",
+      "-protocol_whitelist",
+      "file,pipe",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      framesFile,
+      "-protocol_whitelist",
+      "file,pipe",
+      "-i",
+      audioPath,
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-vf",
+      "fps=24,format=yuv420p",
+      "-t",
+      plan.totalSeconds.toFixed(6),
+      "-c:v",
+      "libx264",
+      "-preset",
+      "ultrafast",
+      "-crf",
+      "30",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
+      "-ar",
+      "48000",
+      "-ac",
+      "1",
+      "-movflags",
+      "+faststart",
+      "-metadata",
+      "title=EARTH AND CLIMATE EXPLAINED - REVIEW REQUIRED",
+      output,
+    ],
+    480000,
+  );
   const details = probe(output);
   const video = details.streams.find((stream) => stream.codec_type === "video");
   const audio = details.streams.find((stream) => stream.codec_type === "audio");
@@ -221,12 +317,18 @@ async function renderMovie(pngPaths, audioPath, plan, directory) {
   assert.equal(audio?.codec_name, "aac");
   assert.equal(video?.width, 1280);
   assert.equal(video?.height, 720);
-  assert.ok(Math.abs(Number(video.nb_frames) - plan.totalFrames) <= 2,
-    "Video frame count must match voice-driven timeline");
-  assert.ok(Math.abs(Number(details.format.duration) - plan.totalSeconds) <= 0.2,
-    "Movie duration must match the voice-driven timeline");
-  assert.ok(Number(details.format.duration) >= 480 && Number(details.format.duration) <= 600,
-    "Episode must be 8–10 minutes, not padded with empty shots");
+  assert.ok(
+    Math.abs(Number(video.nb_frames) - plan.totalFrames) <= 2,
+    "Video frame count must match voice-driven timeline",
+  );
+  assert.ok(
+    Math.abs(Number(details.format.duration) - plan.totalSeconds) <= 0.2,
+    "Movie duration must match the voice-driven timeline",
+  );
+  assert.ok(
+    Number(details.format.duration) >= 480 && Number(details.format.duration) <= 600,
+    "Episode must be 8–10 minutes, not padded with empty shots",
+  );
   const size = (await stat(output)).size;
   assert.ok(size > 100000 && size < 80 * 1024 * 1024);
   return { output, duration: Number(details.format.duration), size };
@@ -248,25 +350,43 @@ async function main() {
     let { paths, plan } = await synthesizeSections(story, directory, voiceSpeed);
     if (plan.totalSeconds < 480 || plan.totalSeconds > 600) {
       // Keep a bounded, intelligible pace; never stretch video with silence.
-      voiceSpeed = Math.max(130, Math.min(175, Math.round(voiceSpeed * plan.totalSeconds / 540)));
+      voiceSpeed = Math.max(130, Math.min(175, Math.round((voiceSpeed * plan.totalSeconds) / 540)));
       ({ paths, plan } = await synthesizeSections(story, directory, voiceSpeed));
     }
-    assert.ok(plan.totalSeconds >= 480 && plan.totalSeconds <= 600,
-      "Source script and measured voice duration must fit the 8–10 minute brief");
+    assert.ok(
+      plan.totalSeconds >= 480 && plan.totalSeconds <= 600,
+      "Source script and measured voice duration must fit the 8–10 minute brief",
+    );
     const pngPaths = await renderGraphics(story, sources, directory);
     const audio = await assembleAudio(paths, plan, directory);
     const movie = await renderMovie(pngPaths, audio, plan, directory);
-    const sha256 = createHash("sha256").update(await readFile(movie.output)).digest("hex");
+    const sha256 = createHash("sha256")
+      .update(await readFile(movie.output))
+      .digest("hex");
     assert.equal(story.editorialApproved, false);
     assert.equal(story.publicationAllowed, false);
     assert.equal(rights.renderAllowed, false);
-    console.log("ENGLISH EXPLAINED OFFLINE CI PASS: " + movie.duration.toFixed(3) +
-      " sec; " + totalWords + " words; " + pngPaths.length +
-      " own graphics; speech speed=" + voiceSpeed + "; bytes=" + movie.size +
-      "; SHA256=" + sha256);
-    console.log("EN-US metadata, review-required original narration; deterministic sequential audio.");
+    console.log(
+      "ENGLISH EXPLAINED OFFLINE CI PASS: " +
+        movie.duration.toFixed(3) +
+        " sec; " +
+        totalWords +
+        " words; " +
+        pngPaths.length +
+        " own graphics; speech speed=" +
+        voiceSpeed +
+        "; bytes=" +
+        movie.size +
+        "; SHA256=" +
+        sha256,
+    );
+    console.log(
+      "EN-US metadata, review-required original narration; deterministic sequential audio.",
+    );
     console.log("TTS is eSpeak technical-only, NOT a production-quality voice.");
-    console.log("Editorial approval: DENIED. Licensed media: NONE. Render/upload/publication: NOT ENABLED.");
+    console.log(
+      "Editorial approval: DENIED. Licensed media: NONE. Render/upload/publication: NOT ENABLED.",
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
