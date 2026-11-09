@@ -92,7 +92,7 @@ function positiveId(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 }
 
-function canonicalPexelsUrl(value: unknown, host: string): URL | null {
+function canonicalPexelsUrl(value: unknown, host: string, allowQuery = false): URL | null {
   if (
     typeof value !== "string" ||
     value.length < 12 ||
@@ -112,7 +112,8 @@ function canonicalPexelsUrl(value: unknown, host: string): URL | null {
       url.password !== "" ||
       url.port !== "" ||
       url.hash !== "" ||
-      url.search !== "" ||
+      (!allowQuery && url.search !== "") ||
+      (allowQuery && url.search.length > 256) ||
       url.pathname.includes("%") ||
       url.pathname.includes("//")
     ) {
@@ -143,7 +144,8 @@ function validProfile(value: unknown): value is string {
 }
 
 function validImageReference(value: unknown, kind: PexelsMediaType, id: number): boolean {
-  const url = canonicalPexelsUrl(value, "images.pexels.com");
+  // Official Pexels CDN thumbnails may carry bounded resizing queries.
+  const url = canonicalPexelsUrl(value, "images.pexels.com", true);
   return (
     url !== null &&
     url.pathname.startsWith((kind === "photo" ? "/photos/" : "/videos/") + id + "/")
