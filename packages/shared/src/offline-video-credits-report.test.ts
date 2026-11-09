@@ -17,8 +17,7 @@ const candidate = (assetId = ASSET_A) => ({
   licenseCode: "CC-BY-4.0",
   licenseUrl: URL,
   contentSha256: "a".repeat(64),
-  attribution:
-    "Synthetic Photographer — https://media.example.invalid/photo/5 — CC BY 4.0 " + URL,
+  attribution: "Synthetic Photographer — https://media.example.invalid/photo/5 — CC BY 4.0 " + URL,
   licenseSnapshot: {
     license_code: "CC-BY-4.0",
     license_url: URL,
@@ -150,7 +149,10 @@ test("malformed requests, missing assets and excessive work fail closed", () => 
     [{ videoId: VIDEO_ID, assets: [] }, "no_assets"],
     [{ videoId: VIDEO_ID, assets: [null] }, "invalid_asset_record"],
     [{ videoId: "invalid", assets: [candidate()] }, "invalid_video_id"],
-    [{ videoId: VIDEO_ID, assets: Array.from({ length: 26 }, () => candidate()) }, "too_many_assets"],
+    [
+      { videoId: VIDEO_ID, assets: Array.from({ length: 26 }, () => candidate()) },
+      "too_many_assets",
+    ],
   ] as const) {
     const result = buildOfflineVideoCreditsReport(payload);
     assert.equal(result.status, "BLOCKED");
