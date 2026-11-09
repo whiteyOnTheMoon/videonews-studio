@@ -35,6 +35,6 @@ test("source candidates cannot start rendering when video render gate is disable
   );
   assert.match(rendered, /Video erstellen<\/button>/);
   assert.match(rendered, /disabled=""/);
-  assert.match(rendered, /noch keine neue Live-Recherche/);
+  assert.match(rendered, /Ein neuer Live-Abruf ist noch nicht freigeschaltet/);
   assert.doesNotMatch(rendered, /YouTube veröffentlichen|Upload starten/);
 });
