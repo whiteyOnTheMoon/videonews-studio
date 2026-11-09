@@ -26,7 +26,7 @@ Der vorhandene P3-07-Generator verwandelt diese internen Daten in
 - Balkendiagramm mit fiktiven Zahlen
 - Schematische Karte ohne echte Geokoordinaten
 
-`ffmpeg` kodiert **diese konkreten SVG-Bilder** zu einem stummen
+`rsvg-convert` rastert **diese konkreten SVG-Bilder** zu internen PNG-Frames, die `ffmpeg` zu einem stummen
 H.264-MP4 mit 1280 × 720 Pixeln, 8 Bildern/s und 10 Sekunden Dauer.
 `ffprobe` prüft Codec, Laufzeit, Auflösung und 80 Videoframes. Somit
 ist nicht nur ein Dateiname, sondern die tatsächliche Videodatei
@@ -40,15 +40,16 @@ Die CI-Datei `.github/workflows/p3-synthetic-mp4-demo.yml`
 führt die Demo **nur auf dem kurzlebigen GitHub-Actions-Runner**
 aus. Der Code lehnt Ausführung ohne `GITHUB_ACTIONS=true`
 und `CI=true` sofort ab. Bestehende Node-/npm-Arbeitsbereiche
-werden mit Lockfile gebaut; `ffmpeg` und `ffprobe` müssen bereits
-lokal installiert sein. Es wird **kein Systempaket installiert**.
+werden mit Lockfile gebaut. **Nur auf dem kurzlebigen CI-Runner**
+werden die kostenlosen Ubuntu-Pakete `ffmpeg` und `librsvg2-bin`
+installiert. Kein VPS-Systempaket wird verändert.
 
 Der Encoder darf als Protokolle nur `file,pipe` lesen;
 er verwendet `spawnSync` ohne Shell, ohne nutzergesteuerte
 FFmpeg-Argumente oder untrusted SVG-Dateien. Er hat keine
 Benutzer-, Admin-, Upload-, Cloud- oder Datenbank-Zugangsdaten.
 
-Alle SVG- und MP4-Dateien entstehen in einem privaten
+Alle SVG-, PNG- und MP4-Dateien entstehen in einem privaten
 System-Tempverzeichnis, werden auf Format/Sicherheit geprüft
 und im `finally`-Block unmittelbar entfernt. Es wird **kein
 GitHub-Artefakt hochgeladen**, nichts im Repository gespeichert
