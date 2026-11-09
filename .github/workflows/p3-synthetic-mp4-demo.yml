@@ -11,7 +11,7 @@ permissions:
 jobs:
   synthetic-mp4:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       CI: "true"
     steps:
@@ -21,10 +21,20 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install open-source FFmpeg and SVG renderer on ephemeral runner only
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin
       - name: Build existing shared and worker modules
         run: |
           npm run build --workspace @vns/shared
           npm run build --workspace @vns/worker
+      - name: Verify all workspace quality gates
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run format:check
+          npm test
       - name: Reject non-CI execution before creating output
         run: |
           if GITHUB_ACTIONS=false node scripts/ci_p3_synthetic_mp4_demo.mjs; then
@@ -35,6 +45,7 @@ jobs:
         run: |
           command -v ffmpeg
           command -v ffprobe
+          command -v rsvg-convert
           ffmpeg -hide_banner -version | head -n 1
       - name: Generate actual playable MP4 and securely remove temporary files
         run: node scripts/ci_p3_synthetic_mp4_demo.mjs
