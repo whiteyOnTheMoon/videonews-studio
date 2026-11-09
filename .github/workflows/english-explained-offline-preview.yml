@@ -75,6 +75,17 @@ jobs:
           }]);
           console.log("PRIVATE READ-ONLY VIDEO OVERLAY PASS – no render, no public routes, no host ports");
           NODE
+      - name: Temporary capture of exact formatted operator documentation
+        run: |
+          npx prettier --write docs/STUDIO_SIMPLIFIED_UI.md
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const data = readFileSync("docs/STUDIO_SIMPLIFIED_UI.md").toString("base64");
+          const parts = Math.ceil(data.length / 2000);
+          for (let i = 0; i < parts; i++) {
+            console.log("VNS_PREVIEW_DOC|" + i + "|" + parts + "|" + data.slice(i * 2000, (i + 1) * 2000));
+          }
+          NODE
       - name: Test source code and structures without creating any video
         run: |
           npm run build --workspace @vns/shared
