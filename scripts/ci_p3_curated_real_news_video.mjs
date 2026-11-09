@@ -59,7 +59,10 @@ function safeText(value, max) {
     value.length > 0 &&
     value.length <= max &&
     value === value.trim() &&
-    !/[<>\u0000-\u001f\u007f]/.test(value)
+    ![...value].some((character) => {
+      const code = character.codePointAt(0);
+      return code !== undefined && (code < 32 || code === 127 || character === "<" || character === ">");
+    })
   );
 }
 
