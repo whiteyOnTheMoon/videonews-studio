@@ -33,3 +33,10 @@ export type {
   OfflineAssetCreditEntry,
   OfflineVideoCreditsReport,
 } from "./offline-video-credits-report.js";
+
+export { makeOfflineGraphicStoryboard } from "./offline-storyboard-graphics.js";
+export type {
+  OfflineGraphicKind,
+  OfflineGraphicFrame,
+  OfflineGraphicStoryboard,
+} from "./offline-storyboard-graphics.js";
