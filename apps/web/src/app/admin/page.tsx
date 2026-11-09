@@ -24,6 +24,7 @@ import EditorialRankedEvents from "./editorial-ranked-events";
 import EditorialFeedInbox from "./editorial-feed-inbox";
 import EditorialRankingPolicy from "./editorial-ranking-policy";
 import EditorialMetadataReviews from "./editorial-metadata-reviews";
+import StudioDashboard from "./studio-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -39,32 +40,44 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="shell">
-      <span className="eyebrow">P1 · Internal admin preview</span>
-      <h1>Admin-Bereich</h1>
-      <p>
-        Anmeldung bestätigt. Redaktionelle Prüf- und Konfigurationsfunktionen werden einzeln
-        freigeschaltet und veröffentlichen keine Inhalte.
-      </p>
-      <div className="notice">Jede Anfrage wird serverseitig durch die Admin-API überprüft.</div>
-      <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
-      <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
-      <AiProviders
-        readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null}
-        writeEnabled={process.env.VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"}
+    <main className="shell studio-shell">
+      <span className="eyebrow">VIDEO NEWS STUDIO</span>
+      <h1>Dein Video-Studio</h1>
+      <p>Aktuelle Earth-&-Climate-Themen auswählen, Videos erstellen und Vorschauen prüfen.</p>
+      <StudioDashboard
+        newsEnabled={editorialAdminProxyConfig(process.env) !== null}
+        previewEnabled={process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true"}
+        renderEnabled={
+          process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true" &&
+          process.env.VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED === "true"
+        }
+        settings={
+          <>
+            <p>
+              Erweiterte Werkzeuge, Anmeldungen, Quellenprüfungen und Anbieter-Konfiguration.
+              Keine dieser Funktionen veröffentlicht Inhalte automatisch.
+            </p>
+            <EditorLogin enabled={editorProxyConfig(process.env) !== null} />
+            <ResearchJobs enabled={adminJobsProxyConfig(process.env) !== null} />
+            <AiProviders
+              readOnlyEnabled={aiProviderReadOnlyProxyConfig(process.env) !== null}
+              writeEnabled={process.env.VNS_WEB_AI_PROVIDER_WRITE_ENABLED === "true"}
+            />
+            <AiPriceFxReview enabled={priceReviewProxyConfig(process.env) !== null} />
+            <AiProviderJobs enabled={process.env.VNS_WEB_AI_PROVIDER_JOBS_ENABLED === "true"} />
+            <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
+            <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
+            <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialFeedInbox enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialRankedEvents enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialRankingPolicy enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialMetadataReviews enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
+            <EditorialTimelineEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
+          </>
+        }
       />
-      <AiPriceFxReview enabled={priceReviewProxyConfig(process.env) !== null} />
-      <AiProviderJobs enabled={process.env.VNS_WEB_AI_PROVIDER_JOBS_ENABLED === "true"} />
-      <NewsSources enabled={sourceAdminProxyConfig(process.env) !== null} />
-      <SourceHostApprovals enabled={hostApprovalProxyConfig(process.env) !== null} />
-      <EditorialProfiles enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialFeedInbox enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialRankedEvents enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialRankingPolicy enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialMetadataReviews enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialAuditExport enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialCheckpointEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
-      <EditorialTimelineEntry enabled={editorialAdminProxyConfig(process.env) !== null} />
       <SignOut />
     </main>
   );
