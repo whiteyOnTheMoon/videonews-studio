@@ -4,9 +4,10 @@
 
 ## Redaktionelles Format
 
-Die verbindliche Struktur steht in [EXPLAINED_SCRIPT_STRUCTURE_V1.md](EXPLAINED_SCRIPT_STRUCTURE_V1.md): **The Hook → The Basics → What Happened? → Why Is It Happening? → Why It Matters → What's Next? → The Takeaway**. Abschnittszeiten sind *keine* festen Werte. Der Generator muss langfristig inhaltlich sinnvoll mit dieser Reihenfolge arbeiten, statt Zeiten mit Standbildern aufzufüllen.
+Die verbindliche Struktur steht in [EXPLAINED_SCRIPT_STRUCTURE_V1.md](EXPLAINED_SCRIPT_STRUCTURE_V1.md): **The Hook → The Basics → What Happened? → Why Is It Happening? → Why It Matters → What's Next? → The Takeaway**. Abschnittszeiten sind _keine_ festen Werte. Der Generator muss langfristig inhaltlich sinnvoll mit dieser Reihenfolge arbeiten, statt Zeiten mit Standbildern aufzufüllen.
 
 Die manuell kuratierte englische Episode `content/news/ozone-2026-explained-en.json` umfasst sieben originale englische Sprecherabschnitte (etwa 1264 Wörter) und 19 eigene grafische Visual-Beats. Alle Abschnitts- und Grafiktexte sind Englisch. Das Material basiert auf öffentlich dokumentierten Messungen vom November 2026 und erklärt:
+
 - Was mit Ozonloch, Dobson-Einheit und Stratosphäre gemeint ist.
 - Saisonmittel der Ozonlochfläche: **25 Mio. km²** (7. September bis 13. Oktober, 2026), Platz sieben in 48 Jahren (gemeinsame NASA-/NOAA-Auswertung).
 - Tagesmaximum: **27,1 Mio. km²** am 18. September 2026; **kein** saisonaler Mittelwert.
@@ -15,6 +16,7 @@ Die manuell kuratierte englische Episode `content/news/ozone-2026-explained-en.j
 - **Unterschiedliche Projektionen:** NASA/NOAA sprechen von den 2070ern; UNEP zitiert eine Einschätzung für etwa 2066 unter fortgesetzter Einhaltung der Abkommen. Beides sind Modellprojektionen, keine Jahresgarantie.
 
 ### Quellen / Beleggruppen
+
 - [NOAA/NASA gemeinsame Auswertung, 4.11.2026](https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole)
 - [NASA Earth Observatory, 9.11.2026](https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/) – dieselbe US-Auswertung, **nicht als unabhängige zweite Prüfung zählen**.
 - [Copernicus CAMS, 16.9.2026](https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026) – eigenständige europäische Beobachtung, kein austauschbarer Messdatensatz.
