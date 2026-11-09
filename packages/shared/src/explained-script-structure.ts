@@ -13,8 +13,7 @@ export const EARTH_CLIMATE_EXPLAINED_SECTION_IDS = [
   "takeaway",
 ] as const;
 
-export type EarthClimateExplainedSectionId =
-  (typeof EARTH_CLIMATE_EXPLAINED_SECTION_IDS)[number];
+export type EarthClimateExplainedSectionId = (typeof EARTH_CLIMATE_EXPLAINED_SECTION_IDS)[number];
 
 export interface EarthClimateExplainedSection {
   id: EarthClimateExplainedSectionId;
