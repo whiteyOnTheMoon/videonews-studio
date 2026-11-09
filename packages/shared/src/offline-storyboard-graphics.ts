@@ -285,7 +285,9 @@ function makeFrame(
       '" height="' +
       FRAME_HEIGHT +
       '" viewBox="0 0 1280 720" role="img" aria-label="' +
-      (language === "en-US" ? "Unpublished news graphic" : "Nicht veröffentlichte Nachrichten-Grafik") +
+      (language === "en-US"
+        ? "Unpublished news graphic"
+        : "Nicht veröffentlichte Nachrichten-Grafik") +
       '">',
     "<title>" +
       xml(title) +
@@ -296,7 +298,9 @@ function makeFrame(
     textAt(
       92,
       138,
-      language === "en-US" ? "ORIGINAL GRAPHIC / NO THIRD-PARTY FOOTAGE" : "EIGENE GRAFIK / OHNE FREMDES FOOTAGE",
+      language === "en-US"
+        ? "ORIGINAL GRAPHIC / NO THIRD-PARTY FOOTAGE"
+        : "EIGENE GRAFIK / OHNE FREMDES FOOTAGE",
       16,
       "#bfe8ff",
     ),
@@ -305,7 +309,9 @@ function makeFrame(
     textAt(
       92,
       701,
-      language === "en-US" ? "PREVIEW – NOT FOR PUBLICATION" : "VORSCHAU – NICHT ZUR VERÖFFENTLICHUNG",
+      language === "en-US"
+        ? "PREVIEW – NOT FOR PUBLICATION"
+        : "VORSCHAU – NICHT ZUR VERÖFFENTLICHUNG",
       18,
       "#ffd392",
     ),
