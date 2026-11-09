@@ -33,37 +33,6 @@ jobs:
           node-version: "22"
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: Temporary capture exact Prettier output for branch review
-        run: |
-          npx prettier --write \
-            content/news/ozone-2026-explained-en.json \
-            docs/ENGLISH_EXPLAINED_CI_PILOT.md \
-            docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md \
-            packages/shared/src/explained-script-structure.test.ts \
-            packages/shared/src/explained-script-structure.ts \
-            packages/shared/src/narration-timeline.test.ts \
-            packages/shared/src/offline-storyboard-graphics.ts \
-            scripts/ci_p3_explained_english_video.mjs
-          node --input-type=module <<'NODE'
-          import { readFileSync } from "node:fs";
-          const paths = [
-            "content/news/ozone-2026-explained-en.json",
-            "docs/ENGLISH_EXPLAINED_CI_PILOT.md",
-            "docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md",
-            "packages/shared/src/explained-script-structure.test.ts",
-            "packages/shared/src/explained-script-structure.ts",
-            "packages/shared/src/narration-timeline.test.ts",
-            "packages/shared/src/offline-storyboard-graphics.ts",
-            "scripts/ci_p3_explained_english_video.mjs",
-          ];
-          for (const path of paths) {
-            const b64 = readFileSync(path).toString("base64");
-            const size = 2000;
-            for (let i = 0; i < Math.ceil(b64.length / size); i++) {
-              console.log("VNS_FORMAT|" + path + "|" + i + "|" + Math.ceil(b64.length / size) + "|" + b64.slice(i * size, (i + 1) * size));
-            }
-          }
-          NODE
       - name: Install local-only audio and video tools on disposable runner
         run: |
           sudo apt-get update -qq
