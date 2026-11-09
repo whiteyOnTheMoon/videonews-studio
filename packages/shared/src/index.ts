@@ -26,3 +26,10 @@ export type {
   AssetLicensePrecheckStatus,
   AssetLicensePrecheckReason,
 } from "./asset-license-policy.js";
+
+export { buildOfflineVideoCreditsReport } from "./offline-video-credits-report.js";
+export type {
+  AssetCreditsBlockReason,
+  OfflineAssetCreditEntry,
+  OfflineVideoCreditsReport,
+} from "./offline-video-credits-report.js";
