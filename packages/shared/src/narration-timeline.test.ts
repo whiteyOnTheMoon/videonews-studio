@@ -24,10 +24,7 @@ test("builds a continuous 24 fps plan with zero visual overlap or gaps", () => {
     assert.ok(section.frames / 24 >= section.measuredAudioSeconds + 0.4);
     const localBeats = section.visualBeats;
     assert.equal(localBeats[0]?.startFrame, section.startFrame);
-    assert.equal(
-      localBeats.at(-1)!.startFrame + localBeats.at(-1)!.frames,
-      end,
-    );
+    assert.equal(localBeats.at(-1)!.startFrame + localBeats.at(-1)!.frames, end);
     for (const beat of localBeats) {
       assert.ok(beat.frames > 0);
       assert.ok(beat.startFrame >= section.startFrame);
@@ -51,9 +48,7 @@ test("rejects non-finite durations, duplicate ids and unbounded beats", () => {
   assert.throws(() =>
     buildNarrationTimeline([{ ...inputs[0]!, audioSeconds: Number.NaN }, ...inputs.slice(1)]),
   );
-  assert.throws(() =>
-    buildNarrationTimeline([inputs[0]!, inputs[0]!, ...inputs.slice(2)]),
-  );
+  assert.throws(() => buildNarrationTimeline([inputs[0]!, inputs[0]!, ...inputs.slice(2)]));
   assert.throws(() =>
     buildNarrationTimeline([{ ...inputs[0]!, beatCount: 0 }, ...inputs.slice(1)]),
   );
