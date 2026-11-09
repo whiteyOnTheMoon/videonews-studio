@@ -3,17 +3,19 @@ import test from "node:test";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import type { EditorAuth } from "./editor-auth.js";
-import {
-  PrivatePreviewService,
-  privatePreviewServiceFromEnv,
-} from "./private-previews.js";
+import { PrivatePreviewService, privatePreviewServiceFromEnv } from "./private-previews.js";
 
 const origin = "https://studio.ap-pixels.com";
 function actor(allowed: boolean): EditorAuth {
   return {
     authenticatedAdminIdentity: async () =>
       allowed
-        ? { id: "00000000-0000-4000-8000-000000000123", username: "operator", role: "admin", authVersion: 1 }
+        ? {
+            id: "00000000-0000-4000-8000-000000000123",
+            username: "operator",
+            role: "admin",
+            authVersion: 1,
+          }
         : null,
   } as unknown as EditorAuth;
 }
@@ -26,17 +28,20 @@ async function request(
   body?: string,
 ): Promise<Response> {
   const server = createServer((req, res) => {
-    void service.handle(req, res).then((handled) => {
-      if (!handled && !res.writableEnded) {
-        res.writeHead(404);
-        res.end();
-      }
-    }).catch(() => {
-      if (!res.writableEnded) {
-        res.writeHead(503);
-        res.end();
-      }
-    });
+    void service
+      .handle(req, res)
+      .then((handled) => {
+        if (!handled && !res.writableEnded) {
+          res.writeHead(404);
+          res.end();
+        }
+      })
+      .catch(() => {
+        if (!res.writableEnded) {
+          res.writeHead(503);
+          res.end();
+        }
+      });
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -83,10 +88,16 @@ test("unauthenticated listing, status and streams are denied", async () => {
 
 test("review-only login cannot trigger rendering unless explicitly activated", async () => {
   const service = new PrivatePreviewService(actor(true), origin, false);
-  const response = await request(service, "/admin/private-previews/render", "POST", {
-    origin,
-    "content-type": "application/json",
-  }, JSON.stringify({ storyId: "ozone-2026-explained-en" }));
+  const response = await request(
+    service,
+    "/admin/private-previews/render",
+    "POST",
+    {
+      origin,
+      "content-type": "application/json",
+    },
+    JSON.stringify({ storyId: "ozone-2026-explained-en" }),
+  );
   assert.equal(response.status, 403);
   assert.deepEqual(await response.json(), { error: "render_disabled" });
   const status = await request(service, "/admin/private-previews/status");
