@@ -1,11 +1,11 @@
-name: English Earth & Climate Explained offline preview
+name: English Earth & Climate Explained source and safety checks only
 
 on:
   pull_request:
     branches: [main]
     paths:
       - "content/news/ozone-2026-explained-en.json"
-      - "scripts/ci_p3_explained_english_video.mjs"
+      - "scripts/vps_p3_explained_preview.mjs"
       - "packages/shared/src/explained-script-structure.ts"
       - "packages/shared/src/explained-script-structure.test.ts"
       - "packages/shared/src/narration-timeline.ts"
@@ -16,14 +16,15 @@ on:
       - ".github/workflows/english-explained-offline-preview.yml"
       - "docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md"
       - "docs/ENGLISH_EXPLAINED_CI_PILOT.md"
+      - "docs/VPS_PRIVATE_PREVIEW_RUNBOOK.md"
 
 permissions:
   contents: read
 
 jobs:
-  english-explained-preview:
+  english-explained-static-check:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       CI: "true"
     steps:
@@ -33,22 +34,17 @@ jobs:
           node-version: "22"
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: Install local-only audio and video tools on disposable runner
-        run: |
-          sudo apt-get update -qq
-          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin espeak-ng
-      - name: Build and run repository quality gates
+      - name: Test source code and structures without creating any video
         run: |
           npm run build --workspace @vns/shared
+          node --check scripts/vps_p3_explained_preview.mjs
           npm run typecheck
           npm run lint
           npm run format:check
           npm test
-      - name: Verify refusal outside CI
+      - name: Confirm VPS-only renderer refuses GitHub Actions even with forged approval
         run: |
-          if GITHUB_ACTIONS=false node scripts/ci_p3_explained_english_video.mjs; then
-            echo "ERROR: English video proof unexpectedly ran outside CI"
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY node scripts/vps_p3_explained_preview.mjs; then
+            echo "ERROR: VPS renderer started in GitHub Actions"
             exit 1
           fi
-      - name: Encode English original-news video in private ephemeral runner directory
-        run: node scripts/ci_p3_explained_english_video.mjs
