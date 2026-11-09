@@ -40,6 +40,22 @@ Ein VPS-Render nutzt nur den **fest verdrahteten** `ozone-2026-explained-en`-Pil
 
 Auch die Behauptung, `studio.ap-pixels.com` sei „nur für mich ersichtlich“, muss **am bestehenden TLS-/Ingress-/Auth-Setup überprüft** werden. Die Anwendung darf nicht als öffentlich lesbare Medienroute freigeschaltet werden. Die zusätzliche Editor-Sitzung ist momentan in den Einstellungen zugänglich; eine gemeinsame, einfache Single-Sign-On-Oberfläche wird später separat umgesetzt, ohne die Personalisierung der Freigaben zu schwächen.
 
+## P4-11: VPS-Vorschaudateien sicher in die bestehende Docker-API einbinden
+
+Nach dem echten Host-VPS-Test von 9:31 min wurde eine MP4 unter `/home/ap/videonews-previews/` mit User `ap` und Dateimodus `0600` erzeugt. Die Bestandserhebung des Betreibers ergab laufende Web/API-Container ohne öffentliche Host-Portweiterleitung, eigene Cloudflare-Tunnel und mehrere andere produktive Container. **Keiner dieser laufenden Dienste wurde hier verändert.**
+
+Der neue **opt-in** Compose-Zusatz `deploy/compose.private-previews.yaml` bindet den **bereits bestehenden** Host-Ordner `/home/ap/videonews-previews` ausschließlich als **read-only** in den API-Container ein. Es gibt **keinen Mount in den Web-Container**, keinen Host-Port, keinen Cloudflare-Konfigurationswechsel und keine Berechtigung zur Ausführung eines Renderers im Container. `create_host_path: false` verhindert die verdeckte Anlage eines neuen Mount-Quellverzeichnisses. Die beiden notwendigen Listing-Flags bleiben ohne ausdrückliche Operator-Aktivierung ausgeschaltet, die zwei Render-Flags sind unveränderlich `false`. Die bestehende doppelte Authentifizierung (Admin und persönlicher Admin-Editor) ist Voraussetzung.
+
+**Wichtige Deploy-Sperre:** Die produktiven API/Web-Images müssen zunächst aus dem geprüften PR-Code gebaut, als exakte Images verifiziert und im bisherigen Overlay-Stack **gezielt nur für die beiden Dienste** bereitgestellt werden. Der bestehenden Docker-Konfiguration müssen dabei die früheren Images/Digests, alle Secret- und Netzwerk-Mounts, das feste HTTPS-Origin, Container-Identitäten und Rollback nachgewiesen erhalten bleiben. **Kein `docker compose up` aus dem ungemergten Branch und keine neue Ingress-Route.** Der separate Operator-Host-Renderer kann weiterhin einmalig direkt auf `ap` laufen.
+
+Vor jeder Aktivierung muss der Operator *ohne Ausgabe von Secrets* den tatsächlichen API-Container-UID mit dem Hostdatei-Eigentümer vergleichen. Eine 0700-Directory/0600-MP4 kann nur von der berechtigten UID gelesen werden. Stimmen UIDs nicht überein, dürfen die Berechtigungen **nicht** auf 755/644 aufgeweicht werden. Stattdessen ist ein getrennt überprüfter Prozess-/Gruppen-Zugriff erforderlich. Ebenso muss die aktive persönliche Editor-Authentifizierung verifiziert werden. Cloudflare-Tunnel allein ist **kein** Beleg, dass die Site privat ist; Zugang und Ablehnung für nicht eingeloggte Browser sind gesondert zu testen.
+
+**Stufenweise Freigabe:**
+1. **Read-only Inventur**, ohne `docker inspect .Config.Env` oder Secret-Ausgabe: Bildrevision, Container-UIDs, Mount-Ziele, vorhandene Security-Flags, benannte boolesche Auth-Feature-Flags.
+2. Review/CI und separate Betreiberfreigabe zum Web/API-Image-Build, Compose-Konfigurationsänderung und genau zwei Dienst-Cutovers. Andere Projektcontainer und Cloudflare-Tunnel bleiben unangetastet.
+3. Feature-Flags zunächst nur für die **private Galerie** aktivieren, Render-Flags `false` lassen. Auth/Range/Download/Revocation testen. Den bereits produzierten MP4-Dateinamen nach dem Login im Videos-Reiter sehen.
+4. Erst später einen separat geprüften Host-Job-Bridge-Mechanismus für `Video erstellen` aktivieren. Die derzeitige API-Child-Process-Implementierung ist **nicht** als Docker-Renderjob geeignet: API-Image ohne Medienpakete, read-only Mount, andere Arbeitsverzeichnisstruktur und In-Memory-Auftragsstatus.
+
 ## Abnahme
 
 - [ ] PR-CI Build/Tests/TypeScript/Lint/Prettier bestanden
