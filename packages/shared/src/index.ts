@@ -40,3 +40,11 @@ export type {
   OfflineGraphicFrame,
   OfflineGraphicStoryboard,
 } from "./offline-storyboard-graphics.js";
+
+export { readOfflinePexelsPage } from "./pexels-offline-discovery.js";
+export type {
+  PexelsMediaType,
+  PexelsDiscoveryFailure,
+  PexelsDiscoveryCandidate,
+  PexelsDiscoveryResult,
+} from "./pexels-offline-discovery.js";
