@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "ozone-2026-antarktis-de",
+  "asOf": "2026-11-09",
+  "language": "de-DE",
+  "headline": "Ozonloch 2026: ungewöhnlich groß trotz langfristiger Erholung",
+  "editorialStatus": "REVIEW_REQUIRED",
+  "editorialApproved": false,
+  "rightsApproved": false,
+  "renderAllowed": false,
+  "uploadAllowed": false,
+  "publicationAllowed": false,
+  "sourceStatus": "manually_curated_public_reports_not_live_ingestion",
+  "independentEvidenceGroups": [
+    "joint-nasa-noaa-ozone-hole-2026",
+    "cams-copernicus-2026",
+    "dlr-sentinel5p-2026"
+  ],
+  "sources": [
+    {
+      "id": "NOAA_2026_11_04",
+      "publisher": "NOAA",
+      "publishedAt": "2026-11-04",
+      "url": "https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole",
+      "evidenceGroup": "joint-nasa-noaa-ozone-hole-2026",
+      "notes": "Joint NASA/NOAA seasonal measurement analysis; not an independent second confirmation of NASA."
+    },
+    {
+      "id": "NASA_2026_11_09",
+      "publisher": "NASA Earth Observatory",
+      "publishedAt": "2026-11-09",
+      "url": "https://science.nasa.gov/earth/earth-observatory/ozone-hole-reaches-its-2026-maximum/",
+      "evidenceGroup": "joint-nasa-noaa-ozone-hole-2026",
+      "notes": "Describes the same NOAA/NASA seasonal results."
+    },
+    {
+      "id": "CAMS_2026_09_16",
+      "publisher": "Copernicus Atmosphere Monitoring Service",
+      "publishedAt": "2026-09-16",
+      "url": "https://atmosphere.copernicus.eu/copernicus-ozone-hole-reaches-notable-threshold-early-again-area-increases-above-average-2026",
+      "evidenceGroup": "cams-copernicus-2026",
+      "notes": "Independent European monitoring; describes September growth and above-average area, not NOAA seasonal ranking."
+    },
+    {
+      "id": "DLR_2026_10_26",
+      "publisher": "Deutsches Zentrum für Luft- und Raumfahrt",
+      "publishedAt": "2026-10-26",
+      "url": "https://www.dlr.de/en/eoc/latest/news/2026/ozone-hole-2026-one-of-the-largest-in-years",
+      "evidenceGroup": "dlr-sentinel5p-2026",
+      "notes": "Independent TROPOMI/Sentinel-5P perspective; different metrics/timestamps are not merged."
+    }
+  ],
+  "facts": [
+    {
+      "id": "seasonal_mean_area",
+      "value": 25,
+      "unit": "million_km2",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-10-13",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09"
+      ]
+    },
+    {
+      "id": "seasonal_mean_area_rank",
+      "value": 7,
+      "ofYears": 48,
+      "metric": "seasonal_mean_area",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09"
+      ]
+    },
+    {
+      "id": "single_day_peak_area",
+      "value": 27.1,
+      "unit": "million_km2",
+      "measuredAt": "2026-09-18",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09"
+      ]
+    },
+    {
+      "id": "south_pole_minimum_ozone_2026",
+      "value": 105,
+      "unit": "dobson_units",
+      "measuredAt": "2026-10-17",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ]
+    },
+    {
+      "id": "south_pole_minimum_ozone_2006",
+      "value": 92,
+      "unit": "dobson_units",
+      "measuredAt": "2006-10",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ]
+    },
+    {
+      "id": "recovery_estimate",
+      "value": "2070s",
+      "type": "projection_not_guarantee",
+      "baseline": "1980 levels",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "title": "Antarktis: Ozonloch 2026",
+      "summary": "Ungewöhnlich groß. Der langfristige Trend zeigt dennoch eine Erholung.",
+      "narration": "Das Ozonloch über der Antarktis war 2026 ungewöhnlich groß. Trotzdem sprechen die Langzeitdaten weiter für eine Erholung der Ozonschicht.",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09"
+      ],
+      "kind": "text-card"
+    },
+    {
+      "title": "25 Millionen km² im Mittel",
+      "summary": "7. September bis 13. Oktober: Platz 7 unter 48 Messjahren.",
+      "narration": "NASA und NOAA melden für die Hauptphase vom siebten September bis zum dreizehnten Oktober eine durchschnittliche Fläche von rund fünfundzwanzig Millionen Quadratkilometern. Das ist Platz sieben seit Beginn der Messreihe.",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ],
+      "kind": "table"
+    },
+    {
+      "title": "27,1 Millionen km² als Tagesmaximum",
+      "summary": "18. September. Keine Verwechslung mit dem Saisonmittel.",
+      "narration": "Am achtzehnten September erreichte das Ozonloch sein jährliches Flächenmaximum: siebenundzwanzig Komma eins Millionen Quadratkilometer. Diese Zahl beschreibt die Ausdehnung, nicht die gesamte Stärke des Ozonverlusts.",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09"
+      ],
+      "kind": "text-card"
+    },
+    {
+      "title": "Fläche ist nicht Ozonverlust",
+      "summary": "Südpol: Minimum 2026 = 105 DU; Oktober 2006 = 92 DU.",
+      "narration": "Über dem Südpol lagen die niedrigsten gemessenen Ozonwerte am siebzehnten Oktober bei einhundertfünf Dobson-Einheiten. Im Oktober zweitausendsechs waren es nur zweiundneunzig. Groß heißt also nicht automatisch tief.",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ],
+      "kind": "chart"
+    },
+    {
+      "title": "Ein starker Polarwirbel",
+      "summary": "Kalte Luft begünstigte Ozonabbau; Copernicus bestätigt auffällige September-Ausdehnung.",
+      "narration": "Ein starker, lang anhaltender Polarwirbel begünstigte die Ausdünnung. Auch der europäische Copernicus-Dienst beobachtete im September eine überdurchschnittliche Ausdehnung.",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "CAMS_2026_09_16",
+        "DLR_2026_10_26"
+      ],
+      "kind": "text-card"
+    },
+    {
+      "title": "Die Erholung dauert Jahrzehnte",
+      "summary": "Montrealer Protokoll 1987; Rückkehr zu 1980er-Niveau für 2070er projiziert.",
+      "narration": "Dass die Ozonschicht sich langfristig erholt, führen Forschende auch auf internationale Beschränkungen ozonschädlicher Stoffe zurück. Mit einer Rückkehr zu Werten von neunzehnhundertachtzig rechnen sie für die zweitausendsiebziger Jahre.",
+      "sourceIds": [
+        "NOAA_2026_11_04"
+      ],
+      "kind": "timeline"
+    },
+    {
+      "title": "Ein Jahr ist kein Langzeittrend",
+      "summary": "Ausdehnung, Intensität und Langzeitentwicklung auseinanderhalten.",
+      "narration": "Fazit: Ein außergewöhnliches Jahr widerlegt keinen langfristigen Trend. Quellen: NASA, NOAA und Copernicus. Dies ist eine redaktionell noch nicht freigegebene Videovorschau.",
+      "sourceIds": [
+        "NOAA_2026_11_04",
+        "NASA_2026_11_09",
+        "CAMS_2026_09_16",
+        "DLR_2026_10_26"
+      ],
+      "kind": "text-card"
+    }
+  ]
+}
