@@ -24,6 +24,11 @@ jobs:
           node-version: "22"
       - name: Install exact locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: P3-07 TEMP formatter diff for new TypeScript (remove before merge)
+        run: |
+          npx prettier --write packages/shared/src/offline-storyboard-graphics.ts packages/shared/src/offline-storyboard-graphics.test.ts
+          git diff -- packages/shared/src/offline-storyboard-graphics.ts packages/shared/src/offline-storyboard-graphics.test.ts
+          exit 1
       - name: Build shared graphics module
         run: npm run build --workspace @vns/shared
       - name: Test safe graphics validation
