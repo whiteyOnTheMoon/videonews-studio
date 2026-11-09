@@ -42,4 +42,4 @@ Der Shared-Baustein `packages/shared/src/explained-script-structure.ts` definier
 
 ## Sicherheit und Freigaben
 
-Reiner Offline-/CI-Kontrakt. Keine VPS-Änderung, keine neuen Providerkosten, keine Medien-Downloads, keine DB-Migration, kein Live-Rendering, kein Upload und keine Veröffentlichungsfreigabe. Bestehende Fail-Closed- und Editorial-Review-Gates bleiben unverändert.
+Der Strukturvalidator ist ein reiner Offline-/CI-Vertrag. Nach ausdrücklicher Betreiberentscheidung ist **die Videogenerierung ausschließlich als manuell genehmigte VPS-Vorschau** vorgesehen, nicht als GitHub-Actions-MP4. Details unter [VPS_PRIVATE_PREVIEW_RUNBOOK.md](VPS_PRIVATE_PREVIEW_RUNBOOK.md). Der vorliegende PR führt selbst kein VPS-Deployment aus. Keine neuen Providerkosten, unautorisierten Medien-Downloads, DB-Migration, automatischen Produktionsrender, Upload oder Veröffentlichungsfreigabe. Bestehende Fail-Closed- und Editorial-Review-Gates bleiben unverändert.
