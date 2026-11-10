@@ -57,7 +57,7 @@ export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInb
     if (
       !object(row) ||
       Object.keys(row).sort().join(",") !==
-        "articleUrl,approvedForPublication,eventId,headline,projected,publishedAt,sourceId" ||
+        "approvedForPublication,articleUrl,eventId,headline,projected,publishedAt,sourceId" ||
       typeof row.sourceId !== "string" ||
       !SOURCE.test(row.sourceId) ||
       !validFeedArticleUrl(row.articleUrl) ||
