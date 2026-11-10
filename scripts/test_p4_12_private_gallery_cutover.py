@@ -50,8 +50,11 @@ class PrivateGalleryCutoverTests(unittest.TestCase):
         }
 
     def validate(self, config, *, records=None):
-        with patch.object(module, "run", return_value=json.dumps(config)):
-            module.validate_compose(records or self.records, {})
+        # Exercise the strict source overlay pin against the checked-out
+        # CI repository, never the production VPS path.
+        with patch.object(module, "ROOT", PATH.parents[1]):
+            with patch.object(module, "run", return_value=json.dumps(config)):
+                module.validate_compose(records or self.records, {})
 
     def test_exact_release_and_isolated_scope(self):
         self.assertEqual(
@@ -104,6 +107,31 @@ class PrivateGalleryCutoverTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.validate(conf)
 
+    def test_pinned_overlay_blob_identity(self):
+        # CI must reject any accidental change to the approved overlay.
+        with patch.object(module, "ROOT", PATH.parents[1]):
+            module.verify_overlay_source()
+
+    def test_compose_json_omits_bind_marker_but_pinned_source_remains_safe(self):
+        conf = synthetic_conf()
+        # Certain Compose implementations omit create_host_path:false when
+        # normalizing valid long-form bind mounts. The original YAML remains
+        # Git-blob-pinned, and read-only/source/target/type stay mandatory.
+        del conf["services"]["api"]["volumes"][0]["bind"]
+        self.validate(conf)
+
+    def test_compose_json_omission_does_not_relax_ro_or_source(self):
+        conf = synthetic_conf()
+        del conf["services"]["api"]["volumes"][0]["bind"]
+        conf["services"]["api"]["volumes"][0]["read_only"] = False
+        with self.assertRaises(RuntimeError):
+            self.validate(conf)
+        conf = synthetic_conf()
+        del conf["services"]["api"]["volumes"][0]["bind"]
+        conf["services"]["api"]["volumes"][0]["source"] = "/tmp"
+        with self.assertRaises(RuntimeError):
+            self.validate(conf)
+
     def test_new_compose_refuses_mount_autocreation(self):
         conf = synthetic_conf()
         conf["services"]["api"]["volumes"][0]["bind"]["create_host_path"] = True
@@ -147,7 +175,9 @@ class PrivateGalleryCutoverTests(unittest.TestCase):
 
     def test_rollback_omits_preview_overlay_and_never_starts_dependencies(self):
         args = []
-        with patch.object(module, "run", side_effect=lambda cmd, **kwargs: args.append(cmd) or ""):
+        with patch.object(module, "run", side_effect=lambda cmd, **kwargs: args.append(cmd) or ""), \
+             patch.object(module, "verify_preview"), \
+             patch.object(module, "verify_overlay_source"):
             base = {"VNS_WEB_IMAGE": module.OLD["web"][0], "VNS_API_IMAGE": module.OLD["api"][0]}
             module.apply_services(base, "api")
             self.assertNotIn("deploy/compose.private-previews.yaml", args[-1])
@@ -166,7 +196,9 @@ class PrivateGalleryCutoverTests(unittest.TestCase):
             self.assertNotIn("worker", args[-1])
 
     def test_mixed_new_old_flags_refused(self):
-        with patch.object(module, "run") as run:
+        with patch.object(module, "run") as run, \
+             patch.object(module, "verify_preview"), \
+             patch.object(module, "verify_overlay_source"):
             env = {"VNS_WEB_IMAGE": module.OLD["web"][0],
                    "VNS_API_IMAGE": module.NEW["api"][0]}
             # Mixed refs use candidate overlay rather than accidentally
