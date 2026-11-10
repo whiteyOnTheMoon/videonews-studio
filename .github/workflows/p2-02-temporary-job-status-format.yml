@@ -1,0 +1,23 @@
+name: P2-02 temporary job-status formatting witness
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  format-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: Print exact source-only formatting diff (no commits)
+        shell: bash
+        run: |
+          npx prettier --write apps/api/src/studio-feed-status.ts apps/api/src/studio-feed-status.test.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/studio-feed-status.ts apps/web/src/lib/studio-feed-status-proxy.ts apps/web/src/lib/studio-feed-status-proxy.test.ts apps/web/src/app/admin/studio-dashboard.tsx apps/web/src/app/admin/page.tsx
+          echo '===VNS_FORMAT_PATCH_START==='
+          git --no-pager diff --no-color -- apps/api/src/studio-feed-status.ts apps/api/src/studio-feed-status.test.ts apps/api/src/server.ts apps/api/src/index.ts apps/web/src/lib/studio-feed-status.ts apps/web/src/lib/studio-feed-status-proxy.ts apps/web/src/lib/studio-feed-status-proxy.test.ts apps/web/src/app/admin/studio-dashboard.tsx apps/web/src/app/admin/page.tsx
+          echo '===VNS_FORMAT_PATCH_END==='
