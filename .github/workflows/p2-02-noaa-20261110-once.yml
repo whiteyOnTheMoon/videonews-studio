@@ -2,10 +2,10 @@ name: P2-02 NOAA 2026-11-10 one-shot safety
 on:
   pull_request:
     paths:
-      - 'scripts/p2_02_noaa_20261110_once.sh'
-      - 'scripts/test_p2_02_noaa_20261110_once.py'
-      - 'docs/P2_02_NOAA_ONESHOT_2026_11_10.md'
-      - '.github/workflows/p2-02-noaa-20261110-once.yml'
+      - "scripts/p2_02_noaa_20261110_once.sh"
+      - "scripts/test_p2_02_noaa_20261110_once.py"
+      - "docs/P2_02_NOAA_ONESHOT_2026_11_10.md"
+      - ".github/workflows/p2-02-noaa-20261110-once.yml"
   workflow_dispatch:
 permissions:
   contents: read
