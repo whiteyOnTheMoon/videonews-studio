@@ -323,6 +323,33 @@ function cursorTime(value: string | null): string | null {
   return Number.isFinite(time) && new Date(time).toISOString() === value ? value : null;
 }
 
+/** Display-only URL; SQL also enforces current source/host authorization. */
+function validSourceArticleUrl(input: unknown): input is string {
+  if (
+    typeof input !== "string" ||
+    input.length < 12 ||
+    input.length > 2048 ||
+    input.includes("%") ||
+    /[\s?#]/.test(input)
+  )
+    return false;
+  try {
+    const url = new URL(input);
+    return (
+      url.protocol === "https:" &&
+      /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/.test(url.hostname) &&
+      url.username === "" &&
+      url.password === "" &&
+      url.port === "" &&
+      url.search === "" &&
+      url.hash === "" &&
+      url.toString() === input
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Explicitly injected Admin API only. It never opens or provisions database
  * connections, and it verifies that DB session_user maps to the same active
@@ -653,17 +680,19 @@ export class DormantPersonalEditorialAdmin {
         }
         const inbox = await session.query<{
           source_id: string;
+          article_url: string;
           headline: string;
           published_at: Date;
           projected: boolean;
           event_id: string | null;
           approved_for_publication: boolean;
-        }>("SELECT * FROM vns.named_feed_inbox_page($1::integer)", [limit]);
+        }>("SELECT * FROM vns.named_feed_inbox_sources_page($1::integer)", [limit]);
         if (
           inbox.rows.length > limit ||
           inbox.rows.some(
             (item) =>
               !PROFILE_ID.test(item.source_id) ||
+              !validSourceArticleUrl(item.article_url) ||
               typeof item.headline !== "string" ||
               item.headline.length < 8 ||
               item.headline.length > 500 ||
@@ -685,6 +714,7 @@ export class DormantPersonalEditorialAdmin {
         respond(res, 200, {
           items: inbox.rows.map((item) => ({
             sourceId: item.source_id,
+            articleUrl: item.article_url,
             headline: item.headline,
             publishedAt: item.published_at.toISOString(),
             projected: item.projected,

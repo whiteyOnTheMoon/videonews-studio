@@ -368,6 +368,7 @@ test("feed inbox stays unranked and cannot become publication approval", () => {
   assert.doesNotMatch(enabled, /<ol/);
   const entry = {
     sourceId: "noaa_news",
+    articleUrl: "https://www.noaa.gov/news/ci-test",
     headline: "Synthetic NOAA headline awaiting independent verification",
     publishedAt: "2026-11-01T12:00:00.000Z",
     projected: false,
@@ -382,6 +383,10 @@ test("feed inbox stays unranked and cannot become publication approval", () => {
     { ...entry, eventId: "bad" },
     { ...entry, headline: "<script>fake</script>" },
     { ...entry, rawUrl: "https://invalid.example/token" },
+    { ...entry, articleUrl: "javascript:alert(1)" },
+    { ...entry, articleUrl: "https://www.noaa.gov/news/item?token=secret" },
+    { ...entry, articleUrl: "https://www.noaa.gov@evil.example/news/item" },
+    { ...entry, articleUrl: "https://127.0.0.1/private" },
     { ...entry, publishedAt: "invalid" },
   ]) {
     assert.equal(

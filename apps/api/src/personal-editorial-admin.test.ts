@@ -73,11 +73,12 @@ function setup(mismatch = false, enabled = true) {
       if (sqlText.includes("named_timeline_append")) {
         return { rows: [{ event_id: "ca310004-4444-4444-8444-444444444444" }] };
       }
-      if (sqlText.includes("named_feed_inbox_page")) {
+      if (sqlText.includes("named_feed_inbox_sources_page")) {
         return {
           rows: [
             {
               source_id: "noaa_news",
+              article_url: "https://www.noaa.gov/news/ci-test",
               headline: "Synthetic NOAA metadata awaiting independent review",
               published_at: new Date("2026-10-28T12:00:00.000Z"),
               projected: false,
@@ -765,6 +766,7 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
     items: [
       {
         sourceId: "noaa_news",
+        articleUrl: "https://www.noaa.gov/news/ci-test",
         headline: "Synthetic NOAA metadata awaiting independent review",
         publishedAt: "2026-10-28T12:00:00.000Z",
         projected: false,
@@ -775,7 +777,7 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
   });
   assert.equal(state.opened, 1);
   assert.equal(state.closed, 1);
-  assert.ok(state.sql.some((s) => s.includes("named_feed_inbox_page")));
+  assert.ok(state.sql.some((s) => s.includes("named_feed_inbox_sources_page")));
   for (const bad of [
     "/admin/editorial-feed-inbox",
     "/admin/editorial-feed-inbox?limit=0",
