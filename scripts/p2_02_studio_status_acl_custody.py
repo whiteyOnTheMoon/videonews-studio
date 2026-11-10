@@ -19,6 +19,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRETS = ROOT / "secrets"
+OPERATOR_UID = 1000
 PRIVATE = SECRETS / "p2-studio-status-redis-acl"
 REDIS = "videonews-studio-redis-1"
 ACL = "redis_acl"
@@ -46,7 +47,7 @@ def command(argv: list[str]) -> str:
     return result.stdout.strip()
 
 def operator(expected_sha: str, *, mutation: bool = False) -> None:
-    if os.getuid() != 1000 or os.geteuid() != 1000 or not SHA.fullmatch(expected_sha):
+    if os.getuid() != OPERATOR_UID or os.geteuid() != OPERATOR_UID or not SHA.fullmatch(expected_sha):
         raise PermissionError(REFUSED)
     git = ["git", "-C", str(ROOT)]
     if (command(git + ["branch", "--show-current"]) != "main"
@@ -69,7 +70,7 @@ def folder(path: Path) -> int:
     fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         st = os.fstat(fd)
-        if not stat.S_ISDIR(st.st_mode) or st.st_uid != 1000 or stat.S_IMODE(st.st_mode) != 0o700:
+        if not stat.S_ISDIR(st.st_mode) or st.st_uid != OPERATOR_UID or stat.S_IMODE(st.st_mode) != 0o700:
             raise PermissionError(REFUSED)
         return fd
     except BaseException:
