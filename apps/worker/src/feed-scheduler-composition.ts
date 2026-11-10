@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
+import { readStudioManualNoaaSelection } from "./feed-studio-manual-noaa-selection.js";
 import { readNasaBoundedResponseGate, feedResponseMaxBytes } from "./feed-nasa-bounded-response.js";
 import {
   oneShotNasaDecodeRefusalReporter,
@@ -65,7 +66,9 @@ export function createDormantFeedScheduler(
 
   // Before loading a registry, reject unauthorized selection. The normal
   // scheduler remains unchanged with no selector.
-  const selectedSourceId = readSingleSourceCanarySelection(env, env.VNS_FEED_RUNTIME_MODE ?? "");
+  const selectedSourceId =
+    readSingleSourceCanarySelection(env, env.VNS_FEED_RUNTIME_MODE ?? "") ??
+    readStudioManualNoaaSelection(env, env.VNS_FEED_RUNTIME_MODE ?? "");
   const nasaReviewEnabled = readNasaBoundedResponseGate(env);
   const policy = readApprovedFetchPolicy(env);
   let contents: string;
