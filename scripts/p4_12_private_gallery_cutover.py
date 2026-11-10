@@ -295,8 +295,24 @@ def image_environment(base: dict[str, str], *, new: bool) -> dict[str, str]:
     return result
 
 
+def verify_overlay_source() -> None:
+    """Pin the exact approved overlay, even if Compose JSON normalizes bind options.
+
+    Docker Compose versions can omit create_host_path:false from config JSON.
+    A missing marker is safe to tolerate only when the *literal committed*
+    overlay is identical and the private host directory was verified.
+    """
+    data = (ROOT / "deploy/compose.private-previews.yaml").read_bytes()
+    git_blob = hashlib.sha1(
+        b"blob " + str(len(data)).encode("ascii") + b"\\0" + data
+    ).hexdigest()
+    if git_blob != "d5ae35b9883164d80ea0e339cd2c1e5859690b28":
+        raise RuntimeError(DENIED)
+
+
 def validate_compose(records: dict[str, dict],
                      env: dict[str, str]) -> None:
+    verify_overlay_source()
     conf = json.loads(run(
         compose_args() + ["config", "--format", "json"],
         env=env, timeout=50, max_stdout=600000,
@@ -349,11 +365,18 @@ def validate_compose(records: dict[str, dict],
             source = mount.get("source")
             if not isinstance(target, str) or not isinstance(source, str):
                 raise RuntimeError(DENIED)
-            if (target == PREVIEW and (
-                    service != "api" or source != PREVIEW
-                    or mount.get("read_only") is not True
-                    or (mount.get("bind") or {}).get("create_host_path") is not False)):
-                raise RuntimeError(DENIED)
+            if target == PREVIEW:
+                # Only the exact pinned source overlay can justify accepting
+                # an omitted create_host_path field in normalized Compose JSON.
+                # An explicit true or null is always rejected.
+                bind = mount.get("bind") or {}
+                if (service != "api" or source != PREVIEW
+                        or mount.get("type") != "bind"
+                        or mount.get("read_only") is not True
+                        or (not isinstance(bind, dict))
+                        or ("create_host_path" in bind
+                            and bind["create_host_path"] is not False)):
+                    raise RuntimeError(DENIED)
             expected_mounts[target] = os.path.normpath(source)
         for mounted in item.get("secrets") or []:
             name = mounted.get("source")
@@ -403,6 +426,23 @@ def check_app_states(expect_new: bool) -> None:
         if expect_new:
             if (records[service].get("Config") or {}).get("Image") != expected_ref:
                 raise RuntimeError(DENIED)
+            mounts = [m for m in records[service].get("Mounts") or []
+                      if m.get("Destination") == PREVIEW]
+            if service == "api":
+                if (len(mounts) != 1 or mounts[0].get("Type") != "bind"
+                        or mounts[0].get("Source") != PREVIEW
+                        or mounts[0].get("RW") is not False):
+                    raise RuntimeError(DENIED)
+            elif mounts:
+                raise RuntimeError(DENIED)
+            active = dict(
+                item.split("=", 1)
+                for item in (records[service].get("Config") or {}).get("Env") or []
+                if "=" in item
+            )
+            if any(active.get(key) != value
+                   for key, value in PREVIEW_ENV[service].items()):
+                raise RuntimeError(DENIED)
             observed = [
                 Path(x).name for x in (records[service].get("Config") or {})
                 .get("Labels", {}).get("com.docker.compose.project.config_files", "").split(",")
@@ -421,6 +461,11 @@ def apply_services(env: dict[str, str], service: str) -> None:
         and env.get("VNS_API_IMAGE") == OLD["api"][0]
     )
     paths = OLD_OVERLAYS if is_rollback else OVERLAYS
+    if not is_rollback:
+        # Do not attempt to bind a missing or altered host directory even
+        # if the installed Compose version mishandles create_host_path:false.
+        verify_preview()
+        verify_overlay_source()
     args = ["docker", "compose", "--project-name", "videonews-studio"]
     for path in paths:
         args += ["-f", path]
