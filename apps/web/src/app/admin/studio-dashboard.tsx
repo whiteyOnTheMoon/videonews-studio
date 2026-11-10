@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { parseFeedInboxPage, type FeedInboxItem } from "../../lib/editorial-feed-inbox";
+import { validStudioFeedStatus } from "../../lib/studio-feed-status";
 
 type Tab = "create" | "videos" | "settings";
 interface PreviewFile {
@@ -19,11 +20,13 @@ const PILOT_LABEL = "Antarktisches Ozonloch 2026 – Earth & Climate Explained (
 function NewsSelector({
   enabled,
   liveNewsEnabled,
+  liveStatusEnabled,
   renderEnabled,
   openVideos,
 }: {
   enabled: boolean;
   liveNewsEnabled: boolean;
+  liveStatusEnabled: boolean;
   renderEnabled: boolean;
   openVideos: () => void;
 }) {
@@ -32,6 +35,8 @@ function NewsSelector({
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [feedJobId, setFeedJobId] = useState("");
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
   async function research() {
     if (!enabled || loading) return;
@@ -64,6 +69,7 @@ function NewsSelector({
         )
           throw new Error("Untrusted research acknowledgement");
         queued = true;
+        setFeedJobId(confirmation.queueJobId);
       }
       const res = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
         credentials: "same-origin",
@@ -94,6 +100,48 @@ function NewsSelector({
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function checkFeedStatus() {
+    if (!liveStatusEnabled || !feedJobId || checkingStatus) return;
+    setCheckingStatus(true);
+    try {
+      const response = await fetch(
+        "/api/admin/studio-news-status?jobId=" + encodeURIComponent(feedJobId),
+        { credentials: "same-origin", cache: "no-store", redirect: "error" },
+      );
+      if (!response.ok) throw new Error("Status lookup refused");
+      const data: unknown = await response.json();
+      if (!validStudioFeedStatus(data, feedJobId)) throw new Error("Invalid status");
+      if (data.state === "completed") {
+        setMessage(
+          "Feedabruf abgeschlossen: " +
+            data.summary!.sourcesExamined +
+            " Quellen geprüft, " +
+            data.summary!.candidatesAdded +
+            " Kandidaten gespeichert. Unabhängige Faktenprüfung weiterhin erforderlich.",
+        );
+        const inbox = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "error",
+        });
+        if (!inbox.ok) throw new Error("Inbox reconciliation unavailable");
+        const items = parseFeedInboxPage((await inbox.json()) as unknown);
+        if (!items) throw new Error("Untrusted inbox");
+        setNews(items);
+      } else if (data.state === "failed") {
+        setMessage("Feedabruf fehlgeschlagen. Keine neuen Nachrichten als bestätigt anzeigen.");
+      } else if (data.state === "unknown") {
+        setMessage("Kein dauerhafter Abschlussnachweis für diesen Feedauftrag verfügbar.");
+      } else {
+        setMessage("Feedauftrag noch nicht abgeschlossen. Status später erneut prüfen.");
+      }
+    } catch {
+      setMessage("Der Rechercheabschluss konnte nicht zuverlässig geprüft werden.");
+    } finally {
+      setCheckingStatus(false);
     }
   }
 
@@ -167,6 +215,16 @@ function NewsSelector({
           {busy ? "Starte Vorschau …" : "Video erstellen"}
         </button>
       </div>
+      {liveStatusEnabled && feedJobId ? (
+        <button
+          type="button"
+          className="studio-secondary"
+          disabled={checkingStatus}
+          onClick={() => void checkFeedStatus()}
+        >
+          {checkingStatus ? "Prüfe Rechercheabschluss …" : "Rechercheabschluss prüfen"}
+        </button>
+      ) : null}
       <p className="studio-explanation">
         „News recherchieren“ lädt in dieser Stufe <strong>bereits gespeicherte Nachrichten</strong>.
         {liveNewsEnabled
@@ -388,12 +446,14 @@ export default function StudioDashboard({
   settings,
   newsEnabled,
   liveNewsEnabled = false,
+  liveStatusEnabled = false,
   previewEnabled,
   renderEnabled,
 }: {
   settings: ReactNode;
   newsEnabled: boolean;
   liveNewsEnabled?: boolean;
+  liveStatusEnabled?: boolean;
   previewEnabled: boolean;
   renderEnabled: boolean;
 }) {
@@ -426,6 +486,7 @@ export default function StudioDashboard({
           <NewsSelector
             enabled={newsEnabled}
             liveNewsEnabled={liveNewsEnabled}
+            liveStatusEnabled={liveStatusEnabled}
             renderEnabled={renderEnabled}
             openVideos={() => setActive("videos")}
           />

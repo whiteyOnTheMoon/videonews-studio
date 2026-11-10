@@ -47,6 +47,7 @@ export default async function AdminPage() {
       <StudioDashboard
         newsEnabled={editorialAdminProxyConfig(process.env) !== null}
         liveNewsEnabled={process.env.VNS_WEB_STUDIO_FEED_REFRESH_ENABLED === "true"}
+        liveStatusEnabled={process.env.VNS_WEB_STUDIO_FEED_STATUS_ENABLED === "true"}
         previewEnabled={process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true"}
         renderEnabled={
           process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true" &&
