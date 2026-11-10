@@ -63,7 +63,9 @@ test("pending is not completion, upstream redirect and corrupt payload fail clos
   const b = backend(200, "pending");
   const pending = await studioFeedStatusProxy(request(), config, b.fetcher);
   assert.equal(pending.status, 200);
-  const parsed: any = await pending.json();
+  const parsed: unknown = await pending.json();
+  assert.equal(validStudioFeedStatus(parsed, job), true);
+  if (!validStudioFeedStatus(parsed, job)) throw new Error("Unexpected status");
   assert.equal(parsed.summary, null);
   assert.equal(parsed.state, "pending");
   assert.equal((await studioFeedStatusProxy(request(), config, backend(302).fetcher)).status, 503);
