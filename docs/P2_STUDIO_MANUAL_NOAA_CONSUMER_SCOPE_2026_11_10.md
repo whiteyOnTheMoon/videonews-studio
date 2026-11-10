@@ -7,7 +7,10 @@ existing persistent **consumer** when a separate, exact runtime gate is enabled.
 
 ## Observed baseline
 
-Production main `d33612d629901e63713ffa2453446a9d8ee0d613` has:
+The last observed **VPS checkout** was `d33612d629901e63713ffa2453446a9d8ee0d613`.
+GitHub `main` later advanced by format-only PR #496 to
+`4432f0b6eababca4b8196e09e469186e3dbe94a2`; this does not deploy to VPS.
+At the observed VPS checkout:
 
 - NOAA one-shot successfully completed with two added candidates.
 - 20 NOAA candidates, 18 projected, two old and outside the editorial age window.
