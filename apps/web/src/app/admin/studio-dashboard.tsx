@@ -164,8 +164,7 @@ function NewsSelector({
                   <strong>{item.headline}</strong>
                   <small>
                     {item.sourceId} · {new Date(item.publishedAt).toLocaleDateString("de-DE")} ·
-                    {item.projected ? "Ereignis erfasst" : "Nur Feed-Metadaten"} · Fakten
-                    nicht unabhängig bestätigt
+                    Quellenprüfung erforderlich
                   </small>
                 </span>
               </label>
