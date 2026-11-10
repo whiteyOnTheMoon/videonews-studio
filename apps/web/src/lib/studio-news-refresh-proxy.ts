@@ -1,8 +1,4 @@
-import {
-  clientAdminCookie,
-  isAdminAuthorized,
-  type AdminProxyConfig,
-} from "./admin-proxy";
+import { clientAdminCookie, isAdminAuthorized, type AdminProxyConfig } from "./admin-proxy";
 import { clientEditorCookie, editorProfile, editorProxyConfig } from "./editor-proxy";
 
 function reply(status: number, body: object): Response {
