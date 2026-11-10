@@ -2,11 +2,11 @@ name: P4-13 source links cutover safety
 on:
   pull_request:
     paths:
-      - 'scripts/p4_13_source_links_cutover.py'
-      - 'scripts/test_p4_13_source_links_cutover.py'
-      - 'deploy/compose.news-links-release.yaml'
-      - '.github/workflows/p4-13-source-links-cutover.yml'
-      - 'docs/P4_13_SOURCE_LINKS_CUTOVER.md'
+      - "scripts/p4_13_source_links_cutover.py"
+      - "scripts/test_p4_13_source_links_cutover.py"
+      - "deploy/compose.news-links-release.yaml"
+      - ".github/workflows/p4-13-source-links-cutover.yml"
+      - "docs/P4_13_SOURCE_LINKS_CUTOVER.md"
   workflow_dispatch:
 permissions:
   contents: read

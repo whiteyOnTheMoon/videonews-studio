@@ -2,7 +2,7 @@
 
 ## Scope
 
-`scripts/p2_04_schema_0064_to_0065.py` is a **fail-closed, default read-only** operator gate for the *existing* `0065_named_feed_inbox_sources.up.sql` migration. The change adds only a personally bound original-article URL reader; no feed runs, publishing, rendering, source approvals, or current private preview paths are modified. The prior `0063_named_feed_inbox_page(integer)` reader and P3 asset provenance catalog remain unchanged.
+`scripts/p2_04_schema_0064_to_0065.py` is a **fail-closed, default read-only** operator gate for the _existing_ `0065_named_feed_inbox_sources.up.sql` migration. The change adds only a personally bound original-article URL reader; no feed runs, publishing, rendering, source approvals, or current private preview paths are modified. The prior `0063_named_feed_inbox_page(integer)` reader and P3 asset provenance catalog remain unchanged.
 
 - `--status --expected-sha SHA`: inspect exact pristine pinned `main`, existing healthy PostgreSQL, the 65-file ordered migration inventory, schema ledger and role-specific permissions; report 0064 or 0065 state.
 - `--preflight --expected-sha SHA`: read-only admission on exactly schema 0064, including an exact on-disk `0065` migration check against pinned tracked Git content, schema privileges and a private hash/count snapshot. Does **not** apply migrations.
