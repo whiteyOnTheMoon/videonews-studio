@@ -10,6 +10,7 @@ import { DormantNamedHostApproval } from "./admin-source-host-approval.js";
 import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
 import { DormantPersonalSourceHostAdmin } from "./personal-source-host-admin.js";
 import { PrivatePreviewService } from "./private-previews.js";
+import { StudioFeedRefreshService } from "./studio-feed-refresh.js";
 
 export function createApiServer(
   options: {
@@ -22,6 +23,7 @@ export function createApiServer(
     personalEditorial?: DormantPersonalEditorialAdmin;
     personalSourceHost?: DormantPersonalSourceHostAdmin;
     privatePreviews?: PrivatePreviewService;
+    studioFeedRefresh?: StudioFeedRefreshService;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -63,6 +65,10 @@ export function createApiServer(
     throw new Error("Private previews require a valid named session service");
   if (options.privatePreviews && (!options.auth || !options.editor))
     throw new Error("Private previews require both admin and named editor auth");
+  if (options.studioFeedRefresh && !(options.studioFeedRefresh instanceof StudioFeedRefreshService))
+    throw new Error("Studio feed refresh requires gated service");
+  if (options.studioFeedRefresh && (!options.auth || !options.editor))
+    throw new Error("Studio feed refresh requires personal authentication");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -74,6 +80,16 @@ export function createApiServer(
     if (request.method === "GET" && request.url === "/healthz") {
       response.writeHead(200);
       response.end(JSON.stringify(createHealth("api")));
+      return;
+    }
+
+    // Default OFF: personally authenticated producer-only P2 feed dispatch.
+    if (request.url === "/admin/studio-news-refresh" && options.studioFeedRefresh) {
+      void options.studioFeedRefresh.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded)
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+      });
       return;
     }
 
