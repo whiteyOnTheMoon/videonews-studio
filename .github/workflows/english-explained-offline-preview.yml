@@ -7,6 +7,8 @@ on:
       - "content/news/ozone-2026-explained-en.json"
       - "scripts/vps_p3_explained_preview.mjs"
       - "scripts/p4_11_bounded_candidate_build.sh"
+      - "scripts/p4_12_private_gallery_cutover.py"
+      - "scripts/test_p4_12_private_gallery_cutover.py"
       - "packages/shared/src/explained-script-structure.ts"
       - "packages/shared/src/explained-script-structure.test.ts"
       - "packages/shared/src/narration-timeline.ts"
@@ -93,6 +95,10 @@ jobs:
           assert.doesNotMatch(s, /\b(?:swapoff|swapon|rm -rf|sudo)\b/);
           console.log("CANDIDATE BUILD SCRIPT STATIC SAFETY PASS – no VPS execution");
           NODE
+      - name: Check private gallery cutover syntax, scoped rollback and refusal gates
+        run: |
+          python3 -m py_compile scripts/p4_12_private_gallery_cutover.py
+          python3 -m unittest discover -s scripts -p 'test_p4_12_private_gallery_cutover.py' -v
       - name: Test source code and structures without creating any video
         run: |
           npm run build --workspace @vns/shared
