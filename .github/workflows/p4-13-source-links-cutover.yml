@@ -1,0 +1,29 @@
+name: P4-13 source links cutover safety
+on:
+  pull_request:
+    paths:
+      - 'scripts/p4_13_source_links_cutover.py'
+      - 'scripts/test_p4_13_source_links_cutover.py'
+      - 'deploy/compose.news-links-release.yaml'
+      - '.github/workflows/p4-13-source-links-cutover.yml'
+      - 'docs/P4_13_SOURCE_LINKS_CUTOVER.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax-check new operator (never touches Docker)
+        run: python3 -m py_compile scripts/p4_13_source_links_cutover.py scripts/test_p4_13_source_links_cutover.py
+      - name: Fail-closed offline regressions
+        run: python3 -m unittest scripts/test_p4_13_source_links_cutover.py
+      - name: Check exact main image source provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '129b7e4687464ce17d280dfca68e475756f5943e' scripts/p4_13_source_links_cutover.py
+          grep -q '104ded920a528f9b53562a322108ff105345ad85410fe8a1ea8430133a406f5f' scripts/p4_13_source_links_cutover.py
+          grep -q '86d5074acb56fd92c6fdb8b6deeaf703a3b487cbb1e10dd383a8a3c98cf94e37' scripts/p4_13_source_links_cutover.py
