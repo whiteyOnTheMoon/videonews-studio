@@ -265,3 +265,34 @@ test("NASA-only single pass requires dedicated acknowledgement before secrets or
     /canary gate refused/,
   );
 });
+
+test("Studio NOAA-only consumer gate is checked during runtime admission", () => {
+  const approved = {
+    ...env,
+    VNS_FEED_RUNTIME_MODE: "persistent_worker",
+    VNS_FEED_REDIS_USER: "vns_feed_consumer_prod",
+    VNS_FEED_SEPARATE_WORKER_ENABLED: "true",
+    VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "true",
+    VNS_FEED_STUDIO_NOAA_ONLY_ENABLED: "true",
+    VNS_FEED_STUDIO_NOAA_ONLY_OPERATOR_ACK: "NOAA_STUDIO_MANUAL_METADATA_ONLY_CONSUMER_APPROVED",
+    VNS_FEED_STUDIO_SOURCE_ID: "noaa_news",
+  };
+  assert.equal(readFeedRuntimeAdmission(approved, "persistent_worker").initialBootstrap, false);
+  for (const change of [
+    { VNS_FEED_STUDIO_SOURCE_ID: "nasa_news" },
+    { VNS_FEED_STUDIO_SOURCE_ID: "usgs_news" },
+    { VNS_FEED_STUDIO_NOAA_ONLY_OPERATOR_ACK: "" },
+    { VNS_FEED_SEPARATE_WORKER_ENABLED: "false" },
+    { VNS_FEED_SOURCE_BOOTSTRAP: "true" },
+    { VNS_FEED_CANARY_SOURCE_ID: "noaa_news" },
+  ]) {
+    assert.throws(
+      () => readFeedRuntimeAdmission({ ...approved, ...change }, "persistent_worker"),
+      /Studio manual NOAA source gate refused|canary gate refused/,
+    );
+  }
+  assert.throws(
+    () => readFeedRuntimeAdmission(approved, "bounded_producer"),
+    /Studio manual NOAA source gate refused/,
+  );
+});
