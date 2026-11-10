@@ -81,7 +81,7 @@ def file_read(fd: int, name: str, mode: int, limit: int = 16384) -> bytes:
     handle = os.open(name, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW, dir_fd=fd)
     try:
         st = os.fstat(handle)
-        if (not stat.S_ISREG(st.st_mode) or st.st_uid != 1000 or st.st_nlink != 1
+        if (not stat.S_ISREG(st.st_mode) or st.st_uid != OPERATOR_UID or st.st_nlink != 1
                 or stat.S_IMODE(st.st_mode) != mode or not 0 < st.st_size <= limit):
             raise PermissionError(REFUSED)
         raw = os.read(handle, limit + 1)
