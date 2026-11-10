@@ -777,7 +777,7 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
   });
   assert.equal(state.opened, 1);
   assert.equal(state.closed, 1);
-  assert.ok(state.sql.some((s) => s.includes("named_feed_inbox_page")));
+  assert.ok(state.sql.some((s) => s.includes("named_feed_inbox_sources_page")));
   for (const bad of [
     "/admin/editorial-feed-inbox",
     "/admin/editorial-feed-inbox?limit=0",
