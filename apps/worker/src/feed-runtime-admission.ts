@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import { readSingleSourceCanarySelection } from "./feed-canary-source-selection.js";
+import { readStudioManualNoaaSelection } from "./feed-studio-manual-noaa-selection.js";
 import { readNasaBoundedResponseGate } from "./feed-nasa-bounded-response.js";
 import type { Pool } from "pg";
 import { readApprovedFetchPolicy } from "./source-fetch.js";
@@ -77,6 +78,7 @@ export function readFeedRuntimeAdmission(
   }
   // Fail closed before any secrets, DNS, DB or Redis are opened.
   readSingleSourceCanarySelection(env, expectedMode);
+  readStudioManualNoaaSelection(env, expectedMode);
   readNasaBoundedResponseGate(env);
   if (
     REQUIRED_FLAGS.some((flag) => env[flag] !== "true") ||
