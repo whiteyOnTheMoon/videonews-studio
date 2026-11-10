@@ -284,6 +284,8 @@ def image_environment(base: dict[str, str], *, new: bool) -> dict[str, str]:
         # Both rendering gates stay strictly OFF in the sixth overlay.
         result["VNS_WEB_PRIVATE_PREVIEWS_ENABLED"] = "true"
         result["VNS_PRIVATE_PREVIEWS_API_ENABLED"] = "true"
+        result["VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED"] = "false"
+        result["VNS_PRIVATE_PREVIEWS_RENDER_ENABLED"] = "false"
     else:
         # Roll back with the original five overlays and without any
         # gallery-related feature toggles inherited from the caller.
