@@ -1,0 +1,22 @@
+name: P2-04 0065 original-source schema admission (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p2_04_schema_0064_to_0065.py"
+      - "scripts/test_p2_04_schema_0064_to_0065.py"
+      - "db/migrations/0065_named_feed_inbox_sources.up.sql"
+      - "docs/P2_0065_SCHEMA_ROLLOUT.md"
+      - ".github/workflows/p2-04-0065-operator-schema.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic fail-closed operator contract (no VPS or database)
+        run: |
+          python3 -m py_compile scripts/p2_04_schema_0064_to_0065.py
+          python3 -m unittest discover -s scripts -p test_p2_04_schema_0064_to_0065.py -v
