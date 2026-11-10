@@ -6,8 +6,7 @@
  * The full signed/anchored registry is still verified by trusted-context.
  * This selector only narrows which source is polled in an admitted job.
  */
-export const STUDIO_MANUAL_NOAA_ACK =
-  "NOAA_STUDIO_MANUAL_METADATA_ONLY_CONSUMER_APPROVED" as const;
+export const STUDIO_MANUAL_NOAA_ACK = "NOAA_STUDIO_MANUAL_METADATA_ONLY_CONSUMER_APPROVED" as const;
 
 export function readStudioManualNoaaSelection(
   env: NodeJS.ProcessEnv,
