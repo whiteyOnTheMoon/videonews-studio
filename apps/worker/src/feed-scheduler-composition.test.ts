@@ -6,6 +6,7 @@ import {
   type OfflineFeedSchedulerPorts,
 } from "./feed-scheduler-composition.js";
 import { REVIEWED_SOURCE_REGISTRY_PATH } from "./research-service-config.js";
+import { STUDIO_MANUAL_NOAA_ACK } from "./feed-studio-manual-noaa-selection.js";
 
 const ROOT = "https://www.example.org/";
 const TOKEN = "11111111-2222-4333-8444-555555555555";
@@ -393,6 +394,30 @@ test("explicit NOAA-only manual canary does not claim leases or contact NASA/USG
   const auth = f.queries.filter((q) => q.sql.includes("feed_runtime_source_authorized"));
   assert.equal(auth.length, 3);
   assert.ok(auth.every((q) => JSON.parse(String(q.args[0])).id === "noaa_news"));
+
+  // The separately approved persistent Studio consumer uses the very same
+  // signed, three-source registry, but polls NOAA alone on an explicit slot.
+  const manualEnv: NodeJS.ProcessEnv = {
+    ...env,
+    VNS_ALLOWED_SOURCE_HOSTS: "www.example.org,www.noaa.gov",
+    VNS_FEED_RUNTIME_ENABLED: "true",
+    VNS_FEED_RUNTIME_MODE: "persistent_worker",
+    VNS_FEED_SOURCE_BOOTSTRAP: "false",
+    VNS_FEED_SEPARATE_WORKER_ENABLED: "true",
+    VNS_FEED_SEPARATE_WORKER_OPERATOR_ACK: "true",
+    VNS_FEED_STUDIO_NOAA_ONLY_ENABLED: "true",
+    VNS_FEED_STUDIO_NOAA_ONLY_OPERATOR_ACK: STUDIO_MANUAL_NOAA_ACK,
+    VNS_FEED_STUDIO_SOURCE_ID: "noaa_news",
+  };
+  f.setNow(60);
+  const studioManual = createDormantFeedScheduler(manualEnv, ports);
+  assert.deepEqual(studioManual.sourceIds, ["noaa_news", "agency_atom", "agency_json"]);
+  const beforeManual = received.length;
+  assert.deepEqual(await studioManual.tick(new Date(START + 60 * 60 * 1000)), [
+    { sourceId: "noaa_news", status: "ingested", newItems: 0 },
+  ]);
+  assert.deepEqual(received.slice(beforeManual), ["dns:www.noaa.gov", "https:/rss.xml"]);
+  assert.deepEqual([...f.db.keys()], ["noaa_news"]);
 
   const invalid = [
     { VNS_FEED_CANARY_OPERATOR_ACK: "" },
