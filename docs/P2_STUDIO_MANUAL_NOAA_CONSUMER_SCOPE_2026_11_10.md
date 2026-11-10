@@ -8,6 +8,7 @@ existing persistent **consumer** when a separate, exact runtime gate is enabled.
 ## Observed baseline
 
 Production main `d33612d629901e63713ffa2453446a9d8ee0d613` has:
+
 - NOAA one-shot successfully completed with two added candidates.
 - 20 NOAA candidates, 18 projected, two old and outside the editorial age window.
 - Four completed and six historical failed BullMQ jobs, no pending/repeating jobs.
@@ -30,7 +31,7 @@ Production main `d33612d629901e63713ffa2453446a9d8ee0d613` has:
 A partial or mismatched gate fails before protected file or network operations.
 The existing single-pass canary flags remain forbidden in persistent mode.
 The full signed source registry must still include 3–5 approved sources;
-the new selector merely restricts *which signed and current SQL-approved source*
+the new selector merely restricts _which signed and current SQL-approved source_
 the poller can claim/fetch in the one job. NASA/USGS are not selected.
 The producer carries no URLs/source IDs, and the slot remains unique with
 one attempt and retained history.
