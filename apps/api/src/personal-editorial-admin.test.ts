@@ -73,7 +73,7 @@ function setup(mismatch = false, enabled = true) {
       if (sqlText.includes("named_timeline_append")) {
         return { rows: [{ event_id: "ca310004-4444-4444-8444-444444444444" }] };
       }
-      if (sqlText.includes("named_feed_inbox_page")) {
+      if (sqlText.includes("named_feed_inbox_sources_page")) {
         return {
           rows: [
             {
