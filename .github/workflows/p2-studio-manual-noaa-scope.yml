@@ -25,13 +25,9 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Report formatting differences in new files
+      - name: Enforce new scope source and document formatting
         run: |
-          npx prettier --write \
-            apps/worker/src/feed-studio-manual-noaa-selection.ts \
-            apps/worker/src/feed-studio-manual-noaa-selection.test.ts \
-            docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md
-          git diff --no-color -- \
+          npx prettier --check \
             apps/worker/src/feed-studio-manual-noaa-selection.ts \
             apps/worker/src/feed-studio-manual-noaa-selection.test.ts \
             docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md
