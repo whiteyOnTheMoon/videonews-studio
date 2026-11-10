@@ -323,24 +323,39 @@ function cursorTime(value: string | null): string | null {
   return Number.isFinite(time) && new Date(time).toISOString() === value ? value : null;
 }
 
+/** Display-only URL; SQL also enforces current source/host authorization. */
+function validSourceArticleUrl(input: unknown): input is string {
+  if (
+    typeof input !== "string" ||
+    input.length < 12 ||
+    input.length > 2048 ||
+    input.includes("%") ||
+    /[\s?#]/.test(input)
+  )
+    return false;
+  try {
+    const url = new URL(input);
+    return (
+      url.protocol === "https:" &&
+      url.hostname.includes(".") &&
+      /^[a-z0-9.-]+$/.test(url.hostname) &&
+      url.username === "" &&
+      url.password === "" &&
+      url.port === "" &&
+      url.search === "" &&
+      url.hash === "" &&
+      url.toString() === input
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Explicitly injected Admin API only. It never opens or provisions database
  * connections, and it verifies that DB session_user maps to the same active
  * person as the rechecked authenticated editor cookie on every request.
  */
-/** Display-only URL; SQL also enforces current source/host authorization. */
-function validSourceArticleUrl(input: unknown): input is string {
-  if (typeof input !== "string" || input.length < 12 || input.length > 2048 ||
-      input.includes("%") || /[\\s?#]/.test(input)) return false;
-  try {
-    const url = new URL(input);
-    return url.protocol === "https:" && url.hostname.includes(".") &&
-      /^[a-z0-9.-]+$/.test(url.hostname) &&
-      url.username === "" && url.password === "" && url.port === "" &&
-      url.search === "" && url.hash === "" && url.toString() === input;
-  } catch { return false; }
-}
-
 export class DormantPersonalEditorialAdmin {
   constructor(
     private readonly editor: Pick<EditorAuth, "authenticatedAdminIdentity">,
