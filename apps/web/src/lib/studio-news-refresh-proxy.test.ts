@@ -40,7 +40,8 @@ test("feature off and missing credentials never contact backend", async () => {
   assert.equal((await studioNewsRefreshProxy(req(), null, f.fetchMock)).status, 404);
   assert.equal((await studioNewsRefreshProxy(req(""), config, f.fetchMock)).status, 401);
   assert.equal(
-    (await studioNewsRefreshProxy(req(cookies, "https://evil.invalid"), config, f.fetchMock)).status,
+    (await studioNewsRefreshProxy(req(cookies, "https://evil.invalid"), config, f.fetchMock))
+      .status,
     403,
   );
   assert.equal(
@@ -50,7 +51,12 @@ test("feature off and missing credentials never contact backend", async () => {
   assert.equal(
     (
       await studioNewsRefreshProxy(
-        req(cookies, config.origin, "POST", "/api/admin/studio-news-refresh?url=https://evil.invalid"),
+        req(
+          cookies,
+          config.origin,
+          "POST",
+          "/api/admin/studio-news-refresh?url=https://evil.invalid",
+        ),
         config,
         f.fetchMock,
       )
@@ -90,8 +96,7 @@ test("failed producer, forged completion and unexpected fields fail closed", asy
   const forged = (async (resource: string | URL | Request) => {
     const url = String(resource);
     if (url.endsWith("/admin/me")) return Response.json({ role: "admin" });
-    if (url.endsWith("/editor/me"))
-      return Response.json({ username: "operator", role: "admin" });
+    if (url.endsWith("/editor/me")) return Response.json({ username: "operator", role: "admin" });
     return Response.json(
       {
         accepted: true,
