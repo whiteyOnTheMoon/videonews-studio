@@ -5,7 +5,7 @@ on:
     paths:
       - "apps/worker/src/feed-studio-manual-noaa-selection.ts"
       - "apps/worker/src/feed-studio-manual-noaa-selection.test.ts"
-            apps/worker/src/feed-runtime-admission.ts
+      - "apps/worker/src/feed-runtime-admission.ts"
       - "apps/worker/src/feed-runtime-admission.test.ts"
       - "apps/worker/src/feed-scheduler-composition.ts"
       - "apps/worker/src/feed-scheduler-composition.test.ts"
