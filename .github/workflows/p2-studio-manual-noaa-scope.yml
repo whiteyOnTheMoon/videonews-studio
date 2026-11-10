@@ -1,0 +1,48 @@
+name: P2 Studio manual NOAA consumer scope (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/worker/src/feed-studio-manual-noaa-selection.ts"
+      - "apps/worker/src/feed-studio-manual-noaa-selection.test.ts"
+      - "apps/worker/src/feed-runtime-admission.ts"
+      - "apps/worker/src/feed-scheduler-composition.ts"
+      - "apps/worker/src/feed-scheduler-composition.test.ts"
+      - "docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md"
+      - ".github/workflows/p2-studio-manual-noaa-scope.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-noaa-scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Report formatting differences in new files
+        run: |
+          npx prettier --write \
+            apps/worker/src/feed-studio-manual-noaa-selection.ts \
+            apps/worker/src/feed-studio-manual-noaa-selection.test.ts \
+            docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md
+          git diff --no-color -- \
+            apps/worker/src/feed-studio-manual-noaa-selection.ts \
+            apps/worker/src/feed-studio-manual-noaa-selection.test.ts \
+            docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md
+      - name: Compile existing shared and worker code
+        run: |
+          npm run build --workspace @vns/shared
+          npm run build --workspace @vns/worker
+      - name: Exercise default-off, negative and NOAA-only source boundaries
+        run: |
+          node --test \
+            apps/worker/dist/feed-studio-manual-noaa-selection.test.js \
+            apps/worker/dist/feed-canary-source-selection.test.js \
+            apps/worker/dist/feed-scheduler-composition.test.js \
+            apps/worker/dist/feed-separated-roles.test.js
