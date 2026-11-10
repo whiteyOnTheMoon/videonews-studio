@@ -9,6 +9,7 @@ import {
 } from "./personal-editorial-runtime.js";
 import { namedProviderRuntimeFromEnv } from "./named-provider-runtime.js";
 import { privatePreviewServiceFromEnv } from "./private-previews.js";
+import { studioFeedRefreshFromEnv } from "./studio-feed-refresh.js";
 import {
   DormantPersonalSourceHostAdmin,
   readPersonalSourceHostGates,
@@ -59,6 +60,7 @@ async function start(): Promise<void> {
     throw new Error("Named provider configuration failed startup checks");
   }
 
+  const studioFeedRefresh = studioFeedRefreshFromEnv(auth, editor, process.env);
   const server = createApiServer({
     auth,
     jobs,
@@ -67,6 +69,7 @@ async function start(): Promise<void> {
     personalSourceHost,
     providerConfig,
     privatePreviews: privatePreviewServiceFromEnv(editor, process.env),
+    studioFeedRefresh,
   });
   server.listen(port, host, () => {
     console.log(`VideoNews Studio API ready at http://${host}:${port}`);
@@ -75,14 +78,17 @@ async function start(): Promise<void> {
   async function close(): Promise<void> {
     server.close((error) => {
       if (error) process.exitCode = 1;
-      void Promise.allSettled([editor?.close(), jobs?.close(), providerConfig?.close()]).then(
-        (results) => {
-          if (results.some((result) => result.status === "rejected")) {
-            console.error("API resource shutdown failed");
-            process.exitCode = 1;
-          }
-        },
-      );
+      void Promise.allSettled([
+        editor?.close(),
+        jobs?.close(),
+        providerConfig?.close(),
+        studioFeedRefresh?.close(),
+      ]).then((results) => {
+        if (results.some((result) => result.status === "rejected")) {
+          console.error("API resource shutdown failed");
+          process.exitCode = 1;
+        }
+      });
     });
   }
   process.once("SIGINT", () => void close());
