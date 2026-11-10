@@ -1,0 +1,21 @@
+name: P3-01 0064 schema operator admission (offline)
+on:
+  pull_request:
+    paths:
+      - "scripts/p3_01_schema_0063_to_0064.py"
+      - "scripts/test_p3_01_schema_0063_to_0064.py"
+      - "docs/P3_0064_SCHEMA_ROLLOUT.md"
+      - ".github/workflows/p3-01-0064-operator-schema.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline schema gate contract (no VPS or database)
+        run: |
+          python3 -m py_compile scripts/p3_01_schema_0063_to_0064.py
+          python3 -m unittest discover -s scripts -p test_p3_01_schema_0063_to_0064.py -v
