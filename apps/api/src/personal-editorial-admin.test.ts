@@ -78,6 +78,7 @@ function setup(mismatch = false, enabled = true) {
           rows: [
             {
               source_id: "noaa_news",
+              article_url: "https://www.noaa.gov/news/ci-test",
               headline: "Synthetic NOAA metadata awaiting independent review",
               published_at: new Date("2026-10-28T12:00:00.000Z"),
               projected: false,
@@ -765,6 +766,7 @@ test("personal feed inbox accepts only authenticated unranked metadata", async (
     items: [
       {
         sourceId: "noaa_news",
+        articleUrl: "https://www.noaa.gov/news/ci-test",
         headline: "Synthetic NOAA metadata awaiting independent review",
         publishedAt: "2026-10-28T12:00:00.000Z",
         projected: false,

@@ -63,8 +63,8 @@ export default function EditorialFeedInbox({ enabled }: { enabled: boolean }) {
       ) : null}
       {enabled && !loading && !error && items.length > 0 ? (
         <ol>
-          {items.map((item, index) => (
-            <li key={item.sourceId + ":" + item.publishedAt + ":" + index}>
+          {items.map((item) => (
+            <li key={item.sourceId + ":" + item.articleUrl}>
               <strong>{item.headline}</strong>
               <p>
                 Quelle: {item.sourceId} ·{" "}
@@ -72,6 +72,11 @@ export default function EditorialFeedInbox({ enabled }: { enabled: boolean }) {
               </p>
               <p>
                 Veröffentlicht: <time dateTime={item.publishedAt}>{item.publishedAt}</time>
+              </p>
+              <p>
+                <a href={item.articleUrl} target="_blank" rel="noopener noreferrer">
+                  Originalquelle öffnen
+                </a>
               </p>
               <p>Unverifiziert · Kein Ranking-Score · Keine Veröffentlichungsfreigabe</p>
             </li>

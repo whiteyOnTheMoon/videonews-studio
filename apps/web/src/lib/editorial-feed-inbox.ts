@@ -1,6 +1,7 @@
 /** Unranked, metadata-only personal Admin feed intake. */
 export interface FeedInboxItem {
   sourceId: string;
+  articleUrl: string;
   headline: string;
   publishedAt: string;
   projected: boolean;
@@ -11,6 +12,17 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const SOURCE = /^[a-z][a-z0-9_-]{2,40}$/;
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+export function validFeedArticleUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length < 12 || value.length > 2048 ||
+      value.includes("%") || /[\\s?#]/.test(value)) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.includes(".") &&
+      /^[a-z0-9.-]+$/.test(url.hostname) &&
+      url.username === "" && url.password === "" && url.port === "" &&
+      url.search === "" && url.hash === "" && url.toString() === value;
+  } catch { return false; }
 }
 export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInboxItem[] | null {
   if (
@@ -29,9 +41,10 @@ export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInb
     if (
       !object(row) ||
       Object.keys(row).sort().join(",") !==
-        "approvedForPublication,eventId,headline,projected,publishedAt,sourceId" ||
+        "articleUrl,approvedForPublication,eventId,headline,projected,publishedAt,sourceId" ||
       typeof row.sourceId !== "string" ||
       !SOURCE.test(row.sourceId) ||
+      !validFeedArticleUrl(row.articleUrl) ||
       typeof row.headline !== "string" ||
       row.headline.length < 8 ||
       row.headline.length > 500 ||

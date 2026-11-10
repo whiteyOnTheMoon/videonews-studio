@@ -46,6 +46,11 @@ function NewsSelector({
       const result = parseFeedInboxPage((await res.json()) as unknown);
       if (!result) throw new Error("Invalid inbox");
       setNews(result);
+      setSelected((previous) =>
+        previous === PILOT || result.some((item) => "feed:" + item.articleUrl === previous)
+          ? previous
+          : PILOT,
+      );
       setMessage(
         result.length
           ? "Gespeicherte Nachrichten geladen. Das ist noch keine neue Live-Recherche. Bitte Quellen prüfen."
@@ -143,28 +148,31 @@ function NewsSelector({
             <small>Vorbereitetes, noch ungeprüftes Quellenskript · 9-Minuten-Testziel</small>
           </span>
         </label>
-        {news.map((item, index) => {
-          const value = "feed:" + index;
+        {news.map((item) => {
+          const value = "feed:" + item.articleUrl;
           return (
-            <label
-              className="studio-choice"
-              key={item.sourceId + ":" + item.publishedAt + ":" + index}
-            >
-              <input
-                type="radio"
-                name="studio-news"
-                value={value}
-                checked={selected === value}
-                onChange={() => setSelected(value)}
-              />
-              <span>
-                <strong>{item.headline}</strong>
-                <small>
-                  {item.sourceId} · {new Date(item.publishedAt).toLocaleDateString("de-DE")} ·
-                  Quellenprüfung erforderlich
-                </small>
-              </span>
-            </label>
+            <div key={item.sourceId + ":" + item.articleUrl}>
+              <label className="studio-choice">
+                <input
+                  type="radio"
+                  name="studio-news"
+                  value={value}
+                  checked={selected === value}
+                  onChange={() => setSelected(value)}
+                />
+                <span>
+                  <strong>{item.headline}</strong>
+                  <small>
+                    {item.sourceId} · {new Date(item.publishedAt).toLocaleDateString("de-DE")} ·
+                    {item.projected ? " Ereignis erfasst" : " Nur Feed-Metadaten"} ·
+                    Fakten nicht unabhängig bestätigt
+                  </small>
+                </span>
+              </label>
+              <a href={item.articleUrl} target="_blank" rel="noopener noreferrer">
+                Originalquelle öffnen
+              </a>
+            </div>
           );
         })}
       </fieldset>
