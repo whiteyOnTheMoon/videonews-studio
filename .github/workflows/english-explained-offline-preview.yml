@@ -6,6 +6,7 @@ on:
     paths:
       - "content/news/ozone-2026-explained-en.json"
       - "scripts/vps_p3_explained_preview.mjs"
+      - "scripts/p4_11_bounded_candidate_build.sh"
       - "packages/shared/src/explained-script-structure.ts"
       - "packages/shared/src/explained-script-structure.test.ts"
       - "packages/shared/src/narration-timeline.ts"
@@ -74,6 +75,23 @@ jobs:
             bind: { create_host_path: false },
           }]);
           console.log("PRIVATE READ-ONLY VIDEO OVERLAY PASS – no render, no public routes, no host ports");
+          NODE
+      - name: Static syntax check of VPS-only bounded candidate image builder
+        run: |
+          bash -n scripts/p4_11_bounded_candidate_build.sh
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          const s = readFileSync("scripts/p4_11_bounded_candidate_build.sh", "utf8");
+          assert.match(s, /cd \/home\/ap\/videonews-pilot-481 \|\| refuse/);
+          assert.match(s, /--expected-sha/);
+          assert.match(s, /memory=2048m,memory-swap=2048m,restart-policy=no/);
+          assert.match(s, /max-parallelism = 1/);
+          assert.match(s, /\[\[ -z "\$\(git branch --show-current\)" \]\] \|\| refuse/);
+          assert.match(s, /\(\( disk >= 16\*1024\*1024 && mem >= 3500\*1024 && swap >= 256\*1024 \)\)/);
+          assert.doesNotMatch(s, /docker (?:compose|stack|run|push|system prune|container stop)/);
+          assert.doesNotMatch(s, /\b(?:swapoff|swapon|rm -rf|sudo)\b/);
+          console.log("CANDIDATE BUILD SCRIPT STATIC SAFETY PASS – no VPS execution");
           NODE
       - name: Test source code and structures without creating any video
         run: |
