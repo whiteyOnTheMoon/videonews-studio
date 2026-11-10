@@ -17,7 +17,7 @@ This is **GitHub-only preparation**, not a live VPS action. Migration 0064 creat
   - `VNS_P3_0064_SCHEMA_OPERATOR_APPROVED=INSTALL_ASSET_PROVENANCE_SCHEMA_ONLY_NO_RENDER_OR_PUBLICATION`
   - `VNS_P3_0064_EXPECTED_MAIN_SHA=SHA`
   - `VNS_P3_0064_RECOVERY_VERIFIED=OPERATOR_VERIFIED_RESTORABLE_BACKUP_AND_ROLLBACK`
-  It then rechecks main SHA, SQL privileges, status, recovery admission, running services and a private count digest. The tracked original migration is executed **at most once** in its PostgreSQL transaction. If any write's outcome is ambiguous, manually inspect the ledger; never retry blindly.
+    It then rechecks main SHA, SQL privileges, status, recovery admission, running services and a private count digest. The tracked original migration is executed **at most once** in its PostgreSQL transaction. If any write's outcome is ambiguous, manually inspect the ledger; never retry blindly.
 - `--status` after schema 0064 verifies columns, seven rights constraints including NOT VALID historic clearance rule, both triggers/functions, isolated asset_uses table, zero render_allowed rows and untouched 0063 reader.
 
 ## Rollout risks and rollback
