@@ -304,7 +304,7 @@ def verify_overlay_source() -> None:
     """
     data = (ROOT / "deploy/compose.private-previews.yaml").read_bytes()
     git_blob = hashlib.sha1(
-        b"blob " + str(len(data)).encode("ascii") + b"\\0" + data
+        b"blob " + str(len(data)).encode("ascii") + b"\0" + data
     ).hexdigest()
     if git_blob != "d5ae35b9883164d80ea0e339cd2c1e5859690b28":
         raise RuntimeError(DENIED)
