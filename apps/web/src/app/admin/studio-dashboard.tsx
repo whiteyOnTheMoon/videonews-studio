@@ -18,10 +18,12 @@ const PILOT_LABEL = "Antarktisches Ozonloch 2026 – Earth & Climate Explained (
 
 function NewsSelector({
   enabled,
+  liveNewsEnabled,
   renderEnabled,
   openVideos,
 }: {
   enabled: boolean;
+  liveNewsEnabled: boolean;
   renderEnabled: boolean;
   openVideos: () => void;
 }) {
@@ -36,7 +38,32 @@ function NewsSelector({
     setLoading(true);
     setMessage("");
     setNews([]);
+    let queued = false;
     try {
+      if (liveNewsEnabled) {
+        const job = await fetch("/api/admin/studio-news-refresh", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "error",
+        });
+        if (job.status !== 202) throw new Error("Research queue admission refused");
+        const confirmation: unknown = await job.json();
+        if (
+          !confirmation ||
+          typeof confirmation !== "object" ||
+          !("accepted" in confirmation) ||
+          confirmation.accepted !== true ||
+          !("completed" in confirmation) ||
+          confirmation.completed !== false ||
+          !("publishingAllowed" in confirmation) ||
+          confirmation.publishingAllowed !== false ||
+          !("queueJobId" in confirmation) ||
+          typeof confirmation.queueJobId !== "string" ||
+          !/^vns-feed-tick-[0-9]{1,14}$/.test(confirmation.queueJobId)
+        ) throw new Error("Untrusted research acknowledgement");
+        queued = true;
+      }
       const res = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
         credentials: "same-origin",
         cache: "no-store",
@@ -52,12 +79,18 @@ function NewsSelector({
           : PILOT,
       );
       setMessage(
-        result.length
-          ? "Gespeicherte Nachrichten geladen. Das ist noch keine neue Live-Recherche. Bitte Quellen prüfen."
-          : "Keine gespeicherten Nachrichten anzeigbar. Eine Live-Recherche wurde nicht gestartet.",
+        queued
+          ? "P2-Feedauftrag eingereiht. Angezeigt werden bisher gespeicherte Meldungen; ein neuer Abruf oder Abschluss ist noch nicht bestätigt. Später erneut aktualisieren."
+          : result.length
+            ? "Gespeicherte Nachrichten geladen. Das ist noch keine neue Live-Recherche. Bitte Quellen prüfen."
+            : "Keine gespeicherten Nachrichten anzeigbar. Eine Live-Recherche wurde nicht gestartet.",
       );
     } catch {
-      setMessage("Gespeicherte News sind derzeit nicht verfügbar. Keine neue Recherche gestartet.");
+      setMessage(
+        queued
+          ? "Rechercheauftrag eingereiht, aber gespeicherte Meldungen konnten nicht geladen werden. Ein Abrufabschluss ist nicht bestätigt."
+          : "Live-Recherche nicht angenommen oder gespeicherte News derzeit nicht verfügbar.",
+      );
     } finally {
       setLoading(false);
     }
@@ -118,7 +151,7 @@ function NewsSelector({
           onClick={() => void research()}
           disabled={!enabled || loading}
         >
-          {loading ? "Suche gespeicherte News …" : "News recherchieren"}
+          {loading ? (liveNewsEnabled ? "Recherche anfordern …" : "Suche gespeicherte News …") : "News recherchieren"}
         </button>
         <button
           type="button"
@@ -131,7 +164,9 @@ function NewsSelector({
       </div>
       <p className="studio-explanation">
         „News recherchieren“ lädt in dieser Stufe <strong>bereits gespeicherte Nachrichten</strong>.
-        Ein neuer Live-Abruf ist noch nicht freigeschaltet.
+        {liveNewsEnabled
+          ? "Ein Feed-Slot wird nur beim ausdrücklichen Klick zur Warteschlange eingereiht. Das ist noch keine Abrufbestätigung."
+          : "Ein neuer Live-Abruf ist noch nicht freigeschaltet."}
       </p>
       <fieldset className="studio-picker">
         <legend>Welche Nachricht soll erklärt werden?</legend>
@@ -347,11 +382,13 @@ function PrivateVideos({ enabled }: { enabled: boolean }) {
 export default function StudioDashboard({
   settings,
   newsEnabled,
+  liveNewsEnabled = false,
   previewEnabled,
   renderEnabled,
 }: {
   settings: ReactNode;
   newsEnabled: boolean;
+  liveNewsEnabled?: boolean;
   previewEnabled: boolean;
   renderEnabled: boolean;
 }) {
@@ -383,6 +420,7 @@ export default function StudioDashboard({
         {active === "create" ? (
           <NewsSelector
             enabled={newsEnabled}
+            liveNewsEnabled={liveNewsEnabled}
             renderEnabled={renderEnabled}
             openVideos={() => setActive("videos")}
           />
