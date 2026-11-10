@@ -1,0 +1,34 @@
+name: P2 format-only diagnostic
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/p2-ci-format-preview.yml"
+      - ".github/workflows/p2-02-noaa-20261110-once.yml"
+      - ".github/workflows/p4-13-source-links-cutover.yml"
+      - "docs/P2_0065_SCHEMA_ROLLOUT.md"
+      - "docs/P3_0064_SCHEMA_ROLLOUT.md"
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: Compute exact Prettier-only diff without committing
+        run: |
+          npx prettier --write \
+            .github/workflows/p2-02-noaa-20261110-once.yml \
+            .github/workflows/p4-13-source-links-cutover.yml \
+            docs/P2_0065_SCHEMA_ROLLOUT.md \
+            docs/P3_0064_SCHEMA_ROLLOUT.md
+          git diff --no-color -- \
+            .github/workflows/p2-02-noaa-20261110-once.yml \
+            .github/workflows/p4-13-source-links-cutover.yml \
+            docs/P2_0065_SCHEMA_ROLLOUT.md \
+            docs/P3_0064_SCHEMA_ROLLOUT.md
