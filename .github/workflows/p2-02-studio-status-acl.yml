@@ -1,0 +1,46 @@
+name: P2-02 Studio status ACL (isolated disposable Redis)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_studio_status_acl_custody.py"
+      - "scripts/test_p2_02_studio_status_acl_custody.py"
+      - "scripts/ci_p2_studio_status_acl.mjs"
+      - "docs/P2_02_STUDIO_STATUS_REDIS_ACL_CUSTODY_2026_11_10.md"
+      - ".github/workflows/p2-02-studio-status-acl.yml"
+permissions:
+  contents: read
+jobs:
+  studio-status-acl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      VNS_P2_STUDIO_STATUS_ACL_CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check formatter and lint (no patch)
+        run: |
+          npm run format:check
+          npm run lint
+      - name: Pure offline status ACL operator and fail-closed tests
+        run: python3 -m unittest discover -s scripts -p 'test_p2_02_studio_status_acl_custody.py' -v
+      - name: Validate exact ACL command scope in disposable Redis
+        run: node scripts/ci_p2_studio_status_acl.mjs
