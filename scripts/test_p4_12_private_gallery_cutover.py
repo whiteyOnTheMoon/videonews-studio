@@ -67,6 +67,34 @@ class PrivateGalleryCutoverTests(unittest.TestCase):
         self.assertEqual(module.PREVIEW_ENV["api"]["VNS_PRIVATE_PREVIEWS_RENDER_ENABLED"], "false")
         self.assertEqual(module.PREVIEW_ENV["web"]["VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED"], "false")
 
+    def test_candidate_enables_only_gallery_listing_and_rollback_clears_it(self):
+        # Regression: the new overlay's default false feature switches must
+        # be explicitly set true in the candidate-only Compose environment.
+        base = {
+            "VNS_ADMIN_ORIGIN": "https://studio.ap-pixels.com",
+            "VNS_WEB_PRIVATE_PREVIEWS_ENABLED": "false",
+            "VNS_PRIVATE_PREVIEWS_API_ENABLED": "false",
+            "VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED": "true",
+            "VNS_PRIVATE_PREVIEWS_RENDER_ENABLED": "true",
+        }
+        candidate = module.image_environment(base, new=True)
+        self.assertEqual(candidate["VNS_WEB_PRIVATE_PREVIEWS_ENABLED"], "true")
+        self.assertEqual(candidate["VNS_PRIVATE_PREVIEWS_API_ENABLED"], "true")
+        self.assertEqual(candidate["VNS_WEB_IMAGE"], module.NEW["web"][0])
+        self.assertEqual(candidate["VNS_API_IMAGE"], module.NEW["api"][0])
+        self.assertEqual(candidate["VNS_ADMIN_ORIGIN"], base["VNS_ADMIN_ORIGIN"])
+        # Rendering is forcibly OFF by the overlay, irrespective of
+        # parent shell variables. Never pass through untrusted ON toggles.
+        self.assertNotEqual(candidate.get("VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED"), "true")
+        self.assertNotEqual(candidate.get("VNS_PRIVATE_PREVIEWS_RENDER_ENABLED"), "true")
+        old = module.image_environment(candidate, new=False)
+        self.assertEqual(old["VNS_WEB_IMAGE"], module.OLD["web"][0])
+        self.assertEqual(old["VNS_API_IMAGE"], module.OLD["api"][0])
+        for keys in module.PREVIEW_ENV.values():
+            for key in keys:
+                self.assertNotIn(key, old)
+        self.assertEqual(old["VNS_ADMIN_ORIGIN"], base["VNS_ADMIN_ORIGIN"])
+
     def test_new_compose_accepts_only_private_api_bind(self):
         self.validate(synthetic_conf())
 
