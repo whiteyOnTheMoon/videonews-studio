@@ -1,0 +1,23 @@
+# P4-11: Owner-only, read-only preview gallery overlay.
+# Default disabled. NOT a render worker, not a public static directory.
+# Apply ONLY after operator inspection, PR review and secure deployment approval.
+# Requires /home/ap/videonews-previews to already exist, mode 0700,
+# and to contain only private 0600 operator-owned previews.
+services:
+  web:
+    environment:
+      VNS_WEB_PRIVATE_PREVIEWS_ENABLED: "${VNS_WEB_PRIVATE_PREVIEWS_ENABLED:-false}"
+      VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED: "false"
+
+  api:
+    environment:
+      VNS_PRIVATE_PREVIEWS_API_ENABLED: "${VNS_PRIVATE_PREVIEWS_API_ENABLED:-false}"
+      VNS_PRIVATE_PREVIEWS_ROOT: /home/ap/videonews-previews
+      VNS_PRIVATE_PREVIEWS_RENDER_ENABLED: "false"
+    volumes:
+      - type: bind
+        source: /home/ap/videonews-previews
+        target: /home/ap/videonews-previews
+        read_only: true
+        bind:
+          create_host_path: false

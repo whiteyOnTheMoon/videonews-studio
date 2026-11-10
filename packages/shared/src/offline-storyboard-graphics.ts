@@ -193,7 +193,7 @@ function validateScene(scene: RecordValue): scene is RecordValue {
   return false;
 }
 
-function graphicsFor(scene: RecordValue): string[] {
+function graphicsFor(scene: RecordValue, language: "de-DE" | "en-US"): string[] {
   const result: string[] = [];
   if (scene.kind === "text-card") {
     const wrapped = linesOf(scene.body as string, 48);
@@ -258,12 +258,24 @@ function graphicsFor(scene: RecordValue): string[] {
     result.push(textAt(Math.min(x + 15, 1030), y - 15, point.label, 18));
   }
   result.push(
-    textAt(96, 630, "Schematische Positionsskizze – keine verifizierte GIS-Karte", 18, "#bfe8ff"),
+    textAt(
+      96,
+      630,
+      language === "en-US"
+        ? "Schematic positions only – not a verified geographic map"
+        : "Schematische Positionsskizze – keine verifizierte GIS-Karte",
+      18,
+      "#bfe8ff",
+    ),
   );
   return result;
 }
 
-function makeFrame(scene: RecordValue, index: number): OfflineGraphicFrame {
+function makeFrame(
+  scene: RecordValue,
+  index: number,
+  language: "de-DE" | "en-US",
+): OfflineGraphicFrame {
   const kind = scene.kind as OfflineGraphicKind;
   const title = scene.title as string;
   const sourceCount = (scene.sourceUrls as string[]).length;
@@ -272,16 +284,46 @@ function makeFrame(scene: RecordValue, index: number): OfflineGraphicFrame {
       FRAME_WIDTH +
       '" height="' +
       FRAME_HEIGHT +
-      '" viewBox="0 0 1280 720" role="img" aria-label="Nicht veröffentlichte Nachrichten-Grafik">',
-    "<title>" + xml(title) + " – ungeprüfte Vorschau</title>",
+      '" viewBox="0 0 1280 720" role="img" aria-label="' +
+      (language === "en-US"
+        ? "Unpublished news graphic"
+        : "Nicht veröffentlichte Nachrichten-Grafik") +
+      '">',
+    "<title>" +
+      xml(title) +
+      (language === "en-US" ? " – unverified preview</title>" : " – ungeprüfte Vorschau</title>"),
     '<rect x="0" y="0" width="1280" height="720" fill="#0a1929"/>',
     '<rect x="52" y="42" width="10" height="100" rx="5" fill="#64d8cb"/>',
     textAt(92, 94, title, 38),
-    textAt(92, 138, "EIGENE GRAFIK / OHNE FREMDES FOOTAGE", 16, "#bfe8ff"),
-    ...graphicsFor(scene),
+    textAt(
+      92,
+      138,
+      language === "en-US"
+        ? "ORIGINAL GRAPHIC / NO THIRD-PARTY FOOTAGE"
+        : "EIGENE GRAFIK / OHNE FREMDES FOOTAGE",
+      16,
+      "#bfe8ff",
+    ),
+    ...graphicsFor(scene, language),
     '<rect x="0" y="667" width="1280" height="53" fill="#172c41"/>',
-    textAt(92, 701, "VORSCHAU – NICHT ZUR VERÖFFENTLICHUNG", 18, "#ffd392"),
-    textAt(948, 701, "Quellenlinks: " + sourceCount + " (ungeprüft)", 16, "#bfe8ff"),
+    textAt(
+      92,
+      701,
+      language === "en-US"
+        ? "PREVIEW – NOT FOR PUBLICATION"
+        : "VORSCHAU – NICHT ZUR VERÖFFENTLICHUNG",
+      18,
+      "#ffd392",
+    ),
+    textAt(
+      948,
+      701,
+      language === "en-US"
+        ? "Source links: " + sourceCount + " (unverified)"
+        : "Quellenlinks: " + sourceCount + " (ungeprüft)",
+      16,
+      "#bfe8ff",
+    ),
     "</svg>",
   ];
   return { index, kind, svg: elements.join(""), sourceCount };
@@ -297,6 +339,8 @@ export function makeOfflineGraphicStoryboard(input: unknown): OfflineGraphicStor
   const storyId =
     typeof request?.storyId === "string" && UUID.test(request.storyId) ? request.storyId : null;
   const errors: string[] = [];
+  const language = request?.language === undefined ? "de-DE" : request.language;
+  if (language !== "de-DE" && language !== "en-US") errors.push("invalid_language");
   if (!storyId) errors.push("invalid_story_id");
   if (!request || !Array.isArray(request.scenes)) {
     errors.push("invalid_scenes");
@@ -319,7 +363,9 @@ export function makeOfflineGraphicStoryboard(input: unknown): OfflineGraphicStor
       sourcesVerified: false,
     };
   }
-  const frames = request.scenes.map((scene, index) => makeFrame(scene as RecordValue, index));
+  const frames = request.scenes.map((scene, index) =>
+    makeFrame(scene as RecordValue, index, language as "de-DE" | "en-US"),
+  );
   return {
     status: "PREVIEW_ONLY",
     storyId,

@@ -8,6 +8,7 @@ import {
   readPersonalEditorialAdmission,
 } from "./personal-editorial-runtime.js";
 import { namedProviderRuntimeFromEnv } from "./named-provider-runtime.js";
+import { privatePreviewServiceFromEnv } from "./private-previews.js";
 import {
   DormantPersonalSourceHostAdmin,
   readPersonalSourceHostGates,
@@ -65,6 +66,7 @@ async function start(): Promise<void> {
     personalEditorial,
     personalSourceHost,
     providerConfig,
+    privatePreviews: privatePreviewServiceFromEnv(editor, process.env),
   });
   server.listen(port, host, () => {
     console.log(`VideoNews Studio API ready at http://${host}:${port}`);

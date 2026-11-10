@@ -1,0 +1,109 @@
+name: English Earth & Climate Explained source and safety checks only
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "content/news/ozone-2026-explained-en.json"
+      - "scripts/vps_p3_explained_preview.mjs"
+      - "scripts/p4_11_bounded_candidate_build.sh"
+      - "packages/shared/src/explained-script-structure.ts"
+      - "packages/shared/src/explained-script-structure.test.ts"
+      - "packages/shared/src/narration-timeline.ts"
+      - "packages/shared/src/narration-timeline.test.ts"
+      - "packages/shared/src/offline-storyboard-graphics.ts"
+      - "packages/shared/src/offline-storyboard-graphics-en.test.ts"
+      - "packages/shared/src/index.ts"
+      - ".github/workflows/english-explained-offline-preview.yml"
+      - "docs/EXPLAINED_SCRIPT_STRUCTURE_V1.md"
+      - "docs/ENGLISH_EXPLAINED_CI_PILOT.md"
+      - "docs/VPS_PRIVATE_PREVIEW_RUNBOOK.md"
+      - "apps/api/src/private-previews*.ts"
+      - "apps/api/src/index.ts"
+      - "apps/api/src/server.ts"
+      - "apps/web/src/app/admin/studio-dashboard*.tsx"
+      - "apps/web/src/app/admin/page.tsx"
+      - "apps/web/src/app/api/admin/private-previews/**"
+      - "apps/web/src/lib/private-preview-proxy*.ts"
+      - "apps/web/src/app/globals.css"
+      - "apps/web/package.json"
+      - "docs/STUDIO_SIMPLIFIED_UI.md"
+      - "deploy/compose.private-previews.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  english-explained-static-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check preview gallery overlay stays private and render-disabled
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          import yaml from "js-yaml";
+          const config = yaml.load(readFileSync("deploy/compose.private-previews.yaml", "utf8"));
+          assert.deepEqual(Object.keys(config.services).sort(), ["api", "web"]);
+          const { api, web } = config.services;
+          for (const service of [api, web]) {
+            assert.equal(Object.hasOwn(service, "ports"), false);
+            assert.equal(Object.hasOwn(service, "privileged"), false);
+            assert.equal(Object.hasOwn(service, "network_mode"), false);
+            assert.equal(Object.hasOwn(service, "cap_add"), false);
+          }
+          assert.equal(web.environment.VNS_WEB_PRIVATE_PREVIEWS_ENABLED, "${VNS_WEB_PRIVATE_PREVIEWS_ENABLED:-false}");
+          assert.equal(web.environment.VNS_WEB_PRIVATE_PREVIEW_RENDER_ENABLED, "false");
+          assert.equal(api.environment.VNS_PRIVATE_PREVIEWS_API_ENABLED, "${VNS_PRIVATE_PREVIEWS_API_ENABLED:-false}");
+          assert.equal(api.environment.VNS_PRIVATE_PREVIEWS_ROOT, "/home/ap/videonews-previews");
+          assert.equal(api.environment.VNS_PRIVATE_PREVIEWS_RENDER_ENABLED, "false");
+          assert.equal(Object.hasOwn(web, "volumes"), false);
+          assert.deepEqual(api.volumes, [{
+            type: "bind",
+            source: "/home/ap/videonews-previews",
+            target: "/home/ap/videonews-previews",
+            read_only: true,
+            bind: { create_host_path: false },
+          }]);
+          console.log("PRIVATE READ-ONLY VIDEO OVERLAY PASS – no render, no public routes, no host ports");
+          NODE
+      - name: Static syntax check of VPS-only bounded candidate image builder
+        run: |
+          bash -n scripts/p4_11_bounded_candidate_build.sh
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          const s = readFileSync("scripts/p4_11_bounded_candidate_build.sh", "utf8");
+          assert.match(s, /cd \/home\/ap\/videonews-pilot-481 \|\| refuse/);
+          assert.match(s, /--expected-sha/);
+          assert.match(s, /memory=2048m,memory-swap=2048m,restart-policy=no/);
+          assert.match(s, /max-parallelism = 1/);
+          assert.match(s, /\[\[ -z "\$\(git branch --show-current\)" \]\] \|\| refuse/);
+          assert.match(s, /\(\( disk >= 16\*1024\*1024 && mem >= 3500\*1024 && swap >= 256\*1024 \)\)/);
+          assert.doesNotMatch(s, /docker (?:compose|stack|run|push|system prune|container stop)/);
+          assert.doesNotMatch(s, /\b(?:swapoff|swapon|rm -rf|sudo)\b/);
+          console.log("CANDIDATE BUILD SCRIPT STATIC SAFETY PASS – no VPS execution");
+          NODE
+      - name: Test source code and structures without creating any video
+        run: |
+          npm run build --workspace @vns/shared
+          node --check scripts/vps_p3_explained_preview.mjs
+          npm run typecheck
+          npm run lint
+          npm run format:check
+          npm test
+      - name: Confirm VPS-only renderer refuses GitHub Actions even with forged approval
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY node scripts/vps_p3_explained_preview.mjs; then
+            echo "ERROR: VPS renderer started in GitHub Actions"
+            exit 1
+          fi
