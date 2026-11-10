@@ -61,7 +61,8 @@ function NewsSelector({
           !("queueJobId" in confirmation) ||
           typeof confirmation.queueJobId !== "string" ||
           !/^vns-feed-tick-[0-9]{1,14}$/.test(confirmation.queueJobId)
-        ) throw new Error("Untrusted research acknowledgement");
+        )
+          throw new Error("Untrusted research acknowledgement");
         queued = true;
       }
       const res = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
@@ -151,7 +152,11 @@ function NewsSelector({
           onClick={() => void research()}
           disabled={!enabled || loading}
         >
-          {loading ? (liveNewsEnabled ? "Recherche anfordern …" : "Suche gespeicherte News …") : "News recherchieren"}
+          {loading
+            ? liveNewsEnabled
+              ? "Recherche anfordern …"
+              : "Suche gespeicherte News …"
+            : "News recherchieren"}
         </button>
         <button
           type="button"
