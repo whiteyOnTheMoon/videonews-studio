@@ -11,6 +11,7 @@ import { DormantPersonalEditorialAdmin } from "./personal-editorial-admin.js";
 import { DormantPersonalSourceHostAdmin } from "./personal-source-host-admin.js";
 import { PrivatePreviewService } from "./private-previews.js";
 import { StudioFeedRefreshService } from "./studio-feed-refresh.js";
+import { StudioFeedStatusService } from "./studio-feed-status.js";
 
 export function createApiServer(
   options: {
@@ -24,6 +25,7 @@ export function createApiServer(
     personalSourceHost?: DormantPersonalSourceHostAdmin;
     privatePreviews?: PrivatePreviewService;
     studioFeedRefresh?: StudioFeedRefreshService;
+    studioFeedStatus?: StudioFeedStatusService;
   } = {},
 ): Server {
   if (options.jobs && !options.auth) throw new Error("Admin jobs require authentication");
@@ -69,6 +71,10 @@ export function createApiServer(
     throw new Error("Studio feed refresh requires gated service");
   if (options.studioFeedRefresh && (!options.auth || !options.editor))
     throw new Error("Studio feed refresh requires personal authentication");
+  if (options.studioFeedStatus && !(options.studioFeedStatus instanceof StudioFeedStatusService))
+    throw new Error("Studio feed status requires gated reader");
+  if (options.studioFeedStatus && (!options.auth || !options.editor))
+    throw new Error("Studio feed status requires personal authentication");
   if (options.editor && (!options.auth || !options.jobs))
     throw new Error("Editors require admin/data gates");
   return createServer((request, response) => {
@@ -86,6 +92,21 @@ export function createApiServer(
     // Default OFF: personally authenticated producer-only P2 feed dispatch.
     if (request.url === "/admin/studio-news-refresh" && options.studioFeedRefresh) {
       void options.studioFeedRefresh.handle(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(503);
+        if (!response.writableEnded)
+          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+      });
+      return;
+    }
+
+    // Default OFF: separate read-only feed job evidence; never enqueues.
+    if (request.url?.startsWith("/admin/studio-news-status") && options.studioFeedStatus) {
+      void options.studioFeedStatus.handle(request, response).then((handled) => {
+        if (!handled && !response.writableEnded) {
+          response.writeHead(404);
+          response.end(JSON.stringify({ error: "not_found" }));
+        }
+      }).catch(() => {
         if (!response.headersSent) response.writeHead(503);
         if (!response.writableEnded)
           response.end(JSON.stringify({ error: "temporarily_unavailable" }));

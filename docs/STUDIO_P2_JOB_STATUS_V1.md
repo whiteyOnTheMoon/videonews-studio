@@ -1,0 +1,11 @@
+# Studio P2 queue completion witness – source only
+
+The new `/admin/studio-news-status?jobId=vns-feed-tick-N` endpoint is a **separate read-only credentialed service**. No Redis consumer, producer, source fetcher, database writer, renderer or deployment changes are introduced. The service is **disabled by default**.
+
+**Private API:** requires existing administrator cookie and independently verified named editor-admin account, plus a single exact current/recent deterministic 15-minute job ID (maximum 3 hours old). Returns only `pending`, `unknown`, `failed`, or `completed`. Completion requires a Redis sorted-set `completed` membership **and** the exact validated BullMQ worker return value `{ok:true,sourcesExamined,candidatesAdded,notModified}`. An absent job, failed job, or invalid completion cannot claim success. `candidatesAdded=0` is still a completed observation, not fresh news. Publishing is always false.
+
+**Dedicated status Redis ACL:** separate username prefix `vns_feed_status_...` and separate file `/run/secrets/vns_studio_feed_status_password`, regular mode 0600 or stricter. The implementation uses exactly `ZSCORE` on `bull:vns:feed:vns-feed-poll:completed` and `:failed`, `HGET` on the exact job hash returnvalue and `EXISTS` on that job hash. No arbitrary key input, enumeration, `KEYS`, `SCAN`, `SET` or `EVAL`. Provision only required Redis connection/auth commands and `+ZSCORE +HGET +EXISTS` on those exact keys/prefix; test the ACL in an isolated environment before live activation. Never grant the read-only identity BullMQ producer or consumer rights.
+
+**API gate:** `VNS_STUDIO_FEED_STATUS_API_ENABLED=true`, `VNS_STUDIO_FEED_STATUS_OPERATOR_ACK=true`, `VNS_STUDIO_FEED_STATUS_REDIS_HOST=redis`, `VNS_STUDIO_FEED_STATUS_REDIS_USER=vns_feed_status_...`, `VNS_STUDIO_FEED_STATUS_REDIS_PASSWORD_FILE=/run/secrets/vns_studio_feed_status_password`, and `VNS_FEED_SOURCE_BOOTSTRAP=false`. Config is rejected if incomplete. No credentials are accepted from a web request.
+
+**No live authorization from a merge:** Do not deploy, enable flags, alter Redis, mount new secrets or start feed workers without a separate explicit VPS approval. The source-only PR is compatible with the current disabled prototype. In particular, this status proves only successful bounded feed observation, not accuracy or independent verification of claims.
