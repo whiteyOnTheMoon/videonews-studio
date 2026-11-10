@@ -46,6 +46,7 @@ export default async function AdminPage() {
       <p>Aktuelle Earth-&-Climate-Themen auswählen, Videos erstellen und Vorschauen prüfen.</p>
       <StudioDashboard
         newsEnabled={editorialAdminProxyConfig(process.env) !== null}
+        liveNewsEnabled={process.env.VNS_WEB_STUDIO_FEED_REFRESH_ENABLED === "true"}
         previewEnabled={process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true"}
         renderEnabled={
           process.env.VNS_WEB_PRIVATE_PREVIEWS_ENABLED === "true" &&
