@@ -102,9 +102,19 @@ test("authenticated request enqueues the exact deterministic queue payload", asy
 
 test("anonymous, wrong editor, wrong origin and GET never contact producer", async () => {
   let attempts = 0;
-  const producer = { async add() { attempts++; } };
-  assert.equal((await call(new StudioFeedRefreshService(auth(false), editor(), producer))).status, 401);
-  assert.equal((await call(new StudioFeedRefreshService(auth(), editor(null), producer))).status, 403);
+  const producer = {
+    async add() {
+      attempts++;
+    },
+  };
+  assert.equal(
+    (await call(new StudioFeedRefreshService(auth(false), editor(), producer))).status,
+    401,
+  );
+  assert.equal(
+    (await call(new StudioFeedRefreshService(auth(), editor(null), producer))).status,
+    403,
+  );
   assert.equal(
     (await call(new StudioFeedRefreshService(auth(), editor("reviewer"), producer))).status,
     403,
@@ -113,7 +123,10 @@ test("anonymous, wrong editor, wrong origin and GET never contact producer", asy
     (await call(new StudioFeedRefreshService(auth(true, false), editor(), producer))).status,
     403,
   );
-  assert.equal((await call(new StudioFeedRefreshService(auth(), editor(), producer), "GET")).status, 405);
+  assert.equal(
+    (await call(new StudioFeedRefreshService(auth(), editor(), producer), "GET")).status,
+    405,
+  );
   assert.equal(attempts, 0);
 });
 
