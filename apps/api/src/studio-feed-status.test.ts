@@ -9,7 +9,7 @@ import {
   type FeedJobEvidence, type FeedStatusReader,
 } from "./studio-feed-status.js";
 
-const NOW = new Date("2026-11-10T04:00:00.000Z");
+const NOW = new Date("2026-11-10T04:07:00.000Z");
 const SLOT = Math.floor(NOW.getTime() / 900000);
 const JOB = "vns-feed-tick-" + SLOT;
 function auth(yes = true) {
