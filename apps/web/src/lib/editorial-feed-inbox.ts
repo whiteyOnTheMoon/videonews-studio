@@ -14,16 +14,32 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 export function validFeedArticleUrl(value: unknown): value is string {
-  if (typeof value !== "string" || value.length < 12 || value.length > 2048 ||
-      value.includes("%") || /[\\s?#]/.test(value)) return false;
+  if (
+    typeof value !== "string" ||
+    value.length < 12 ||
+    value.length > 2048 ||
+    value.includes("%") ||
+    /[\s?#]/.test(value)
+  )
+    return false;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.includes(".") &&
+    return (
+      url.protocol === "https:" &&
+      url.hostname.includes(".") &&
       /^[a-z0-9.-]+$/.test(url.hostname) &&
-      url.username === "" && url.password === "" && url.port === "" &&
-      url.search === "" && url.hash === "" && url.toString() === value;
-  } catch { return false; }
+      url.username === "" &&
+      url.password === "" &&
+      url.port === "" &&
+      url.search === "" &&
+      url.hash === "" &&
+      url.toString() === value
+    );
+  } catch {
+    return false;
+  }
 }
+
 export function parseFeedInboxPage(value: unknown, limit = 25): readonly FeedInboxItem[] | null {
   if (
     !object(value) ||
