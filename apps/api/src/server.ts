@@ -101,16 +101,19 @@ export function createApiServer(
 
     // Default OFF: separate read-only feed job evidence; never enqueues.
     if (request.url?.startsWith("/admin/studio-news-status") && options.studioFeedStatus) {
-      void options.studioFeedStatus.handle(request, response).then((handled) => {
-        if (!handled && !response.writableEnded) {
-          response.writeHead(404);
-          response.end(JSON.stringify({ error: "not_found" }));
-        }
-      }).catch(() => {
-        if (!response.headersSent) response.writeHead(503);
-        if (!response.writableEnded)
-          response.end(JSON.stringify({ error: "temporarily_unavailable" }));
-      });
+      void options.studioFeedStatus
+        .handle(request, response)
+        .then((handled) => {
+          if (!handled && !response.writableEnded) {
+            response.writeHead(404);
+            response.end(JSON.stringify({ error: "not_found" }));
+          }
+        })
+        .catch(() => {
+          if (!response.headersSent) response.writeHead(503);
+          if (!response.writableEnded)
+            response.end(JSON.stringify({ error: "temporarily_unavailable" }));
+        });
       return;
     }
 
