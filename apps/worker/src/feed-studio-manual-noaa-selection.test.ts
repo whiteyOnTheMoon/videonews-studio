@@ -31,6 +31,7 @@ test("manual NOAA is off by default and cannot enable sources implicitly", () =>
 test("manual NOAA requires distinct complete consumer-only runtime approval", () => {
   for (const key of Object.keys(approved)) {
     for (const change of ["", "false"]) {
+      if (approved[key] === change) continue;
       assert.throws(
         () => readStudioManualNoaaSelection({ ...approved, [key]: change }, "persistent_worker"),
         /source gate refused/,
