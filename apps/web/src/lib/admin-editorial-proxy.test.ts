@@ -650,6 +650,7 @@ test("ranked BFF rejects an oversized upstream page even if every candidate is v
 test("feed inbox BFF enforces personal GET, strict page and no-store", async () => {
   const item = {
     sourceId: "noaa_news",
+    articleUrl: "https://www.noaa.gov/news/ci-test",
     headline: "Synthetic NOAA headline awaiting independent verification",
     publishedAt: "2026-11-01T12:00:00.000Z",
     projected: false,
