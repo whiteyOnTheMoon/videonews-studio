@@ -139,5 +139,56 @@ class SchemaGateTest(unittest.TestCase):
         self.assertIn("default_transaction_read_only=off", source)
 
 
+    def test_missing_0064_refused_even_if_0063_is_installed(self):
+        a, b, c, d = self.mocks()
+        attempts = []
+
+        def missing_0064(sql, *, write=False):
+            if write:
+                attempts.append(sql)
+                raise AssertionError("Missing 0064 must never be applied as 0065")
+            if sql.startswith("SELECT version"):
+                return "\n".join(NAMES[:63])
+            raise AssertionError("No subsequent database read expected")
+
+        env = {gate.APPROVAL_ENV: gate.APPROVAL,
+               gate.SHA_ENV: SHA, gate.RECOVERY_ENV: gate.RECOVERY}
+        with a, b, c, d, patch.object(gate, "query", side_effect=missing_0064), \
+                patch.dict(os.environ, env, clear=True):
+            for action in ("--status", "--preflight", "--apply"):
+                with self.assertRaises(RuntimeError):
+                    gate.main([action, "--expected-sha", SHA])
+        self.assertEqual(attempts, [])
+
+    def test_changed_snapshot_before_apply_refuses_without_sql_write(self):
+        a, b, c, d = self.mocks()
+        snapshot_calls = 0
+        writes = []
+
+        def concurrent_mutation(sql, *, write=False):
+            nonlocal snapshot_calls
+            if write:
+                writes.append(sql)
+                raise AssertionError("Concurrent snapshot changed")
+            if sql.startswith("SELECT version"):
+                return "\n".join(NAMES[:64])
+            if sql == gate.BASE_SQL:
+                return "t"
+            if sql == gate.STATE_SQL:
+                snapshot_calls += 1
+                return ("1" if snapshot_calls == 1 else "2") * 32
+            raise AssertionError(sql[:70])
+
+        env = {gate.APPROVAL_ENV: gate.APPROVAL,
+               gate.SHA_ENV: SHA, gate.RECOVERY_ENV: gate.RECOVERY}
+        with a, b, c, d, patch.object(gate, "query",
+                                       side_effect=concurrent_mutation), \
+                patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError):
+                gate.main(["--apply", "--expected-sha", SHA])
+        self.assertEqual(snapshot_calls, 2)
+        self.assertEqual(writes, [])
+
+
 if __name__ == "__main__":
     unittest.main()
