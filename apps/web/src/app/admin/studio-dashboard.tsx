@@ -116,12 +116,16 @@ function NewsSelector({
       if (!validStudioFeedStatus(data, feedJobId)) throw new Error("Invalid status");
       if (data.state === "completed") {
         setMessage(
-          "Feedabruf abgeschlossen: " + data.summary!.sourcesExamined +
-          " Quellen geprüft, " + data.summary!.candidatesAdded +
-          " Kandidaten gespeichert. Unabhängige Faktenprüfung weiterhin erforderlich.",
+          "Feedabruf abgeschlossen: " +
+            data.summary!.sourcesExamined +
+            " Quellen geprüft, " +
+            data.summary!.candidatesAdded +
+            " Kandidaten gespeichert. Unabhängige Faktenprüfung weiterhin erforderlich.",
         );
         const inbox = await fetch("/api/admin/editorial-feed-inbox?limit=25", {
-          credentials: "same-origin", cache: "no-store", redirect: "error",
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "error",
         });
         if (!inbox.ok) throw new Error("Inbox reconciliation unavailable");
         const items = parseFeedInboxPage((await inbox.json()) as unknown);
