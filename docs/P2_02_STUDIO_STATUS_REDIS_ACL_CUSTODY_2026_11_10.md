@@ -67,7 +67,7 @@ correct ownership and mode readable by the `node` process. A separate
 producer identity/handoff and exact consumer mounts must be checked
 independently before any Studio enable flag changes.
 
-CI verifies the complete offline candidate lifecycle and tests the *actual*
+CI verifies the complete offline candidate lifecycle and tests the _actual_
 generated ACL command and key scope on disposable Redis. Neither this PR nor
 its tests authorize a live feed, candidate projector, ranking, rendering,
 publication or Web/API deployment.
