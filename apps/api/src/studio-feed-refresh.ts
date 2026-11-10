@@ -80,8 +80,7 @@ export class StudioFeedRefreshService {
     }
     if (
       !this.auth.originAllowed(req) ||
-      (req.headers["content-length"] !== undefined &&
-        req.headers["content-length"] !== "0") ||
+      (req.headers["content-length"] !== undefined && req.headers["content-length"] !== "0") ||
       req.headers["transfer-encoding"] !== undefined ||
       req.headers["content-encoding"] !== undefined
     ) {
@@ -126,9 +125,7 @@ function readPassword(): string {
       (stat.mode & 0o077) !== 0 ||
       stat.size < 40 ||
       stat.size > 256 ||
-      (typeof process.getuid === "function" &&
-        stat.uid !== 0 &&
-        stat.uid !== process.getuid())
+      (typeof process.getuid === "function" && stat.uid !== 0 && stat.uid !== process.getuid())
     ) {
       throw new Error("Invalid feed producer secret");
     }
