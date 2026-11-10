@@ -96,6 +96,8 @@ class PrivateSourceLinksCutoverTests(unittest.TestCase):
         self.assertEqual(old["VNS_API_IMAGE"], module.OLD["api"][0])
         for keys in module.PREVIEW_ENV.values():
             for key, value in keys.items():
+                if key == "VNS_PRIVATE_PREVIEWS_ROOT":
+                    continue  # injected by the pinned Compose overlay, not CLI env
                 self.assertEqual(old[key], value)
         for keys in module.NEWS_ENV.values():
             for key in keys:
