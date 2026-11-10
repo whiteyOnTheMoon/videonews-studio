@@ -45,6 +45,24 @@ class InboxContract(unittest.TestCase):
         self.assertNotIn("DROP TABLE", text)
         self.assertNotIn("DROP ROLE", text)
 
+    def test_0065_original_url_reader_preserves_0063_and_personal_gate(self):
+        extension = ROOT / "db/migrations/0065_named_feed_inbox_sources.up.sql"
+        text = extension.read_text()
+        for fragment in (
+            "CREATE FUNCTION vns.named_feed_inbox_sources_page",
+            "SECURITY DEFINER", "session_user", "a.role='admin'",
+            "vns.feed_runtime_source_authorized(src.value)",
+            "src.value->>'status'='approved'",
+            "SELECT c.source_id,c.article_url,c.headline",
+            "approved_for_publication boolean",
+            "REVOKE ALL ON FUNCTION vns.named_feed_inbox_sources_page",
+            "FROM PUBLIC", "vns_p2_named_client",
+        ):
+            self.assertIn(fragment, text)
+        self.assertNotIn("DROP FUNCTION vns.named_feed_inbox_page", text)
+        self.assertNotIn("INSERT INTO vns.research_articles", text)
+        self.assertNotIn("GRANT EXECUTE ON FUNCTION vns.named_feed_inbox_sources_page(integer) TO PUBLIC", text)
+
     def test_http_surface_is_personal_get_only(self):
         route = ROUTE.read_text()
         api = API.read_text()
@@ -53,7 +71,7 @@ class InboxContract(unittest.TestCase):
         self.assertNotIn("export async function POST", route)
         self.assertIn("named_current_editor()", api)
         self.assertIn('"/admin/editorial-feed-inbox"', api)
-        self.assertIn("named_feed_inbox_page", api)
+        self.assertIn("named_feed_inbox_sources_page", api)
         self.assertIn("approved_for_publication !== false", api)
         self.assertIn('endpoint === "feed-inbox"', bff)
         self.assertIn("parseFeedInboxPage", bff)
