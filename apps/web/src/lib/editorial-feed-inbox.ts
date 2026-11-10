@@ -26,7 +26,7 @@ export function validFeedArticleUrl(value: unknown): value is string {
     const url = new URL(value);
     return (
       url.protocol === "https:" &&
-      /^(?:[a-z0-9-]+\\.)+[a-z]{2,}$/.test(url.hostname) &&
+      /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/.test(url.hostname) &&
       url.username === "" &&
       url.password === "" &&
       url.port === "" &&
