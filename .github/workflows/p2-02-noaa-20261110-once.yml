@@ -1,0 +1,32 @@
+name: P2-02 NOAA 2026-11-10 one-shot safety
+on:
+  pull_request:
+    paths:
+      - 'scripts/p2_02_noaa_20261110_once.sh'
+      - 'scripts/test_p2_02_noaa_20261110_once.py'
+      - 'docs/P2_02_NOAA_ONESHOT_2026_11_10.md'
+      - '.github/workflows/p2-02-noaa-20261110-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  canary-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Bash syntax only
+        run: bash -n scripts/p2_02_noaa_20261110_once.sh
+      - name: Run offline operator tests (no Docker, SQL, RSS or network)
+        run: python3 -m unittest scripts/test_p2_02_noaa_20261110_once.py scripts/test_p2_02_noaa_one_shot_operator.py
+      - name: Assert fixed scope, fresh approval and preserved history
+        shell: bash
+        run: |
+          set -euo pipefail
+          S=scripts/p2_02_noaa_20261110_once.sh
+          grep -Fq 'CONTAINER="vns-noaa-single-20261110-a5c73c9"' "$S"
+          grep -Fq 'OLD_AUDIT="vns-noaa-single-20261108-a5c73c9"' "$S"
+          grep -Fq 'assert x["counts"]["failed"]==6 and x["counts"]["completed"]==3' "$S"
+          grep -Fq 'VNS_P2_NOAA_20261110_RECOVERY_VERIFIED' "$S"
+          grep -Fq 'VNS_FEED_CANARY_SOURCE_ID=noaa_news' "$S"
+          grep -Fq 'VNS_FEED_SOURCE_BOOTSTRAP=false' "$S"
