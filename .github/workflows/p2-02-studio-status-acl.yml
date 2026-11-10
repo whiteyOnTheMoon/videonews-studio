@@ -36,10 +36,9 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Show exact Prettier-only differences for review
+      - name: Enforce formatter and lint without modifying files
         run: |
-          npx prettier --write docs/P2_02_STUDIO_STATUS_REDIS_ACL_CUSTODY_2026_11_10.md scripts/ci_p2_studio_status_acl.mjs
-          git diff --no-color -- docs/P2_02_STUDIO_STATUS_REDIS_ACL_CUSTODY_2026_11_10.md scripts/ci_p2_studio_status_acl.mjs
+          npm run format:check
           npm run lint
       - name: Pure offline status ACL operator and fail-closed tests
         run: python3 -m unittest discover -s scripts -p 'test_p2_02_studio_status_acl_custody.py' -v
