@@ -45,8 +45,13 @@ export async function studioFeedStatusProxy(
   if (profile.status === 401) return reply(401, { error: "unauthorized" });
   if (profile.status !== 200) return reply(503, { error: "temporarily_unavailable" });
   const identity: unknown = await profile.json();
-  if (!identity || typeof identity !== "object" || !("role" in identity) ||
-      identity.role !== "admin") return reply(403, { error: "forbidden" });
+  if (
+    !identity ||
+    typeof identity !== "object" ||
+    !("role" in identity) ||
+    identity.role !== "admin"
+  )
+    return reply(403, { error: "forbidden" });
   try {
     const target = config.api + "/admin/studio-news-status?jobId=" + jobId;
     const upstream = await fetcher(target, {
