@@ -278,6 +278,18 @@ def image_environment(base: dict[str, str], *, new: bool) -> dict[str, str]:
     for service in SWITCH_SERVICES:
         key = "VNS_WEB_IMAGE" if service == "web" else "VNS_API_IMAGE"
         result[key] = NEW[service][0] if new else OLD[service][0]
+    if new:
+        # The optional sixth overlay defaults private gallery listing OFF.
+        # Only the owner-approved API/Web listing gates may be enabled here.
+        # Both rendering gates stay strictly OFF in the sixth overlay.
+        result["VNS_WEB_PRIVATE_PREVIEWS_ENABLED"] = "true"
+        result["VNS_PRIVATE_PREVIEWS_API_ENABLED"] = "true"
+    else:
+        # Roll back with the original five overlays and without any
+        # gallery-related feature toggles inherited from the caller.
+        for flags in PREVIEW_ENV.values():
+            for flag in flags:
+                result.pop(flag, None)
     return result
 
 
@@ -454,13 +466,16 @@ def main(args: list[str]) -> None:
         raise RuntimeError(DENIED)
     check_resources()
     verify_preview()
+    print("PASS: private video rights, size and SHA256", flush=True)
     current = live()
     env = environment(current)
-    # New images are verified against actual config SHA digests from the
-    # operator's successful local BuildKit build, not just mutable names.
+    print("PASS: running container identities and personal auth", flush=True)
+    # Verify immutable new GHCR images and the exact original local images.
     inspect_images()
+    print("PASS: previous and candidate image identities", flush=True)
     candidate = image_environment(env, new=True)
     validate_compose(current, candidate)
+    print("PASS: six-overlay Compose plan and preserved secrets/mounts", flush=True)
 
     if options.status:
         check_app_states(expect_new=True)
