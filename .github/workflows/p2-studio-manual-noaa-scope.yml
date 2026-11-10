@@ -5,7 +5,8 @@ on:
     paths:
       - "apps/worker/src/feed-studio-manual-noaa-selection.ts"
       - "apps/worker/src/feed-studio-manual-noaa-selection.test.ts"
-      - "apps/worker/src/feed-runtime-admission.ts"
+            apps/worker/src/feed-runtime-admission.ts
+      - "apps/worker/src/feed-runtime-admission.test.ts"
       - "apps/worker/src/feed-scheduler-composition.ts"
       - "apps/worker/src/feed-scheduler-composition.test.ts"
       - "docs/P2_STUDIO_MANUAL_NOAA_CONSUMER_SCOPE_2026_11_10.md"
@@ -39,6 +40,7 @@ jobs:
         run: |
           node --test \
             apps/worker/dist/feed-studio-manual-noaa-selection.test.js \
+            apps/worker/dist/feed-runtime-admission.test.js \
             apps/worker/dist/feed-canary-source-selection.test.js \
             apps/worker/dist/feed-scheduler-composition.test.js \
             apps/worker/dist/feed-separated-roles.test.js
