@@ -77,7 +77,9 @@ try {
   ]) {
     await assert.rejects(operation(), /NOPERM/);
   }
-  console.log("PASS: Studio status ACL authenticates and reads only exact feed completion evidence");
+  console.log(
+    "PASS: Studio status ACL authenticates and reads only exact feed completion evidence",
+  );
   console.log("PASS: writes, Lua, key enumeration, other jobs and other namespaces denied");
 } finally {
   if (status) await status.quit().catch(() => status.disconnect());
