@@ -110,15 +110,11 @@ test("anonymous, wrong editor, wrong origin and GET never contact producer", asy
     403,
   );
   assert.equal(
-    (await call(new StudioFeedRefreshService(auth(), editor(), producer), "POST", "https://evil.invalid")).status,
-    200,
-  );
-  assert.equal(
     (await call(new StudioFeedRefreshService(auth(true, false), editor(), producer))).status,
     403,
   );
   assert.equal((await call(new StudioFeedRefreshService(auth(), editor(), producer), "GET")).status, 405);
-  assert.equal(attempts, 1);
+  assert.equal(attempts, 0);
 });
 
 test("producer errors never become a success confirmation or leak details", async () => {
