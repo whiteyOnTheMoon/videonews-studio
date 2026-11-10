@@ -337,8 +337,7 @@ function validSourceArticleUrl(input: unknown): input is string {
     const url = new URL(input);
     return (
       url.protocol === "https:" &&
-      url.hostname.includes(".") &&
-      /^[a-z0-9.-]+$/.test(url.hostname) &&
+      /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/.test(url.hostname) &&
       url.username === "" &&
       url.password === "" &&
       url.port === "" &&
