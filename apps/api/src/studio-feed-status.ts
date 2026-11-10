@@ -35,12 +35,17 @@ function asSummary(raw: string | null): FeedJobSummary | null {
   try {
     const data: unknown = JSON.parse(raw);
     if (
-      data === null || typeof data !== "object" || Array.isArray(data) ||
+      data === null ||
+      typeof data !== "object" ||
+      Array.isArray(data) ||
       Object.keys(data).sort().join(",") !== "candidatesAdded,notModified,ok,sourcesExamined" ||
-      !("ok" in data) || data.ok !== true ||
-      !("sourcesExamined" in data) || !("candidatesAdded" in data) ||
+      !("ok" in data) ||
+      data.ok !== true ||
+      !("sourcesExamined" in data) ||
+      !("candidatesAdded" in data) ||
       !("notModified" in data)
-    ) return null;
+    )
+      return null;
     for (const key of ["sourcesExamined", "candidatesAdded", "notModified"] as const) {
       const value = data[key];
       if (!Number.isSafeInteger(value) || (value as number) < 0) return null;
@@ -49,7 +54,8 @@ function asSummary(raw: string | null): FeedJobSummary | null {
       (data.sourcesExamined as number) > 5 ||
       (data.notModified as number) > (data.sourcesExamined as number) ||
       (data.candidatesAdded as number) > 10000
-    ) return null;
+    )
+      return null;
     return {
       sourcesExamined: data.sourcesExamined as number,
       candidatesAdded: data.candidatesAdded as number,
@@ -111,10 +117,12 @@ export class StudioFeedStatusService {
     const slot = match ? Number(match[1]) : NaN;
     const slotMs = slot * SLOT_MS;
     if (
-      keys.length !== 1 || keys[0] !== "jobId" ||
+      keys.length !== 1 ||
+      keys[0] !== "jobId" ||
       !Number.isSafeInteger(slot) ||
       !Number.isSafeInteger(nowMs) ||
-      slotMs > nowMs || nowMs - slotMs > MAX_AGE_MS ||
+      slotMs > nowMs ||
+      nowMs - slotMs > MAX_AGE_MS ||
       req.headers["transfer-encoding"] !== undefined
     ) {
       reply(res, 400, { error: "invalid_request" });
@@ -130,14 +138,13 @@ export class StudioFeedStatusService {
         (evidence.completed !== null && typeof evidence.completed !== "string") ||
         (evidence.failed !== null && typeof evidence.failed !== "string") ||
         (evidence.returnvalue !== null && typeof evidence.returnvalue !== "string")
-      ) throw new Error("Untrusted Redis evidence");
+      )
+        throw new Error("Untrusted Redis evidence");
       if (completed) {
         const stamp = Number(evidence.completed);
         const summary = asSummary(evidence.returnvalue);
-        if (
-          !summary || !Number.isSafeInteger(stamp) ||
-          stamp < slotMs || stamp > nowMs
-        ) throw new Error("Invalid completed job");
+        if (!summary || !Number.isSafeInteger(stamp) || stamp < slotMs || stamp > nowMs)
+          throw new Error("Invalid completed job");
         reply(res, 200, {
           jobId,
           state: "completed",
@@ -147,13 +154,19 @@ export class StudioFeedStatusService {
         });
       } else if (failed) {
         reply(res, 200, {
-          jobId, state: "failed", finishedAt: null, summary: null,
+          jobId,
+          state: "failed",
+          finishedAt: null,
+          summary: null,
           publishingAllowed: false,
         });
       } else {
         reply(res, 200, {
-          jobId, state: evidence.exists === 1 ? "pending" : "unknown",
-          finishedAt: null, summary: null, publishingAllowed: false,
+          jobId,
+          state: evidence.exists === 1 ? "pending" : "unknown",
+          finishedAt: null,
+          summary: null,
+          publishingAllowed: false,
         });
       }
     } catch {
@@ -173,12 +186,14 @@ function secretFile(): string {
     fd = openSync(SECRET, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = fstatSync(fd);
     if (
-      !stat.isFile() || stat.nlink !== 1 ||
+      !stat.isFile() ||
+      stat.nlink !== 1 ||
       (stat.mode & 0o077) !== 0 ||
-      stat.size < 40 || stat.size > 256 ||
-      (typeof process.getuid === "function" &&
-        stat.uid !== 0 && stat.uid !== process.getuid())
-    ) throw new Error("Untrusted feed status credential");
+      stat.size < 40 ||
+      stat.size > 256 ||
+      (typeof process.getuid === "function" && stat.uid !== 0 && stat.uid !== process.getuid())
+    )
+      throw new Error("Untrusted feed status credential");
     const password = readFileSync(fd, "utf8").trimEnd();
     if (!/^[A-Za-z0-9_-]{40,256}$/.test(password)) {
       throw new Error("Invalid feed status credential");
@@ -199,15 +214,18 @@ export function studioFeedStatusFromEnv(
 ): StudioFeedStatusService | undefined {
   if (env.VNS_STUDIO_FEED_STATUS_API_ENABLED !== "true") return undefined;
   if (
-    !auth || !editor ||
+    !auth ||
+    !editor ||
     env.VNS_STUDIO_FEED_STATUS_OPERATOR_ACK !== "true" ||
     env.VNS_STUDIO_FEED_STATUS_REDIS_HOST !== "redis" ||
     !USERNAME.test(env.VNS_STUDIO_FEED_STATUS_REDIS_USER ?? "") ||
     env.VNS_STUDIO_FEED_STATUS_REDIS_PASSWORD_FILE !== SECRET ||
     env.VNS_FEED_SOURCE_BOOTSTRAP !== "false"
-  ) throw new Error("Studio status reader not authorized");
+  )
+    throw new Error("Studio status reader not authorized");
   const redis = new Redis({
-    host: "redis", port: 6379,
+    host: "redis",
+    port: 6379,
     username: env.VNS_STUDIO_FEED_STATUS_REDIS_USER,
     password: secretFile(),
     lazyConnect: true,
