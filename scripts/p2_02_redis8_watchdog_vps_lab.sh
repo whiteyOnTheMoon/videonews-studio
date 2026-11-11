@@ -149,7 +149,7 @@ EOF
     STARTED_EPOCH="$(date -u -d "$LAST_STARTED" +%s)"
     (( STARTED_EPOCH > PAUSED_AT )) || fail
     journalctl --user -u "$UNIT.service" --since "@$PAUSED_AT" \
-      --no-pager --output=cat | grep -Fxq "LAB_UNPAUSE_ATTEMPTED=true" || fail
+      --no-pager --output=cat | grep -Fx "LAB_UNPAUSE_ATTEMPTED=true" >/dev/null || fail
     [[ -n "$(systemctl --user show "$UNIT.timer" \
       -p LastTriggerUSec --value)" ]] || fail
     echo "LAB_INDEPENDENT_TIMER_RELEASE=PASS"
