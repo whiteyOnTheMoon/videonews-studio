@@ -1,0 +1,40 @@
+name: P2-02 Redis-only maintenance guard and isolated AOF rollback
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_redis_only_maintenance.py"
+      - "scripts/test_p2_02_redis_only_maintenance.py"
+      - "scripts/ci_p2_02_redis_only_rehearsal.py"
+      - "docs/P2_02_REDIS_ONLY_MAINTENANCE_2026_11_11.md"
+      - ".github/workflows/p2-02-redis-only-maintenance.yml"
+permissions:
+  contents: read
+concurrency:
+  group: redis-only-maintenance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  offline-guard-and-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      VNS_REDIS_ONLY_MAINTENANCE_CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Check formatting and lint without changing files
+        run: |
+          npm ci --no-audit --no-fund
+          npm run format:check
+          npm run lint
+      - name: Test read-only Redis-only operator and fail-closed cases
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_02_redis_only_maintenance.py' -v
+      - name: Rehearse pinned Redis 8 AOF cutover and rollback in disposable Docker
+        run: python3 scripts/ci_p2_02_redis_only_rehearsal.py
