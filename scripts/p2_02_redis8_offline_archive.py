@@ -21,8 +21,10 @@ MANIFEST = "appendonly.aof.manifest"
 BASE = re.compile(r"appendonly\.aof\.([1-9][0-9]*)\.base\.(rdb|aof)\Z")
 INCR = re.compile(r"appendonly\.aof\.([1-9][0-9]*)\.incr\.aof\Z")
 LINE = re.compile(
-    r"file ([a-zA-Z0-9_.-]+) seq ([1-9][0-9]*) type ([bi])\Z"
+    r"file ([a-zA-Z0-9_.-]+) seq ([1-9][0-9]*) type ([bi])"
+    r"(?: startoffset (0|[1-9][0-9]*)(?: endoffset (0|[1-9][0-9]*))?)?\Z"
 )
+
 REFUSED = "REFUSED: offline Redis 8 AOF archive validation failed"
 
 
@@ -114,7 +116,11 @@ def manifest_entries(raw: bytes) -> list[str]:
         item = LINE.fullmatch(line)
         if item is None:
             deny()
-        name, sequence, kind = item.groups()
+        name, sequence, kind, start_offset, end_offset = item.groups()
+        if (kind == "b" and start_offset is not None):
+            deny()
+        if (end_offset is not None and int(end_offset) < int(start_offset)):
+            deny()
         base = BASE.fullmatch(name)
         increment = INCR.fullmatch(name)
         if kind == "b" and base and index == 0:
