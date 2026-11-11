@@ -6,6 +6,7 @@ on:
       - "scripts/p2_02_redis8_offline_archive.py"
       - "scripts/test_p2_02_redis8_offline_archive.py"
       - "scripts/ci_p2_02_redis8_offline_restore.py"
+      - "scripts/ci_p2_02_redis8_paused_capture.py"
       - "docs/P2_02_REDIS8_OFFLINE_ARCHIVE_2026_11_11.md"
       - ".github/workflows/p2-02-redis8-offline-archive.yml"
 permissions:
@@ -16,11 +17,12 @@ concurrency:
 jobs:
   synthetic-offline-archive-guard:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       PYTHONDONTWRITEBYTECODE: "1"
       CI: "true"
       VNS_P2_REDIS8_RESTORE_CI: "true"
+      VNS_P2_REDIS8_PAUSE_CI: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Offline archive validator unit tests (synthetic only)
@@ -29,6 +31,8 @@ jobs:
             -p 'test_p2_02_redis8_offline_archive.py' -v
       - name: Verify independent Redis 8 replay on synthetic stopped-source AOF
         run: python3 scripts/ci_p2_02_redis8_offline_restore.py
+      - name: Rehearse paused synthetic AOF capture and networkless recovery
+        run: python3 scripts/ci_p2_02_redis8_paused_capture.py
       - name: Assert no compilation artifacts
         run: |
           test -z "$(git status --porcelain)"
