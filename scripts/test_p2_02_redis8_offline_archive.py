@@ -126,6 +126,42 @@ class ArchiveTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     proof.compare_with_independent_inventory(self.root, bad)
 
+    def test_redis84_stopped_source_offsets_accepted(self) -> None:
+        incr = f"file {INCR} seq 1 type i"
+        for suffix in (" startoffset 0", " startoffset 0 endoffset 2"):
+            with self.subTest(suffix=suffix):
+                (self.part / proof.MANIFEST).write_text(
+                    GOOD.replace(incr, incr + suffix), encoding="ascii"
+                )
+                self.assertEqual(len(proof.inspect_archive(self.root)["files"]), 3)
+
+    def test_invalid_offset_variants_refused(self) -> None:
+        incr = f"file {INCR} seq 1 type i"
+        for suffix in (
+            " endoffset 2",
+            " startoffset -1",
+            " startoffset 01",
+            " startoffset 3 endoffset 2",
+            " startoffset 1 endoffset -1",
+            " startoffset 0 endoffset 2 garbage x",
+            " startoffset 0 startoffset 1",
+        ):
+            with self.subTest(suffix=suffix):
+                (self.part / proof.MANIFEST).write_text(
+                    GOOD.replace(incr, incr + suffix), encoding="ascii"
+                )
+                with self.assertRaises(ValueError):
+                    proof.inspect_archive(self.root)
+
+    def test_base_offsets_refused(self) -> None:
+        base = f"file {BASE} seq 1 type b"
+        (self.part / proof.MANIFEST).write_text(
+            GOOD.replace(base, base + " startoffset 0 endoffset 2"),
+            encoding="ascii",
+        )
+        with self.assertRaises(ValueError):
+            proof.inspect_archive(self.root)
+
     def test_directory_symlink_refused(self) -> None:
         link = Path(self.temp.name) / "link"
         link.symlink_to(self.root, target_is_directory=True)
