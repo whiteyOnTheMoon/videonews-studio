@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -220,21 +221,24 @@ def verify(expected_sha: str, *, postcheck: bool = False) -> dict:
     if (not stat.S_ISREG(st.st_mode) or st.st_nlink != 1
             or stat.S_IMODE(st.st_mode) != 0o644 or st.st_uid != os.getuid()):
         raise RuntimeError(REFUSED)
-    os.chdir(ROOT)
     disk = os.statvfs("/var/lib/docker")
     result = redis_assessment(
         definition, live, image_id, inode, (st.st_dev, st.st_ino),
         disk.f_bavail * disk.f_frsize,
     )
     mounted_current = result["acl_mount_current_inode"]
-    if mounted_current is postcheck:
-        pass
-    else:
+    if mounted_current != postcheck:
         raise RuntimeError(REFUSED)
     if postcheck:
         endpoint = (live.get("NetworkSettings") or {}).get("Networks", {}).get(NETWORK, {})
         ip = endpoint.get("IPAddress")
-        if not isinstance(ip, str) or not re.fullmatch(r"172\.[0-9.]+|10\.[0-9.]+|192\.168\.[0-9.]+", ip):
+        try:
+            address = ipaddress.ip_address(ip)
+        except ValueError:
+            raise RuntimeError(REFUSED) from None
+        if (not isinstance(address, ipaddress.IPv4Address)
+                or not address.is_private or address.is_loopback
+                or address.is_link_local):
             raise RuntimeError(REFUSED)
         check_status_auth(ip, read_private_status_password())
         result["studio_status_auth_and_foreign_key_denial"] = True
