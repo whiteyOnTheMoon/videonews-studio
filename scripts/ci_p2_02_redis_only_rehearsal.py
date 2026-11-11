@@ -168,10 +168,11 @@ def main() -> None:
                 "vns_worker", PASSWORD,
                 "ZADD bull:vns:vns-jobs:completed 12345 p107-ci-probe",
                 "ZADD bull:vns:feed:vns-feed-poll:completed 12345 vns-feed-tick-12345",
-                'HSET bull:vns:feed:vns-feed-poll:vns-feed-tick-12345 returnvalue {"ok":true,"sourcesExamined":1,"candidatesAdded":2,"notModified":0}',
+                "HSET bull:vns:feed:vns-feed-poll:vns-feed-tick-12345 returnvalue '{\"ok\":true,\"sourcesExamined\":1,\"candidatesAdded\":2,\"notModified\":0}'",
             )
             if lines != ["1", "1", "1"]:
-                raise RuntimeError("Synthetic baseline not created")
+                classes = [v if v in {"0", "1", "2"} else "OTHER" for v in lines]
+                raise RuntimeError(f"Synthetic baseline write result classes: {classes}")
             assert_job_data()
 
             candidate.write_bytes(baseline + acl_line((STATUS + "\n").encode("ascii")))
