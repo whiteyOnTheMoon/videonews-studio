@@ -94,19 +94,25 @@ def main() -> None:
         restored = root / "restored"
         source.mkdir(mode=0o700)
         try:
+            print("CI_STAGE=source_start", flush=True)
             start(SOURCE, source)
+            print("CI_STAGE=source_ready", flush=True)
             first = docker("exec", SOURCE, "redis-cli", "ZADD",
                            "bull:vns:vns-jobs:completed", "12345", "ci-p1")
             second = docker("exec", SOURCE, "redis-cli", "ZADD",
                             "bull:vns:feed:vns-feed-poll:completed", "67890", "ci-p2")
             if first != "1" or second != "1" or not data_matches(SOURCE):
                 raise RuntimeError(REFUSED)
+            print("CI_STAGE=source_seeded", flush=True)
             docker("stop", "--time", "15", SOURCE, timeout=35)
+            print("CI_STAGE=source_stopped", flush=True)
 
             # Only an already stopped synthetic source is copied.
             inventory = archive.inspect_archive(source)
+            print("CI_STAGE=source_inventory", flush=True)
             shutil.copytree(source, restored, symlinks=True)
             result = archive.compare_with_independent_inventory(restored, inventory)
+            print("CI_STAGE=first_copy_validated", flush=True)
             if not (result["layout_checked"] and result["inventory_match"]):
                 raise RuntimeError(REFUSED)
 
@@ -125,11 +131,14 @@ def main() -> None:
             else:
                 raise RuntimeError(REFUSED)
 
+            print("CI_STAGE=tampering_rejected", flush=True)
             # Fresh independent copy (never mount the original synthetic source).
             shutil.rmtree(restored)
             shutil.copytree(source, restored, symlinks=True)
             archive.compare_with_independent_inventory(restored, inventory)
+            print("CI_STAGE=second_copy_validated", flush=True)
             start(TARGET, restored)
+            print("CI_STAGE=restore_started", flush=True)
             if not data_matches(TARGET):
                 raise RuntimeError(REFUSED)
             if docker("exec", TARGET, "redis-cli", "INFO", "persistence").find(
