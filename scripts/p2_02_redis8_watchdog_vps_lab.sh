@@ -9,6 +9,7 @@ readonly ROOT="/home/ap/www/videonews-studio"
 readonly NAME="vns-p2-redis-watchdog-lab-20261111"
 readonly DATA="/run/user/1000/$NAME-data"
 readonly IDENTITY="$DATA/identity.txt"
+readonly PAUSE_MARKER="$DATA/pause-marker.txt"
 readonly UNIT="$NAME"
 readonly SERVICE="$HOME/.config/systemd/user/$UNIT.service"
 readonly TIMER="$HOME/.config/systemd/user/$UNIT.timer"
@@ -106,7 +107,8 @@ EOF
 Description=VNS independent synthetic Redis unpause lab timer
 
 [Timer]
-OnActiveSec=120s
+OnActiveSec=45s
+OnUnitInactiveSec=15s
 AccuracySec=1s
 Unit=$UNIT.service
 EOF
@@ -122,9 +124,13 @@ EOF
     # The independent user-systemd timer is armed BEFORE pausing the lab.
     docker pause "$CID" >/dev/null
     [[ "$(docker inspect --format '{{.State.Paused}}' "$CID")" == true ]] || fail
+    [[ ! -e "$PAUSE_MARKER" && ! -L "$PAUSE_MARKER" ]] || fail
+    date -u +%s > "$PAUSE_MARKER"
+    chmod 600 "$PAUSE_MARKER"
     echo "LAB_TIMER_ARMED=true"
     echo "LAB_CONTAINER_PAUSED=true"
-    echo "LAB_RELEASE_DELAY_SECONDS=120"
+    echo "LAB_FIRST_RELEASE_DELAY_SECONDS=45"
+    echo "LAB_RECHECK_INTERVAL_SECONDS=15"
     echo "PRODUCTION_REDIS_TOUCHED=false"
     echo "OPERATOR_EXITS_WITHOUT_UNPAUSING=true"
     ;;
@@ -132,9 +138,18 @@ EOF
     read_identity
     policy_check
     [[ "$(docker inspect --format '{{.State.Paused}}' "$CID")" == false ]] || fail
+    [[ -f "$PAUSE_MARKER" && ! -L "$PAUSE_MARKER" ]] || fail
+    [[ "$(stat -c '%u:%a' "$PAUSE_MARKER")" == 1000:600 ]] || fail
+    PAUSED_AT="$(cat "$PAUSE_MARKER")"
+    [[ "$PAUSED_AT" =~ ^[0-9]{10}$ ]] || fail
     [[ "$(systemctl --user show "$UNIT.service" -p Result --value)" == success ]] || fail
-    [[ -n "$(systemctl --user show "$UNIT.service" \
-      -p ExecMainStartTimestamp --value)" ]] || fail
+    LAST_STARTED="$(systemctl --user show "$UNIT.service" \
+      -p ExecMainStartTimestamp --value)"
+    [[ -n "$LAST_STARTED" ]] || fail
+    STARTED_EPOCH="$(date -u -d "$LAST_STARTED" +%s)"
+    (( STARTED_EPOCH > PAUSED_AT )) || fail
+    journalctl --user -u "$UNIT.service" --since "@$PAUSED_AT" \
+      --no-pager --output=cat | grep -Fxq "LAB_UNPAUSE_ATTEMPTED=true" || fail
     [[ -n "$(systemctl --user show "$UNIT.timer" \
       -p LastTriggerUSec --value)" ]] || fail
     echo "LAB_INDEPENDENT_TIMER_RELEASE=PASS"
@@ -154,7 +169,7 @@ EOF
     systemctl --user stop "$UNIT.timer"
     systemctl --user stop "$UNIT.service" || true
     docker rm -f "$CID" >/dev/null
-    rm -- "$SERVICE" "$TIMER" "$IDENTITY"
+    rm -- "$SERVICE" "$TIMER" "$IDENTITY" "$PAUSE_MARKER"
     systemctl --user daemon-reload
     rmdir -- "$DATA"
     echo "LAB_CLEANUP=PASS"
