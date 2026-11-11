@@ -108,19 +108,6 @@ def main() -> None:
             print("CI_STAGE=source_stopped", flush=True)
 
             # Only an already stopped synthetic source is copied.
-            # Redacted synthetic-only debugging: names and size classes only.
-            names = sorted(p.name for p in source.iterdir())
-            print("CI_ARCHIVE_ROOT=" + ",".join(names), flush=True)
-            if (source / "appendonlydir").is_dir():
-                for component in sorted((source / "appendonlydir").iterdir()):
-                    print("CI_ARCHIVE_FILE=" + component.name
-                          + "|size=" + str(component.stat().st_size), flush=True)
-            # CI-only: synthetic Redis manifest contains filenames, never jobs.
-            lines = (source / "appendonlydir" / "appendonly.aof.manifest").read_text(
-                encoding="ascii"
-            ).splitlines()
-            for line in lines:
-                print("CI_SYNTHETIC_MANIFEST=" + line, flush=True)
             inventory = archive.inspect_archive(source)
             print("CI_STAGE=source_inventory", flush=True)
             shutil.copytree(source, restored, symlinks=True)
