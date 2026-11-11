@@ -115,6 +115,12 @@ def main() -> None:
                 for component in sorted((source / "appendonlydir").iterdir()):
                     print("CI_ARCHIVE_FILE=" + component.name
                           + "|size=" + str(component.stat().st_size), flush=True)
+            # CI-only: synthetic Redis manifest contains filenames, never jobs.
+            lines = (source / "appendonlydir" / "appendonly.aof.manifest").read_text(
+                encoding="ascii"
+            ).splitlines()
+            for line in lines:
+                print("CI_SYNTHETIC_MANIFEST=" + line, flush=True)
             inventory = archive.inspect_archive(source)
             print("CI_STAGE=source_inventory", flush=True)
             shutil.copytree(source, restored, symlinks=True)
