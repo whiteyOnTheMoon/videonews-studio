@@ -92,8 +92,8 @@ def validate(observation: dict) -> None:
             refuse()
         for field in ("device", "inode", "size", "mtime_ns", "ctime_ns"):
             number(item[field], minimum=1)
-    bases = sum(bool(re.fullmatch(r"appendonly\\.aof\\.[1-9][0-9]*\\.base\\.(?:rdb|aof)", x)) for x in seen)
-    incrs = sum(bool(re.fullmatch(r"appendonly\\.aof\\.[1-9][0-9]*\\.incr\\.aof", x)) for x in seen)
+    bases = sum(name.endswith((".base.rdb", ".base.aof")) for name in seen)
+    incrs = sum(name.endswith(".incr.aof") for name in seen)
     if "appendonly.aof.manifest" not in seen or bases != 1 or incrs < 1:
         refuse()
 
