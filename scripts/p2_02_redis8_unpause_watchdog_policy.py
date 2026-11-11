@@ -82,6 +82,14 @@ def classify(raw: dict, expected: ExpectedTarget) -> str:
             or not isinstance(mounts, list)):
         refuse()
     labels = config.get("Labels")
+    network = raw.get("NetworkSettings")
+    if not isinstance(network, dict):
+        refuse()
+    ports = network.get("Ports")
+    if (ports is not None
+            and (not isinstance(ports, dict)
+                 or any(value not in (None, []) for value in ports.values()))):
+        refuse()
     if (raw.get("Id") != expected.id
             or raw.get("Name") != "/" + expected.name
             or raw.get("Image") != expected.image_id
@@ -97,7 +105,7 @@ def classify(raw: dict, expected: ExpectedTarget) -> str:
                 "paused" if state.get("Paused") else "running"
             )
             or host.get("PortBindings") not in (None, {})
-            or raw.get("NetworkSettings", {}).get("Ports") not in (None, {})):
+            ):
         refuse()
     data = [item for item in mounts if isinstance(item, dict)
             and item.get("Destination") == "/data"]
