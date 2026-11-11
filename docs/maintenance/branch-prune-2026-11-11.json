@@ -3,7 +3,7 @@
   "repository": "whiteyOnTheMoon/videonews-studio",
   "releaseBase": "6fd5732c237f0747850fdce1f13482a796abb63b",
   "ownBranch": "maintenance/p1-02-merged-branch-prune-20261111",
-  "ownPr": null,
+  "ownPr": 501,
   "expectedCandidates": 182,
   "candidates": [
     {
