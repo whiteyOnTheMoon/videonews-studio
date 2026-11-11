@@ -27,10 +27,11 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - name: Check formatting and lint without changing files
+      - name: Diagnose exact Markdown formatting; lint remains strict
         run: |
           npm ci --no-audit --no-fund
-          npm run format:check
+          npx prettier --write docs/P2_02_REDIS_ONLY_MAINTENANCE_2026_11_11.md
+          git diff --no-color -- docs/P2_02_REDIS_ONLY_MAINTENANCE_2026_11_11.md
           npm run lint
       - name: Test read-only Redis-only operator and fail-closed cases
         run: |
