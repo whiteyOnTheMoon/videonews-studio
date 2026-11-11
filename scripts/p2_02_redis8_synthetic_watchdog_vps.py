@@ -134,6 +134,7 @@ def run(argv: list[str]) -> None:
     )
     if not result["identity_verified"]:
         raise RuntimeError(REFUSED)
+    print("LAB_UNPAUSE_ATTEMPTED=" + str(result["unpause_attempted"]).lower())
     print("LAB_UNPAUSE_POLICY_PASS=true")
     print("LAB_RUNNING_AFTER_UNPAUSE=true")
     print("PRODUCTION_TARGET_ADMITTED=false")
