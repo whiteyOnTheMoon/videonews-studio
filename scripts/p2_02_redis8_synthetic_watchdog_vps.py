@@ -88,7 +88,8 @@ def check_only_synthetic(raw: dict, expected: ExpectedTarget) -> None:
             or host.get("Privileged") is not False
             or "ALL" not in (host.get("CapDrop") or [])
             or config.get("User") != "1000:1000"
-            or networks not in ({}, {"none": networks.get("none")} if isinstance(networks, dict) and "none" in networks else {})):
+            or not isinstance(networks, dict)
+            or set(networks) != {"none"}):
         raise RuntimeError(REFUSED)
     if status not in ("paused", "running"):
         raise RuntimeError(REFUSED)
@@ -119,7 +120,8 @@ def run(argv: list[str]) -> None:
             or stat.S_IMODE(st.st_mode) != 0o700):
         raise RuntimeError(REFUSED)
 
-    read = lambda cid: strict_read(cid, target)
+    def read(cid: str) -> dict:
+        return strict_read(cid, target)
     state = classify(read(target.id), target)
     if args.check:
         print("LAB_TARGET_EXACT_ID_VERIFIED=true")
