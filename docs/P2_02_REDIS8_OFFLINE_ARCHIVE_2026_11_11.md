@@ -40,6 +40,34 @@ This test NEVER reads a real Docker volume, and its source is fully stopped.
 The CI replay is not evidence of consistency or recoverability of real VPS
 data. No real credentials or job contents are used.
 
+
+## CI-only paused capture alternative — NOT production authorization
+
+The second CI rehearsal `ci_p2_02_redis8_paused_capture.py` deliberately pauses
+**only a disposable synthetic Redis container**, copies the three-file AOF while
+paused into another private directory, removes the synthetic source, then
+replays only the independent copy without a network. It is a candidate for
+avoiding the need to grant a live `CONFIG SET` ACL to a production identity.
+
+A production Redis `docker pause` is **service-disrupting**, even if brief.
+It can interrupt API, BullMQ worker connections, and job delivery. A future
+live procedure must therefore include all of the following before execution:
+
+- A verified, bounded pause duration, with an *independent unpause watchdog*
+  installed, tested, and capable of recovering if the operator is interrupted,
+  exits unexpectedly, receives SIGKILL, or loses its terminal.
+- A production job/producer quiescence gate and explicit P1-worker risk review.
+- A pinned, read-only source mount, new isolated destination and fail-closed
+  metadata/persistence guards; no raw AOF bytes in logs or repository.
+- Owner-only backup permissions, independent provenance custody and offsite
+  recovery access verification.
+- Replay in a separate Redis 8.4.8 instance, with trusted P1/P2 baseline
+  comparisons and zero connection to the running Redis network.
+
+The CI script's `finally` cleanup is **not** a crash-proof watchdog and does
+not authorize this procedure on any VPS. An aborted or interrupted production
+pause without an independent failsafe is unacceptable.
+
 ## Requirements before live capture and recovery acceptance
 
 1. Separately implement and CI-test a root-controlled capture operator with the
