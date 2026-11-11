@@ -1,0 +1,920 @@
+{
+  "schemaVersion": 1,
+  "repository": "whiteyOnTheMoon/videonews-studio",
+  "releaseBase": "6fd5732c237f0747850fdce1f13482a796abb63b",
+  "ownBranch": "maintenance/p1-02-merged-branch-prune-20261111",
+  "ownPr": null,
+  "expectedCandidates": 182,
+  "candidates": [
+    {
+      "branch": "codex/p2-03-noaa-project-once-operator-20261108",
+      "sha": "6d950989da767719fd1dd7635b822c5fb0c24e07",
+      "pr": 464
+    },
+    {
+      "branch": "codex/p2-03-noaa-projector-readonly-preflight-20261108",
+      "sha": "1113865d0c3782bf637b90861a5db3171596594a",
+      "pr": 463
+    },
+    {
+      "branch": "codex/p2-04-0063-operator-schema-gate-20261108",
+      "sha": "862778633ca171e1f68fa57c7b26de1a8ddf9805",
+      "pr": 466
+    },
+    {
+      "branch": "codex/p2-04-authenticated-feed-inbox-20261108",
+      "sha": "862bab6754d8b3bb8b550107636e83fa729c836a",
+      "pr": 465
+    },
+    {
+      "branch": "codex/p2-04-local-admin-cutover-20261108",
+      "sha": "fb140d0798e31f73759f0f8b26f6109a83981e5c",
+      "pr": 468
+    },
+    {
+      "branch": "codex/p2-04-memory-bounded-local-build-20261108",
+      "sha": "41f017a2c83c9b68b8e50d5469541e881396e3eb",
+      "pr": 467
+    },
+    {
+      "branch": "docs/p1-04-ghcr-tty-provisioning-guard",
+      "sha": "0d9d05df27b29e99e75d80d5ec056a5448b5ae31",
+      "pr": 376
+    },
+    {
+      "branch": "docs/p1-final-release-gates-20261027",
+      "sha": "42696f79b4a3cc8b0e098d39993a22945ba395fd",
+      "pr": 300
+    },
+    {
+      "branch": "docs/p2-01-04-official-publisher-rights-provenance-review",
+      "sha": "155653b56feecbac45ce99889b029ccba6d34e2b",
+      "pr": 459
+    },
+    {
+      "branch": "docs/p2-02-article-query-identity-contract",
+      "sha": "3e5e3c5e369e45771d3c748b52914bd0a0bc5fdf",
+      "pr": 453
+    },
+    {
+      "branch": "docs/p2-02-noaa-10-10-readiness-witness",
+      "sha": "bea48c15a0c3dd597c128cd9e9be94abaf1df27e",
+      "pr": 460
+    },
+    {
+      "branch": "docs/p2-02-usgs-nontracking-query-blocker",
+      "sha": "26c17559d6971cc197bcfc146a43ee56e6c0b521",
+      "pr": 441
+    },
+    {
+      "branch": "docs/p2-operator-backup-monitoring-status-20261028",
+      "sha": "24047daa33e5d8b26254728af650485d96951888",
+      "pr": 345
+    },
+    {
+      "branch": "feat/p1-09-atomic-provider-budget-ledger",
+      "sha": "f4c9afd9ceec18a77e74ff5a589a1b09448a30ba",
+      "pr": 307
+    },
+    {
+      "branch": "feat/p1-09-claimed-secret-custody-0043",
+      "sha": "bb5e9063a96b92b75013aefd7809f68ee1de3ec1",
+      "pr": 315
+    },
+    {
+      "branch": "feat/p1-09-controlled-schema-0018-to-0043",
+      "sha": "fb19e480b75df7a82ef10f2367419eb469be26f2",
+      "pr": 318
+    },
+    {
+      "branch": "feat/p1-09-dormant-budget-worker-bridge",
+      "sha": "d70d32a187a72f7670a77583aa41495c6cedd874",
+      "pr": 308
+    },
+    {
+      "branch": "feat/p1-09-dormant-native-text-transport",
+      "sha": "8a8dbd51bcda35d30c776b0699dc0af5d9f6ca1e",
+      "pr": 314
+    },
+    {
+      "branch": "feat/p1-09-guarded-live-schema-0013-0018",
+      "sha": "68a48c203a7fa5c664575037bfd218ebb3c74506",
+      "pr": 301
+    },
+    {
+      "branch": "feat/p1-09-named-admin-runtime-integration",
+      "sha": "cc73c0d68a29de8f638bce202230bc0e133f6a2b",
+      "pr": 303
+    },
+    {
+      "branch": "feat/p1-09-named-price-fx-review-0041",
+      "sha": "02b2133093b9a9929512e8b86398ae51a8d6f07d",
+      "pr": 312
+    },
+    {
+      "branch": "feat/p1-09-native-usage-priced-admission",
+      "sha": "cab5bb399cd0ec42d514bedd540e605be89dd626",
+      "pr": 306
+    },
+    {
+      "branch": "feat/p1-09-offline-eur-fx-spend-gate",
+      "sha": "312157a856cb7c86bf0ac0f6d7eced8de23ba280",
+      "pr": 311
+    },
+    {
+      "branch": "feat/p1-09-one-shot-provider-dispatch-claim",
+      "sha": "f4d3261f974b968c236b4eacfbfa3a3c62c9a78d",
+      "pr": 309
+    },
+    {
+      "branch": "feat/p1-09-personal-admin-first-operator-bootstrap",
+      "sha": "55db498cffd06ee5e2896d4d1cc60853c3e1d43f",
+      "pr": 304
+    },
+    {
+      "branch": "feat/p1-09-provider-usage-admission-contract",
+      "sha": "9ff3c5e01764fe3a1d13eb65efb5d1648213c030",
+      "pr": 299
+    },
+    {
+      "branch": "feat/p1-09-provider-usage-immutable-ledger-0036",
+      "sha": "df7accf4783eee45d99da36ad3674171ed2d4d16",
+      "pr": 302
+    },
+    {
+      "branch": "feat/p1-09-provider-worker-login-provisioning",
+      "sha": "e8cc5c657868589808600c97aa28d813410fd199",
+      "pr": 317
+    },
+    {
+      "branch": "feat/p1-09-provider-writer-key-custody",
+      "sha": "923aa7b56e68de120ec1d0d076b4dbf7101f5048",
+      "pr": 305
+    },
+    {
+      "branch": "feat/p1-09-reviewed-model-selection-0042",
+      "sha": "6bc1d7cde1c0bc66d3af4538f61987aa9b23b724",
+      "pr": 313
+    },
+    {
+      "branch": "feat/p1-09-separated-provider-worker-preflight",
+      "sha": "f1501d3f631c74adb75b35ecbee8c8f8beb32238",
+      "pr": 316
+    },
+    {
+      "branch": "feat/p2-01-reviewed-feed-url-scope-20261029",
+      "sha": "71c5bd86aa0ace7abfc831f036a76f3167b1e735",
+      "pr": 358
+    },
+    {
+      "branch": "feat/p2-02-nasa-exact-512k-dormant-review",
+      "sha": "c55dfeaf7b52058cd655c12a76c64fa15a044069",
+      "pr": 450
+    },
+    {
+      "branch": "feat/p2-02-nasa-fixed-code-decode-diagnostics",
+      "sha": "84b6a659beed2bcc4a91194e22ff89f2a716dd1a",
+      "pr": 451
+    },
+    {
+      "branch": "feat/p2-02-nasa-query-classification-counts",
+      "sha": "bcd66eb154d61fd01509fb08c4e3e7869e30e586",
+      "pr": 455
+    },
+    {
+      "branch": "feat/p2-02-nasa-readonly-historical-bullmq-review",
+      "sha": "dc6779b1da90ba469519e749511f24f7d40afd7f",
+      "pr": 446
+    },
+    {
+      "branch": "feat/p2-02-nasa-readonly-queue-preflight",
+      "sha": "3ebc548646911ebf2b480c73e1e172640bdc6baa",
+      "pr": 443
+    },
+    {
+      "branch": "feat/p2-02-nasa-redacted-metadata-rejections",
+      "sha": "e593b990afbd4a20d9ad8ae8725f79a7e9a8a817",
+      "pr": 452
+    },
+    {
+      "branch": "feat/p2-02-nasa-single-source-canary",
+      "sha": "1cbab463e8e1f7485ff02d4360046783e85e88ae",
+      "pr": 442
+    },
+    {
+      "branch": "feat/p2-02-noaa-once-authorized-operator",
+      "sha": "0c735991e004ea54f0b8da1842f356f73e263ccf",
+      "pr": 461
+    },
+    {
+      "branch": "feat/p2-02-offline-query-identity-prototype",
+      "sha": "febcd8152ede91a923025d7553cb7d3d692eb035",
+      "pr": 454
+    },
+    {
+      "branch": "feat/p2-02-usgs-readonly-single-get-probe",
+      "sha": "78efcd2661e26b1e997a332409013cd4a96bb655",
+      "pr": 437
+    },
+    {
+      "branch": "feat/p2-02-usgs-tracking-key-dryrun-proof",
+      "sha": "9647203556fdd1f24450d8048914b5d3fd93da68",
+      "pr": 440
+    },
+    {
+      "branch": "feat/p2-04-ranking-empty-state-explains-unranked-events",
+      "sha": "e2b596b5fc347bfbdb1f3ed52ce15766a5021ce4",
+      "pr": 456
+    },
+    {
+      "branch": "feat/p2-04-readonly-multisource-readiness",
+      "sha": "2c3878b07d68c8467a2e6c6b6fcdae0527b85051",
+      "pr": 458
+    },
+    {
+      "branch": "feat/p2-04-schema-0065-safety-gate-20261110",
+      "sha": "197026676eb87a46e829c95c94f1410152c0d041",
+      "pr": 491
+    },
+    {
+      "branch": "feat/p2-04-web-only-ghcr-release-gate",
+      "sha": "f97546820182dc118a07b9b2d65280c2efff4a4e",
+      "pr": 457
+    },
+    {
+      "branch": "feat/p2-05-10-claim-checkpoint-handoff-20261028",
+      "sha": "d8f555cbd3e229bf2bcf4ec5571b624e907b5090",
+      "pr": 352
+    },
+    {
+      "branch": "feat/p2-a-canonical-fingerprint-unified-match-0059",
+      "sha": "195323bf7cdec8eeda160aa5d07296c7b710c18b",
+      "pr": 368
+    },
+    {
+      "branch": "feat/p2-a-continuous-multisource-rank-projector-20261029",
+      "sha": "e1059bc66938b2c5922478b6b5d406d3c70912b9",
+      "pr": 355
+    },
+    {
+      "branch": "feat/p2-a-event-48hour-exact-guard-0058-20261029",
+      "sha": "f3e96efbaabe50ff2754a5a82e89ca89c6e18443",
+      "pr": 367
+    },
+    {
+      "branch": "feat/p2-a-failclosed-ranking-read-0056-20261029",
+      "sha": "47b0e0683227dfcdb06e546022226ed8c96c5d8f",
+      "pr": 365
+    },
+    {
+      "branch": "feat/p2-a-guarded-schema-0049-0059",
+      "sha": "f1d7244653fa77764bf5fe4dad6bffd2f8a79d7b",
+      "pr": 371
+    },
+    {
+      "branch": "feat/p2-a-named-ranking-policy-0054-20261029",
+      "sha": "50433a1e8d4b4d5c97ee228d4fd8df8e8660da6c",
+      "pr": 363
+    },
+    {
+      "branch": "feat/p2-a-personal-provenance-factors-0055-20261029",
+      "sha": "32a405bc4e675ea7ecf734e2fb2667e7e21e635b",
+      "pr": 364
+    },
+    {
+      "branch": "feat/p2-a-public-feed-licensing-and-compatibility-gate-20261029",
+      "sha": "3dbe867db9203b72dfa53f9535b925d71f7a0972",
+      "pr": 357
+    },
+    {
+      "branch": "feat/p2-a-readonly-live-acceptance-preflight-0060",
+      "sha": "ae949caddc8c0f6976cb44a611eb5e5fcbd55488",
+      "pr": 370
+    },
+    {
+      "branch": "feat/p2-a-reviewed-sql-weighted-0053-20261029",
+      "sha": "34074656e42b49ed76701af8e6c02929beb0af7c",
+      "pr": 362
+    },
+    {
+      "branch": "feat/p2-a-risk-visual-provenance-20261029",
+      "sha": "4d5885a1cb93ec323fb25f078c8c4524af657c84",
+      "pr": 359
+    },
+    {
+      "branch": "feat/p2-a-source-candidate-readiness-0060",
+      "sha": "aebcb5cb9c16f8e0b90623b0e0c2f17e2e0d86c5",
+      "pr": 369
+    },
+    {
+      "branch": "feat/p2-a-syndication-sql-0052-20261029",
+      "sha": "38152b1aa0864f54fb6761b606343ce8db6518c4",
+      "pr": 361
+    },
+    {
+      "branch": "feat/p2-a-unicode-freshness-0051-20261029",
+      "sha": "235cbef4e89ac9b5447b41e55d70147ba8d7840f",
+      "pr": 360
+    },
+    {
+      "branch": "feat/p2-a-unicode-token-parity-0057-20261029",
+      "sha": "acba6aeb310507bb0190196d2a49ff49ddd6b041",
+      "pr": 366
+    },
+    {
+      "branch": "feat/p2-package-a-persisted-ranked-feed-admin-20261029",
+      "sha": "9da2d18260df966fdaf809829b2b1dc724c98301",
+      "pr": 354
+    },
+    {
+      "branch": "feat/p2-personal-editorial-web-overlay-gate",
+      "sha": "5b99411906da447eb543a9110a61b61f556c8d11",
+      "pr": 373
+    },
+    {
+      "branch": "feat/p2-personal-owner-db-enrollment",
+      "sha": "5465d12e1898a4f7ad03a636daa4b847da72bdc1",
+      "pr": 372
+    },
+    {
+      "branch": "feat/p3-01-schema-0064-safety-gate-20261110",
+      "sha": "564db80774c81dfd1233c76ed0ccb2ddebcc54d1",
+      "pr": 492
+    },
+    {
+      "branch": "feature/p2-01-controlled-schema-0059-to-0061",
+      "sha": "c8f634bc9f9bb94af2453c4b17c20bd7f0d3568e",
+      "pr": 380
+    },
+    {
+      "branch": "feature/p2-01-named-source-host-sql-gateways",
+      "sha": "53f6baf58b07c400dbd7e9c7ecd1a4b5a16a5c7c",
+      "pr": 377
+    },
+    {
+      "branch": "feature/p2-01-personal-source-host-api",
+      "sha": "ed4eec793bce54fbfbe2587e28411fa7ef0f006f",
+      "pr": 379
+    },
+    {
+      "branch": "feature/p2-01-single-owner-reviewed-host-policy",
+      "sha": "f5c3abee916e06b1c738a893f786a58aa99674f8",
+      "pr": 378
+    },
+    {
+      "branch": "feature/p2-01-sole-owner-policy-operator-approval",
+      "sha": "a30a6070814dd85ebf549537287b430f24c440f6",
+      "pr": 383
+    },
+    {
+      "branch": "feature/p2-01-web-source-host-default-off-compose",
+      "sha": "fd5f184b3164b0171e19e38320fa0da1d647daa3",
+      "pr": 382
+    },
+    {
+      "branch": "feature/p2-03-readonly-persistence-witness",
+      "sha": "18a7b406ba8576b5815f08e1b30e30ee69f67be5",
+      "pr": 435
+    },
+    {
+      "branch": "fix/p1-09-halt-on-unconfirmed-dispatch-claim",
+      "sha": "53442a802a298bc850992b4b81fcf91385df6f4b",
+      "pr": 319
+    },
+    {
+      "branch": "fix/p1-09-official-price-review-provenance",
+      "sha": "2496985f19266dccd6135d9a819e733ac67ab0c0",
+      "pr": 320
+    },
+    {
+      "branch": "fix/p1-09-outbox-custody-postgres-boolean-contract",
+      "sha": "3bf6fe879f09de3676d8ab23cdd12f209f0d3d38",
+      "pr": 338
+    },
+    {
+      "branch": "fix/p1-09-redis-acl-install-umask-and-recovery",
+      "sha": "1689cca6faae60afbb1e4a3ac62a214235446f21",
+      "pr": 340
+    },
+    {
+      "branch": "fix/p1-09-redis84-production-guard",
+      "sha": "4952c84e1bbcadcc3ff014d42fb900b6151d127f",
+      "pr": 341
+    },
+    {
+      "branch": "fix/p1-09-single-reservation-reconciliation",
+      "sha": "c55c4bf2cb1fe10edbcae26f8b5a1be968bcefd4",
+      "pr": 310
+    },
+    {
+      "branch": "fix/p2-01-schema-0061-postcheck-role-guard",
+      "sha": "3875bde70d60e55c23714b80f9966561161d3b90",
+      "pr": 381
+    },
+    {
+      "branch": "fix/p2-02-nasa-postcanary-readonly-witness",
+      "sha": "17ad151e8df3c3a7182d64020876d69d663e81ae",
+      "pr": 449
+    },
+    {
+      "branch": "fix/p2-02-nasa-signed-sql-parity-diagnostic",
+      "sha": "b3c8530e930deb37e61fe4c9354edf5c34370133",
+      "pr": 444
+    },
+    {
+      "branch": "fix/p2-02-nasa-stat-result-runtime",
+      "sha": "6b1d792a90f9059a412517b1b165c42d2dcc7d1b",
+      "pr": 445
+    },
+    {
+      "branch": "fix/p2-02-observer-https-refusal-reason",
+      "sha": "20b7a33cbe8d5c8e90c5305282bab939507f2e8d",
+      "pr": 436
+    },
+    {
+      "branch": "fix/p2-02-queue-snapshot-fail-closed-20261028",
+      "sha": "724c33b8f042f0aba5b2108440202cf90253339a",
+      "pr": 342
+    },
+    {
+      "branch": "fix/p2-02-usgs-link-refusal-categories",
+      "sha": "3f7ada039fb25ff7e50fff60db1e1bfbb1caa5f7",
+      "pr": 439
+    },
+    {
+      "branch": "fix/p2-02-usgs-metadata-rejection-counters",
+      "sha": "ec5cf149a468c433336a983f1a3265d58ca5d941",
+      "pr": 438
+    },
+    {
+      "branch": "fix/p2-03-candidate-identity-validation-20261028",
+      "sha": "7905152f438de24c1f497380a20e975392a49d0e",
+      "pr": 343
+    },
+    {
+      "branch": "fix/p2-03-exact-event-48h-window",
+      "sha": "d6e3ddefb6e45266dcf95c598e95f21eb7085c71",
+      "pr": 433
+    },
+    {
+      "branch": "fix/p2-03-offline-feed-metadata-parity",
+      "sha": "f0744f6a81b68cd504771bd0d84507b6fbb06d89",
+      "pr": 434
+    },
+    {
+      "branch": "fix/p2-04-08-weighted-qa-metadata-consistency-20261028",
+      "sha": "ab38648577ef6fb2804db1c968abfc18fbec0ca2",
+      "pr": 350
+    },
+    {
+      "branch": "fix/p2-04-metadata-ranking-integrity-20261028",
+      "sha": "7e92928e2aa3715b8ce73bf8384d6d97f69e81d2",
+      "pr": 347
+    },
+    {
+      "branch": "fix/p2-05-claims-no-self-verification-20261028",
+      "sha": "f37ee93ee14ed85888b219cee1a271a1731ac2e5",
+      "pr": 344
+    },
+    {
+      "branch": "fix/p2-07-script-generation-claim-article-binding-20261028",
+      "sha": "a18f1a68af44e9332bc4d77881a2cd64f713b33f",
+      "pr": 353
+    },
+    {
+      "branch": "fix/p2-08-independent-script-qa-cost-integrity-20261028",
+      "sha": "cd3f7d7f0dd93ce65e8019f0f03f41254681b37f",
+      "pr": 346
+    },
+    {
+      "branch": "fix/p2-09-profile-validation-across-api-web-worker-20261028",
+      "sha": "8b09955a5933a2758e810459353e2e17241057bd",
+      "pr": 349
+    },
+    {
+      "branch": "fix/p2-10-audit-export-content-continuity-20261028",
+      "sha": "bb389e840c36d0c76c57bb39a2a2538b48e989fc",
+      "pr": 348
+    },
+    {
+      "branch": "fix/p2-10-worker-checkpoint-pagination-integrity-20261028",
+      "sha": "70a185aaa81f9c556d2425ae2fdf852b5c0f4ca3",
+      "pr": 351
+    },
+    {
+      "branch": "fix/p2-editorial-admin-responsive-forms",
+      "sha": "da77a034b09dfd981d94322a51ed1831b78bfdc4",
+      "pr": 374
+    },
+    {
+      "branch": "fix/p2-noaa-root-git-index-readonly",
+      "sha": "40d0e70528821d28fea41fc2f7a27e150d693c2f",
+      "pr": 462
+    },
+    {
+      "branch": "fix/p2-usgs-metadata-sql-url-guard",
+      "sha": "021747447e40ee2d5c74268c5680e0fa5be8218c",
+      "pr": 432
+    },
+    {
+      "branch": "p1-09-0043-to-0048-guarded-operator-upgrade",
+      "sha": "47dbdeff8c7cf23cb35fccf6a7e8a38708eeb815",
+      "pr": 337
+    },
+    {
+      "branch": "p1-09-additive-redis-producer-acl-rollout",
+      "sha": "657d16078fd02687bcdd872b869b815b2e25442e",
+      "pr": 339
+    },
+    {
+      "branch": "p1-09-atomic-sql-provider-budget-gate",
+      "sha": "fe92e9263d1b3dce8035c27f015bc0a7465880d9",
+      "pr": 326
+    },
+    {
+      "branch": "p1-09-named-admin-sealed-job-submission",
+      "sha": "65005cbef4178ca0f55ea502131ce453a11cfa44",
+      "pr": 330
+    },
+    {
+      "branch": "p1-09-named-provider-job-admin-bff",
+      "sha": "49fba05a8be06c14c42a1e8198dc8d597de12b4d",
+      "pr": 331
+    },
+    {
+      "branch": "p1-09-named-provider-job-authorization",
+      "sha": "3a1020c6b4ffc0542c867c88334d89b4bef2a665",
+      "pr": 324
+    },
+    {
+      "branch": "p1-09-outbox-secret-isolation-fix",
+      "sha": "91430c2f29dd16f7cb1ab1ba31afca14c40cd0cd",
+      "pr": 336
+    },
+    {
+      "branch": "p1-09-provider-dedicated-worker-boundary",
+      "sha": "64870da367f64d5833c964c168aa2c884c58c5e3",
+      "pr": 323
+    },
+    {
+      "branch": "p1-09-provider-encrypted-prompt-envelope",
+      "sha": "7bd158113fe25e3e73cafd1f28559154b9a0f1c3",
+      "pr": 328
+    },
+    {
+      "branch": "p1-09-provider-job-admission-gate",
+      "sha": "d9864102433730f1f960bf38c6a70997acdf2159",
+      "pr": 321
+    },
+    {
+      "branch": "p1-09-provider-outbox-deployment-contract",
+      "sha": "b2ea48fbd9e50fc5e3c6c3bd3dba0b6d9ac0b345",
+      "pr": 334
+    },
+    {
+      "branch": "p1-09-provider-outbox-operator-custody",
+      "sha": "779c6610f1a3f2345b8fa3b654d9c41b77238de7",
+      "pr": 335
+    },
+    {
+      "branch": "p1-09-provider-processor-composition",
+      "sha": "66ef56aeb8b84ff7366cfdf122519a1f308465b7",
+      "pr": 322
+    },
+    {
+      "branch": "p1-09-provider-sealed-outbox-0046",
+      "sha": "bb78f3da97752b4eef82e51c1104a4e250c6a523",
+      "pr": 329
+    },
+    {
+      "branch": "p1-09-real-postgres-redis-outbox-e2e",
+      "sha": "aaa1abefbe6b1ec19a99c60a82576d8736c2d134",
+      "pr": 333
+    },
+    {
+      "branch": "p1-09-sealed-outbox-redis-producer",
+      "sha": "59f3cd384ec758a825bdf9c18899eccea6336753",
+      "pr": 332
+    },
+    {
+      "branch": "p1-09-worker-authorized-reservation-0045",
+      "sha": "89792367ae0223941b3085f3d66a8e1bbb7659ef",
+      "pr": 327
+    },
+    {
+      "branch": "p1-09-worker-sql-authority-gate",
+      "sha": "7d4abd3fc9dbb77b4a8d0ac64a252793fd2e743d",
+      "pr": 325
+    },
+    {
+      "branch": "p2-01-anchor-bootstrap-evidence-20261102",
+      "sha": "cb2ea429e03ffbd19b7999acd9340bfb3bb78d10",
+      "pr": 405
+    },
+    {
+      "branch": "p2-01-cross-uid-signed-import-e2e-20261031",
+      "sha": "2faccd644d9604d0ac34139c76abd14ce444b515",
+      "pr": 389
+    },
+    {
+      "branch": "p2-01-independent-anchor-operator-attestation",
+      "sha": "23b336f4cce3dffeb13460f030b8d8f65c06ee99",
+      "pr": 406
+    },
+    {
+      "branch": "p2-01-live-trust-policy-anchor-20261031",
+      "sha": "6b0de57a993b4ecf5944dc0b00f84a717ee6c8e3",
+      "pr": 390
+    },
+    {
+      "branch": "p2-01-real-pg-reviewed-upgrade-test-20261101",
+      "sha": "743cbd6e1383dc0014afea029a81d09c1a6ea3cf",
+      "pr": 398
+    },
+    {
+      "branch": "p2-01-reviewed-audit-ledger-admission-20261101",
+      "sha": "6a61d6128783ee1b2d43e528c58fc2b596f8352b",
+      "pr": 399
+    },
+    {
+      "branch": "p2-01-same-vps-anchor-provisioning-20261102",
+      "sha": "c5bb40a6397563f3a18d31eb9a1beca89eabe2d8",
+      "pr": 412
+    },
+    {
+      "branch": "p2-01-schema-0061-reviewed-registry-preservation-20261101",
+      "sha": "1fb065659ec15091927fd2a0cf32d0ab38befc30",
+      "pr": 397
+    },
+    {
+      "branch": "p2-01-signed-source-handoff-stage-20261031",
+      "sha": "d9515ed52d3e1a38c7d2411961b229defb89bf7d",
+      "pr": 388
+    },
+    {
+      "branch": "p2-01-signed-stage-to-worker-import-uid-e2e-20261101",
+      "sha": "02666352dafe096cd9146c0b705ef5d9db0c190e",
+      "pr": 400
+    },
+    {
+      "branch": "p2-01-trust-policy-bootstrap-report-20261031",
+      "sha": "9d6989c1f46145d0a0c0e2cadb55c2435c22c80f",
+      "pr": 391
+    },
+    {
+      "branch": "p2-02-canary-phase-diagnostics-20261103",
+      "sha": "5dcc8448a2ec760fea44e6d87d7849a96e36929c",
+      "pr": 416
+    },
+    {
+      "branch": "p2-02-feed-container-secrets-handoff-20261031",
+      "sha": "3058ba042b5a6f5849cc4c2a648a7da24100304e",
+      "pr": 387
+    },
+    {
+      "branch": "p2-02-feed-login-custody-20261031",
+      "sha": "d3c11c66378dbc411bde38ade5d9a863ca8017eb",
+      "pr": 384
+    },
+    {
+      "branch": "p2-02-feed-runtime-secret-custody-20261102",
+      "sha": "3c194bd85fdf27e52e064b311dfa8b03fba49fca",
+      "pr": 401
+    },
+    {
+      "branch": "p2-02-get-transport-reason-classification",
+      "sha": "e13326d3299860e782d8c1460f533983a2a6d290",
+      "pr": 421
+    },
+    {
+      "branch": "p2-02-independent-anchor-login-no-direct-write-20261102",
+      "sha": "8523e61911338822427ad2e8ff1b0e2a74d1596b",
+      "pr": 404
+    },
+    {
+      "branch": "p2-02-independent-trust-approval-admission-20261031",
+      "sha": "7dabfc0608f6a4db8ba2fb44d98210cc52eb7200",
+      "pr": 392
+    },
+    {
+      "branch": "p2-02-live-observer-same-vps-20261103",
+      "sha": "46b932fda2f339c9cf1d4307b7639717f0479ef6",
+      "pr": 413
+    },
+    {
+      "branch": "p2-02-live-redis-auth-preflight-20261103",
+      "sha": "53e3ff2b3212332704197546f416af8f96118240",
+      "pr": 415
+    },
+    {
+      "branch": "p2-02-nasa-public-ipv4-and-tls-diagnostics-20261103",
+      "sha": "dd9ada90963c4c3c5e0def5bc52e9503ab5a0e98",
+      "pr": 418
+    },
+    {
+      "branch": "p2-02-noaa-20261110-single-metadata-canary",
+      "sha": "8b056868187b6e570c258e161c1eeb73be140673",
+      "pr": 494
+    },
+    {
+      "branch": "p2-02-node22-lookup-all-pinning",
+      "sha": "31978af5c9c0460d217a44b582dd43c756fbeb96",
+      "pr": 419
+    },
+    {
+      "branch": "p2-02-one-shot-separated-redis-20261103",
+      "sha": "cd6275f506627c1fbbe098b0813d46a66e5adab9",
+      "pr": 414
+    },
+    {
+      "branch": "p2-02-readonly-feed-head-diagnosis-20261103",
+      "sha": "2e907c1b72bb4a721fecda3c2349be63d9d3f99f",
+      "pr": 417
+    },
+    {
+      "branch": "p2-02-readonly-rss-get-validation",
+      "sha": "22f00369326a35ecebf43671306590e30cdee09a",
+      "pr": 420
+    },
+    {
+      "branch": "p2-02-redis-only-maintenance-guard-20261111",
+      "sha": "7ae348b567225f2e887dd2cd63d3e641ace86153",
+      "pr": 498
+    },
+    {
+      "branch": "p2-02-redis8-capture-readonly-admission-20261111",
+      "sha": "567b37dbfa48e6ceea36415e89849a03dea6b986",
+      "pr": 500
+    },
+    {
+      "branch": "p2-02-redis8-offline-archive-guard-20261111",
+      "sha": "947b50be9178534947e0c5346fe25380631c2f42",
+      "pr": 499
+    },
+    {
+      "branch": "p2-02-reviewed-noaa-only-canary-gate",
+      "sha": "e371e5fe6beaf1ff09c2320591b4f09d933ec1af",
+      "pr": 424
+    },
+    {
+      "branch": "p2-02-rss-readonly-timeout-stream-bands",
+      "sha": "14b29f2176e579347073eca4ae0bd2da5af64da8",
+      "pr": 422
+    },
+    {
+      "branch": "p2-02-separated-feed-redis-acl-20261031",
+      "sha": "6990d9b7041c9c5cd1d73da52896ee3ebdde0977",
+      "pr": 386
+    },
+    {
+      "branch": "p2-02-size-refusal-priority",
+      "sha": "9651449f368464e34bc0c7fd721f55f3e26956dc",
+      "pr": 423
+    },
+    {
+      "branch": "p2-02-studio-status-redis-acl-20261110",
+      "sha": "c212e0d1e292cacf259e7fce7cecce733ae640eb",
+      "pr": 497
+    },
+    {
+      "branch": "p2-02-verify-existing-login-postcheck-20261031",
+      "sha": "2b466996b9f19d7029d8b68bfa5f863d7d75351d",
+      "pr": 385
+    },
+    {
+      "branch": "p2-03-consumer-monotonic-failclosed-health-20261102",
+      "sha": "f567c672a8c11eaaea8edf3d6fc96ed28f79aafb",
+      "pr": 403
+    },
+    {
+      "branch": "p2-03-continuous-producer-progress-health-20261102",
+      "sha": "fb6702037f9b372e05d8147eacac7b759324e637",
+      "pr": 402
+    },
+    {
+      "branch": "p2-03-continuous-projector-health-watchdog-20261101",
+      "sha": "84a56b7d6f42d7281a8e263011e6e0d9647996a7",
+      "pr": 393
+    },
+    {
+      "branch": "p2-04-named-admin-live-postgres-e2e-20261102",
+      "sha": "538fede4f39c8fd112a4fb4f5e8493da13bf6766",
+      "pr": 395
+    },
+    {
+      "branch": "p2-04-web-ranked-admin-boundary-20261102",
+      "sha": "ec157f33e8fbbee834e7839d0dd8c65e8f8c80da",
+      "pr": 396
+    },
+    {
+      "branch": "p2-05-06-offline-evidence-metadata-integrity-20261102",
+      "sha": "eac6af89560f9ca72bb4223416ec0b6274c05a45",
+      "pr": 408
+    },
+    {
+      "branch": "p2-08-independent-mock-qa-scaffold-integrity-20261102",
+      "sha": "5549de93fab865d6fd3d110126c96b7ca1d62105",
+      "pr": 409
+    },
+    {
+      "branch": "p2-08-independent-review-assignment-20261102",
+      "sha": "b11d8ebd53c034a20f56413942b87055477b296a",
+      "pr": 410
+    },
+    {
+      "branch": "p2-10-browser-checkpoint-hash-recompute-20261102",
+      "sha": "3c98cd11472392da4d4bef1b29f61fc371c2540d",
+      "pr": 407
+    },
+    {
+      "branch": "p2-ci-format-only-20261110",
+      "sha": "7506b77c15f83643bd20f2854bd368ed16cb236d",
+      "pr": 496
+    },
+    {
+      "branch": "p2-mvp-two-rss-e2e-20261108",
+      "sha": "d04857de61f3f2328944601e3eedf28ff80eb9f6",
+      "pr": 469
+    },
+    {
+      "branch": "p2-runtime-readonly-host-status-20261101",
+      "sha": "eebf778ee40f9c743b3819975274d4a985ce10a1",
+      "pr": 394
+    },
+    {
+      "branch": "p2-single-vps-anchor-20261102",
+      "sha": "86487e80a204e8f59d59cbaa38ef2d52eff38f69",
+      "pr": 411
+    },
+    {
+      "branch": "p2-studio-manual-noaa-consumer-scope-20261110",
+      "sha": "3d3788644c1b583947e78f8c6514ee086ca63dcc",
+      "pr": 495
+    },
+    {
+      "branch": "p2-usgs-single-source-canary-10-10",
+      "sha": "c3f0ae3eaaf7eafb2cdd745064f496cfd7ad9337",
+      "pr": 431
+    },
+    {
+      "branch": "p2/host-reconfirm-0062-source-revision-20261104",
+      "sha": "a1d391702e5da732ba9921773106b99625ba99da",
+      "pr": 430
+    },
+    {
+      "branch": "p2/usgs-bounded-rss-items-20261104",
+      "sha": "5b9be4bb733c300d72ab0cb29791e380300ff322",
+      "pr": 425
+    },
+    {
+      "branch": "p2/usgs-signed-stage-refresh-20261104",
+      "sha": "fc2b1390fa22db8009476e0e1547d78e97ab54c7",
+      "pr": 428
+    },
+    {
+      "branch": "p3-01-asset-provenance-catalog-20261108",
+      "sha": "2cdf51d3005d33e83ab67c28271ec41d123ab057",
+      "pr": 470
+    },
+    {
+      "branch": "p3-02-license-policy-precheck-20261108",
+      "sha": "c82e5b335676fb59303a3ce3a61bc553d5e2394a",
+      "pr": 471
+    },
+    {
+      "branch": "p3-03-pexels-offline-provenance-20261108",
+      "sha": "f8b6536735da452f6940b07f35f874dc793a230c",
+      "pr": 474
+    },
+    {
+      "branch": "p3-05-commons-offline-license-metadata-20261108",
+      "sha": "807970d3a04915e52713400aea6e1c7e5c91b112",
+      "pr": 475
+    },
+    {
+      "branch": "p3-07-offline-own-graphics-20261108",
+      "sha": "5c059ef90303fb0cd7cdb6bd2f60cd785ca2eaf1",
+      "pr": 473
+    },
+    {
+      "branch": "p3-08-offline-credits-deny-preview-20261109",
+      "sha": "b06bfff1d1c6480421cce11a10577c058736cda8",
+      "pr": 472
+    },
+    {
+      "branch": "p4-13-source-links-private-cutover",
+      "sha": "606aadf47efb2a634e708b2eb55e499eb5eea5ba",
+      "pr": 493
+    },
+    {
+      "branch": "security/p1-04-ephemeral-ghcr-readonly-pull",
+      "sha": "a92873cb5c442468697c3274c629aba5b87ff946",
+      "pr": 375
+    },
+    {
+      "branch": "test/p2-a-real-ports-feed-to-admin-ranked-e2e-20261029",
+      "sha": "e2efe3078c912a0aa43ad659432ee5ce09130fbf",
+      "pr": 356
+    }
+  ]
+}
