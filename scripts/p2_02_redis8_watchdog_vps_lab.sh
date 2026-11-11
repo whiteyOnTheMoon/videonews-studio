@@ -145,10 +145,14 @@ EOF
     read_identity
     policy_check >/dev/null
     [[ -f "$SERVICE" && -f "$TIMER" && ! -L "$SERVICE" && ! -L "$TIMER" ]] || fail
+    # The independent timer must stay armed until the exact synthetic
+    # target is confirmed running. If this operator is interrupted before
+    # release, the timer remains available to recover the lab container.
+    policy_release >/dev/null
+    [[ "$(docker inspect --format '{{.State.Running}}|{{.State.Paused}}' "$CID")" == "true|false" ]] || fail
+    policy_check >/dev/null
     systemctl --user stop "$UNIT.timer"
     systemctl --user stop "$UNIT.service" || true
-    policy_release >/dev/null
-    policy_check >/dev/null
     docker rm -f "$CID" >/dev/null
     rm -- "$SERVICE" "$TIMER" "$IDENTITY"
     systemctl --user daemon-reload
