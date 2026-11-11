@@ -56,11 +56,16 @@ def conversation(user: str, password: str, *commands: str) -> list[str]:
 
 def successful(user: str, password: str, *commands: str) -> list[str]:
     lines = conversation(user, password, *commands)
-    if not lines or lines[0] != "OK" or len(lines) != len(commands) + 2:
+    # redis-cli may omit the QUIT acknowledgement in piped --raw mode.
+    if (not lines or lines[0] != "OK"
+            or len(lines) not in (len(commands) + 1, len(commands) + 2)
+            or (len(lines) == len(commands) + 2 and lines[-1] != "OK")):
         raise RuntimeError("Redis synthetic authentication/command count failed")
-    if any("ERR" in line or "NOPERM" in line for line in lines):
+    result = lines[1:1 + len(commands)]
+    if any("ERR" in line or "NOPERM" in line or "NOAUTH" in line
+           for line in result):
         raise RuntimeError("Redis synthetic command failed")
-    return lines[1:-1]
+    return result
 
 
 def start(path: Path) -> None:
@@ -121,7 +126,7 @@ def role_is_restricted() -> None:
         "GET bull:vns:vns-jobs:outside-denied",
     )
     if not (
-        len(lines) == 7
+        len(lines) in (6, 7)
         and lines[0:3] == ["OK", "PONG", "12345"]
         and lines[3] == '{"ok":true,"sourcesExamined":1,"candidatesAdded":2,"notModified":0}'
         and lines[4] == "1"
