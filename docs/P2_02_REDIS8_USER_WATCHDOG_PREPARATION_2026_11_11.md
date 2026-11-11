@@ -102,7 +102,7 @@ container. The prepare process exits without unpausing. The timer's
 one-shot service invokes only the above exact-ID release helper.
 `--verify` is read-only and requires the systemd service actually
 started, its result was successful, and the synthetic Redis is running.
-`--cleanup` releases the exact lab if necessary, removes only the lab
+`--cleanup` releases and **verifies the running state of the exact lab before stopping the independent timer** (so an interrupted cleanup cannot first remove the recovery path), then removes only the lab
 container, its two generated user-unit files and its disposable
 directory. All modes refuse dirty/mismatched Git or a missing Linger.
 
