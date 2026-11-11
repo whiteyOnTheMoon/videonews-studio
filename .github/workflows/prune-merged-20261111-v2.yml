@@ -1,0 +1,46 @@
+name: P1-02 Verified merged-ref cleanup bulk v2
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/one_time_prune_merged_20261111_v2.mjs"
+      - "docs/maintenance/branch-prune-2026-11-11-v2.json"
+      - ".github/workflows/prune-merged-20261111-v2.yml"
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: one-time-prune-20261111-v2-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bulk read-only exact SHA and merged PR audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/one_time_prune_merged_20261111_v2.mjs --audit
+  prune:
+    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, '[P1-02] Verified cleanup of 182 merged refs bulk')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Delete only exact approved merged refs after bulk audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/one_time_prune_merged_20261111_v2.mjs --delete
