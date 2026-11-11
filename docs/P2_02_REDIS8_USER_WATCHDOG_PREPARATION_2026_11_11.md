@@ -96,12 +96,15 @@ removes or recreates Docker objects.
 `p2_02_redis8_watchdog_vps_lab.sh` is a separate, explicit
 operator-invoked test. With `VNS_P2_LAB_SHA` set to the **exact current
 clean main commit**, `--prepare` creates the uniquely named synthetic
-Redis 8 lab with AOF disabled, arms its user-systemd timer for 120
-seconds, verifies that it is armed, and **only then** pauses that lab
+Redis 8 lab with AOF disabled, arms its user-systemd timer for an initial 45
+seconds and subsequent 15-second recovery checks (avoiding a one-shot
+expiry race before the pause), verifies that it is armed, and **only then** pauses that lab
 container. The prepare process exits without unpausing. The timer's
 one-shot service invokes only the above exact-ID release helper.
 `--verify` is read-only and requires the systemd service actually
-started, its result was successful, and the synthetic Redis is running.
+started **after the paused-state timestamp**, its result was successful,
+the systemd journal recorded an actual `LAB_UNPAUSE_ATTEMPTED=true`
+after the pause, and the synthetic Redis is running.
 `--cleanup` releases and **verifies the running state of the exact lab before stopping the independent timer** (so an interrupted cleanup cannot first remove the recovery path), then removes only the lab
 container, its two generated user-unit files and its disposable
 directory. All modes refuse dirty/mismatched Git or a missing Linger.
