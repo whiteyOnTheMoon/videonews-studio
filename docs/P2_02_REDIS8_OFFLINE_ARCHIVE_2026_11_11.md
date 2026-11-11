@@ -16,7 +16,10 @@ No production volume, container, ACL, queue or database changes were made.
 `scripts/p2_02_redis8_offline_archive.py` validates a pre-existing **offline
 copy** of a multipart AOF directory. It checks strict manifest syntax,
 referenced files, regular-file invariants, bounds, and SHA-256 contents.
-It compares the copy with an inventory supplied **by an independent custodian**.
+It accepts the legacy six-field manifest lines and Redis 8.4's optional
+`startoffset`/`endoffset` fields on incremental AOF entries, with strict
+syntax, ordering, and bounds. It compares the copy with an inventory
+supplied **by an independent custodian**.
 Checksums and AOF bytes must never be printed, committed, or uploaded to CI.
 
 The **offline validator** does **not**:
