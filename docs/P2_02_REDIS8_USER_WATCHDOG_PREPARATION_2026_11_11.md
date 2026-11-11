@@ -72,3 +72,48 @@ WATCHDOG INSTALLED, NO PAUSE AUTHORIZED, NO BACKUP OR RESTORE PROOF.**
 Read systemd `loginctl` and `systemd-run` documentation and Docker
 `pause`/`unpause` documentation before designing the separate
 production runner.
+
+
+## Subsequent evidence and isolated VPS systemd rehearsal
+
+The operator subsequently verified a persistent systemd-user test timer:
+`LastTriggerUSec=2026-11-11 20:30:22 UTC`,
+`PROOF_EXECUTED=true`, `LINGER=yes`, private mode-0600 proof,
+and successful service start/exit journal entries. The harmless service,
+timer, and proof were then removed with `TIMER_CLEANUP=PASS`; Linger
+remained enabled. **That proof did not record the absence of other active
+SSH sessions**, so the strict zero-session claim is still open.
+
+`p2_02_redis8_synthetic_watchdog_vps.py` is a narrow, unpause-only
+wrapper around the policy. It insists on the **fixed lab name**
+`vns-p2-redis-watchdog-lab-20261111`, `none` networking, Redis image
+digest, synthetic Compose label, read-only root filesystem, non-root UID,
+all capabilities dropped and an exact disposable bind mount inside
+`/run/user/1000`. It refuses a production container (including if a
+production ID is passed), never pauses a container and never restarts,
+removes or recreates Docker objects.
+
+`p2_02_redis8_watchdog_vps_lab.sh` is a separate, explicit
+operator-invoked test. With `VNS_P2_LAB_SHA` set to the **exact current
+clean main commit**, `--prepare` creates the uniquely named synthetic
+Redis 8 lab with AOF disabled, arms its user-systemd timer for 120
+seconds, verifies that it is armed, and **only then** pauses that lab
+container. The prepare process exits without unpausing. The timer's
+one-shot service invokes only the above exact-ID release helper.
+`--verify` is read-only and requires the systemd service actually
+started, its result was successful, and the synthetic Redis is running.
+`--cleanup` releases the exact lab if necessary, removes only the lab
+container, its two generated user-unit files and its disposable
+directory. All modes refuse dirty/mismatched Git or a missing Linger.
+
+The operator MUST run the prepare, verify and cleanup stages separately,
+review the outputs, and stop if any REFUSED appears. Never copy a
+synthetic lab `docker pause` command onto the production container.
+
+This smoke test **does not establish** a crash-proof production watchdog:
+a reboot, Docker-daemon outage longer than the retry window, changed
+container identity, disk exhaustion, systemd-user failure, and
+production BullMQ behavior have not been verified. It also does not
+establish an independently stored and consistency-proven backup. An
+out-of-band recovery path remains necessary for any production
+maintenance decision.
