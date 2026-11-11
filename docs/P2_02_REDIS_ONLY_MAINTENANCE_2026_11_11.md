@@ -59,7 +59,7 @@ The operator emits a compact no-secret JSON verdict. A missing or
 ambiguous piece of evidence fails closed; it does not patch files,
 stop/restart Redis, load ACLs, enqueue jobs or publish anything.
 
-## Mandatory independent controls before any *future* production switch
+## Mandatory independent controls before any _future_ production switch
 
 1. Independently prove the **actual Redis 8 AOF volume** can be restored
    offline, including ACL recovery, P1 probe receipt and both queues.
