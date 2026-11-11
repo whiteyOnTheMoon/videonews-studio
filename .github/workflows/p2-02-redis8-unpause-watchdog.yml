@@ -6,6 +6,8 @@ on:
       - "scripts/p2_02_redis8_unpause_watchdog_policy.py"
       - "scripts/test_p2_02_redis8_unpause_watchdog_policy.py"
       - "scripts/ci_p2_02_redis8_unpause_watchdog.py"
+      - "scripts/p2_02_redis8_synthetic_watchdog_vps.py"
+      - "scripts/test_p2_02_redis8_synthetic_watchdog_vps.py"
       - "docs/P2_02_REDIS8_USER_WATCHDOG_PREPARATION_2026_11_11.md"
       - ".github/workflows/p2-02-redis8-unpause-watchdog.yml"
 permissions:
@@ -27,6 +29,10 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts \
             -p 'test_p2_02_redis8_unpause_watchdog_policy.py' -v
+      - name: VPS synthetic-only exact-ID unpause runner refusal tests
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_02_redis8_synthetic_watchdog_vps.py' -v
       - name: Networkless Redis 8 pause/unpause synthetic recovery
         run: python3 scripts/ci_p2_02_redis8_unpause_watchdog.py
       - name: Assert checkout remained unchanged
