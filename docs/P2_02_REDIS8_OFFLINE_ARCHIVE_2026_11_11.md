@@ -19,15 +19,23 @@ referenced files, regular-file invariants, bounds, and SHA-256 contents.
 It compares the copy with an inventory supplied **by an independent custodian**.
 Checksums and AOF bytes must never be printed, committed, or uploaded to CI.
 
-The module does **not**:
+The **offline validator** does **not**:
 - read the live Docker volume, connect to Redis, issue a Redis command or copy data;
 - make, seal, delete, rewrite or replace backups or volumes;
 - prove the capture is point-in-time consistent or its inventory independently trusted;
 - start Redis, replay AOF, verify credentials, inspect job payloads, or authorize a restart;
 - implement an execution or rollback path for production.
 
-The accompanying CI tests contain **only synthetic byte strings** and cannot
-establish recoverability of real VPS data.
+The unit tests contain **only synthetic byte strings**. The separate
+`ci_p2_02_redis8_offline_restore.py` CI rehearsal creates an isolated Redis
+8.4.8 AOF fixture, stops its synthetic source, copies it to a separate
+private directory, rejects a deliberately tampered copy, then starts only
+the verified independent copy in a new container with `--network none`,
+`--read-only`, no published ports and `--aof-load-truncated no`. It checks
+synthetic P1/P2 completed entries and tears down the disposable CI objects.
+This test NEVER reads a real Docker volume, and its source is fully stopped.
+The CI replay is not evidence of consistency or recoverability of real VPS
+data. No real credentials or job contents are used.
 
 ## Requirements before live capture and recovery acceptance
 
