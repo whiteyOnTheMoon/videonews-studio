@@ -71,21 +71,31 @@ def validate(observation: dict) -> None:
             or aof["aof_base_size"] <= 0):
         refuse()
     records = observation["files"]
-    if not isinstance(records, list) or not 2 <= len(records) <= 11:
+    if not isinstance(records, list) or not 3 <= len(records) <= 12:
         refuse()
     seen: set[str] = set()
     for item in records:
         if (not isinstance(item, dict)
                 or set(item) != {
-                    "name", "device", "inode", "size", "mtime_ns", "ctime_ns"
+                    "name", "device", "inode", "size", "mtime_ns", "ctime_ns",
+                    "sha256",
                 }):
             refuse()
         name = item["name"]
-        if not isinstance(name, str) or not NAMES.fullmatch(name) or name in seen:
+        if (not isinstance(name, str)
+                or (name != "appendonly.aof.manifest" and not NAMES.fullmatch(name))
+                or name in seen):
             refuse()
         seen.add(name)
+        if (not isinstance(item["sha256"], str)
+                or not IMAGE_SHA.fullmatch(item["sha256"])):
+            refuse()
         for field in ("device", "inode", "size", "mtime_ns", "ctime_ns"):
             number(item[field], minimum=1)
+    bases = sum(bool(re.fullmatch(r"appendonly\\.aof\\.[1-9][0-9]*\\.base\\.(?:rdb|aof)", x)) for x in seen)
+    incrs = sum(bool(re.fullmatch(r"appendonly\\.aof\\.[1-9][0-9]*\\.incr\\.aof", x)) for x in seen)
+    if "appendonly.aof.manifest" not in seen or bases != 1 or incrs < 1:
+        refuse()
 
 
 def assess_window(before: dict, after: dict) -> dict:
