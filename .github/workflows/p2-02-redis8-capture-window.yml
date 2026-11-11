@@ -1,0 +1,35 @@
+name: P2-02 Redis 8 read-only AOF capture-window guard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_02_redis8_capture_window.py"
+      - "scripts/test_p2_02_redis8_capture_window.py"
+      - "docs/P2_02_REDIS8_CAPTURE_WINDOW_2026_11_11.md"
+      - ".github/workflows/p2-02-redis8-capture-window.yml"
+permissions:
+  contents: read
+concurrency:
+  group: redis8-capture-window-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  observation-only-synthetic-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert syntax of capture window assessor
+        run: |
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          ast.parse(Path("scripts/p2_02_redis8_capture_window.py").read_text())
+          PY
+      - name: Run strict synthetic before/after tests
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_02_redis8_capture_window.py' -v
+      - name: Assert no generated files
+        run: test -z "$(git status --porcelain)"
