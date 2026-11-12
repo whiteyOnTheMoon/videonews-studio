@@ -6,6 +6,7 @@ on:
       - "scripts/p2_03_redis_cloud_offhost_readonly_preflight.sh"
       - "scripts/test_p2_03_redis_cloud_offhost_readonly_preflight.py"
       - "docs/P2_03_REDIS_ENCRYPTED_OFFHOST_CLOUD_PREPARATION_2026_11_12.md"
+      - "docs/P2_03_GOOGLE_DRIVE_ENCRYPTED_REDIS_BACKUP_2026_11_12.md"
       - ".github/workflows/p2-03-redis-cloud-backup-plan.yml"
 permissions:
   contents: read

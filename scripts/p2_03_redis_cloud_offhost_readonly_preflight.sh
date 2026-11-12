@@ -31,7 +31,7 @@ echo "PRODUCTION_REDIS_HEALTHY=true"
 echo "PRODUCTION_DATA_SOURCE_PINNED=true"
 
 echo "=== 3. Local tooling (presence only) ==="
-for TOOL in restic docker python3 openssl; do
+for TOOL in restic rclone docker python3 openssl; do
   if command -v "$TOOL" >/dev/null 2>&1; then
     echo "TOOL_$TOOL=available"
   else

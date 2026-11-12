@@ -85,6 +85,61 @@ class CloudPreflightContract(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.doc)
 
+    def test_google_drive_requires_rclone_without_auth_in_preflight(self):
+        self.assertIn(
+            "for TOOL in restic rclone docker python3 openssl; do",
+            self.script,
+        )
+        for forbidden in (
+            "rclone config", "rclone copy", "rclone sync",
+            "restic backup", "restic init", "rclone authorize",
+            "rclone lsd", "rclone ls ", "rclone serve",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, self.script)
+
+    def test_google_drive_documentation_no_s3_or_gcs_confusion(self):
+        doc = (ROOT.parent /
+               "docs/P2_03_GOOGLE_DRIVE_ENCRYPTED_REDIS_BACKUP_2026_11_12.md")
+        source = doc.read_text(encoding="utf-8")
+        self.assertIn("Google Drive", source)
+        self.assertIn("Google Cloud Storage", source)
+        self.assertIn("rclone:<remote>:<directory>", source)
+        self.assertIn("restic client-side encryption", source)
+        self.assertIn("OAuth", source)
+
+    def test_google_drive_retains_independent_recovery_requirements(self):
+        doc = (ROOT.parent /
+               "docs/P2_03_GOOGLE_DRIVE_ENCRYPTED_REDIS_BACKUP_2026_11_12.md")
+        source = doc.read_text(encoding="utf-8")
+        for statement in (
+            "drive.file",
+            "shared Google Drive OAuth client ID",
+            "refresh tokens",
+            "restic check --read-data",
+            "independent",
+            "Redis 8.10+",
+            "NO actual cloud or Redis backup",
+            "OFF_HOST_BACKUP_VERIFIED=false",
+            "PRODUCTION_REDIS_PAUSE_AUTHORIZED=false",
+        ):
+            with self.subTest(statement=statement):
+                self.assertIn(statement, source)
+
+    def test_general_doc_identifies_google_drive_via_rclone(self):
+        self.assertIn(
+            "Google Drive (not Google Cloud Storage)",
+            self.doc,
+        )
+        self.assertIn(
+            "Google Drive via restic + rclone",
+            self.doc,
+        )
+        self.assertIn(
+            "Google Drive requires the supported restic rclone backend",
+            self.doc,
+        )
+
     def test_script_has_no_credentials(self):
         for forbidden in (
             "AWS_SECRET_ACCESS_KEY", "AWS_ACCESS_KEY_ID",
