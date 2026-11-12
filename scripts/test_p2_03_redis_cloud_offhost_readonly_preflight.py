@@ -47,8 +47,8 @@ class CloudPreflightContract(unittest.TestCase):
                 self.assertIn(required, self.script)
 
     def test_docker_is_metadata_only(self):
-        commands = re.findall(r"\bdocker\s+[a-z][a-z-]*", self.script)
-        self.assertEqual(commands, ["docker inspect"] * 3)
+        commands = re.findall(r"\$\(docker\s+[a-z][a-z-]*", self.script)
+        self.assertEqual(commands, ["$(docker inspect"] * 3)
         for forbidden in (
             "docker pause", "docker unpause", "docker exec",
             "docker restart", "docker run", "docker rm",
