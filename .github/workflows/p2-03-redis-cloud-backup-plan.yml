@@ -1,0 +1,30 @@
+name: P2-03 Redis encrypted cloud backup planning (offline only)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p2_03_redis_cloud_offhost_readonly_preflight.sh"
+      - "scripts/test_p2_03_redis_cloud_offhost_readonly_preflight.py"
+      - "docs/P2_03_REDIS_ENCRYPTED_OFFHOST_CLOUD_PREPARATION_2026_11_12.md"
+      - ".github/workflows/p2-03-redis-cloud-backup-plan.yml"
+permissions:
+  contents: read
+concurrency:
+  group: p2-03-cloud-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  audit-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject shell syntax errors
+        run: bash -n scripts/p2_03_redis_cloud_offhost_readonly_preflight.sh
+      - name: Offline read-only preflight boundary unit tests
+        run: |
+          python3 -m unittest discover -s scripts \
+            -p 'test_p2_03_redis_cloud_offhost_readonly_preflight.py' -v
+      - name: No changed checkout files
+        run: test -z "$(git status --porcelain)"
