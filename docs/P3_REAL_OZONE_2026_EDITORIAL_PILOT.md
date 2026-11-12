@@ -90,10 +90,40 @@ Für echten Betrieb fehlen weiterhin: automatisch autorisierte
 Quellenaufnahme, unabhängiger redaktioneller Faktencheck,
 benannte Freigabe im Admin, dauerhafte Lizenz-Snapshots
 für zugelassene Medien und Sperren an echten Render-
-und Upload-Einstiegspunkten. **Nicht auf dem VPS starten,
-keine Produktionsmigration, keinen Upload auslösen,
-Issue #33 nicht schließen.**
+und Upload-Einstiegspunkten. **Keine Produktionsmigration oder Upload auslösen,
+Issue #33 nicht schließen.** Eine explizite lokale Vorschau
+ist nur mit `--save-local` als Benutzer `ap` vorgesehen.
 
 `main` bleibt bis zum genehmigten, überprüften Merge
 unverändert. Das frühere Einverständnis für PR #470–#473
 ist keine automatische Ausnahme für diesen neuen PR.
+
+## Private lokale MP4-Vorschau (kein Upload)
+
+Optional für den Hobbybetrieb, **nur zur privaten Wiedergabe**: Nach
+Installation der lokalen Programme `node`, `ffmpeg`, `ffprobe`,
+`rsvg-convert` und `espeak-ng` sowie mit installierten Node-Abhängigkeiten
+und gebautem `@vns/shared`-Paket kann der Nutzer `ap` auf dem VPS im
+sauberen Repository eine lokale Vorschau rendern:
+
+```bash
+node scripts/ci_p3_curated_real_news_video.mjs --save-local
+```
+
+Die Datei entsteht ausschließlich unter
+`/home/ap/vns-offline-previews/ozonloch-2026-de-vorschau.mp4`, außerhalb
+des Git-Verzeichnisses und der öffentlichen Webverzeichnisse. Das Zielverzeichnis
+hat Modus `0700`, die Datei `0600`. Bereits vorhandene Vorschauen werden
+nicht überschrieben. Die sieben Originalgrafiken und die deutsche Offline-Stimme
+sind dieselben wie im CI-Nachweis. Es gibt keinen Datenbank-/Redis-Zugriff,
+keine Live-Nachrichtenabfrage, keinen Medien-Upload und keine Veröffentlichung.
+
+Zum privaten Herunterladen vom eigenen Computer kann eine bestehende
+SSH-Verbindung mit `scp` genutzt werden. Dabei wird die Datei **nur**
+zwischen dem VPS und dem eigenen Computer kopiert; nichts wird öffentlich
+freigegeben. Die nötigen Pakete werden nicht automatisch installiert und
+der normale CI-Aufruf erzeugt weiterhin keinerlei dauerhafte MP4.
+
+Die Vorschau ist ein Demo-Video zu den festen, manuell kuratierten
+November-2026-Daten. Sie ist weder ein laufender News-Generator noch eine
+Freigabe für automatische Publikation.
