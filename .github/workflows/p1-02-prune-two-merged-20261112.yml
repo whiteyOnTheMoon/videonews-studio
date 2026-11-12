@@ -1,0 +1,49 @@
+name: P1-02 one-time cleanup of two merged branches
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/one_time_prune_two_merged_branches_20261112.mjs"
+      - ".github/workflows/p1-02-prune-two-merged-20261112.yml"
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: p1-02-two-merged-20261112
+  cancel-in-progress: false
+jobs:
+  audit-only:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax-check bounded cleanup (no deletion)
+        run: node --check scripts/one_time_prune_two_merged_branches_20261112.mjs
+      - name: Verify exact SHA, merged PR IDs, protected branch inventory (no deletion)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VNS_OWN_PR_NUMBER: ${{ github.event.pull_request.number }}
+          VNS_OWN_PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/one_time_prune_two_merged_branches_20261112.mjs --audit
+  cleanup:
+    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, '[P1-02] Verified final cleanup of 2 merged refs (#')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recheck all branch heads and PR merges; delete only approved refs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/one_time_prune_two_merged_branches_20261112.mjs --delete
