@@ -6,22 +6,37 @@
  * in-repository snapshot. This script does NOT fetch live news or verify
  * the article contents, author rights, or independent editorial approval.
  *
- * Only a disposable GitHub Actions runner may create temporary media here.
+ * Disposable GitHub Actions proves the video; --save-local stores one private,
+ * preview-only MP4 for the VPS operator. Neither mode publishes or uploads.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { lstat, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildOfflineVideoCreditsReport,
   makeOfflineGraphicStoryboard,
 } from "../packages/shared/dist/index.js";
 
-if (process.env.GITHUB_ACTIONS !== "true" || process.env.CI !== "true") {
-  throw new Error("REFUSED: real-source preview encoder is GitHub CI only");
+const CI_PROOF =
+  process.argv.length === 2 && process.env.GITHUB_ACTIONS === "true" && process.env.CI === "true";
+const LOCAL_PREVIEW = process.argv.length === 3 && process.argv[2] === "--save-local";
+if (
+  !CI_PROOF &&
+  !(
+    LOCAL_PREVIEW &&
+    process.env.GITHUB_ACTIONS !== "true" &&
+    process.env.CI !== "true" &&
+    process.getuid?.() === 1000 &&
+    process.env.USER === "ap" &&
+    homedir() === "/home/ap"
+  )
+) {
+  throw new Error("REFUSED: only isolated GitHub CI proof or local ap preview permitted");
 }
+if (LOCAL_PREVIEW) process.umask(0o077);
 
 const STORY_PATH = new URL("../content/news/ozone-2026-antarktis-de.json", import.meta.url);
 const VIDEO_ID = "00000000-0000-4000-8000-000000000731";
@@ -368,9 +383,8 @@ async function main() {
     assert.ok(Number(info.format.duration) > 35 && Number(info.format.duration) < 220);
     const byteSize = (await stat(output)).size;
     assert.ok(byteSize > 5000 && byteSize < 30 * 1024 * 1024);
-    const sha256 = createHash("sha256")
-      .update(await readFile(output))
-      .digest("hex");
+    const videoBytes = await readFile(output);
+    const sha256 = createHash("sha256").update(videoBytes).digest("hex");
     assert.equal(news.editorialApproved, false);
     assert.equal(news.publicationAllowed, false);
     assert.equal(rights.renderAllowed, false);
@@ -389,6 +403,23 @@ async function main() {
       "Sources: NASA/NOAA joint evidence + independent Copernicus/DLR context. " +
         "Editorial rights approval: DENIED. Production render/upload: NOT ENABLED.",
     );
+    if (LOCAL_PREVIEW) {
+      // No webroot, Git checkout, media server or cloud upload. Never overwrite.
+      const directory = join(homedir(), "vns-offline-previews");
+      try {
+        await mkdir(directory, { mode: 0o700 });
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+      }
+      const dirInfo = await lstat(directory);
+      assert.ok(dirInfo.isDirectory() && !dirInfo.isSymbolicLink());
+      assert.equal(dirInfo.uid, process.getuid());
+      assert.equal(dirInfo.mode & 0o777, 0o700);
+      const target = join(directory, "ozonloch-2026-de-vorschau.mp4");
+      await writeFile(target, videoBytes, { mode: 0o600, flag: "wx" });
+      console.log("LOCAL_PRIVATE_PREVIEW=" + target);
+      console.log("NOT_PUBLISHED=true");
+    }
   } finally {
     await rm(folder, { recursive: true, force: true });
   }
