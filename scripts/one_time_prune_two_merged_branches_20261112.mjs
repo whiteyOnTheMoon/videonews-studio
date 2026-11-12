@@ -2,7 +2,6 @@
 // ONE-TIME, SHA-pinned deletion of two already-merged historical refs.
 // Deletion only after audited PR is merged via an exact-title main push.
 // Explicitly retain P1-09, P3 open-PR branches and the default branch.
-import assert from "node:assert/strict";
 
 const REPO = "whiteyOnTheMoon/videonews-studio";
 const OWN = "maintenance/p1-02-final-merged-refs-prune-20261112";

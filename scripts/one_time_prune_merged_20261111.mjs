@@ -2,7 +2,6 @@
 // P1-02: one-time SHA-pinned cleanup of exactly 182 verified merged PR refs.
 // On PR: strictly read-only audit. On a specific merged-main push: deletion.
 // Never delete unmerged, opened, protected, unknown, or changed branches.
-import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const manifest = JSON.parse(

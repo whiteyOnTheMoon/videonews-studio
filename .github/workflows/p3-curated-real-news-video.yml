@@ -1,0 +1,47 @@
+name: P3 curated real-news offline voiced video proof
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "content/news/ozone-2026-antarktis-de.json"
+      - "scripts/ci_p3_curated_real_news_video.mjs"
+      - "docs/P3_REAL_OZONE_2026_EDITORIAL_PILOT.md"
+      - ".github/workflows/p3-curated-real-news-video.yml"
+permissions:
+  contents: read
+jobs:
+  real-news-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked Node dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install open-source local-only media tools on disposable runner
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin espeak-ng
+      - name: Build and validate repository without activating production workers
+        run: |
+          npm run build --workspace @vns/shared
+          npm run typecheck
+          npm run lint
+          npx prettier --check \
+            content/news/ozone-2026-antarktis-de.json \
+            scripts/ci_p3_curated_real_news_video.mjs \
+            docs/P3_REAL_OZONE_2026_EDITORIAL_PILOT.md \
+            .github/workflows/p3-curated-real-news-video.yml
+          npm test
+      - name: Reject execution without GitHub Actions environment
+        run: |
+          if GITHUB_ACTIONS=false node scripts/ci_p3_curated_real_news_video.mjs; then
+            echo "REFUSED: real-news preview unexpectedly ran outside CI"
+            exit 1
+          fi
+      - name: Encode and ffprobe real-sourced original-news preview in temporary CI only
+        run: node scripts/ci_p3_curated_real_news_video.mjs
