@@ -51,12 +51,12 @@ const FADE = 0.55;
 const VISUAL_ASSETS = Object.freeze([
   {
     filename: "earth-nasa.jpg",
-    sha256: "PENDING_EARTH_SHA256",
+    sha256: "872e1a5317ac31612a766ef6dfa7e774e2d10509b1e564b38e3aa384d6b0bf19",
     credit: "NASA / Suomi NPP (PIA18033)",
   },
   {
     filename: "ozone-2026-nasa.jpg",
-    sha256: "PENDING_OZONE_SHA256",
+    sha256: "22b83f5dab6248d401e5ac313f98a18626b8c1ca002e43b67209d56f69ce0c6d",
     credit: "NASA Earth Observatory / Lauren Dauphin",
   },
 ]);
