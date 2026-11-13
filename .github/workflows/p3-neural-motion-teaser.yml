@@ -1,0 +1,57 @@
+name: P3 private Piper voice and motion teaser
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/vps_p3_neural_motion_teaser.mjs"
+      - ".github/workflows/p3-neural-motion-teaser.yml"
+      - "docs/P3_NEURAL_MOTION_QUALITY_TEASER.md"
+permissions:
+  contents: read
+jobs:
+  private-quality-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked Node dependencies and build shared graphics
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @vns/shared
+          npm run lint
+          node --check scripts/vps_p3_neural_motion_teaser.mjs
+      - name: Install free offline tools only in disposable CI
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin
+          python -m venv "$RUNNER_TEMP/vns-piper"
+          "$RUNNER_TEMP/vns-piper/bin/python" -m pip install --disable-pip-version-check "piper-tts==1.8.0"
+          echo "VNS_PIPER_PYTHON=$RUNNER_TEMP/vns-piper/bin/python" >> "$GITHUB_ENV"
+      - name: Download and verify pinned public voice model
+        run: |
+          mkdir -p "$RUNNER_TEMP/voices"
+          ROOT="https://huggingface.co/rhasspy/piper-voices/resolve/b145f2ac26522d6a2ccde0164b7b0e48b1e3199c/en/en_US/lessac/medium"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" \
+            "$ROOT/en_US-lessac-medium.onnx"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/voices/en_US-lessac-medium.onnx.json" \
+            "$ROOT/en_US-lessac-medium.onnx.json"
+          echo "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f  $RUNNER_TEMP/voices/en_US-lessac-medium.onnx" | sha256sum -c -
+          echo "VNS_PIPER_MODEL=$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" >> "$GITHUB_ENV"
+      - name: Refuse an unapproved local save in CI
+        run: |
+          if VNS_QUALITY_TEASER_APPROVED=PRIVATE_REVIEW_ONLY node scripts/vps_p3_neural_motion_teaser.mjs --save-local; then
+            echo "Unexpected local preview permission in CI"
+            exit 1
+          fi
+      - name: Prove actual local neural voice and animated MP4 without publishing
+        run: node scripts/vps_p3_neural_motion_teaser.mjs
