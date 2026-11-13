@@ -123,3 +123,38 @@ remains limited to isolated decorative elements, rather than moving type.
 The full 8–10-minute MP4 is only rendered manually on the VPS. The CI audio,
 six-image compositing and disposable 3-second mux smoke check do **not**
 establish subjective listening quality or YouTube publication clearance.
+
+
+## Visual uniqueness gate (follow-up prototype)
+
+The private preview renderer now enforces **one source image per episode**.
+Of the 19 visual beats, only six use the previously SHA-pinned NASA photos,
+each exactly once; 13 are original SVG graphics with no repeated
+photographic background. Cropping, zooming, recoloring or renaming a source
+file is **not** a new motif. An explicit duplicate SHA-256 manifest check
+prevents byte-identical files from masquerading as distinct assets.
+The programmatic scene map also rejects repeat assignments. These are
+source-level checks; near-duplicate *perceptual* detection is future work.
+
+All picture-in-picture inserts have been removed. The original graphic's
+full background is retained for graphic-only beats. The dark photograph
+overlay is slightly less opaque. The project does not yet have a verified
+license-safe moving-video asset pipeline; **do not silently scrape videos**
+or treat unspecified third-party clips as approved.
+
+Next video-source integration requirements:
+- Manually reviewed source URL, credited creator, capture/data date,
+  precise license/rights statement, permitted use, and pinned digest;
+  video frame comparisons must catch reused video/motifs.
+- Distinguish actual footage from simulation and historical archive; no
+  archival climate footage should suggest it was recorded in 2026.
+- Local deterministic cache only, conservative ffprobe validation, no
+  download during rendering, fail closed for unknown rights.
+- Maintain explicit human editorial, rights, upload and publication gates
+  (all remain DENIED); the Piper Lessac voice is for private demo only.
+- Run the CI smoke test and review the full private VPS output before
+  describing motion or picture quality as validated.
+
+The earlier sections describe the previous six-background version and
+are preserved for historical comparison. This section supersedes prior
+references to recurring photo backgrounds and picture-in-picture insets.
