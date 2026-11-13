@@ -28,6 +28,11 @@ on:
       - "scripts/p3_science_safe_composition.mjs"
       - "scripts/p3_science_safe_composition.test.mjs"
       - "scripts/p3_science_safe_visual_review.mjs"
+      - "scripts/p3_layered_cinematic_composition.mjs"
+      - "scripts/p3_layered_cinematic_composition.test.mjs"
+      - "scripts/p3_layered_visual_review.mjs"
+      - "scripts/vps_p3_full_english_piper_preview.mjs"
+      - "docs/P3_LAYERED_CINEMATIC.md"
       - "docs/P3_SCIENCE_SAFE_CINEMATIC.md"
       - "docs/P3_INTEGRATED_PRIVATE_PREVIEW_PROOF.md"
       - ".github/workflows/p3-episode-asset-library.yml"
@@ -61,6 +66,9 @@ jobs:
           node --check scripts/p3_science_safe_composition.mjs
           node --check scripts/p3_science_safe_composition.test.mjs
           node --check scripts/p3_science_safe_visual_review.mjs
+          node --check scripts/p3_layered_cinematic_composition.mjs
+          node --check scripts/p3_layered_cinematic_composition.test.mjs
+          node --check scripts/p3_layered_visual_review.mjs
       - name: Install local-only FFmpeg test fixture tooling
         run: |
           sudo apt-get update -qq
@@ -82,5 +90,15 @@ jobs:
           fi
       - name: Create and inspect ephemeral 10-second synthetic five-beat visual review
         run: env -u PEXELS_API_KEY node scripts/p3_science_safe_visual_review.mjs --verify-ephemeral
+      - name: Verify full-bleed gradient, real crossfade and synthetic inset
+        run: env -u PEXELS_API_KEY node --test scripts/p3_layered_cinematic_composition.test.mjs
+      - name: Refuse P3-17 saved private preview inside CI
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY node scripts/p3_layered_visual_review.mjs --save-private; then
+            echo "REFUSED: CI cannot persist P3-17 preview"
+            exit 1
+          fi
+      - name: Render ephemeral P3-17 five-beat layered witness with two backgrounds
+        run: env -u PEXELS_API_KEY node scripts/p3_layered_visual_review.mjs --verify-ephemeral
       - name: Verify end-to-end synthetic voiced cinematic preview, quarantine and cleanup
         run: env -u PEXELS_API_KEY node --test scripts/p3_integrated_private_preview.test.mjs
