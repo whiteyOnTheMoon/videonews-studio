@@ -53,8 +53,8 @@ export async function validateEpisodeMediaManifest(manifest, root) {
     if (!SHA.test(asset.sha256)) fail("Invalid SHA-256: " + asset.id);
     if (!validHttps(asset.sourceUrl) || !validHttps(asset.licenseUrl))
       fail("Invalid source or license URL: " + asset.id);
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(asset.captureDate) ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(asset.rightsReviewedAt) ||
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asset.captureDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(asset.rightsReviewedAt) ||
         !Number.isFinite(Date.parse(asset.captureDate)) ||
         !Number.isFinite(Date.parse(asset.rightsReviewedAt)))
       fail("Invalid capture/review date: " + asset.id);
