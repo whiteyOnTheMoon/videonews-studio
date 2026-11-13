@@ -153,7 +153,7 @@ test("two full-bleed moving sources crossfade across five beats under text and r
     }), /scientific footage must be a separate foreground inset/);
     await assert.rejects(() => planLayeredTimeline({
       ...input, manifest: {schemaVersion: 1, assets: backgrounds.map((a, i) =>
-        i === 2 ? {...a, role: "background"} : a)},
+        i === 2 ? {...a, role: "background", scientificVisualization: false} : a)},
     }), /Layered background spans overlap/);
 
     const output = join(root, "layered-video-only.mp4");
