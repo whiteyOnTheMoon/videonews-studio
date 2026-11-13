@@ -137,7 +137,9 @@ export async function researchVisualBatch({
   assert.ok(Array.isArray(tasks) && tasks.length === expected.length &&
     tasks.every((task, i) =>
       task.id === expected[i].id &&
+      task.sceneId === expected[i].sceneId &&
       task.provider === expected[i].provider &&
+      task.role === expected[i].role &&
       task.query === expected[i].query),
   "Research task schedule must match this immutable story plan");
   assert.ok(Number.isSafeInteger(cursor) && cursor >= 0 && cursor <= tasks.length);
