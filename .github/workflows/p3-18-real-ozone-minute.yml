@@ -1,0 +1,52 @@
+name: P3-18 authentic ozone one-minute editorial pilot proof
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p3_minute_editorial_layout.mjs"
+      - "scripts/p3_layered_cinematic_composition.mjs"
+      - "scripts/p3_ozone_minute_private_pilot.mjs"
+      - "scripts/p3_ozone_minute_private_pilot.test.mjs"
+      - "scripts/p3_18_create_media_draft.mjs"
+      - "content/news/ozone-2026-minute-editorial-pilot-en.json"
+      - "content/media/p3-18-ozone-pilot-candidate-review.json"
+      - "docs/P3_18_ONE_MINUTE_AUTHENTIC_PILOT.md"
+      - ".github/workflows/p3-18-real-ozone-minute.yml"
+permissions:
+  contents: read
+jobs:
+  ozone-minute-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate entire repository lint and P3-18 scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run lint
+          node --check scripts/p3_minute_editorial_layout.mjs
+          node --check scripts/p3_layered_cinematic_composition.mjs
+          node --check scripts/p3_ozone_minute_private_pilot.mjs
+          node --check scripts/p3_ozone_minute_private_pilot.test.mjs
+          node --check scripts/p3_18_create_media_draft.mjs
+          node scripts/p3_ozone_minute_private_pilot.mjs --check-editorial
+      - name: Install offline FFmpeg test fixture encoder and SVG renderer
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin
+      - name: Refuse any real media/Piper private render inside CI
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY \
+            node scripts/p3_ozone_minute_private_pilot.mjs --save-private; then
+            echo "UNSAFE: real media preview must be refused in CI"
+            exit 1
+          fi
+      - name: Render 60-second ORIGINAL SYNTHETIC stand-in with real editorial script
+        run: |
+          env -u PEXELS_API_KEY \
+            node --test scripts/p3_ozone_minute_private_pilot.test.mjs

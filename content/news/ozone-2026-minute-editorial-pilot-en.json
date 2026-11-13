@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "id": "ozone-2026-minute-editorial-pilot-en",
+  "language": "en-US",
+  "title": "Antarctica's 2026 Ozone Hole: Large, Yet Healing",
+  "date": "2026-11-13",
+  "durationFrames": 1440,
+  "fps": 24,
+  "editorialApproved": false,
+  "publicationAllowed": false,
+  "sources": [
+    {
+      "id": "nasa-nov-04",
+      "url": "https://science.nasa.gov/earth/2026-ozone-hole/",
+      "date": "2026-11-04",
+      "publisher": "NASA"
+    },
+    {
+      "id": "noaa-nov-04",
+      "url": "https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole",
+      "date": "2026-11-04",
+      "publisher": "NOAA"
+    },
+    {
+      "id": "nasa-world-change",
+      "url": "https://science.nasa.gov/earth/earth-observatory/world-of-change/ozone-hole/",
+      "date": "2026-11-09",
+      "publisher": "NASA Earth Observatory"
+    }
+  ],
+  "beats": [
+    {
+      "id": "beat-01",
+      "seconds": 10,
+      "narration": "The Antarctic ozone hole grew unusually large in twenty twenty-six. Does that mean the ozone layer has stopped healing?",
+      "visual": {
+        "presentation": "hero",
+        "kind": "text-card",
+        "title": "ANTARCTICA'S OZONE HOLE",
+        "body": "2026: a large hole, but a more complex story"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-02",
+      "seconds": 10,
+      "narration": "NASA and NOAA report an average area of twenty-five million square kilometers during peak season: seventh largest in forty-eight years.",
+      "visual": {
+        "presentation": "metric",
+        "kind": "text-card",
+        "title": "2026 PEAK-SEASON AVERAGE",
+        "metric": "25 MILLION km²",
+        "body": "September 7–October 13 · 7th largest on record"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-03",
+      "seconds": 10,
+      "narration": "On September eighteenth, the hole reached twenty-seven point one million square kilometers. Ozone hole means thinning, not an actual empty space.",
+      "visual": {
+        "presentation": "metric",
+        "kind": "text-card",
+        "title": "LARGEST SINGLE DAY",
+        "metric": "27.1 MILLION km²",
+        "body": "18 September 2026 · a threshold-based area"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "nasa-world-change"
+      ]
+    },
+    {
+      "id": "beat-04",
+      "seconds": 10,
+      "narration": "An unusually powerful polar vortex kept Antarctic air very cold, creating conditions where ozone-destroying chemicals became more effective.",
+      "visual": {
+        "presentation": "science-focus",
+        "kind": "text-card",
+        "title": "THE POLAR VORTEX",
+        "body": "2026 NASA ozone observations · dated scientific graphic"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-05",
+      "seconds": 10,
+      "narration": "Still, the hole was not as deep as other large years. Long-term reductions in harmful chemicals are making a difference.",
+      "visual": {
+        "presentation": "center-brief",
+        "kind": "text-card",
+        "title": "SIZE IS NOT DEPTH",
+        "body": "An unusually large area did not set a depletion-depth record."
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-06",
+      "seconds": 10,
+      "narration": "Thanks in part to the Montreal Protocol, recovery remains on track, though full Antarctic recovery may take until the twenty-seventies.",
+      "visual": {
+        "presentation": "science-focus",
+        "kind": "text-card",
+        "title": "RECOVERY TAKES TIME",
+        "body": "NASA data visualisation · editorial preview only"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "nasa-world-change"
+      ]
+    }
+  ],
+  "mediaPlan": {
+    "background": [
+      {
+        "role": "background",
+        "sceneId": "beat-01",
+        "endSceneId": "beat-02",
+        "candidateId": "svs-earth-5570"
+      },
+      {
+        "role": "background",
+        "sceneId": "beat-03",
+        "endSceneId": "beat-04",
+        "candidateId": "svs-earth-spheres-31365"
+      },
+      {
+        "role": "background",
+        "sceneId": "beat-05",
+        "endSceneId": "beat-06",
+        "candidateId": "svs-pace-31365"
+      }
+    ],
+    "foreground": [
+      {
+        "role": "image-card",
+        "sceneId": "beat-04",
+        "endSceneId": "beat-04",
+        "candidateId": "nasa-ozone-map-2026"
+      },
+      {
+        "role": "science-inset",
+        "sceneId": "beat-06",
+        "endSceneId": "beat-06",
+        "candidateId": "nasa-ozone-video-2026"
+      }
+    ]
+  }
+}

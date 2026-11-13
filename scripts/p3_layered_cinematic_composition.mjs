@@ -15,6 +15,10 @@ import {lstat, mkdir, readFile, writeFile} from "node:fs/promises";
 import {isAbsolute, join} from "node:path";
 import {validateEpisodeMediaManifest} from "./check_episode_media_manifest.mjs";
 import {requiresScienceSafeMode} from "./p3_science_safe_composition.mjs";
+import {
+  createMinuteEditorialOverlaySvg,
+  minuteMediaPlacement,
+} from "./p3_minute_editorial_layout.mjs";
 
 export const LAYERED_FPS = 24;
 export const LAYERED_FADE_FRAMES = 12;
@@ -108,6 +112,11 @@ export function createLayeredDimSvg() {
 
 /** All science-image pixels stay within their frame, above the dim layer. */
 export function createLayeredForegroundSvg({visual, sequence, backgroundCredit, foreground}) {
+  if (visual?.presentation) {
+    return createMinuteEditorialOverlaySvg({
+      visual, sequence, backgroundCredit, foreground,
+    });
+  }
   assert.ok(visual && typeof visual.title === "string" &&
     visual.title.length >= 3 && visual.title.length <= 85);
   assert.ok(Number.isInteger(sequence) && sequence >= 1 && sequence <= SCENE_LIMIT);
@@ -211,7 +220,15 @@ export async function planLayeredTimeline({manifest, assetRoot, beatFrames, beat
     const frames = beatFrames.slice(start, end + 1).reduce((sum, n) => sum + n, 0);
     if (asset.role === "background") {
       assert.equal(asset.kind, "video", "Background must be video");
-      assert.ok(!requiresScienceSafeMode(asset),
+      // The NASA SVS hostname alone is not proof that every frame contains
+      // scientific labels. A specifically reviewed atmospheric illustration
+      // can be deliberately dimmed, but P3-16 protected mode is unchanged.
+      const reviewedAtmosphere = asset.scientificVisualization === false &&
+        asset.atmosphericVisualReview === true &&
+        asset.contentClassification === "ILLUSTRATIVE_BACKGROUND" &&
+        typeof asset.reviewReceipt === "string" &&
+        asset.reviewReceipt.length >= 15;
+      assert.ok(!requiresScienceSafeMode(asset) || reviewedAtmosphere,
         "Annotated scientific footage must be a separate foreground inset");
       assert.ok(start <= end, "Invalid background range");
       for (let index = start; index <= end; index++) {
@@ -358,17 +375,21 @@ export async function encodeLayeredSequence({plan, output, directory}) {
     const frames = a.assignedFrames;
     const fade = Math.min(10, Math.floor(frames / 4));
     const mediaTag = "[fg-media" + i + "]";
+    const presentation = plan.beatVisuals[a.start]?.presentation;
+    const placement = presentation
+      ? minuteMediaPlacement(presentation)
+      : {x: MEDIA_X, y: MEDIA_Y, width: MEDIA_WIDTH, height: MEDIA_HEIGHT};
     g.push("[" + index + ":v:0]fps=24,trim=duration=" + duration(frames) +
-      ",setpts=PTS-STARTPTS,scale=" + MEDIA_WIDTH + ":" + MEDIA_HEIGHT +
+      ",setpts=PTS-STARTPTS,scale=" + placement.width + ":" + placement.height +
       ":force_original_aspect_ratio=decrease," +
-      "pad=" + MEDIA_WIDTH + ":" + MEDIA_HEIGHT +
+      "pad=" + placement.width + ":" + placement.height +
       ":(ow-iw)/2:(oh-ih)/2:color=0x06101c," +
       "setsar=1,format=rgba,fade=t=in:st=0:d=" + duration(fade) +
       ":alpha=1,fade=t=out:st=" + duration(frames - fade) +
       ":d=" + duration(fade) + ":alpha=1,setpts=PTS-STARTPTS+" +
       duration(offset) + "/TB" + mediaTag);
     const next = "[with-media" + i + "]";
-    g.push(previous + mediaTag + "overlay=" + MEDIA_X + ":" + MEDIA_Y +
+    g.push(previous + mediaTag + "overlay=" + placement.x + ":" + placement.y +
       ":format=auto:repeatlast=0:eof_action=pass:" +
       "enable='gte(t," + duration(offset) + ")*lt(t," +
       duration(offset + frames) + ")'" + next);
