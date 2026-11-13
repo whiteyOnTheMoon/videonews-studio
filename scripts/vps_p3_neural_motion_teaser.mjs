@@ -246,13 +246,19 @@ async function makeVideo(frames, wav, dir, seconds, images) {
     assert.ok(svgText.includes(oldBackground));
     svgText = svgText.replace(oldBackground,
       '<rect x="0" y="0" width="1280" height="720" fill="#071420" fill-opacity="0.76"/>');
+    const credit = index % 2 === 0
+      ? "NASA / Suomi NPP · Earth composite"
+      : "NASA Earth Observatory / Lauren Dauphin · Oct 4, 2026";
+    svgText = svgText.replace("</svg>",
+      '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
+      'font-family="Arial, sans-serif">' + credit + '</text></svg>');
     const showInset = index === 0 || index === 4;
     if (showInset) {
       svgText = svgText.replace("</svg>",
         '<rect x="828" y="378" width="344" height="250" rx="9" ' +
         'fill="#0a1b29" stroke="#64d8cb" stroke-width="3"/>' +
         '<text x="841" y="646" font-size="17" fill="#c9e1f0" ' +
-        'font-family="Arial, sans-serif">NASA EO / Lauren Dauphin · 2026 data</text></svg>');
+        'font-family="Arial, sans-serif">Ozone map: NASA EO · Oct 4, 2026</text></svg>');
     }
     const path = join(dir, "graphic-" + index + ".svg");
     const transparent = join(dir, "foreground-" + index + ".png");
