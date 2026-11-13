@@ -94,11 +94,10 @@ function command(name, args, timeout = 120000) {
   });
   if (result.error || result.status !== 0) {
     throw new Error(
-      name +
-        " failed: " +
-        (result.error?.code ?? result.status) +
-        " " +
-        (result.stderr ?? "").slice(-900),
+      name + " failed; status=" + String(result.status) +
+      "; signal=" + String(result.signal) +
+      "; code=" + String(result.error?.code ?? "none") +
+      "; stderr=" + (result.stderr ?? "").slice(-1200),
     );
   }
   return result.stdout;
@@ -408,87 +407,110 @@ async function assembleAudio(speechPaths, plan, directory) {
   return output;
 }
 
-async function renderMovie(pngPaths, audioPath, plan, directory) {
+/**
+ * A long-lived FFmpeg filter graph on a small VPS may be terminated by the
+ * OS, without diagnostic stderr. Encode each graphic beat separately (with
+ * one CPU encoding thread), then losslessly concat the identical H264
+ * bitstreams. Audio is combined and AAC-encoded only once, at the end.
+ * Never scale or translate text; move only the decorative underline.
+ */
+async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false) {
   const beats = plan.sections.flatMap((section) => section.visualBeats);
   assert.equal(pngPaths.length, beats.length);
-  const lines = ["ffconcat version 1.0"];
-  for (const [index, beat] of beats.entries()) {
-    // Paths are generated inside the private CI temp directory, not user-provided.
-    assert.ok(!pngPaths[index].includes("'") && !pngPaths[index].includes("\n"));
-    lines.push("file '" + pngPaths[index] + "'");
-    lines.push("duration " + (beat.frames / FPS).toFixed(9));
+  const selected = smoke ? pngPaths.slice(0, 2) : pngPaths;
+  const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
+  assert.equal(selected.length, frameCounts.length);
+  if (smoke) {
+    assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
+    assert.equal(selected.length, 2);
+  } else {
+    assert.equal(selected.length, 19);
+    assert.equal(frameCounts.reduce((sum, frames) => sum + frames, 0), plan.totalFrames);
   }
-  lines.push("file '" + pngPaths.at(-1) + "'");
-  const framesFile = join(directory, "frames.ffconcat");
-  await writeFile(framesFile, lines.join("\n") + "\n", { mode: 0o600, flag: "wx" });
-  const startTimes = beats.map((beat) => (beat.startFrame / FPS).toFixed(6));
-  const xMotion = startTimes
-    .slice()
-    .reverse()
-    .reduce(
-      (otherwise, start) =>
-        "if(between(t," + start + "," + (Number(start) + 1.55).toFixed(6) +
-        "),-420+512*min(max(t-" + start + ",0)/1.4,1)," + otherwise + ")",
-      "-420",
+  const encodedClips = [];
+  for (const [index, path] of selected.entries()) {
+    const frames = frameCounts[index];
+    assert.ok(Number.isSafeInteger(frames) && frames >= 24 && frames < 24 * 240);
+    const encoded = join(
+      directory,
+      "scene-" + String(index + 1).padStart(2, "0") + ".mp4",
     );
-  const filters =
-    "[0:v]fps=24,format=yuv420p[slides];" +
-    "color=c=0x64d8cb:s=420x6:r=24:d=" +
-    plan.totalSeconds.toFixed(6) +
-    ",format=rgba[accent];" +
-    "[slides][accent]overlay=x='" + xMotion +
-    "':y=174:shortest=1:format=auto,format=yuv420p[finalv]";
-  const output = join(directory, "ENGLISH_PIPER_NASA_REVIEW_REQUIRED.mp4");
-  command(
-    "ffmpeg",
-    [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-nostdin",
-      "-y",
-      "-protocol_whitelist",
-      "file,pipe",
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      framesFile,
-      "-protocol_whitelist",
-      "file,pipe",
-      "-i",
-      audioPath,
-      "-filter_complex",
-      filters,
-      "-map",
-      "[finalv]",
-      "-map",
-      "1:a:0",
-      "-t",
-      plan.totalSeconds.toFixed(6),
-      "-c:v",
-      "libx264",
-      "-preset",
-      "ultrafast",
-      "-crf",
-      "30",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "128k",
-      "-ar",
-      "48000",
-      "-ac",
-      "1",
-      "-movflags",
-      "+faststart",
-      "-metadata",
-      "title=EARTH AND CLIMATE EXPLAINED - REVIEW REQUIRED",
-      output,
-    ],
-    480000,
+    const filter =
+      "[0:v]format=yuv420p[fixed];" +
+      "color=c=0x64d8cb:s=420x6:r=24,format=rgba[accent];" +
+      "[fixed][accent]overlay=x='-420+512*min(t/1.4,1)'" +
+      ":y=174:shortest=1:format=auto,format=yuv420p[finalv]";
+    command("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+      "-filter_complex_threads", "1", "-threads", "1",
+      "-loop", "1", "-framerate", String(FPS),
+      "-protocol_whitelist", "file,pipe", "-i", path,
+      "-filter_complex", filter,
+      "-map", "[finalv]", "-frames:v", String(frames),
+      "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+      "-threads:v", "1",
+      "-pix_fmt", "yuv420p", "-r", String(FPS),
+      "-an", "-movflags", "+faststart",
+      encoded,
+    ], 360000);
+    const clip = probe(encoded);
+    const video = clip.streams.find((stream) => stream.codec_type === "video");
+    assert.equal(video?.codec_name, "h264");
+    assert.equal(video?.width, 1280);
+    assert.equal(video?.height, 720);
+    assert.equal(Number(video?.nb_frames), frames);
+    encodedClips.push(encoded);
+    console.log(
+      "VIDEO_SCENE_ENCODED=" + (index + 1) + "/" + selected.length +
+      "; frames=" + frames,
+    );
+  }
+
+  // The encoded MP4 segments share encoder profile, dimensions, fps and
+  // pixel format, so video can be copied into one continuous track without
+  // keeping the entire 8-minute episode in a live filter graph.
+  const concat = join(directory, "encoded-scenes.ffconcat");
+  const list = ["ffconcat version 1.0"];
+  for (const clip of encodedClips) {
+    assert.ok(!clip.includes("'") && !clip.includes("\n"));
+    list.push("file '" + clip + "'");
+  }
+  await writeFile(concat, list.join("\n") + "\n", {
+    mode: 0o600, flag: "wx",
+  });
+  const joined = join(directory, "joined-video-track.mp4");
+  command("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-protocol_whitelist", "file,pipe", "-f", "concat", "-safe", "0",
+    "-i", concat,
+    "-map", "0:v:0", "-c:v", "copy", "-an",
+    "-movflags", "+faststart",
+    joined,
+  ], 120000);
+  const expectedFrames = frameCounts.reduce((sum, n) => sum + n, 0);
+  const duration = expectedFrames / FPS;
+  const joinedVideo = probe(joined);
+  const joinedStream = joinedVideo.streams.find(
+    (stream) => stream.codec_type === "video",
   );
+  assert.equal(Number(joinedStream?.nb_frames), expectedFrames);
+  assert.ok(Math.abs(Number(joinedVideo.format.duration) - duration) < 0.1);
+
+  const output = join(
+    directory,
+    smoke ? "CI_ONLY_3_SECOND_VIDEO_SMOKE.mp4" : "ENGLISH_PIPER_NASA_REVIEW_REQUIRED.mp4",
+  );
+  command("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-protocol_whitelist", "file,pipe", "-i", joined,
+    "-protocol_whitelist", "file,pipe", "-i", audioPath,
+    "-map", "0:v:0", "-map", "1:a:0",
+    "-t", duration.toFixed(6), "-c:v", "copy",
+    "-c:a", "aac", "-b:a", "128k",
+    "-ar", "48000", "-ac", "1", "-movflags", "+faststart",
+    "-metadata", "title=EARTH AND CLIMATE EXPLAINED - REVIEW REQUIRED",
+    output,
+  ], 120000);
   const details = probe(output);
   const video = details.streams.find((stream) => stream.codec_type === "video");
   const audio = details.streams.find((stream) => stream.codec_type === "audio");
@@ -496,18 +518,17 @@ async function renderMovie(pngPaths, audioPath, plan, directory) {
   assert.equal(audio?.codec_name, "aac");
   assert.equal(video?.width, 1280);
   assert.equal(video?.height, 720);
-  assert.ok(
-    Math.abs(Number(video.nb_frames) - plan.totalFrames) <= 2,
-    "Video frame count must match voice-driven timeline",
-  );
-  assert.ok(
-    Math.abs(Number(details.format.duration) - plan.totalSeconds) <= 0.2,
-    "Movie duration must match the voice-driven timeline",
-  );
-  assert.ok(
-    Number(details.format.duration) >= 480 && Number(details.format.duration) <= 600,
-    "Episode must be 8–10 minutes, not padded with empty shots",
-  );
+  assert.equal(Number(video?.nb_frames), expectedFrames);
+  assert.ok(Math.abs(Number(details.format.duration) - duration) <= 0.2);
+  if (smoke) {
+    assert.ok(duration === 3);
+    console.log("THREE_SECOND_SEGMENTED_H264_AAC_SMOKE=PASS");
+  } else {
+    assert.ok(Math.abs(duration - plan.totalSeconds) <= 0.01);
+    assert.ok(Number(details.format.duration) >= 480 &&
+      Number(details.format.duration) <= 600,
+    "Episode must be 8–10 minutes, never padded with empty shots");
+  }
   const size = (await stat(output)).size;
   assert.ok(size > 100000 && size < 140 * 1024 * 1024);
   return { output, duration: Number(details.format.duration), size };
@@ -551,9 +572,12 @@ async function main() {
       "; ENGLISH_VISUAL_BEATS=19");
     const pngPaths = await renderGraphics(story, sources, images, directory);
     if (CI_AUDIO_ONLY) {
+      // Prove the *actual* encode/concat/mux pipeline with a tiny 3-second
+      // disposable video. A full 8–10 minute MP4 is still VPS-only.
+      await renderMovie(pngPaths, paths[0], plan, directory, true);
       console.log("P3 FULL ENGLISH AUDIO AND 19 GRAPHIC PROOF PASS: " +
         plan.totalSeconds.toFixed(3) + " seconds; 7 canonical sections; " +
-        pngPaths.length + " photo-backed original graphics; NO MP4 IN CI");
+        pngPaths.length + " photo-backed original graphics; NO FULL MP4 IN CI");
       return;
     }
     const audio = await assembleAudio(paths, plan, directory);
