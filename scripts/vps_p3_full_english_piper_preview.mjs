@@ -96,21 +96,29 @@ const VISUAL_ASSETS = Object.freeze([
     credit: "NASA/JPL · Antarctic limb mosaic · archive 1990",
   },
 ]);
-/** 19 source-matched backgrounds. Avoid misleading archival views as 2026 photos. */
+/**
+ * A source photo may appear in exactly one beat. null means an original
+ * graphic without any recycled background. Do not silently duplicate files,
+ * crop, zoom, or re-color a photo to work around this restriction.
+ */
 const BEAT_VISUAL_ASSET = Object.freeze([
-  1, 0,             // The Hook: 2026 ozone data, Earth
-  0, 2, 3,          // Basics: Earth / Antarctica / globe context
-  1, 1, 4,          // Measurements: actual 2026 map / archival vortex context
-  2, 4, 5,          // Why: ice shelf / vortex 2014 / atmosphere 1990
-  3, 0, 2,          // Why it matters: global archive / Earth / Antarctica
-  3, 1, 0,          // Next: historic Earth views / ozone monitoring / Earth
-  1, 0,             // Takeaway: the observed ozone hole / Earth
-]);
-const INSET_BY_BEAT = new Map([
-  [0, 1], [7, 4], [17, 1],
+  1, null,           // Hook: contemporary ozone image, then original graphic
+  0, null, null,     // Basics: Earth photo, then diagrams
+  null, null, 4,     // Measurements: comparison diagrams and dated 2014 vortex
+  2, null, 5,        // Why: Antarctic archive, graphic, archival limb mosaic
+  null, 3, null,     // Why it matters: original graphics, archival Earth views
+  null, null, null,  // Next: data/monitoring explanations as original graphics
+  null, null,        // Takeaway: original graphics only
 ]);
 assert.equal(BEAT_VISUAL_ASSET.length, 19);
-assert.equal(new Set(BEAT_VISUAL_ASSET).size, VISUAL_ASSETS.length);
+const photoBeats = BEAT_VISUAL_ASSET.filter(index => index !== null);
+assert.equal(photoBeats.length, VISUAL_ASSETS.length);
+assert.equal(new Set(photoBeats).size, photoBeats.length,
+  "The same source photo must never appear twice in one episode");
+assert.deepEqual([...photoBeats].sort((a, b) => a - b),
+  VISUAL_ASSETS.map((_, index) => index));
+assert.equal(new Set(VISUAL_ASSETS.map(a => a.sha256)).size, VISUAL_ASSETS.length,
+  "Distinct asset filenames must not hide duplicate image bytes");
 
 const SOURCE_HOSTS = Object.freeze({
   "noaa-2026": "www.noaa.gov",
@@ -368,57 +376,46 @@ async function renderGraphics(story, sources, images, directory) {
       const index = pngPaths.length;
       let svg = result.frames[0].svg;
       assert.match(svg, /PREVIEW – NOT FOR PUBLICATION/);
-      assert.doesNotMatch(svg, /VORSCHAU|Quellenlinks|<image\b|<script\b|<foreignObject\b/);
+      assert.doesNotMatch(svg, /VORSCHAU|Quellenlinks|<image\\b|<script\\b|<foreignObject\\b/);
       const opaque = '<rect x="0" y="0" width="1280" height="720" fill="#0a1929"/>';
       assert.ok(svg.includes(opaque));
-      svg = svg.replace(opaque,
-        '<rect x="0" y="0" width="1280" height="720" ' +
-        'fill="#071420" fill-opacity="0.76"/>');
       const imageIndex = BEAT_VISUAL_ASSET[index];
-      assert.ok(Number.isInteger(imageIndex) && backgrounds[imageIndex],
-        "Each beat needs an approved NASA background");
-      sceneImagesUsed.add(imageIndex);
-      const credit = VISUAL_ASSETS[imageIndex].credit;
-      svg = svg.replace("</svg>",
-        '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
-        'font-family="Arial, sans-serif">' + credit + '</text></svg>');
-      const insetImageIndex = INSET_BY_BEAT.get(index);
-      const inset = insetImageIndex !== undefined;
-      if (inset) {
-        assert.equal(visual.kind, "text-card");
-        const label = VISUAL_ASSETS[insetImageIndex].insetLabel;
-        assert.ok(label && label.length <= 42);
+      const photoBacked = imageIndex !== null;
+      if (photoBacked) {
+        assert.ok(Number.isInteger(imageIndex) && backgrounds[imageIndex],
+          "Every photo-backed beat needs an approved NASA image");
+        assert.ok(!sceneImagesUsed.has(imageIndex),
+          "Source photo reused in multiple scenes: " + VISUAL_ASSETS[imageIndex].filename);
+        sceneImagesUsed.add(imageIndex);
+        // Preserve legible text without obscuring the source photograph completely.
+        svg = svg.replace(opaque,
+          '<rect x="0" y="0" width="1280" height="720" ' +
+          'fill="#071420" fill-opacity="0.60"/>');
+        const credit = VISUAL_ASSETS[imageIndex].credit;
         svg = svg.replace("</svg>",
-          '<rect x="828" y="378" width="344" height="250" rx="9" ' +
-          'fill="#0a1b29" stroke="#64d8cb" stroke-width="3"/>' +
-          '<text x="841" y="646" font-size="17" fill="#c9e1f0" ' +
-          'font-family="Arial, sans-serif">' + label + '</text></svg>');
+          '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
+          'font-family="Arial, sans-serif">' + credit + '</text></svg>');
       }
       const label = String(index + 1).padStart(2, "0");
       const svgPath = join(directory, "visual-" + label + ".svg");
-      const transparent = join(directory, "foreground-" + label + ".png");
+      const foreground = join(directory, "foreground-" + label + ".png");
       const png = join(directory, "visual-" + label + ".png");
       await writeFile(svgPath, svg, { mode: 0o600, flag: "wx" });
-      command("rsvg-convert", ["--output", transparent, svgPath], 30000);
-      const filters = [
-        "[0:v][1:v]overlay=0:0:format=auto[headlines]",
-      ];
-      if (inset) {
-        filters.push(
-          "[2:v]scale=316:224:force_original_aspect_ratio=decrease," +
-          "pad=316:224:(ow-iw)/2:(oh-ih)/2:color=0x101d29[inset]",
-        );
-        filters.push("[headlines][inset]overlay=842:389:format=auto[final]");
+      command("rsvg-convert", ["--output", foreground, svgPath], 30000);
+      if (photoBacked) {
+        command("ffmpeg", [
+          "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+          "-i", backgrounds[imageIndex],
+          "-i", foreground,
+          "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto[final]",
+          "-map", "[final]",
+          "-frames:v", "1", png,
+        ], 120000);
+      } else {
+        // The native SVG contains its own opaque backdrop and remains a
+        // distinct, self-contained informational graphic.
+        await copyFile(foreground, png, fsConstants.COPYFILE_EXCL);
       }
-      command("ffmpeg", [
-        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-i", backgrounds[imageIndex],
-        "-i", transparent,
-        ...(inset ? ["-i", images[insetImageIndex]] : []),
-        "-filter_complex", filters.join(";"),
-        "-map", inset ? "[final]" : "[headlines]",
-        "-frames:v", "1", png,
-      ], 120000);
       assert.equal((await readFile(png)).subarray(0, 8).toString("hex"),
         "89504e470d0a1a0a");
       pngPaths.push(png);
@@ -427,6 +424,9 @@ async function renderGraphics(story, sources, images, directory) {
   assert.equal(pngPaths.length, 19);
   assert.equal(sceneImagesUsed.size, VISUAL_ASSETS.length);
   console.log("NASA_DISTINCT_SCENE_BACKGROUNDS=" + sceneImagesUsed.size);
+  console.log("UNIQUE_PHOTO_BEATS=" + sceneImagesUsed.size +
+    "; ORIGINAL_GRAPHIC_ONLY_BEATS=" + (pngPaths.length - sceneImagesUsed.size) +
+    "; DUPLICATE_IMAGE_INSETS=0");
   return pngPaths;
 }
 
