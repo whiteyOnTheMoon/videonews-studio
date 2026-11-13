@@ -63,7 +63,7 @@ export async function planCinematicTimeline({
     assert.ok(Number.isSafeInteger(count) && count >= 24 && count < FPS * 240);
   const checked = await validateEpisodeMediaManifest(manifest, assetRoot);
   assert.equal(checked.assets, manifest.assets.length);
-  const starts = new Map(), occupied = new Set();
+  const starts = new Map(), inserts = new Map(), occupied = new Set();
   const timelineFrames = beatFrames.reduce((sum, frames) => sum + frames, 0);
   for (const asset of manifest.assets) {
     assert.equal(asset.kind, "video", "Cinematic background requires a reviewed video");
@@ -73,6 +73,15 @@ export async function planCinematicTimeline({
     const end = parseBeatId(asset.endSceneId);
     assert.ok(end >= start && end - start <= 2,
       "A cinematic video may span one to three consecutive beats");
+    const isInsert = Object.hasOwn(asset, "insertFrames");
+    if (isInsert) {
+      assert.equal(end, start,
+        "Short inserts must remain within one editorial beat");
+      assert.ok(Number.isSafeInteger(asset.insertFrames) &&
+        asset.insertFrames >= 48 &&
+        asset.insertFrames <= beatFrames[start] - FPS,
+        "Short insert needs >=2 seconds of footage and >=1 second graphic remainder");
+    }
     for (let i = start; i <= end; i++) {
       assert.equal(beatVisualAssets[i], null,
         "Cannot replace a photo-backed scene with video");
@@ -80,7 +89,9 @@ export async function planCinematicTimeline({
       occupied.add(i);
     }
     const frames = beatFrames.slice(start, end + 1);
-    const durationFrames = frames.reduce((sum, count) => sum + count, 0);
+    const durationFrames = isInsert
+      ? asset.insertFrames
+      : frames.reduce((sum, count) => sum + count, 0);
     const metadata = probe(asset.path);
     const videos = metadata.streams.filter(stream => stream.codec_type === "video");
     assert.equal(videos.length, 1, "One video track required");
@@ -89,15 +100,17 @@ export async function planCinematicTimeline({
       "Source video smaller than 640x360");
     assert.ok(Number(metadata.format.duration) >= durationFrames / FPS + 0.1,
       "Source cannot be looped or frozen to fill the cinematic span");
-    starts.set(start, Object.freeze({
-      start, end, frames, durationFrames,
+    const planned = Object.freeze({
+      start, end, frames: isInsert ? [durationFrames] : frames, durationFrames,
       path: asset.path, sha256: asset.sha256,
       credit: asset.credit, captureDate: asset.captureDate,
       visuals: beatVisuals.slice(start, end + 1),
       motifId: asset.motifId,
-    }));
+    });
+    if (isInsert) inserts.set(start, planned);
+    else starts.set(start, planned);
   }
-  return {starts, occupied, timelineFrames};
+  return {starts, inserts, occupied, timelineFrames};
 }
 
 export async function loadCinematicTimeline({
