@@ -1,0 +1,76 @@
+name: P3 full English Piper explained private audio proof
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/vps_p3_full_english_piper_preview.mjs"
+      - "docs/P3_FULL_ENGLISH_PIPER_EXPLAINED.md"
+      - ".github/workflows/p3-full-english-piper-explained.yml"
+      - "content/news/ozone-2026-explained-en.json"
+permissions:
+  contents: read
+jobs:
+  full-english-script-audio-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify repository script and shared structure
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @vns/shared
+          npm run lint
+          npm run test --workspace @vns/shared
+          node --check scripts/vps_p3_full_english_piper_preview.mjs
+      - name: Set up private offline voice and media tools
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin
+          python -m venv "$RUNNER_TEMP/vns-piper"
+          "$RUNNER_TEMP/vns-piper/bin/python" -m pip install --disable-pip-version-check "piper-tts==1.8.0"
+          echo "VNS_PIPER_PYTHON=$RUNNER_TEMP/vns-piper/bin/python" >> "$GITHUB_ENV"
+      - name: Download exact offline voice and check SHA
+        run: |
+          mkdir -p "$RUNNER_TEMP/voices"
+          ROOT="https://huggingface.co/rhasspy/piper-voices/resolve/b145f2ac26522d6a2ccde0164b7b0e48b1e3199c/en/en_US/lessac/medium"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" "$ROOT/en_US-lessac-medium.onnx"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/voices/en_US-lessac-medium.onnx.json" "$ROOT/en_US-lessac-medium.onnx.json"
+          printf '%s  %s\n' \
+            '5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f' \
+            "$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" | sha256sum -c -
+          echo "VNS_PIPER_MODEL=$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" >> "$GITHUB_ENV"
+      - name: Download credited NASA images and check both hashes
+        run: |
+          mkdir -p "$RUNNER_TEMP/nasa-visuals"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/nasa-visuals/earth-nasa.jpg" \
+            "https://images-assets.nasa.gov/image/PIA18033/PIA18033~orig.jpg"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/nasa-visuals/ozone-2026-nasa.jpg" \
+            "https://assets.science.nasa.gov/content/dam/science/esd/eo/woc/images/ozone/ozone_geos5_20261004.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg"
+          printf '%s  %s\n' \
+            '872e1a5317ac31612a766ef6dfa7e774e2d10509b1e564b38e3aa384d6b0bf19' \
+            "$RUNNER_TEMP/nasa-visuals/earth-nasa.jpg" | sha256sum -c -
+          printf '%s  %s\n' \
+            '22b83f5dab6248d401e5ac313f98a18626b8c1ca002e43b67209d56f69ce0c6d' \
+            "$RUNNER_TEMP/nasa-visuals/ozone-2026-nasa.jpg" | sha256sum -c -
+          echo "VNS_VISUAL_ASSETS_DIR=$RUNNER_TEMP/nasa-visuals" >> "$GITHUB_ENV"
+      - name: Refuse private full video save inside CI
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY \
+            node scripts/vps_p3_full_english_piper_preview.mjs --save-local; then
+            echo "REFUSED: local private MP4 unexpectedly permitted on CI runner"
+            exit 1
+          fi
+      - name: Verify 7-section natural Piper narration duration and all 19 original graphics
+        run: node scripts/vps_p3_full_english_piper_preview.mjs --verify-audio-only
