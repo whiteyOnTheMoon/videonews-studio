@@ -8,6 +8,9 @@ on:
       - "scripts/check_episode_media_manifest.test.mjs"
       - "scripts/p3_private_clip_support.mjs"
       - "scripts/p3_private_clip_support.test.mjs"
+      - "scripts/p3_cinematic_timeline.mjs"
+      - "scripts/p3_cinematic_timeline.test.mjs"
+      - "docs/P3_CINEMATIC_TIMELINE.md"
       - "docs/P3_MEDIA_INTAKE.md"
       - "docs/P3_FULL_ENGLISH_PIPER_EXPLAINED.md"
       - ".github/workflows/p3-full-english-piper-explained.yml"
@@ -36,6 +39,7 @@ jobs:
           npm run test --workspace @vns/shared
           node --check scripts/vps_p3_full_english_piper_preview.mjs
           node --check scripts/p3_private_clip_support.mjs
+          node --check scripts/p3_cinematic_timeline.mjs
           node --test scripts/check_episode_media_manifest.test.mjs
       - name: Set up private offline voice and media tools
         run: |
@@ -46,6 +50,8 @@ jobs:
           echo "VNS_PIPER_PYTHON=$RUNNER_TEMP/vns-piper/bin/python" >> "$GITHUB_ENV"
       - name: Verify real moving-scene codec path using synthetic offline media
         run: node --test scripts/p3_private_clip_support.test.mjs
+      - name: Verify cinematic three-overlay continuous-clip pipeline
+        run: node --test scripts/p3_cinematic_timeline.test.mjs
       - name: Download exact offline voice and check SHA
         run: |
           mkdir -p "$RUNNER_TEMP/voices"
