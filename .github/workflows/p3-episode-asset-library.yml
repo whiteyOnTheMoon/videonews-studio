@@ -20,6 +20,9 @@ on:
       - "scripts/p3_media_review_board.mjs"
       - "scripts/p3_media_review_board.test.mjs"
       - "docs/P3_OFFLINE_MEDIA_REVIEW_BOARD.md"
+      - "scripts/p3_visual_similarity.mjs"
+      - "scripts/p3_visual_similarity.test.mjs"
+      - "docs/P3_VISUAL_SIMILARITY.md"
       - ".github/workflows/p3-episode-asset-library.yml"
 permissions:
   contents: read
@@ -47,6 +50,7 @@ jobs:
           node --check scripts/p3_reviewed_media_selection_cli.mjs
           node --check scripts/p3_media_candidate_ranking.mjs
           node --check scripts/p3_media_review_board.mjs
+          node --check scripts/p3_visual_similarity.mjs
       - name: Install local-only FFmpeg test fixture tooling
         run: |
           sudo apt-get update -qq
@@ -57,3 +61,4 @@ jobs:
           env -u PEXELS_API_KEY node --test scripts/p3_post_editorial_asset_handoff.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_reviewed_media_selection.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_media_review_board.test.mjs
+          env -u PEXELS_API_KEY node --test scripts/p3_visual_similarity.test.mjs
