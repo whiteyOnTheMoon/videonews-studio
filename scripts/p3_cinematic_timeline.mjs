@@ -298,3 +298,36 @@ export async function encodeCinematicSpan({span, output, directory}) {
   assert.ok(Math.abs(Number(media.format.duration) - span.durationFrames / FPS) < 0.08);
   return output;
 }
+
+
+/**
+ * After one short moving insert, preserve the original beat's static graphic
+ * for exactly the remaining narrated frames. Fade back from the cinematic
+ * dip-to-dark; never hold or replay the last motion-video frame.
+ */
+export async function encodeGraphicTail({imagePath, output, frames}) {
+  assert.ok(isAbsolute(imagePath) && isAbsolute(output));
+  assert.ok(Number.isSafeInteger(frames) && frames >= FPS &&
+    frames < FPS * 240, "Invalid graphic-tail frame budget");
+  const info = await lstat(imagePath);
+  assert.ok(info.isFile() && !info.isSymbolicLink());
+  command("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-filter_complex_threads", "1", "-threads", "1",
+    "-loop", "1", "-framerate", String(FPS),
+    "-protocol_whitelist", "file,pipe", "-i", imagePath,
+    "-vf", "format=yuv420p,fade=t=in:st=0:d=" + (10 / FPS).toFixed(6),
+    "-frames:v", String(frames),
+    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+    "-threads:v", "1", "-pix_fmt", "yuv420p", "-r", String(FPS),
+    "-an", "-movflags", "+faststart", output,
+  ], 360000);
+  const result = probe(output);
+  assert.equal(result.streams.length, 1, "Graphic tail must never add an audio track");
+  assert.equal(result.streams[0].codec_name, "h264");
+  assert.equal(result.streams[0].width, 1280);
+  assert.equal(result.streams[0].height, 720);
+  assert.equal(Number(result.streams[0].nb_frames), frames);
+  assert.ok(Math.abs(Number(result.format.duration) - frames / FPS) < 0.08);
+  return output;
+}
