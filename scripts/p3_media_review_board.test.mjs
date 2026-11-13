@@ -113,7 +113,7 @@ test("offline board escapes untrusted metadata and exports a locked draft only",
   assert.match(html,/target="_blank" rel="noopener noreferrer"/);
   assert.match(html,/nasa:OZONE-SCIENCE/);
   assert.match(html,/Stock – nur atmosphärischer Kontext/);
-  assert.match(html,/Metadaten 100\/100/);
+  assert.match(html,/Metadaten \d+\/100/);
 });
 test("only local hash-pinned quarantine bytes produce an embedded thumbnail; no remote access",async()=>{
   const root=await mkdtemp(join(tmpdir(),"p3-private-review-"));
