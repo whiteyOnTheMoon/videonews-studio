@@ -111,3 +111,46 @@ This is a deliberate two-step process:
 
 No real NASA clip has been installed, rights-approved, or rendered by CI.
 The synthetic codec test is not evidence of subjective documentary quality.
+
+## Short video inserts within one longer narrated beat
+
+The first manually downloaded NASA 2026 Ozone Watch file was technically
+inspected by the operator on the VPS:
+
+- 1280×720 H264 MP4, **15.166667 seconds**, no source audio,
+  4,965,817 bytes, SHA-256
+  `adfd7a539766cb06c71e6bdf3fd87d9c646c0d8e4f11913cb5922cd8a46289bb`.
+- The inspector deliberately returned `INSPECTED_UNAPPROVED`. These metadata
+  do **not** establish capture-date accuracy, editorial fit, third-party
+  clearance or publication rights. The file must remain private.
+- It is unsuitable for the previously assumed full two-to-three-beat
+  background if the combined narration is longer than the source.
+
+To allow such useful short scientific visualizations without repeats, the
+operator-reviewed cinematic manifest now supports **one short insert** inside
+one original beat. Keep `sceneId` and `endSceneId` equal, such as
+`"beat-15"`, and set **`"insertFrames": 288`** for 12 seconds at 24fps.
+That is an example, **not an approved asset or guaranteed editorial fit**.
+The planner rejects the insert unless its source lasts more than
+`insertFrames / 24 + 0.1` seconds and at least one second of that narration
+beat remains for the original SVG explanation.
+
+The renderer encodes the reviewed moving clip once, with its own transparent
+fading title and persistent citation, followed by the original static
+information graphic fading in for the remaining exact speech-aligned frames.
+The source video is neither looped, frozen, nor reused. The intact narration
+is muxed once at the end, so the source MP4 cannot replace or interrupt
+spoken words. Full-beat three-scene footage remains supported separately.
+
+The CI synthesizes its own 8-second video and deliberately includes an audio
+track, uses six seconds of it in a ten-second sample narration beat, creates
+a four-second original graphic tail and verifies the concatenated result has
+240 frames, ten seconds and **no source audio**. It also tests approval
+refusals, attempted use over reserved NASA photos, invalid cross-beat insert
+requests and durations exceeding the source. The test never installs or
+renders the actual Ozone Watch asset.
+
+**Not yet implemented:** automatic semantics matching between narration and
+footage, independent human verification of NASA data dates, true continuous
+crossfades between two different motion clips, full-episode review with the
+real asset, or licensing clearance. The publication gate remains DENIED.
