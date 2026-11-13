@@ -28,6 +28,11 @@ import {
 import { tmpdir, userInfo } from "node:os";
 import { isAbsolute, join } from "node:path";
 import {
+  createPrivateClipOverlaySvg,
+  encodePrivateClipBeat,
+  loadPrivateClipAssignments,
+} from "./p3_private_clip_support.mjs";
+import {
   assertEarthClimateExplainedStructure,
   EARTH_CLIMATE_EXPLAINED_SECTION_IDS,
   buildNarrationTimeline,
@@ -496,12 +501,15 @@ async function assembleAudio(speechPaths, plan, directory) {
  * bitstreams. Audio is combined and AAC-encoded only once, at the end.
  * Never scale or translate text; move only the decorative underline.
  */
-async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false) {
+async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false, privateClips = new Map()) {
   const beats = plan.sections.flatMap((section) => section.visualBeats);
   assert.equal(pngPaths.length, beats.length);
   const selected = smoke ? pngPaths.slice(0, 2) : pngPaths;
   const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
   assert.equal(selected.length, frameCounts.length);
+  assert.ok(privateClips instanceof Map);
+  if (privateClips.size) assert.ok(!smoke && LOCAL_PREVIEW,
+    "Reviewed moving footage is allowed only in an explicit private VPS preview");
   if (smoke) {
     assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
     assert.equal(selected.length, 2);
@@ -522,19 +530,34 @@ async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false) 
       "color=c=0x64d8cb:s=420x6:r=24,format=rgba[accent];" +
       "[fixed][accent]overlay=x='-420+512*min(t/1.4,1)'" +
       ":y=174:shortest=1:format=auto,format=yuv420p[finalv]";
-    command("ffmpeg", [
-      "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-      "-filter_complex_threads", "1", "-threads", "1",
-      "-loop", "1", "-framerate", String(FPS),
-      "-protocol_whitelist", "file,pipe", "-i", path,
-      "-filter_complex", filter,
-      "-map", "[finalv]", "-frames:v", String(frames),
-      "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
-      "-threads:v", "1",
-      "-pix_fmt", "yuv420p", "-r", String(FPS),
-      "-an", "-movflags", "+faststart",
-      encoded,
-    ], 360000);
+    const approvedClip = privateClips.get(index);
+    if (approvedClip) {
+      const overlaySvg = join(directory, "clip-overlay-" + String(index + 1) + ".svg");
+      const overlayPng = join(directory, "clip-overlay-" + String(index + 1) + ".png");
+      await writeFile(overlaySvg, createPrivateClipOverlaySvg({
+        title: approvedClip.title,
+        credit: approvedClip.credit,
+        captureDate: approvedClip.captureDate,
+      }), { mode: 0o600, flag: "wx" });
+      command("rsvg-convert", ["--output", overlayPng, overlaySvg], 30000);
+      await encodePrivateClipBeat({
+        assignment: approvedClip, overlayPng, output: encoded, frames,
+      });
+    } else {
+      command("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-filter_complex_threads", "1", "-threads", "1",
+        "-loop", "1", "-framerate", String(FPS),
+        "-protocol_whitelist", "file,pipe", "-i", path,
+        "-filter_complex", filter,
+        "-map", "[finalv]", "-frames:v", String(frames),
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+        "-threads:v", "1",
+        "-pix_fmt", "yuv420p", "-r", String(FPS),
+        "-an", "-movflags", "+faststart",
+        encoded,
+      ], 360000);
+    }
     const clip = probe(encoded);
     const video = clip.streams.find((stream) => stream.codec_type === "video");
     assert.equal(video?.codec_name, "h264");
@@ -652,6 +675,21 @@ async function main() {
     console.log("ENGLISH_FULL_AUDIO_DURATION_SECONDS=" + plan.totalSeconds.toFixed(3));
     console.log("ENGLISH_FULL_SECTIONS=7; ENGLISH_FULL_WORDS=" + totalWords +
       "; ENGLISH_VISUAL_BEATS=19");
+    let privateClips = new Map();
+    const manifestPath = process.env.VNS_PRIVATE_MEDIA_MANIFEST;
+    if (manifestPath !== undefined) {
+      assert.ok(LOCAL_PREVIEW,
+        "Private media manifest is forbidden in CI and other unapproved modes");
+      const beats = plan.sections.flatMap(section => section.visualBeats);
+      privateClips = await loadPrivateClipAssignments({
+        manifestPath,
+        beatVisualAssets: BEAT_VISUAL_ASSET,
+        beatFrames: beats.map(beat => beat.frames),
+        beatTitles: story.sections.flatMap(section =>
+          section.visuals.map(visual => visual.title)),
+      });
+      console.log("PRIVATE_REVIEWED_VIDEO_BEATS=" + privateClips.size);
+    }
     const pngPaths = await renderGraphics(story, sources, images, directory);
     if (CI_AUDIO_ONLY) {
       // Prove the *actual* encode/concat/mux pipeline with a tiny 3-second
@@ -659,11 +697,11 @@ async function main() {
       await renderMovie(pngPaths, paths[0], plan, directory, true);
       console.log("P3 FULL ENGLISH AUDIO AND 19 GRAPHIC PROOF PASS: " +
         plan.totalSeconds.toFixed(3) + " seconds; 7 canonical sections; " +
-        pngPaths.length + " photo-backed original graphics; NO FULL MP4 IN CI");
+        pngPaths.length + " original graphic scenes; NO FULL MP4 IN CI");
       return;
     }
     const audio = await assembleAudio(paths, plan, directory);
-    const movie = await renderMovie(pngPaths, audio, plan, directory);
+    const movie = await renderMovie(pngPaths, audio, plan, directory, false, privateClips);
     const sha256 = createHash("sha256").update(await readFile(movie.output)).digest("hex");
     const stamp = new Date().toISOString().replace(/[-:.]/g, "").replace("T", "-").slice(0, 15);
     const base = "earth-climate-explained-ozone-2026-piper-nasa-" +
@@ -688,7 +726,7 @@ async function main() {
     console.log("P3 FULL PRIVATE ENGLISH PIPER NASA VIDEO PASS: " +
       movie.duration.toFixed(3) + " seconds; " + totalWords + " words; " +
       pngPaths.length + " photo-backed original graphic beats; H264/AAC; bytes=" +
-      movie.size + "; SHA256=" + sha256);
+      movie.size + "; reviewed_clip_beats=" + privateClips.size + "; SHA256=" + sha256);
     console.log("Editorial/publication: DENIED. Piper Lessac: private demo voice only.");
   } finally {
     if (directory) await rm(directory, { recursive: true, force: true });
