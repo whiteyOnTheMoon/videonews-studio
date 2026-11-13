@@ -370,8 +370,8 @@ export async function encodeLayeredSequence({plan, output, directory}) {
     const next = "[with-media" + i + "]";
     g.push(previous + mediaTag + "overlay=" + MEDIA_X + ":" + MEDIA_Y +
       ":format=auto:repeatlast=0:eof_action=pass:" +
-      "enable='between(n," + offset + "," +
-      (offset + frames - 1) + ")'" + next);
+      "enable='gte(t," + duration(offset) + ")*lt(t," +
+      duration(offset + frames) + ")'" + next);
     previous = next;
   }
 
@@ -389,8 +389,9 @@ export async function encodeLayeredSequence({plan, output, directory}) {
       ":d=" + duration(fade) + ":alpha=1,setpts=PTS-STARTPTS+" +
       duration(offset) + "/TB" + alpha);
     g.push(previous + alpha + "overlay=0:0:format=auto:" +
-      "repeatlast=0:eof_action=pass:enable='between(n," +
-      offset + "," + (offset + frames - 1) + ")'" + next);
+      "repeatlast=0:eof_action=pass:enable='gte(t," +
+      duration(offset) + ")*lt(t," + duration(offset + frames) +
+      ")'" + next);
     previous = next;
   }
   const brandIndex = dimIndex + plan.beatFrames.length + 1;
