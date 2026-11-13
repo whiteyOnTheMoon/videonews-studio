@@ -38,6 +38,10 @@ import {
   loadPrivateClipAssignments,
 } from "./p3_private_clip_support.mjs";
 import {
+  encodeLayeredSequence,
+  loadLayeredTimeline,
+} from "./p3_layered_cinematic_composition.mjs";
+import {
   assertEarthClimateExplainedStructure,
   EARTH_CLIMATE_EXPLAINED_SECTION_IDS,
   buildNarrationTimeline,
@@ -508,7 +512,7 @@ async function assembleAudio(speechPaths, plan, directory) {
  */
 async function renderMovie(
   pngPaths, audioPath, plan, directory, smoke = false,
-  privateClips = new Map(), cinematic = null,
+  privateClips = new Map(), cinematic = null, layered = null,
 ) {
   const beats = plan.sections.flatMap((section) => section.visualBeats);
   assert.equal(pngPaths.length, beats.length);
@@ -516,13 +520,15 @@ async function renderMovie(
   const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
   assert.equal(selected.length, frameCounts.length);
   assert.ok(privateClips instanceof Map);
-  if (privateClips.size || cinematic?.starts.size || cinematic?.inserts.size) {
+  if (privateClips.size || cinematic?.starts.size || cinematic?.inserts.size || layered) {
     assert.ok(!smoke && LOCAL_PREVIEW,
       "Reviewed moving footage is allowed only in a private VPS preview");
   }
   assert.ok(!(privateClips.size &&
     (cinematic?.starts.size || cinematic?.inserts.size)),
     "Choose only one private footage mode");
+  assert.ok(!(layered && (privateClips.size || cinematic)),
+    "Layered, cinematic and per-beat footage modes are mutually exclusive");
   if (smoke) {
     assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
     assert.equal(selected.length, 2);
@@ -531,12 +537,23 @@ async function renderMovie(
     assert.equal(frameCounts.reduce((sum, frames) => sum + frames, 0), plan.totalFrames);
     if (cinematic) assert.equal(cinematic.timelineFrames, plan.totalFrames,
       "Cinematic edit decision list must match narration exactly");
+    if (layered) assert.equal(layered.timelineFrames, plan.totalFrames,
+      "Layered edit decision list must match narration exactly");
   }
   const cinematicEndBeats = new Set(
     cinematic ? [...cinematic.starts.values()].map(span => span.end) : [],
   );
   const encodedClips = [];
-  for (let index = 0; index < selected.length;) {
+  if (layered) {
+    const encoded = join(directory, "scene-layered-full-track.mp4");
+    await encodeLayeredSequence({
+      plan: layered, output: encoded, directory: join(directory, "layered-frames"),
+    });
+    encodedClips.push(encoded);
+    console.log("LAYERED_CINEMATIC_BACKGROUND_SPANS=" + layered.backgrounds.length +
+      "; FOREGROUND_MEDIA=" + layered.foreground.length +
+      "; TOTAL_FRAMES=" + layered.timelineFrames);
+  } else for (let index = 0; index < selected.length;) {
     const span = cinematic?.starts.get(index);
     const insert = cinematic?.inserts.get(index);
     assert.ok(!(span && insert), "Full span and short insert cannot overlap");
@@ -741,10 +758,13 @@ async function main() {
       "; ENGLISH_VISUAL_BEATS=19");
     let privateClips = new Map();
     let cinematic = null;
+    let layered = null;
     const cinematicPath = process.env.VNS_CINEMATIC_MEDIA_MANIFEST;
     const manifestPath = process.env.VNS_PRIVATE_MEDIA_MANIFEST;
-    assert.ok(!(cinematicPath && manifestPath),
-      "Specify only one reviewed private footage manifest");
+    const layeredPath = process.env.VNS_LAYERED_MEDIA_MANIFEST;
+    assert.ok([cinematicPath, manifestPath, layeredPath]
+      .filter(path => path !== undefined).length <= 1,
+    "Specify only one reviewed private footage manifest");
     if (cinematicPath !== undefined) {
       assert.ok(LOCAL_PREVIEW,
         "Cinematic media is forbidden in CI and other unapproved modes");
@@ -758,6 +778,18 @@ async function main() {
       console.log("CINEMATIC_BACKGROUND_SPANS=" + cinematic.starts.size +
         "; SHORT_VIDEO_INSERTS=" + cinematic.inserts.size +
         "; CINEMATIC_OVERLAY_BEATS=" + cinematic.occupied.size);
+    }
+    if (layeredPath !== undefined) {
+      assert.ok(LOCAL_PREVIEW,
+        "Layered media is forbidden in CI and other unapproved modes");
+      const beats = plan.sections.flatMap(section => section.visualBeats);
+      layered = await loadLayeredTimeline({
+        manifestPath: layeredPath,
+        beatFrames: beats.map(beat => beat.frames),
+        beatVisuals: story.sections.flatMap(section => section.visuals),
+      });
+      console.log("LAYERED_BACKGROUND_SPANS=" + layered.backgrounds.length +
+        "; LAYERED_FOREGROUND_MEDIA=" + layered.foreground.length);
     }
     if (manifestPath !== undefined) {
       assert.ok(LOCAL_PREVIEW,
@@ -784,7 +816,7 @@ async function main() {
     }
     const audio = await assembleAudio(paths, plan, directory);
     const movie = await renderMovie(
-      pngPaths, audio, plan, directory, false, privateClips, cinematic,
+      pngPaths, audio, plan, directory, false, privateClips, cinematic, layered,
     );
     const sha256 = createHash("sha256").update(await readFile(movie.output)).digest("hex");
     const stamp = new Date().toISOString().replace(/[-:.]/g, "").replace("T", "-").slice(0, 15);
@@ -812,7 +844,10 @@ async function main() {
       pngPaths.length + " photo-backed original graphic beats; H264/AAC; bytes=" +
       movie.size + "; reviewed_clip_beats=" + privateClips.size +
       "; cinematic_spans=" + (cinematic?.starts.size ?? 0) +
-      "; short_inserts=" + (cinematic?.inserts.size ?? 0) + "; SHA256=" + sha256);
+      "; short_inserts=" + (cinematic?.inserts.size ?? 0) +
+      "; layered_background_spans=" + (layered?.backgrounds.length ?? 0) +
+      "; layered_foreground_assets=" + (layered?.foreground.length ?? 0) +
+      "; SHA256=" + sha256);
     console.log("Editorial/publication: DENIED. Piper Lessac: private demo voice only.");
   } finally {
     if (directory) await rm(directory, { recursive: true, force: true });
