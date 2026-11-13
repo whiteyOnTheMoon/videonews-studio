@@ -21,7 +21,6 @@ import {
   planCinematicTimeline, encodeCinematicSpan, encodeGraphicTail,
 } from "./p3_cinematic_timeline.mjs";
 
-const FPS = 24;
 const SHA = b => createHash("sha256").update(b).digest("hex");
 function run(name, args, seconds = 90) {
   const r = spawnSync(name, args, {
