@@ -9,6 +9,9 @@ import {spawnSync} from "node:child_process";
 import {lstat, readFile, realpath, writeFile} from "node:fs/promises";
 import {basename, dirname, extname, isAbsolute, join, resolve} from "node:path";
 import {rankEpisodeMediaCandidates} from "./p3_media_candidate_ranking.mjs";
+import {
+  fingerprintPrivateMedia, inspectEpisodeVisualDuplicates,
+} from "./p3_visual_similarity.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const TYPES = new Set([".jpg", ".jpeg", ".png", ".mp4"]);
@@ -98,6 +101,8 @@ p,small{color:#c5d9e7}.warning{border-left:4px solid #eac181;padding:10px;backgr
 .preview{height:155px;display:grid;place-items:center;background:#091723;border-radius:7px;overflow:hidden}
 .preview img{max-height:100%;max-width:100%;object-fit:contain}
 .placeholder{text-align:center;color:#b9cede;padding:14px}
+.similarity{border-left:3px solid #f2c274;padding:8px;margin:10px 0;background:#45362b;color:#fff2cf}
+.similarity-list{margin:12px 0;padding:12px;background:#283746;border-radius:8px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .tag{background:#314c61;padding:3px 7px;border-radius:5px;font-size:12px}
 a{color:#a5e3f1;overflow-wrap:anywhere}small{display:block}
@@ -141,7 +146,7 @@ const exportScript = String.raw`
   });
 })();`;
 
-function card(item, jpeg) {
+function card(item, jpeg, warnings = []) {
   const image = jpeg ?
     '<img alt="Offline erzeugte lokale Vorschau" src="data:image/jpeg;base64,' +
       jpeg.toString("base64") + '">' :
@@ -149,6 +154,13 @@ function card(item, jpeg) {
   const resolution = item.width && item.height ?
     item.width + "×" + item.height : "unbekannt";
   const reasons = item.reasons.map(t => "<li>" + htmlEscape(t) + "</li>").join("");
+  const similarity = warnings.map(warning =>
+    '<p class="similarity"><strong>Visuelle Ähnlichkeit prüfen:</strong> ' +
+      htmlEscape(warning.kind === "EXACT_FILE_DUPLICATE" ?
+        "Identische Mediendatei" : "Möglicherweise nahezu identisches Bildmotiv") +
+      ' – ' + htmlEscape(warning.counterpartId) +
+      ' (' + htmlEscape(warning.counterpartScene) +
+      '). Kein automatischer Ausschluss.</p>').join("");
   return '<article class="card"><div class="preview">' + image + '</div>' +
     '<h3>' + htmlEscape(item.title || item.id) + '</h3>' +
     '<div class="tags"><span class="tag">' + htmlEscape(item.provider) + '</span>' +
@@ -162,7 +174,7 @@ function card(item, jpeg) {
     '" target="_blank" rel="noopener noreferrer">Originalquelle</a> · ' +
     '<a href="' + safeLink(item.licensePage) +
     '" target="_blank" rel="noopener noreferrer">Lizenzhinweise</a></small>' +
-    '<ul>' + reasons + '</ul>' +
+    '<ul>' + reasons + '</ul>' + similarity +
     '<small>Inhalt und Nutzungsrechte weiterhin ungeprüft</small>' +
     '<label><input type="checkbox" data-candidate="' + htmlEscape(item.id) +
     '" data-scene="' + htmlEscape(item.sceneId) +
@@ -170,16 +182,30 @@ function card(item, jpeg) {
     '"> In gesperkten Auswahlentwurf übernehmen</label></article>';
 }
 /** Only data URLs for local thumbnails; external links are user-initiated. */
-export function renderOfflineMediaBoardHtml(ranked, previews = new Map()) {
+export function renderOfflineMediaBoardHtml(ranked, previews = new Map(), visualReport = null) {
   assert.ok(ranked && ranked.schemaVersion === 1 &&
     ranked.publicationAllowed === false &&
     ranked.rightsApproved === false && ranked.renderAllowed === false &&
     Array.isArray(ranked.scenes) && ranked.scenes.length === 19 &&
-    previews instanceof Map);
+    previews instanceof Map &&
+    (visualReport === null || (visualReport &&
+      visualReport.publicationAllowed === false &&
+      Array.isArray(visualReport.pairs))));
+  const warnings = new Map();
+  for (const pair of visualReport?.pairs ?? []) {
+    for (const [candidateId, counterpartId, counterpartScene] of [
+      [pair.candidateA, pair.candidateB, pair.sceneB],
+      [pair.candidateB, pair.candidateA, pair.sceneA],
+    ]) {
+      const entries = warnings.get(candidateId) ?? [];
+      entries.push({kind: pair.kind, counterpartId, counterpartScene});
+      warnings.set(candidateId, entries);
+    }
+  }
   const scenes = ranked.scenes.map(scene => {
     const group = (heading, items) =>
       '<h2>' + htmlEscape(heading) + ' (' + items.length + ')</h2><div class="cards">' +
-      (items.map(item => card(item, previews.get(item.id))).join("") ||
+      (items.map(item => card(item, previews.get(item.id), warnings.get(item.id) ?? [])).join("") ||
       '<p>Keine Quellenkandidaten gefunden.</p>') + '</div>';
     return '<details class="scene"><summary>' + htmlEscape(scene.sceneId) +
       ' · ' + htmlEscape(scene.title) +
@@ -207,40 +233,63 @@ export function renderOfflineMediaBoardHtml(ranked, previews = new Map()) {
     '<button id="save-draft" type="button">Auswahl als gesperrten JSON-Entwurf speichern</button>' +
     '<small>Dieser Entwurf enthält absichtlich keine direkten Video-URLs ' +
     'und aktiviert keine Download- oder Renderfreigabe.</small></header>' +
-    '<main>' + scenes + '</main>' +
+    '<main>' +
+    '<section class="similarity-list"><h2>Bildähnlichkeitsprüfung (nur lokale Dateien)</h2>' +
+    '<p>' + String(visualReport?.inspectedSources ?? 0) +
+    ' lokale Medien geprüft; ' + String(visualReport?.possiblePairs ?? 0) +
+    ' mögliche Motivüberschneidungen. Ein dHash-Treffer ist kein Nachweis' +
+    ' derselben Aufnahme, keiner Lizenz und keiner wissenschaftlichen Bedeutung.' +
+    ' Fehlende Downloads wurden nicht bildlich untersucht.</p></section>' +
+    scenes + '</main>' +
     '<footer>Keine externen Bilder, Skripte, Schriften oder API-Aufrufe. ' +
     'Quellen-Links öffnen erst nach einem Klick.</footer><script>' +
     exportScript + '</script></body></html>';
 }
 export async function buildOfflineMediaBoard({
-  libraryDocument, workspace, receipt = null, makeThumbnail = createOfflineJpegThumbnail,
+  libraryDocument, workspace, receipt = null,
+  makeThumbnail = createOfflineJpegThumbnail,
+  fingerprintMedia = fingerprintPrivateMedia,
 }) {
   await checkPrivateDirectory(workspace);
   const library = extractEpisodeLibrary(libraryDocument);
   const ranked = rankEpisodeMediaCandidates(library);
   const previews = new Map();
+  const fingerprints = [];
   if (receipt) {
     assert.ok(receipt.schemaVersion === 1 &&
       receipt.episodeId === ranked.episodeId &&
       receipt.status === "QUARANTINE_ONLY_REQUIRES_REVIEW" &&
       Array.isArray(receipt.records) && receipt.records.length <= 120);
     const quarantine = join(workspace, "quarantine");
-    const candidates = new Set(library.candidates.map(item => item.id));
+    const candidates = new Map(library.candidates.map(item => [item.id, item]));
     for (const record of receipt.records) {
       assert.ok(!previews.has(record.candidateId),
         "Repeated local preview candidate");
+      const original = candidates.get(record.candidateId);
+      assert.ok(original &&
+        record.sceneId === original.sceneId &&
+        record.motifId === original.motifId,
+        "Quarantine preview must match the original episode scene and motif");
       const path = await validatePrivateThumbnailSource(
-        record, quarantine, candidates);
+        record, quarantine, new Set(candidates.keys()));
       const jpeg = await makeThumbnail(path);
       assert.ok(Buffer.isBuffer(jpeg) && jpeg.length > 2 &&
         jpeg.length < 200 * 1024 &&
         jpeg[0] === 255 && jpeg[1] === 216);
       previews.set(record.candidateId, jpeg);
+      fingerprints.push(await fingerprintMedia({
+        file: path,
+        sha256: record.sha256,
+        candidateId: record.candidateId,
+        sceneId: record.sceneId,
+      }));
     }
   }
+  const visualReport = inspectEpisodeVisualDuplicates(fingerprints);
   return {
-    html: renderOfflineMediaBoardHtml(ranked, previews),
+    html: renderOfflineMediaBoardHtml(ranked, previews, visualReport),
     ranked, localPreviews: previews.size,
+    visualReport,
     rightsApproved: false, publicationAllowed: false,
   };
 }
@@ -265,6 +314,7 @@ export async function runOfflineMediaBoardCli(args) {
     output, episodeId: board.ranked.episodeId,
     candidates: board.ranked.sourceCandidates,
     scenes: board.ranked.scenes.length, localPreviews: board.localPreviews,
+    possibleVisualDuplicates: board.visualReport.possiblePairs,
     rightsApproved: false, publicationAllowed: false,
   };
 }
