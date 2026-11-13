@@ -99,6 +99,18 @@ test("possible visual matches are review hints; exact byte reuse remains distinc
       [v("aaaaaaaaaaaaaaaa", false)], "photo"),
   ]);
   assert.equal(onlyFlat.possiblePairs, 0);
+  const onlyOneMatchingFrame = inspectEpisodeVisualDuplicates([
+    first,
+    sample("nasa:G", "beat-13", "1".repeat(64),
+      [v("aaaaaaaaaaaaaaaa"), v("ffffffffffffffff"),
+        v("ffffffffffffffff")]),
+  ]);
+  assert.equal(onlyOneMatchingFrame.possiblePairs, 0,
+    "A single shared video frame must not count as multiple matches");
+  assert.throws(() => inspectEpisodeVisualDuplicates([
+    sample("nasa:too-few-frames", "beat-05", "2".repeat(64),
+      [v("aaaaaaaaaaaaaaaa")]),
+  ]), /Malformed or repeated/);
 });
 
 test("local 3-frame H264 sampling is checksum verified and never reads provider URLs", async () => {
