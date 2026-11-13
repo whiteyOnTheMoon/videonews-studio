@@ -127,6 +127,11 @@ test("synthetic NASA-like four-corner science annotations survive video composit
     }), /Unknown cinematic composition mode/);
     await assert.rejects(() => planCinematicTimeline({
       ...args, manifest: {schemaVersion: 1, assets: [
+        {...asset, scientificVisualization: "false", compositionMode: "standard"},
+      ]},
+    }), /scientificVisualization must be boolean/);
+    await assert.rejects(() => planCinematicTimeline({
+      ...args, manifest: {schemaVersion: 1, assets: [
         {...asset, rightsApproved: false},
       ]},
     }), /Unapproved media/);

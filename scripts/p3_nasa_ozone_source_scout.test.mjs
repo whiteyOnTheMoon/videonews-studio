@@ -31,6 +31,8 @@ test("NASA source scout emits inspected-but-unapproved manifest for synthetic lo
     assert.match(result.media.sha256, /^[a-f0-9]{64}$/);
     assert.equal(result.draft.assets[0].sha256, result.media.sha256);
     assert.equal(result.draft.assets[0].rightsApproved, false);
+    assert.equal(result.draft.assets[0].scientificVisualization, true);
+    assert.equal(result.draft.assets[0].compositionMode, "science-safe");
     assert.equal(result.draft.assets[0].editorialApproved, false);
     assert.equal(result.draft.assets[0].thirdPartyRightsCleared, false);
     assert.equal(result.draft.assets[0].captureDate, "REQUIRES_REVIEW");

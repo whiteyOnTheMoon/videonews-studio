@@ -76,6 +76,9 @@ export async function planCinematicTimeline({
     assert.equal(asset.kind, "video", "Cinematic background requires a reviewed video");
     assert.ok(asset.path.endsWith(".mp4"), "Only local H264 MP4 is supported");
     assert.ok(typeof asset.endSceneId === "string", "Missing endSceneId");
+    if (Object.hasOwn(asset, "scientificVisualization"))
+      assert.equal(typeof asset.scientificVisualization, "boolean",
+        "scientificVisualization must be boolean");
     const compositionMode = asset.compositionMode ?? "standard";
     assert.ok(compositionMode === "standard" || compositionMode === SCIENCE_SAFE_MODE,
       "Unknown cinematic composition mode");

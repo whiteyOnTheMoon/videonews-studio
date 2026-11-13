@@ -35,8 +35,11 @@ continue to be refused by `validateEpisodeMediaManifest` before rendering.
 science-safe sources by URL, so setting `compositionMode: "standard"` or
 omitting the mode is rejected for those hosts. Other scientific-footage
 providers must be explicitly marked `scientificVisualization: true`.
-Unknown composition modes fail closed. Normal, nonscientific video retains
-its earlier cinematic lower-third behavior.
+Unknown composition modes and non-boolean `scientificVisualization` values
+fail closed. Normal, nonscientific video retains its earlier cinematic
+lower-third behavior. The offline NASA Ozone Watch/SVS source scout now places
+both science-safe flags in its *unapproved* manifest draft by default; this
+must never be mistaken for source-specific rights clearance.
 
 The protected video is scaled to **fit, never crop** inside the 960×540
 viewport x=320..1279, y=90..629 of the 1280×720 output. Aspect ratio is
