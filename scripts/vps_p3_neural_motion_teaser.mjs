@@ -19,7 +19,6 @@ import {
   realpath,
   rename,
   rm,
-  stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir, userInfo } from "node:os";
