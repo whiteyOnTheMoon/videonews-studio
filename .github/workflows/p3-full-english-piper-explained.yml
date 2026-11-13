@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - "scripts/vps_p3_full_english_piper_preview.mjs"
+      - "scripts/check_episode_media_manifest.mjs"
+      - "scripts/check_episode_media_manifest.test.mjs"
+      - "docs/P3_MEDIA_INTAKE.md"
       - "docs/P3_FULL_ENGLISH_PIPER_EXPLAINED.md"
       - ".github/workflows/p3-full-english-piper-explained.yml"
       - "content/news/ozone-2026-explained-en.json"
@@ -30,6 +33,7 @@ jobs:
           npm run lint
           npm run test --workspace @vns/shared
           node --check scripts/vps_p3_full_english_piper_preview.mjs
+          node --test scripts/check_episode_media_manifest.test.mjs
       - name: Set up private offline voice and media tools
         run: |
           sudo apt-get update -qq
