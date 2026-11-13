@@ -27,9 +27,6 @@ const HOSTS = Object.freeze({
   pexels: new Set(["videos.pexels.com", "images.pexels.com"]),
 });
 const SHA = /^[a-f0-9]{64}$/;
-function inside(root, file) {
-  return file.startsWith(root + "/");
-}
 function requireHttpsUrl(raw, hosts) {
   assert.ok(typeof raw === "string" && raw.length <= 2000);
   const url = new URL(raw);
