@@ -10,6 +10,7 @@ on:
       - "scripts/p3_private_clip_support.test.mjs"
       - "scripts/p3_cinematic_timeline.mjs"
       - "scripts/p3_cinematic_timeline.test.mjs"
+      - "scripts/p3_cinematic_short_insert.test.mjs"
       - "docs/P3_CINEMATIC_TIMELINE.md"
       - "scripts/p3_nasa_ozone_source_scout.mjs"
       - "scripts/p3_nasa_ozone_source_scout.test.mjs"
@@ -55,6 +56,8 @@ jobs:
         run: node --test scripts/p3_private_clip_support.test.mjs
       - name: Verify cinematic three-overlay continuous-clip pipeline
         run: node --test scripts/p3_cinematic_timeline.test.mjs
+      - name: Verify partial-beat motion fades into original graphic without looping
+        run: node --test scripts/p3_cinematic_short_insert.test.mjs
       - name: Verify NASA candidate source scouting stays offline and unapproved
         run: node --test scripts/p3_nasa_ozone_source_scout.test.mjs
       - name: Download exact offline voice and check SHA
