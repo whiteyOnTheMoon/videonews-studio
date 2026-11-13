@@ -72,3 +72,42 @@ Piper proof and original three-second encoder test remain unchanged.
 - Future work: true background-to-background cross-dissolves, additional
   freely licensed footage, motion infographic animation, perceptual
   near-duplicate video-frame checks and more varied overlay layouts.
+
+## First real NASA footage: inspect before any rights approval
+
+NASA Ozone Watch lists a Southern Hemisphere seasonal animation for 2026,
+including a 1280×720 MP4. The 2026 clip is a *seasonal sequence*, not a
+full-year post-season analysis. Its directory modification date is not an
+observational end date. NASA SVS also offers historical 1979–2025 ozone data
+visualizations. Historical footage **must not be presented as 2026 data**.
+
+Source/reference links (not automatic downloads):
+- NASA Ozone Watch: https://ozonewatch.gsfc.nasa.gov/multimedia/index.html
+- NASA SVS historical annual maximum: https://svs.gsfc.nasa.gov/31392/
+- NASA SVS reuse FAQ: https://svs.gsfc.nasa.gov/help/
+- NASA images/media guidelines: https://www.nasa.gov/nasa-brand-center/images-and-media/
+
+For a manually downloaded 2026 MP4 stored outside the webroot, inspect it with:
+
+```bash
+node scripts/p3_nasa_ozone_source_scout.mjs \
+  ozonewatch-2026-southern \
+  /home/ap/private-media/nasa-ozone-2026.mp4
+```
+
+The scout is **offline** and emits `INSPECTED_UNAPPROVED`, a locally calculated
+SHA-256, actual ffprobe duration and dimensions, a source URL, and a manifest
+draft where all three approval gates are `false`. Never treat the generated
+draft as a grant of rights. Confirm the individual clip, any third-party
+material, the real data coverage, and the required credits and descriptions
+before changing approval flags.
+
+This is a deliberate two-step process:
+1. Download a specific NASA file manually and inspect it without any renderer.
+2. Compare its *measured* duration to one, two or three real narration beats.
+   Use it once only if it fits the spoken explanation. No loops or frozen
+   final frames. The current three-beat "What's Next?" run is much longer
+   than a typical short animation; **do not assume this clip fits**.
+
+No real NASA clip has been installed, rights-approved, or rendered by CI.
+The synthetic codec test is not evidence of subjective documentary quality.
