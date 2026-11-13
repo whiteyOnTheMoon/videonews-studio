@@ -78,7 +78,72 @@ node scripts/p3_18_create_media_draft.mjs \
 
 This reads local files and computes current file SHA-256 values, checks H264 and runtime, confirms pre-existing pinned NASA map/clip checksums and writes a **non-renderable** `INSPECTED_UNAPPROVED` draft with all rights flags false and mode 0600. It **does not** grant permission. The initial `captureDate` is an intake placeholder, not a scientific timestamp; a named reviewer must correct it according to each source record and document the exact observation/release distinction. A scientific inspector must also verify the 2026 Ozone Watch video's actual frame-date coverage. Document review separately.
 
-### Only AFTER individual source approvals
+### Source-specific offline contact audit (P3-18 follow-up)
+
+The five files were downloaded by the operator and an explicitly
+**UNAPPROVED** manifest was produced on the VPS. Do not replace this intake
+manifest or automatically flip any rights flags.
+
+The new **non-rendering** auditor
+`scripts/p3_18_audit_real_media.mjs --inspect-private`
+runs only with the explicit `ap` private review opt-in, reads:
+`/home/ap/vns-p3-18-private-candidates/ozone-pilot-UNAPPROVED.json`
+and the five original media files, re-verifies SHA-256, H.264, dimensions,
+audio presence and duration, and produces **read-only review derivatives** in
+`/home/ap/videonews-previews/p3-18-real-source-audit/`.
+
+- Three JPEG contact frames per moving source: seconds 1, 10 and 20 for
+  each of the three atmospheric backgrounds; seconds 1, 7 and 14 for the
+  real NASA Ozone Watch 2026 clip.
+- One fitted JPEG preview of the 2026-10-04 ozone-map still.
+- `source-audit-receipt.json` preserves the hashes and technical stream
+  facts along with NASA source URLs, known release dates, dataset warnings,
+  attribution notes and **unanswered** human checks per source.
+- Total **13 contact JPEGs**, each with SHA-256. Review images are downscaled
+  to 960×540 only for inspection. For tiny calendar text, legend ticks, and
+  scientific labels the **original full-resolution files must still be
+  examined**. No OCR or AI-inferred rights decisions are used.
+
+The reviewer should pay special attention to NASA SVS 31365: its composite
+Spheres movie switches datasets every ~27 seconds. It is not a 2026 ozone
+measurement and its exact 0–20 s excerpt must be assessed, with credits
+for PACE/SWOT/GRACE-FO data and contributors as applicable. PACE true
+color is based on **2024-09-24** imagery. NASA SVS 5570 was released on
+**2025-07-21** and credits Kel Elkins, William Putman and Reto Stockli's
+Blue Marble data. Source pages:
+
+- https://svs.gsfc.nasa.gov/5570/
+- https://svs.gsfc.nasa.gov/31365/
+- https://ozonewatch.gsfc.nasa.gov/SH.html
+- https://svs.gsfc.nasa.gov/help/
+- https://www.nasa.gov/nasa-brand-center/images-and-media/
+
+The auditor **refuses** existing output directories and files changed since
+intake, never edits originals, never connects to media providers or downloads
+additional material, never renders a composed film, and never sets
+`rightsApproved`, `editorialApproved` or
+`thirdPartyRightsCleared` to true. Output contains only source/rights
+**questions**, not clearance. No automated promotion of an unapproved source
+manifest is provided. Original source attribution, precise scientific
+timestamps and third-party/music rights remain subject to human review.
+
+Offline synthetic regression:
+`node --test scripts/p3_18_audit_real_media.test.mjs`.
+
+After all workflows for **this exact last commit** are green, run in an
+SHA-pinned disposable git worktree:
+
+```bash
+VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY \
+  node scripts/p3_18_audit_real_media.mjs --inspect-private
+```
+
+No file outside the dedicated private audit-output directory is created or
+modified; the audit source files and intake manifest remain intact. The audit
+output deliberately persists for human viewing, and no cleanup of these
+proofs should occur without operator review.
+
+## Only AFTER individual source approvals
 
 The operator may create a **separate** version of the above manifest after assessing each item's usage rights and editorial accuracy. Required conditions:
 - Every candidate individually reviewed; no automatic blanket NASA/Pexels/Pixabay/Unsplash permission;
