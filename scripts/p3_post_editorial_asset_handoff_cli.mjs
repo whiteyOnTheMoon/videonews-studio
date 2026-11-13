@@ -9,7 +9,6 @@
  *
  * No automatic calls from the dormant research worker. No media downloads.
  */
-import assert from "node:assert/strict";
 import {randomBytes} from "node:crypto";
 import {lstat, readFile, realpath, rename, rm, writeFile} from "node:fs/promises";
 import {basename, dirname, isAbsolute, join, resolve} from "node:path";
