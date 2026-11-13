@@ -16,6 +16,10 @@ on:
       - "scripts/p3_reviewed_media_selection_cli.mjs"
       - "scripts/p3_reviewed_media_selection.test.mjs"
       - "docs/P3_REVIEWED_MEDIA_SELECTION.md"
+      - "scripts/p3_media_candidate_ranking.mjs"
+      - "scripts/p3_media_review_board.mjs"
+      - "scripts/p3_media_review_board.test.mjs"
+      - "docs/P3_OFFLINE_MEDIA_REVIEW_BOARD.md"
       - ".github/workflows/p3-episode-asset-library.yml"
 permissions:
   contents: read
@@ -41,8 +45,15 @@ jobs:
           node --check scripts/p3_post_editorial_asset_handoff_cli.mjs
           node --check scripts/p3_reviewed_media_selection.mjs
           node --check scripts/p3_reviewed_media_selection_cli.mjs
+          node --check scripts/p3_media_candidate_ranking.mjs
+          node --check scripts/p3_media_review_board.mjs
+      - name: Install local-only FFmpeg test fixture tooling
+        run: |
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg
       - name: Prove bounded search and export-hash-gated cleanup without providers
         run: |
           env -u PEXELS_API_KEY node --test scripts/p3_episode_asset_library.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_post_editorial_asset_handoff.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_reviewed_media_selection.test.mjs
+          env -u PEXELS_API_KEY node --test scripts/p3_media_review_board.test.mjs
