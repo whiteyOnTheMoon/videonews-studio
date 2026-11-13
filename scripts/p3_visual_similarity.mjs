@@ -170,14 +170,25 @@ export function inspectEpisodeVisualDuplicates(fingerprints) {
       }
       const bothVideos = a.mediaType === "video" && b.mediaType === "video";
       const maxDistance = bothVideos ? 4 : 3;
-      const matches = [];
-      for (const first of a.samples) {
-        let best = null;
-        for (const second of b.samples) {
-          const d = closeSample(first, second, maxDistance);
-          if (d !== null && (best === null || d < best)) best = d;
+      const comparable = [];
+      for (const [aIndex, first] of a.samples.entries()) {
+        for (const [bIndex, second] of b.samples.entries()) {
+          const distance = closeSample(first, second, maxDistance);
+          if (distance !== null)
+            comparable.push({aIndex, bIndex, distance});
         }
-        if (best !== null) matches.push(best);
+      }
+      // Distinct video frames must match distinct counterpart frames;
+      // three close matches to just one video frame are NOT three samples.
+      comparable.sort((x, y) => x.distance - y.distance ||
+        x.aIndex - y.aIndex || x.bIndex - y.bIndex);
+      const matchedA = new Set(), matchedB = new Set(), matches = [];
+      for (const candidate of comparable) {
+        if (matchedA.has(candidate.aIndex) ||
+            (bothVideos && matchedB.has(candidate.bIndex))) continue;
+        matchedA.add(candidate.aIndex);
+        matchedB.add(candidate.bIndex);
+        matches.push(candidate.distance);
       }
       const qualifying = bothVideos ? matches.length >= 2 :
         matches.length >= 1;
