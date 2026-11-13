@@ -167,7 +167,11 @@ async function validateOfflineVoice() {
   assert.ok(typeof python === "string" && isAbsolute(python));
   assert.ok(typeof model === "string" && isAbsolute(model) &&
     model.endsWith("/" + VOICE_FILE));
-  for (const path of [python, model, model + ".json"]) {
+  // A standard Python virtualenv may use bin/python -> python3 symlinks.
+  // Resolve and check the requested interpreter, while requiring an actual
+  // non-symlink model and config whose model bytes match the pinned SHA.
+  assert.ok((await stat(python)).isFile(), "Piper interpreter is not a file");
+  for (const path of [model, model + ".json"]) {
     const info = await lstat(path);
     assert.ok(info.isFile() && !info.isSymbolicLink());
   }
