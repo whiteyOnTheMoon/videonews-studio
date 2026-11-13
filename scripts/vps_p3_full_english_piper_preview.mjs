@@ -62,11 +62,6 @@ const PIPER_LENGTH_SCALE = "1.04";
 const PIPER_SENTENCE_SILENCE = "0.38";
 const VOICE_SHA256 = "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f";
 const VOICE_NAME = "en_US-lessac-medium.onnx";
-const FPS = 24;
-const FADE = 0.55;
-// Calm English voice: longer vowels/syllables and natural sentence breaks.
-const VOICE_LENGTH_SCALE = "1.04";
-const VOICE_SENTENCE_SILENCE = "0.38";
 const VISUAL_ASSETS = Object.freeze([
   {
     filename: "earth-nasa.jpg",
@@ -235,7 +230,6 @@ async function synthesizeSections(story, directory) {
     const input = join(directory, "section-" + index + ".txt");
     const path = join(directory, "speech-" + index + ".wav");
     await writeFile(input, section.narration, { mode: 0o600, flag: "wx" });
-    command("node", ["--version"], 10000);
     command(process.env.VNS_PIPER_PYTHON, [
       "-m", "piper",
       "-m", process.env.VNS_PIPER_MODEL,
