@@ -515,11 +515,12 @@ async function renderMovie(
   const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
   assert.equal(selected.length, frameCounts.length);
   assert.ok(privateClips instanceof Map);
-  if (privateClips.size || cinematic?.starts.size) {
+  if (privateClips.size || cinematic?.starts.size || cinematic?.inserts.size) {
     assert.ok(!smoke && LOCAL_PREVIEW,
       "Reviewed moving footage is allowed only in a private VPS preview");
   }
-  assert.ok(!(privateClips.size && cinematic?.starts.size),
+  assert.ok(!(privateClips.size &&
+    (cinematic?.starts.size || cinematic?.inserts.size)),
     "Choose only one private footage mode");
   if (smoke) {
     assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
@@ -536,6 +537,8 @@ async function renderMovie(
   const encodedClips = [];
   for (let index = 0; index < selected.length;) {
     const span = cinematic?.starts.get(index);
+    const insert = cinematic?.inserts.get(index);
+    assert.ok(!(span && insert), "Full span and short insert cannot overlap");
     const frames = span ? span.durationFrames : frameCounts[index];
     assert.ok(Number.isSafeInteger(frames) &&
       frames >= 24 && frames < 24 * 3 * 240);
@@ -549,6 +552,44 @@ async function renderMovie(
         span.durationFrames,
       );
       await encodeCinematicSpan({span, output: encoded, directory});
+    } else if (insert) {
+      const tailFrames = frameCounts[index] - insert.durationFrames;
+      assert.ok(tailFrames >= FPS,
+        "Short insert must leave a graphic remainder of at least one second");
+      // One source shot, played once. The rest of the narrated beat uses
+      // its original SVG scene rather than looping a short video.
+      await encodeCinematicSpan({span: insert, output: encoded, directory});
+      const media = probe(encoded);
+      assert.equal(Number(media.streams.find(stream =>
+        stream.codec_type === "video")?.nb_frames), insert.durationFrames);
+      encodedClips.push(encoded);
+      const tail = join(directory,
+        "scene-" + String(index + 1).padStart(2, "0") + "-graphic-tail.mp4");
+      const fadeDuration = (10 / FPS).toFixed(6);
+      const still = selected[index];
+      command("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-filter_complex_threads", "1", "-threads", "1",
+        "-loop", "1", "-framerate", String(FPS),
+        "-protocol_whitelist", "file,pipe", "-i", still,
+        "-vf", "format=yuv420p,fade=t=in:st=0:d=" + fadeDuration,
+        "-frames:v", String(tailFrames),
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+        "-threads:v", "1", "-pix_fmt", "yuv420p", "-r", String(FPS),
+        "-an", "-movflags", "+faststart", tail,
+      ], 360000);
+      const tailInfo = probe(tail);
+      const tailVideo = tailInfo.streams.find(stream => stream.codec_type === "video");
+      assert.equal(tailVideo?.codec_name, "h264");
+      assert.equal(tailVideo?.width, 1280);
+      assert.equal(tailVideo?.height, 720);
+      assert.equal(Number(tailVideo?.nb_frames), tailFrames);
+      encodedClips.push(tail);
+      console.log("VIDEO_SHORT_INSERT_BEAT=" + (index + 1) +
+        "; clip_frames=" + insert.durationFrames +
+        "; graphic_remainder_frames=" + tailFrames);
+      index += 1;
+      continue;
     } else {
       assert.ok(!cinematic?.occupied.has(index),
         "A cinematic background may not be rendered as a duplicate still");
@@ -730,6 +771,7 @@ async function main() {
         beatVisuals: story.sections.flatMap(section => section.visuals),
       });
       console.log("CINEMATIC_BACKGROUND_SPANS=" + cinematic.starts.size +
+        "; SHORT_VIDEO_INSERTS=" + cinematic.inserts.size +
         "; CINEMATIC_OVERLAY_BEATS=" + cinematic.occupied.size);
     }
     if (manifestPath !== undefined) {
@@ -784,7 +826,8 @@ async function main() {
       movie.duration.toFixed(3) + " seconds; " + totalWords + " words; " +
       pngPaths.length + " photo-backed original graphic beats; H264/AAC; bytes=" +
       movie.size + "; reviewed_clip_beats=" + privateClips.size +
-      "; cinematic_spans=" + (cinematic?.starts.size ?? 0) + "; SHA256=" + sha256);
+      "; cinematic_spans=" + (cinematic?.starts.size ?? 0) +
+      "; short_inserts=" + (cinematic?.inserts.size ?? 0) + "; SHA256=" + sha256);
     console.log("Editorial/publication: DENIED. Piper Lessac: private demo voice only.");
   } finally {
     if (directory) await rm(directory, { recursive: true, force: true });
