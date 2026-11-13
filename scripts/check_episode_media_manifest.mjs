@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile, lstat, realpath } from "node:fs/promises";
-import { isAbsolute, dirname, resolve, extname } from "node:path";
+import { isAbsolute, resolve, extname } from "node:path";
 
 const SHA = /^[a-f0-9]{64}$/;
 const ALLOWED = Object.freeze({
