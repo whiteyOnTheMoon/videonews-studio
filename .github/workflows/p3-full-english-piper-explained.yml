@@ -72,5 +72,5 @@ jobs:
             echo "REFUSED: local private MP4 unexpectedly permitted on CI runner"
             exit 1
           fi
-      - name: Verify 7-section natural Piper narration duration and all 19 original graphics
+      - name: Verify full Piper audio, all 19 original graphics and 3-second segmented MP4 smoke
         run: node scripts/vps_p3_full_english_piper_preview.mjs --verify-audio-only
