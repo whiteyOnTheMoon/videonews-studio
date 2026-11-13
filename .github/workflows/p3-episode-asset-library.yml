@@ -23,6 +23,8 @@ on:
       - "scripts/p3_visual_similarity.mjs"
       - "scripts/p3_visual_similarity.test.mjs"
       - "docs/P3_VISUAL_SIMILARITY.md"
+      - "scripts/p3_integrated_private_preview.test.mjs"
+      - "docs/P3_INTEGRATED_PRIVATE_PREVIEW_PROOF.md"
       - ".github/workflows/p3-episode-asset-library.yml"
 permissions:
   contents: read
@@ -54,7 +56,7 @@ jobs:
       - name: Install local-only FFmpeg test fixture tooling
         run: |
           sudo apt-get update -qq
-          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ffmpeg librsvg2-bin
       - name: Prove bounded search and export-hash-gated cleanup without providers
         run: |
           env -u PEXELS_API_KEY node --test scripts/p3_episode_asset_library.test.mjs
@@ -62,3 +64,5 @@ jobs:
           env -u PEXELS_API_KEY node --test scripts/p3_reviewed_media_selection.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_media_review_board.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_visual_similarity.test.mjs
+      - name: Verify end-to-end synthetic voiced cinematic preview, quarantine and cleanup
+        run: env -u PEXELS_API_KEY node --test scripts/p3_integrated_private_preview.test.mjs
