@@ -281,7 +281,7 @@ async function preview(root) {
   };
 }
 
-async function persistPrivate({movie, contacts, report}, sourceDir) {
+async function persistPrivate({contacts, report}, sourceDir) {
   await mkdir(PRIVATE_ROOT, {recursive: true, mode: 0o700});
   const parent = await lstat(PRIVATE_ROOT);
   assert.ok(parent.isDirectory() && !parent.isSymbolicLink());
