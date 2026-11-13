@@ -74,9 +74,11 @@ test("possible visual matches are review hints; exact byte reuse remains distinc
   const wrong = sample("nasa:C", "beat-09", "c".repeat(64),
     [v("ffffffffffffffff"), v("ffffffffffffffff"), v("ffffffffffffffff")]);
   const flat = sample("nasa:D", "beat-10", "d".repeat(64),
-    [v("aaaaaaaaaaaaaaaa", false), v("5555555555555555", false)]);
+    [v("aaaaaaaaaaaaaaaa", false), v("5555555555555555", false),
+      v("00000000ffffffff", false)]);
   const sameBytes = sample("nasa:E", "beat-11", SHA_A,
-    [v("ffffffffffffffff")]);
+    [v("0123456789abcdef"), v("0123456789abcdef"),
+      v("0123456789abcdef")]);
   const result = inspectEpisodeVisualDuplicates([
     first, close, wrong, flat, sameBytes,
   ]);
@@ -94,7 +96,7 @@ test("possible visual matches are review hints; exact byte reuse remains distinc
     /Malformed or repeated/);
   const onlyFlat = inspectEpisodeVisualDuplicates([
     flat, sample("nasa:F", "beat-12", "f".repeat(64),
-      [v("aaaaaaaaaaaaaaaa", false)]),
+      [v("aaaaaaaaaaaaaaaa", false)], "photo"),
   ]);
   assert.equal(onlyFlat.possiblePairs, 0);
 });
