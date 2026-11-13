@@ -24,6 +24,10 @@ on:
       - "scripts/p3_visual_similarity.test.mjs"
       - "docs/P3_VISUAL_SIMILARITY.md"
       - "scripts/p3_integrated_private_preview.test.mjs"
+      - "scripts/p3_cinematic_timeline.mjs"
+      - "scripts/p3_science_safe_composition.mjs"
+      - "scripts/p3_science_safe_composition.test.mjs"
+      - "docs/P3_SCIENCE_SAFE_CINEMATIC.md"
       - "docs/P3_INTEGRATED_PRIVATE_PREVIEW_PROOF.md"
       - ".github/workflows/p3-episode-asset-library.yml"
 permissions:
@@ -53,6 +57,8 @@ jobs:
           node --check scripts/p3_media_candidate_ranking.mjs
           node --check scripts/p3_media_review_board.mjs
           node --check scripts/p3_visual_similarity.mjs
+          node --check scripts/p3_science_safe_composition.mjs
+          node --check scripts/p3_science_safe_composition.test.mjs
       - name: Install local-only FFmpeg test fixture tooling
         run: |
           sudo apt-get update -qq
@@ -64,5 +70,7 @@ jobs:
           env -u PEXELS_API_KEY node --test scripts/p3_reviewed_media_selection.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_media_review_board.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_visual_similarity.test.mjs
+      - name: Prove non-overpaint scientific composition with synthetic four-corner fixture
+        run: env -u PEXELS_API_KEY node --test scripts/p3_science_safe_composition.test.mjs
       - name: Verify end-to-end synthetic voiced cinematic preview, quarantine and cleanup
         run: env -u PEXELS_API_KEY node --test scripts/p3_integrated_private_preview.test.mjs
