@@ -27,6 +27,7 @@ on:
       - "scripts/p3_cinematic_timeline.mjs"
       - "scripts/p3_science_safe_composition.mjs"
       - "scripts/p3_science_safe_composition.test.mjs"
+      - "scripts/p3_science_safe_visual_review.mjs"
       - "docs/P3_SCIENCE_SAFE_CINEMATIC.md"
       - "docs/P3_INTEGRATED_PRIVATE_PREVIEW_PROOF.md"
       - ".github/workflows/p3-episode-asset-library.yml"
@@ -59,6 +60,7 @@ jobs:
           node --check scripts/p3_visual_similarity.mjs
           node --check scripts/p3_science_safe_composition.mjs
           node --check scripts/p3_science_safe_composition.test.mjs
+          node --check scripts/p3_science_safe_visual_review.mjs
       - name: Install local-only FFmpeg test fixture tooling
         run: |
           sudo apt-get update -qq
@@ -72,5 +74,13 @@ jobs:
           env -u PEXELS_API_KEY node --test scripts/p3_visual_similarity.test.mjs
       - name: Prove non-overpaint scientific composition with synthetic four-corner fixture
         run: env -u PEXELS_API_KEY node --test scripts/p3_science_safe_composition.test.mjs
+      - name: Verify retained-private-preview mode is refused inside CI
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY node scripts/p3_science_safe_visual_review.mjs --save-private; then
+            echo "REFUSED: CI must never persist a private review"
+            exit 1
+          fi
+      - name: Create and inspect ephemeral 10-second synthetic five-beat visual review
+        run: env -u PEXELS_API_KEY node scripts/p3_science_safe_visual_review.mjs --verify-ephemeral
       - name: Verify end-to-end synthetic voiced cinematic preview, quarantine and cleanup
         run: env -u PEXELS_API_KEY node --test scripts/p3_integrated_private_preview.test.mjs

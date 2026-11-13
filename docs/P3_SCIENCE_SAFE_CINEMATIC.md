@@ -76,6 +76,50 @@ SVGs, invalid mode refusal, unapproved-source refusal and protected-host
 refusal. It does **not** download or access the NASA file or use live stock
 footage. A passing CI test does not certify perceptual film quality.
 
+## P3-16 visual quality review witness (synthetic, no NASA)
+
+The synthetic pixel tests prove non-overpaint but do not leave a video that
+the operator can watch. The new `scripts/p3_science_safe_visual_review.mjs`
+constructs **two original synthetic moving motifs** with date, corner labels,
+and a five-color legend burned *inside* each source frame. It then uses the
+existing reviewed-manifest and cinematic renderer to export five independent
+overlay beats (15–19), 240 frames / 10 seconds at 24 fps, and one independent
+440 Hz **synthetic** narration stand-in. The two synthetic sources contain
+different embedded tones: the final audio always maps only the independent
+soundtrack, never a source track. The script also captures the center frame
+of every beat at seconds 1, 3, 5, 7 and 9.
+
+CI exclusively runs `--verify-ephemeral`, which validates the H264/AAC export,
+all five JPEG contacts, 240 frames and source asset SHA-256 values before
+removing the entire temporary workspace. It deliberately does *not* use
+actual NASA footage or a Piper model.
+
+For an explicitly authorized, **ap-only** operator session on the VPS, run
+`VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY node
+scripts/p3_science_safe_visual_review.mjs --save-private` from an exact
+SHA-pinned clean Git worktree, **after all last-commit GitHub Actions finish
+green**. This uses only synthesized assets and writes only into the existing
+private preview parent, under the newly created folder
+`/home/ap/videonews-previews/p3-16-science-safe-visual-review/`.
+It refuses to replace an existing review folder; the folder must be
+owned by `ap` and private (mode 0700). Retained files include:
+
+- `science-safe-visual-review.mp4`: video and single test audio;
+- `review-frame-01.jpg` through `review-frame-05.jpg`: one per beat;
+- `review-receipt.json`: output/source/contact SHA-256, simulated status,
+  frame count and explicitly `publicationAllowed: false`.
+
+The temporary generation workspace is removed regardless of exit status.
+The saved preview and receipt are NOT part of the temporary workspace and
+are deliberately retained for manual review. Do not automatically delete
+those retained files. The synthetic success flag is **not human visual
+approval** and is not evidence for clearing rights on actual NASA assets.
+
+Inspect the contact pictures and private MP4 manually, especially the
+source's four corners, side rail, motion and fades. Record the assessment
+separately. The full English 19-scene Piper episode still needs its own
+private end-to-end viewing and rights-gated real-footage review.
+
 ## Real footage remains blocked
 
 The VPS asset
