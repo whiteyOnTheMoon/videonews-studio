@@ -28,6 +28,11 @@ import {
 import { tmpdir, userInfo } from "node:os";
 import { isAbsolute, join } from "node:path";
 import {
+  createPrivateClipOverlaySvg,
+  encodePrivateClipBeat,
+  loadPrivateClipAssignments,
+} from "./p3_private_clip_support.mjs";
+import {
   assertEarthClimateExplainedStructure,
   EARTH_CLIMATE_EXPLAINED_SECTION_IDS,
   buildNarrationTimeline,
@@ -96,21 +101,29 @@ const VISUAL_ASSETS = Object.freeze([
     credit: "NASA/JPL · Antarctic limb mosaic · archive 1990",
   },
 ]);
-/** 19 source-matched backgrounds. Avoid misleading archival views as 2026 photos. */
+/**
+ * A source photo may appear in exactly one beat. null means an original
+ * graphic without any recycled background. Do not silently duplicate files,
+ * crop, zoom, or re-color a photo to work around this restriction.
+ */
 const BEAT_VISUAL_ASSET = Object.freeze([
-  1, 0,             // The Hook: 2026 ozone data, Earth
-  0, 2, 3,          // Basics: Earth / Antarctica / globe context
-  1, 1, 4,          // Measurements: actual 2026 map / archival vortex context
-  2, 4, 5,          // Why: ice shelf / vortex 2014 / atmosphere 1990
-  3, 0, 2,          // Why it matters: global archive / Earth / Antarctica
-  3, 1, 0,          // Next: historic Earth views / ozone monitoring / Earth
-  1, 0,             // Takeaway: the observed ozone hole / Earth
-]);
-const INSET_BY_BEAT = new Map([
-  [0, 1], [7, 4], [17, 1],
+  1, null,           // Hook: contemporary ozone image, then original graphic
+  0, null, null,     // Basics: Earth photo, then diagrams
+  null, null, 4,     // Measurements: comparison diagrams and dated 2014 vortex
+  2, null, 5,        // Why: Antarctic archive, graphic, archival limb mosaic
+  null, 3, null,     // Why it matters: original graphics, archival Earth views
+  null, null, null,  // Next: data/monitoring explanations as original graphics
+  null, null,        // Takeaway: original graphics only
 ]);
 assert.equal(BEAT_VISUAL_ASSET.length, 19);
-assert.equal(new Set(BEAT_VISUAL_ASSET).size, VISUAL_ASSETS.length);
+const photoBeats = BEAT_VISUAL_ASSET.filter(index => index !== null);
+assert.equal(photoBeats.length, VISUAL_ASSETS.length);
+assert.equal(new Set(photoBeats).size, photoBeats.length,
+  "The same source photo must never appear twice in one episode");
+assert.deepEqual([...photoBeats].sort((a, b) => a - b),
+  VISUAL_ASSETS.map((_, index) => index));
+assert.equal(new Set(VISUAL_ASSETS.map(a => a.sha256)).size, VISUAL_ASSETS.length,
+  "Distinct asset filenames must not hide duplicate image bytes");
 
 const SOURCE_HOSTS = Object.freeze({
   "noaa-2026": "www.noaa.gov",
@@ -368,57 +381,46 @@ async function renderGraphics(story, sources, images, directory) {
       const index = pngPaths.length;
       let svg = result.frames[0].svg;
       assert.match(svg, /PREVIEW – NOT FOR PUBLICATION/);
-      assert.doesNotMatch(svg, /VORSCHAU|Quellenlinks|<image\b|<script\b|<foreignObject\b/);
+      assert.doesNotMatch(svg, /VORSCHAU|Quellenlinks|<image\\b|<script\\b|<foreignObject\\b/);
       const opaque = '<rect x="0" y="0" width="1280" height="720" fill="#0a1929"/>';
       assert.ok(svg.includes(opaque));
-      svg = svg.replace(opaque,
-        '<rect x="0" y="0" width="1280" height="720" ' +
-        'fill="#071420" fill-opacity="0.76"/>');
       const imageIndex = BEAT_VISUAL_ASSET[index];
-      assert.ok(Number.isInteger(imageIndex) && backgrounds[imageIndex],
-        "Each beat needs an approved NASA background");
-      sceneImagesUsed.add(imageIndex);
-      const credit = VISUAL_ASSETS[imageIndex].credit;
-      svg = svg.replace("</svg>",
-        '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
-        'font-family="Arial, sans-serif">' + credit + '</text></svg>');
-      const insetImageIndex = INSET_BY_BEAT.get(index);
-      const inset = insetImageIndex !== undefined;
-      if (inset) {
-        assert.equal(visual.kind, "text-card");
-        const label = VISUAL_ASSETS[insetImageIndex].insetLabel;
-        assert.ok(label && label.length <= 42);
+      const photoBacked = imageIndex !== null;
+      if (photoBacked) {
+        assert.ok(Number.isInteger(imageIndex) && backgrounds[imageIndex],
+          "Every photo-backed beat needs an approved NASA image");
+        assert.ok(!sceneImagesUsed.has(imageIndex),
+          "Source photo reused in multiple scenes: " + VISUAL_ASSETS[imageIndex].filename);
+        sceneImagesUsed.add(imageIndex);
+        // Preserve legible text without obscuring the source photograph completely.
+        svg = svg.replace(opaque,
+          '<rect x="0" y="0" width="1280" height="720" ' +
+          'fill="#071420" fill-opacity="0.60"/>');
+        const credit = VISUAL_ASSETS[imageIndex].credit;
         svg = svg.replace("</svg>",
-          '<rect x="828" y="378" width="344" height="250" rx="9" ' +
-          'fill="#0a1b29" stroke="#64d8cb" stroke-width="3"/>' +
-          '<text x="841" y="646" font-size="17" fill="#c9e1f0" ' +
-          'font-family="Arial, sans-serif">' + label + '</text></svg>');
+          '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
+          'font-family="Arial, sans-serif">' + credit + '</text></svg>');
       }
       const label = String(index + 1).padStart(2, "0");
       const svgPath = join(directory, "visual-" + label + ".svg");
-      const transparent = join(directory, "foreground-" + label + ".png");
+      const foreground = join(directory, "foreground-" + label + ".png");
       const png = join(directory, "visual-" + label + ".png");
       await writeFile(svgPath, svg, { mode: 0o600, flag: "wx" });
-      command("rsvg-convert", ["--output", transparent, svgPath], 30000);
-      const filters = [
-        "[0:v][1:v]overlay=0:0:format=auto[headlines]",
-      ];
-      if (inset) {
-        filters.push(
-          "[2:v]scale=316:224:force_original_aspect_ratio=decrease," +
-          "pad=316:224:(ow-iw)/2:(oh-ih)/2:color=0x101d29[inset]",
-        );
-        filters.push("[headlines][inset]overlay=842:389:format=auto[final]");
+      command("rsvg-convert", ["--output", foreground, svgPath], 30000);
+      if (photoBacked) {
+        command("ffmpeg", [
+          "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+          "-i", backgrounds[imageIndex],
+          "-i", foreground,
+          "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto[final]",
+          "-map", "[final]",
+          "-frames:v", "1", png,
+        ], 120000);
+      } else {
+        // The native SVG contains its own opaque backdrop and remains a
+        // distinct, self-contained informational graphic.
+        await copyFile(foreground, png, fsConstants.COPYFILE_EXCL);
       }
-      command("ffmpeg", [
-        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-i", backgrounds[imageIndex],
-        "-i", transparent,
-        ...(inset ? ["-i", images[insetImageIndex]] : []),
-        "-filter_complex", filters.join(";"),
-        "-map", inset ? "[final]" : "[headlines]",
-        "-frames:v", "1", png,
-      ], 120000);
       assert.equal((await readFile(png)).subarray(0, 8).toString("hex"),
         "89504e470d0a1a0a");
       pngPaths.push(png);
@@ -427,6 +429,9 @@ async function renderGraphics(story, sources, images, directory) {
   assert.equal(pngPaths.length, 19);
   assert.equal(sceneImagesUsed.size, VISUAL_ASSETS.length);
   console.log("NASA_DISTINCT_SCENE_BACKGROUNDS=" + sceneImagesUsed.size);
+  console.log("UNIQUE_PHOTO_BEATS=" + sceneImagesUsed.size +
+    "; ORIGINAL_GRAPHIC_ONLY_BEATS=" + (pngPaths.length - sceneImagesUsed.size) +
+    "; DUPLICATE_IMAGE_INSETS=0");
   return pngPaths;
 }
 
@@ -496,12 +501,15 @@ async function assembleAudio(speechPaths, plan, directory) {
  * bitstreams. Audio is combined and AAC-encoded only once, at the end.
  * Never scale or translate text; move only the decorative underline.
  */
-async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false) {
+async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false, privateClips = new Map()) {
   const beats = plan.sections.flatMap((section) => section.visualBeats);
   assert.equal(pngPaths.length, beats.length);
   const selected = smoke ? pngPaths.slice(0, 2) : pngPaths;
   const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
   assert.equal(selected.length, frameCounts.length);
+  assert.ok(privateClips instanceof Map);
+  if (privateClips.size) assert.ok(!smoke && LOCAL_PREVIEW,
+    "Reviewed moving footage is allowed only in an explicit private VPS preview");
   if (smoke) {
     assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
     assert.equal(selected.length, 2);
@@ -522,19 +530,34 @@ async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false) 
       "color=c=0x64d8cb:s=420x6:r=24,format=rgba[accent];" +
       "[fixed][accent]overlay=x='-420+512*min(t/1.4,1)'" +
       ":y=174:shortest=1:format=auto,format=yuv420p[finalv]";
-    command("ffmpeg", [
-      "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-      "-filter_complex_threads", "1", "-threads", "1",
-      "-loop", "1", "-framerate", String(FPS),
-      "-protocol_whitelist", "file,pipe", "-i", path,
-      "-filter_complex", filter,
-      "-map", "[finalv]", "-frames:v", String(frames),
-      "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
-      "-threads:v", "1",
-      "-pix_fmt", "yuv420p", "-r", String(FPS),
-      "-an", "-movflags", "+faststart",
-      encoded,
-    ], 360000);
+    const approvedClip = privateClips.get(index);
+    if (approvedClip) {
+      const overlaySvg = join(directory, "clip-overlay-" + String(index + 1) + ".svg");
+      const overlayPng = join(directory, "clip-overlay-" + String(index + 1) + ".png");
+      await writeFile(overlaySvg, createPrivateClipOverlaySvg({
+        title: approvedClip.title,
+        credit: approvedClip.credit,
+        captureDate: approvedClip.captureDate,
+      }), { mode: 0o600, flag: "wx" });
+      command("rsvg-convert", ["--output", overlayPng, overlaySvg], 30000);
+      await encodePrivateClipBeat({
+        assignment: approvedClip, overlayPng, output: encoded, frames,
+      });
+    } else {
+      command("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-filter_complex_threads", "1", "-threads", "1",
+        "-loop", "1", "-framerate", String(FPS),
+        "-protocol_whitelist", "file,pipe", "-i", path,
+        "-filter_complex", filter,
+        "-map", "[finalv]", "-frames:v", String(frames),
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+        "-threads:v", "1",
+        "-pix_fmt", "yuv420p", "-r", String(FPS),
+        "-an", "-movflags", "+faststart",
+        encoded,
+      ], 360000);
+    }
     const clip = probe(encoded);
     const video = clip.streams.find((stream) => stream.codec_type === "video");
     assert.equal(video?.codec_name, "h264");
@@ -652,6 +675,21 @@ async function main() {
     console.log("ENGLISH_FULL_AUDIO_DURATION_SECONDS=" + plan.totalSeconds.toFixed(3));
     console.log("ENGLISH_FULL_SECTIONS=7; ENGLISH_FULL_WORDS=" + totalWords +
       "; ENGLISH_VISUAL_BEATS=19");
+    let privateClips = new Map();
+    const manifestPath = process.env.VNS_PRIVATE_MEDIA_MANIFEST;
+    if (manifestPath !== undefined) {
+      assert.ok(LOCAL_PREVIEW,
+        "Private media manifest is forbidden in CI and other unapproved modes");
+      const beats = plan.sections.flatMap(section => section.visualBeats);
+      privateClips = await loadPrivateClipAssignments({
+        manifestPath,
+        beatVisualAssets: BEAT_VISUAL_ASSET,
+        beatFrames: beats.map(beat => beat.frames),
+        beatTitles: story.sections.flatMap(section =>
+          section.visuals.map(visual => visual.title)),
+      });
+      console.log("PRIVATE_REVIEWED_VIDEO_BEATS=" + privateClips.size);
+    }
     const pngPaths = await renderGraphics(story, sources, images, directory);
     if (CI_AUDIO_ONLY) {
       // Prove the *actual* encode/concat/mux pipeline with a tiny 3-second
@@ -659,11 +697,11 @@ async function main() {
       await renderMovie(pngPaths, paths[0], plan, directory, true);
       console.log("P3 FULL ENGLISH AUDIO AND 19 GRAPHIC PROOF PASS: " +
         plan.totalSeconds.toFixed(3) + " seconds; 7 canonical sections; " +
-        pngPaths.length + " photo-backed original graphics; NO FULL MP4 IN CI");
+        pngPaths.length + " original graphic scenes; NO FULL MP4 IN CI");
       return;
     }
     const audio = await assembleAudio(paths, plan, directory);
-    const movie = await renderMovie(pngPaths, audio, plan, directory);
+    const movie = await renderMovie(pngPaths, audio, plan, directory, false, privateClips);
     const sha256 = createHash("sha256").update(await readFile(movie.output)).digest("hex");
     const stamp = new Date().toISOString().replace(/[-:.]/g, "").replace("T", "-").slice(0, 15);
     const base = "earth-climate-explained-ozone-2026-piper-nasa-" +
@@ -688,7 +726,7 @@ async function main() {
     console.log("P3 FULL PRIVATE ENGLISH PIPER NASA VIDEO PASS: " +
       movie.duration.toFixed(3) + " seconds; " + totalWords + " words; " +
       pngPaths.length + " photo-backed original graphic beats; H264/AAC; bytes=" +
-      movie.size + "; SHA256=" + sha256);
+      movie.size + "; reviewed_clip_beats=" + privateClips.size + "; SHA256=" + sha256);
     console.log("Editorial/publication: DENIED. Piper Lessac: private demo voice only.");
   } finally {
     if (directory) await rm(directory, { recursive: true, force: true });

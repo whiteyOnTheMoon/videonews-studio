@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths:
       - "scripts/vps_p3_full_english_piper_preview.mjs"
+      - "scripts/check_episode_media_manifest.mjs"
+      - "scripts/check_episode_media_manifest.test.mjs"
+      - "scripts/p3_private_clip_support.mjs"
+      - "scripts/p3_private_clip_support.test.mjs"
+      - "docs/P3_MEDIA_INTAKE.md"
       - "docs/P3_FULL_ENGLISH_PIPER_EXPLAINED.md"
       - ".github/workflows/p3-full-english-piper-explained.yml"
       - "content/news/ozone-2026-explained-en.json"
@@ -30,6 +35,8 @@ jobs:
           npm run lint
           npm run test --workspace @vns/shared
           node --check scripts/vps_p3_full_english_piper_preview.mjs
+          node --check scripts/p3_private_clip_support.mjs
+          node --test scripts/check_episode_media_manifest.test.mjs
       - name: Set up private offline voice and media tools
         run: |
           sudo apt-get update -qq
@@ -37,6 +44,8 @@ jobs:
           python -m venv "$RUNNER_TEMP/vns-piper"
           "$RUNNER_TEMP/vns-piper/bin/python" -m pip install --disable-pip-version-check "piper-tts==1.8.0"
           echo "VNS_PIPER_PYTHON=$RUNNER_TEMP/vns-piper/bin/python" >> "$GITHUB_ENV"
+      - name: Verify real moving-scene codec path using synthetic offline media
+        run: node --test scripts/p3_private_clip_support.test.mjs
       - name: Download exact offline voice and check SHA
         run: |
           mkdir -p "$RUNNER_TEMP/voices"
