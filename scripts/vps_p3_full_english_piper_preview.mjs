@@ -29,6 +29,7 @@ import { tmpdir, userInfo } from "node:os";
 import { isAbsolute, join } from "node:path";
 import {
   encodeCinematicSpan,
+  encodeGraphicTail,
   loadCinematicTimeline,
 } from "./p3_cinematic_timeline.mjs";
 import {
@@ -565,25 +566,9 @@ async function renderMovie(
       encodedClips.push(encoded);
       const tail = join(directory,
         "scene-" + String(index + 1).padStart(2, "0") + "-graphic-tail.mp4");
-      const fadeDuration = (10 / FPS).toFixed(6);
-      const still = selected[index];
-      command("ffmpeg", [
-        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-filter_complex_threads", "1", "-threads", "1",
-        "-loop", "1", "-framerate", String(FPS),
-        "-protocol_whitelist", "file,pipe", "-i", still,
-        "-vf", "format=yuv420p,fade=t=in:st=0:d=" + fadeDuration,
-        "-frames:v", String(tailFrames),
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
-        "-threads:v", "1", "-pix_fmt", "yuv420p", "-r", String(FPS),
-        "-an", "-movflags", "+faststart", tail,
-      ], 360000);
-      const tailInfo = probe(tail);
-      const tailVideo = tailInfo.streams.find(stream => stream.codec_type === "video");
-      assert.equal(tailVideo?.codec_name, "h264");
-      assert.equal(tailVideo?.width, 1280);
-      assert.equal(tailVideo?.height, 720);
-      assert.equal(Number(tailVideo?.nb_frames), tailFrames);
+      await encodeGraphicTail({
+        imagePath: selected[index], output: tail, frames: tailFrames,
+      });
       encodedClips.push(tail);
       console.log("VIDEO_SHORT_INSERT_BEAT=" + (index + 1) +
         "; clip_frames=" + insert.durationFrames +
