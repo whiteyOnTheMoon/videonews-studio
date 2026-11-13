@@ -70,3 +70,45 @@ identical pixel hashes for two steady headline crops, and **different** hashes
 for two frames of the chart-bar area. The test verifies absence of the prior
 visible-lettering jitter in a stable scene; subjective visual quality still
 requires watching the private preview.
+
+## Visual polish – genuine NASA imagery beneath stable typography
+
+The follow-up private test places two official NASA images behind the native
+1280×720 text/graphics layer, then darkens the photograph so white captions
+remain readable. A small NASA ozone-visualization inset appears in scenes
+one and five; other scenes alternate photographic and scientific-background
+imagery. The original independent chart animation remains.
+
+The locally supplied JPEGs must be present in the directory designated
+by `VNS_VISUAL_ASSETS_DIR` as `earth-nasa.jpg` and
+`ozone-2026-nasa.jpg`. The renderer validates JPEG bytes, minimum image
+dimensions, bounded size and a fixed SHA-256 for each file. This is a
+**one-time operator download**, not a network request from the renderer.
+
+NASA image sources and credits:
+
+- `earth-nasa.jpg`: NASA Blue Marble Earth from Suomi NPP, NASA Photojournal
+  PIA18033. Source
+  `https://science.nasa.gov/photojournal/earth/`.
+  Image: `https://images-assets.nasa.gov/image/PIA18033/PIA18033~orig.jpg`.
+  Credit: NASA.
+- `ozone-2026-nasa.jpg`: NASA Earth Observatory ozone map, October 4,
+  2026, using NASA satellite ozone observations. Source
+  `https://science.nasa.gov/earth/earth-observatory/world-of-change/ozone-hole/`.
+  Image:
+  `https://assets.science.nasa.gov/content/dam/science/esd/eo/woc/images/ozone/ozone_geos5_20261004.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg`.
+  Credit: NASA Earth Observatory/Lauren Dauphin.
+
+NASA media is generally usable for factual/informational purposes with
+acknowledgment and without implying NASA endorsement. See
+`https://www.nasa.gov/nasa-brand-center/images-and-media/`.
+NASA logos/identifiers and third-party media are not included. This
+preview remains unreleased and requires editorial review before any
+external publication. NASA maps are data visualizations, not literal
+photographs of an ozone hole.
+
+The typography is rendered once into a translucent static foreground:
+the background JPEG, the dark overlay, the overlaid NASA map, and the
+foreground text are merged to a single still per scene. Only designated
+decorative accents and chart bars animate; no completed text frame is
+zoomed, preventing previous text jitter.

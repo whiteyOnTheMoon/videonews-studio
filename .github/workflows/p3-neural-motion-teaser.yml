@@ -47,6 +47,18 @@ jobs:
             "$ROOT/en_US-lessac-medium.onnx.json"
           echo "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f  $RUNNER_TEMP/voices/en_US-lessac-medium.onnx" | sha256sum -c -
           echo "VNS_PIPER_MODEL=$RUNNER_TEMP/voices/en_US-lessac-medium.onnx" >> "$GITHUB_ENV"
+      - name: Retrieve two official NASA visuals for private preview
+        run: |
+          mkdir -p "$RUNNER_TEMP/nasa-visuals"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/nasa-visuals/earth-nasa.jpg" \
+            "https://images-assets.nasa.gov/image/PIA18033/PIA18033~orig.jpg"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+            -o "$RUNNER_TEMP/nasa-visuals/ozone-2026-nasa.jpg" \
+            "https://assets.science.nasa.gov/content/dam/science/esd/eo/woc/images/ozone/ozone_geos5_20261004.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg"
+          sha256sum "$RUNNER_TEMP/nasa-visuals/"*.jpg
+          file "$RUNNER_TEMP/nasa-visuals/"*.jpg
+          echo "VNS_VISUAL_ASSETS_DIR=$RUNNER_TEMP/nasa-visuals" >> "$GITHUB_ENV"
       - name: Refuse an unapproved local save in CI
         run: |
           if VNS_QUALITY_TEASER_APPROVED=PRIVATE_REVIEW_ONLY node scripts/vps_p3_neural_motion_teaser.mjs --save-local; then

@@ -48,6 +48,18 @@ const VOICE_SHA256 = "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eea
 const VOICE_NAME = "en_US-lessac-medium.onnx";
 const FPS = 24;
 const FADE = 0.55;
+const VISUAL_ASSETS = Object.freeze([
+  {
+    filename: "earth-nasa.jpg",
+    sha256: "872e1a5317ac31612a766ef6dfa7e774e2d10509b1e564b38e3aa384d6b0bf19",
+    credit: "NASA / Suomi NPP (PIA18033)",
+  },
+  {
+    filename: "ozone-2026-nasa.jpg",
+    sha256: "22b83f5dab6248d401e5ac313f98a18626b8c1ca002e43b67209d56f69ce0c6d",
+    credit: "NASA Earth Observatory / Lauren Dauphin",
+  },
+]);
 const TEXT = [
   "Antarctica's ozone hole was unusually large in twenty twenty-six.",
   "The seasonal average covered about twenty-five million square kilometres.",
@@ -102,6 +114,33 @@ async function prepareVoice() {
   assert.equal(config.language.code, "en_US");
   exec(python, ["-m", "piper", "--help"], 15000);
   return { python, model };
+}
+
+async function prepareVisualAssets() {
+  const root = process.env.VNS_VISUAL_ASSETS_DIR;
+  assert.ok(typeof root === "string" && isAbsolute(root));
+  const rootInfo = await lstat(root);
+  assert.ok(rootInfo.isDirectory() && !rootInfo.isSymbolicLink());
+  const images = [];
+  for (const asset of VISUAL_ASSETS) {
+    const path = join(root, asset.filename);
+    const details = await lstat(path);
+    assert.ok(details.isFile() && !details.isSymbolicLink());
+    assert.ok(details.size > 25000 && details.size < 12 * 1024 * 1024);
+    const raw = await readFile(path);
+    assert.equal(raw.subarray(0, 3).toString("hex"), "ffd8ff", "NASA photo must be JPEG");
+    assert.equal(
+      createHash("sha256").update(raw).digest("hex"),
+      asset.sha256,
+      "NASA image digest mismatch: " + asset.filename,
+    );
+    const info = probe(path);
+    const video = info.streams.find((stream) => stream.codec_type === "video");
+    assert.ok(video?.width >= 700 && video?.height >= 480,
+      "Photo resolution is too small: " + asset.filename);
+    images.push(path);
+  }
+  return images;
 }
 
 function graphics(story) {
@@ -161,7 +200,7 @@ function graphics(story) {
   return result.frames;
 }
 
-async function makeVideo(frames, wav, dir, seconds) {
+async function makeVideo(frames, wav, dir, seconds, images) {
   const totalFrames = Math.ceil(seconds * FPS);
   const sceneFrames = Math.ceil((totalFrames + 4 * FADE * FPS) / 5);
   const sceneSeconds = sceneFrames / FPS;
@@ -201,10 +240,50 @@ async function makeVideo(frames, wav, dir, seconds) {
       assert.equal((await readFile(chartOverlay)).subarray(0, 8).toString("hex"),
         "89504e470d0a1a0a");
     }
+    // Render a transparent news-style foreground over genuine NASA imagery.
+    // Never animate or resample text: the final 1280x720 composite is static.
+    const oldBackground = '<rect x="0" y="0" width="1280" height="720" fill="#0a1929"/>';
+    assert.ok(svgText.includes(oldBackground));
+    svgText = svgText.replace(oldBackground,
+      '<rect x="0" y="0" width="1280" height="720" fill="#071420" fill-opacity="0.76"/>');
+    const credit = index % 2 === 0
+      ? "NASA / Suomi NPP · Earth composite"
+      : "NASA Earth Observatory / Lauren Dauphin · Oct 4, 2026";
+    svgText = svgText.replace("</svg>",
+      '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
+      'font-family="Arial, sans-serif">' + credit + '</text></svg>');
+    const showInset = index === 0 || index === 4;
+    if (showInset) {
+      svgText = svgText.replace("</svg>",
+        '<rect x="828" y="378" width="344" height="250" rx="9" ' +
+        'fill="#0a1b29" stroke="#64d8cb" stroke-width="3"/>' +
+        '<text x="841" y="646" font-size="17" fill="#c9e1f0" ' +
+        'font-family="Arial, sans-serif">Ozone map: NASA EO · Oct 4, 2026</text></svg>');
+    }
     const path = join(dir, "graphic-" + index + ".svg");
+    const transparent = join(dir, "foreground-" + index + ".png");
     const png = join(dir, "graphic-" + index + ".png");
     await writeFile(path, svgText, { mode: 0o600, flag: "wx" });
-    exec("rsvg-convert", ["--output", png, path], 30000);
+    exec("rsvg-convert", ["--output", transparent, path], 30000);
+    const source = images[index % 2];
+    const filters = [
+      "[0:v]scale=1280:720:force_original_aspect_ratio=increase," +
+        "crop=1280:720,eq=brightness=-0.08:saturation=0.78[photo]",
+      "[photo][1:v]overlay=0:0:format=auto[headlines]",
+    ];
+    if (showInset) {
+      filters.push("[2:v]scale=316:224:force_original_aspect_ratio=decrease," +
+        "pad=316:224:(ow-iw)/2:(oh-ih)/2:color=0x101d29[inset]");
+      filters.push("[headlines][inset]overlay=842:389:format=auto[final]");
+    }
+    exec("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+      "-i", source, "-i", transparent,
+      ...(showInset ? ["-i", images[1]] : []),
+      "-filter_complex", filters.join(";"),
+      "-map", showInset ? "[final]" : "[headlines]",
+      "-frames:v", "1", png,
+    ], 60000);
     assert.equal((await readFile(png)).subarray(0, 8).toString("hex"),
       "89504e470d0a1a0a");
     pngFiles.push(png);
@@ -330,6 +409,7 @@ async function main() {
   const story = JSON.parse(await readFile(STORY, "utf8"));
   const frames = graphics(story);
   const { python, model } = await prepareVoice();
+  const images = await prepareVisualAssets();
   exec("ffmpeg", ["-version"], 10000);
   exec("rsvg-convert", ["--version"], 10000);
   const dir = await mkdtemp(join(tmpdir(), "vns-p3-neural-teaser-"));
@@ -348,13 +428,14 @@ async function main() {
     const seconds = Number(speech.format.duration);
     assert.ok(Number.isFinite(seconds) && seconds >= 30 && seconds <= 45,
       "Natural narration must be 30-45 seconds without silence padding: " + seconds);
-    const result = await makeVideo(frames, wav, dir, seconds);
+    const result = await makeVideo(frames, wav, dir, seconds, images);
     const bytes = await readFile(result.movie);
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     console.log("P3 NEURAL MOTION QUALITY PASS: " + result.duration.toFixed(3) +
       " seconds; " + frames.length + " scenes with isolated moving graphics; " +
       "H264/AAC; bytes=" + bytes.length + "; SHA256=" + sha256);
     console.log("Piper en_US-lessac-medium (verified ONNX); private preview only.");
+    console.log("NASA source imagery (two checked images) + dark overlay + labeled insets.");
     console.log("Editorial approval: DENIED. Upload/publication: NOT ENABLED.");
     if (local) await savePrivate(result.movie);
   } finally {
