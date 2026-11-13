@@ -166,30 +166,77 @@ async function makeVideo(frames, wav, dir, seconds) {
   const sceneFrames = Math.ceil((totalFrames + 4 * FADE * FPS) / 5);
   const sceneSeconds = sceneFrames / FPS;
   const pngFiles = [];
+  let chartSceneIndex = -1;
+  let chartOverlay = null;
   for (const [index, frame] of frames.entries()) {
     assert.match(frame.svg, /PREVIEW – NOT FOR PUBLICATION/);
     assert.doesNotMatch(frame.svg, /<image\b|<script\b|<foreignObject\b|xlink:href\b/);
+    let svgText = frame.svg;
+    if (frame.kind === "chart") {
+      assert.equal(chartSceneIndex, -1, "Exactly one animated chart expected");
+      chartSceneIndex = index;
+      const bars = [];
+      // Split the original bar shapes into a separately animated transparent
+      // layer. All titles, labels and source text remain a fixed 1280x720 image.
+      svgText = svgText.replace(
+        /<rect x="460" y="(\d+)" width="(\d+)" height="35" rx="5" fill="#64d8cb"\/>/g,
+        (_whole, y, width) => {
+          bars.push({ y: Number(y) - 215, width: Number(width) });
+          return "";
+        },
+      );
+      assert.equal(bars.length, 2);
+      assert.ok(bars.every(({ y, width }) =>
+        y >= 0 && y <= 135 && width > 0 && width <= 650));
+      const layer = '<svg xmlns="http://www.w3.org/2000/svg" ' +
+        'width="650" height="170" viewBox="0 0 650 170">' +
+        bars.map(({ y, width }) =>
+          '<rect x="0" y="' + y + '" width="' + width +
+          '" height="35" rx="5" fill="#64d8cb"/>').join("") +
+        "</svg>";
+      const barSvg = join(dir, "chart-bars.svg");
+      chartOverlay = join(dir, "chart-bars.png");
+      await writeFile(barSvg, layer, { mode: 0o600, flag: "wx" });
+      exec("rsvg-convert", ["--output", chartOverlay, barSvg], 30000);
+      assert.equal((await readFile(chartOverlay)).subarray(0, 8).toString("hex"),
+        "89504e470d0a1a0a");
+    }
     const path = join(dir, "graphic-" + index + ".svg");
     const png = join(dir, "graphic-" + index + ".png");
-    await writeFile(path, frame.svg, { mode: 0o600, flag: "wx" });
+    await writeFile(path, svgText, { mode: 0o600, flag: "wx" });
     exec("rsvg-convert", ["--output", png, path], 30000);
     assert.equal((await readFile(png)).subarray(0, 8).toString("hex"),
       "89504e470d0a1a0a");
     pngFiles.push(png);
   }
-  const inputArgs = pngFiles.flatMap((png) => [
+  assert.ok(chartOverlay !== null && chartSceneIndex >= 0);
+  const inputArgs = [...pngFiles, chartOverlay].flatMap((png) => [
     "-protocol_whitelist", "file,pipe",
     "-loop", "1", "-framerate", String(FPS),
     "-t", sceneSeconds.toFixed(6), "-i", png,
   ]);
-  const chains = pngFiles.map((_, index) =>
-    "[" + index + ":v]" +
-    "zoompan=z='min(pzoom+0.00055,1.11)'" +
-    ":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" +
-    ":d=1:s=1280x720:fps=" + FPS +
-    ",trim=duration=" + sceneSeconds.toFixed(6) +
-    ",setpts=PTS-STARTPTS,format=yuv420p[v" + index + "]"
-  );
+  const chains = [];
+  for (let index = 0; index < pngFiles.length; index++) {
+    chains.push("[" + index + ":v]format=yuv420p[fixed" + index + "]");
+    let base = "fixed" + index;
+    if (index === chartSceneIndex) {
+      chains.push("[" + pngFiles.length +
+        ":v]format=rgba,scale=w='max(2,trunc(650*min(t/2,1)/2)*2)'" +
+        ":h=170:eval=frame[animatedbars]");
+      chains.push("[" + base +
+        "][animatedbars]overlay=x=460:y=215:eval=frame:shortest=1" +
+        ":format=auto,format=yuv420p[chartwithbars]");
+      base = "chartwithbars";
+    }
+    // Animate only an isolated decorative underline above the infographic.
+    // Never zoom, translate or resample the completed SVG with text.
+    chains.push("color=c=0x64d8cb:s=420x6:r=" + FPS +
+      ":d=" + sceneSeconds.toFixed(6) +
+      ",format=rgba[accent" + index + "]");
+    chains.push("[" + base + "][accent" + index +
+      "]overlay=x='-420+512*min(t/1.4,1)':y=174" +
+      ":eval=frame:shortest=1:format=auto,format=yuv420p[v" + index + "]");
+  }
   let previous = "v0";
   for (let index = 1; index < pngFiles.length; index++) {
     const dest = index === pngFiles.length - 1 ? "outv" : "mix" + index;
@@ -205,7 +252,7 @@ async function makeVideo(frames, wav, dir, seconds) {
     ...inputArgs,
     "-protocol_whitelist", "file,pipe", "-i", wav,
     "-filter_complex", chains.join(";"),
-    "-map", "[outv]", "-map", pngFiles.length + ":a:0",
+    "-map", "[outv]", "-map", (pngFiles.length + 1) + ":a:0",
     "-t", seconds.toFixed(6),
     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
     "-pix_fmt", "yuv420p", "-r", String(FPS),
@@ -225,6 +272,19 @@ async function makeVideo(frames, wav, dir, seconds) {
   assert.ok(Math.abs(Number(info.format.duration) - seconds) <= 0.3);
   assert.ok(Number(info.format.duration) >= 30 && Number(info.format.duration) <= 45);
   assert.ok(Number(info.format.size) > 100000 && Number(info.format.size) < 40e6);
+  // Regression: two decoded frames of the first headline must have identical
+  // typography pixels. Previous whole-frame zoompan visibly made text shimmer.
+  const stableText = exec("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-i", movie,
+    "-vf", "crop=900:80:92:65,select='eq(n,48)+eq(n,60)'",
+    "-fps_mode", "vfr", "-f", "framemd5", "-",
+  ], 30000);
+  const hashes = stableText.split("\n")
+    .filter((line) => /^0,/.test(line.trim()))
+    .map((line) => line.split(",").at(-1).trim());
+  assert.equal(hashes.length, 2, "Must sample exactly two stable-text frames");
+  assert.equal(hashes[0], hashes[1], "Static title text must not jitter across frames");
+  console.log("STATIC_TEXT_PIXEL_STABILITY=PASS");
   return { movie, duration: Number(info.format.duration) };
 }
 
@@ -276,7 +336,7 @@ async function main() {
     const bytes = await readFile(result.movie);
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     console.log("P3 NEURAL MOTION QUALITY PASS: " + result.duration.toFixed(3) +
-      " seconds; " + frames.length + " moving original graphics; " +
+      " seconds; " + frames.length + " scenes with isolated moving graphics; " +
       "H264/AAC; bytes=" + bytes.length + "; SHA256=" + sha256);
     console.log("Piper en_US-lessac-medium (verified ONNX); private preview only.");
     console.log("Editorial approval: DENIED. Upload/publication: NOT ENABLED.");
