@@ -60,9 +60,15 @@ export async function runReviewedMediaSelectionCli(args) {
   const [action, libraryPath, evidencePath, workspace] = args;
   assert.ok(action === "download" || action === "prepare");
   await assertWorkspace(workspace);
-  const [library, evidence] = await Promise.all([
+  const [libraryInput, evidence] = await Promise.all([
     readPrivateJson(libraryPath), readPrivateJson(evidencePath),
   ]);
+  // P3-11 stores a checkpoint {library, handoff, ...}; P3-10 stores a
+  // plain episode library. Both must retain blocked publication status.
+  const library = libraryInput.library ?? libraryInput;
+  assert.ok(library && library.schemaVersion === 1 &&
+    library.publicationAllowed === false &&
+    library.rightsStatus === "BLOCKED");
   if (action === "download") {
     assert.ok(evidence && evidence.schemaVersion === 1 &&
       Array.isArray(evidence.selections),
