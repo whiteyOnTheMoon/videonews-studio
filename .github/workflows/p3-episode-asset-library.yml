@@ -1,0 +1,34 @@
+name: P3 episode asset research library proof
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/p3_episode_asset_library.mjs"
+      - "scripts/p3_episode_asset_library.test.mjs"
+      - "scripts/p3_episode_asset_workspace.mjs"
+      - "scripts/p3_episode_asset_research_cli.mjs"
+      - "docs/P3_EPISODE_ASSET_LIBRARY.md"
+      - ".github/workflows/p3-episode-asset-library.yml"
+permissions:
+  contents: read
+jobs:
+  asset-library-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check offline library code and repository lint
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run lint
+          node --check scripts/p3_episode_asset_library.mjs
+          node --check scripts/p3_episode_asset_workspace.mjs
+          node --check scripts/p3_episode_asset_research_cli.mjs
+      - name: Prove bounded search and export-hash-gated cleanup without providers
+        run: |
+          env -u PEXELS_API_KEY node --test scripts/p3_episode_asset_library.test.mjs
