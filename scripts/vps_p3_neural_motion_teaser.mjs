@@ -285,6 +285,22 @@ async function makeVideo(frames, wav, dir, seconds) {
   assert.equal(hashes.length, 2, "Must sample exactly two stable-text frames");
   assert.equal(hashes[0], hashes[1], "Static title text must not jitter across frames");
   console.log("STATIC_TEXT_PIXEL_STABILITY=PASS");
+  // The isolated chart bars, unlike text, must genuinely change over time.
+  const chartOffset = chartSceneIndex * (sceneFrames / FPS - FADE);
+  const first = Math.round((chartOffset + 0.75) * FPS);
+  const second = Math.round((chartOffset + 1.65) * FPS);
+  const animatedChart = exec("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-i", movie,
+    "-vf", "crop=650:135:460:215,select='eq(n," + first +
+      ")+eq(n," + second + ")'",
+    "-fps_mode", "vfr", "-f", "framemd5", "-",
+  ], 30000);
+  const barHashes = animatedChart.split("\n")
+    .filter((line) => /^0,/.test(line.trim()))
+    .map((line) => line.split(",").at(-1).trim());
+  assert.equal(barHashes.length, 2, "Must sample two animated chart frames");
+  assert.notEqual(barHashes[0], barHashes[1], "Chart bars must animate independently");
+  console.log("INDEPENDENT_CHART_ANIMATION=PASS");
   return { movie, duration: Number(info.format.duration) };
 }
 
