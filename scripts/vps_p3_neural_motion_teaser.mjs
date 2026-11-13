@@ -48,6 +48,9 @@ const VOICE_SHA256 = "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eea
 const VOICE_NAME = "en_US-lessac-medium.onnx";
 const FPS = 24;
 const FADE = 0.55;
+// Calm English voice: longer vowels/syllables and natural sentence breaks.
+const VOICE_LENGTH_SCALE = "1.04";
+const VOICE_SENTENCE_SILENCE = "0.38";
 const VISUAL_ASSETS = Object.freeze([
   {
     filename: "earth-nasa.jpg",
@@ -419,8 +422,8 @@ async function main() {
     await writeFile(input, TEXT, { mode: 0o600, flag: "wx" });
     exec(python, [
       "-m", "piper", "-m", model,
-      "--length-scale", "0.91",
-      "--sentence-silence", "0.13",
+      "--length-scale", VOICE_LENGTH_SCALE,
+      "--sentence-silence", VOICE_SENTENCE_SILENCE,
       "--input-file", input,
       "-f", wav,
     ], 180000);
@@ -428,6 +431,9 @@ async function main() {
     const seconds = Number(speech.format.duration);
     assert.ok(Number.isFinite(seconds) && seconds >= 30 && seconds <= 45,
       "Natural narration must be 30-45 seconds without silence padding: " + seconds);
+    console.log("VOICE_PACING=length_scale:" + VOICE_LENGTH_SCALE +
+      "; sentence_silence_seconds:" + VOICE_SENTENCE_SILENCE +
+      "; measured_audio_seconds:" + seconds.toFixed(3));
     const result = await makeVideo(frames, wav, dir, seconds, images);
     const bytes = await readFile(result.movie);
     const sha256 = createHash("sha256").update(bytes).digest("hex");

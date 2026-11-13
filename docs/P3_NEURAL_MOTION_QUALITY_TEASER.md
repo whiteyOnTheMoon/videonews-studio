@@ -112,3 +112,26 @@ the background JPEG, the dark overlay, the overlaid NASA map, and the
 foreground text are merged to a single still per scene. Only designated
 decorative accents and chart bars animate; no completed text frame is
 zoomed, preventing previous text jitter.
+
+## Calmer spoken pacing (private quality iteration)
+
+The first English Piper voice clip was judged clearer than eSpeak but too
+fast and nearly continuous. The preview now uses
+`--length-scale 1.04` (slower than the original `0.91`) and
+`--sentence-silence 0.38` seconds (instead of `0.13`) to introduce
+short breaks after sentences. The actual voice length is measured; the
+picture timeline follows the finished narration, with a hard 30–45-second
+quality-preview bound and no artificial silence padding. Listen to the
+result before applying the pacing to the 8–10-minute format.
+
+**Licensing boundary:** Piper itself is open source and has no usage charge,
+but voice-model rights are separate. The Piper project's own licensing
+notes identify restrictions in the Lessac Blizzard 2013 training data,
+particularly for commercial synthesis. Treat `en_US-lessac-medium` as
+**private research/demo only**; do not distribute or monetize with this
+voice without clearing its rights or switching to an appropriately licensed
+voice. See `https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/LICENSING.md`.
+
+No usage-based speech service was added. GitHub Actions still has plan-based
+private-repository quotas, and server/network costs are external to this
+free local renderer.
