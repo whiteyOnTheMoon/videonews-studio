@@ -28,6 +28,11 @@ import {
 import { tmpdir, userInfo } from "node:os";
 import { isAbsolute, join } from "node:path";
 import {
+  encodeCinematicSpan,
+  encodeGraphicTail,
+  loadCinematicTimeline,
+} from "./p3_cinematic_timeline.mjs";
+import {
   createPrivateClipOverlaySvg,
   encodePrivateClipBeat,
   loadPrivateClipAssignments,
@@ -501,62 +506,119 @@ async function assembleAudio(speechPaths, plan, directory) {
  * bitstreams. Audio is combined and AAC-encoded only once, at the end.
  * Never scale or translate text; move only the decorative underline.
  */
-async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false, privateClips = new Map()) {
+async function renderMovie(
+  pngPaths, audioPath, plan, directory, smoke = false,
+  privateClips = new Map(), cinematic = null,
+) {
   const beats = plan.sections.flatMap((section) => section.visualBeats);
   assert.equal(pngPaths.length, beats.length);
   const selected = smoke ? pngPaths.slice(0, 2) : pngPaths;
   const frameCounts = smoke ? [36, 36] : beats.map((beat) => beat.frames);
   assert.equal(selected.length, frameCounts.length);
   assert.ok(privateClips instanceof Map);
-  if (privateClips.size) assert.ok(!smoke && LOCAL_PREVIEW,
-    "Reviewed moving footage is allowed only in an explicit private VPS preview");
+  if (privateClips.size || cinematic?.starts.size || cinematic?.inserts.size) {
+    assert.ok(!smoke && LOCAL_PREVIEW,
+      "Reviewed moving footage is allowed only in a private VPS preview");
+  }
+  assert.ok(!(privateClips.size &&
+    (cinematic?.starts.size || cinematic?.inserts.size)),
+    "Choose only one private footage mode");
   if (smoke) {
     assert.ok(CI_AUDIO_ONLY, "Short video encoder smoke only in disposable CI");
     assert.equal(selected.length, 2);
   } else {
     assert.equal(selected.length, 19);
     assert.equal(frameCounts.reduce((sum, frames) => sum + frames, 0), plan.totalFrames);
+    if (cinematic) assert.equal(cinematic.timelineFrames, plan.totalFrames,
+      "Cinematic edit decision list must match narration exactly");
   }
+  const cinematicEndBeats = new Set(
+    cinematic ? [...cinematic.starts.values()].map(span => span.end) : [],
+  );
   const encodedClips = [];
-  for (const [index, path] of selected.entries()) {
-    const frames = frameCounts[index];
-    assert.ok(Number.isSafeInteger(frames) && frames >= 24 && frames < 24 * 240);
+  for (let index = 0; index < selected.length;) {
+    const span = cinematic?.starts.get(index);
+    const insert = cinematic?.inserts.get(index);
+    assert.ok(!(span && insert), "Full span and short insert cannot overlap");
+    const frames = span ? span.durationFrames : frameCounts[index];
+    assert.ok(Number.isSafeInteger(frames) &&
+      frames >= 24 && frames < 24 * 3 * 240);
     const encoded = join(
       directory,
       "scene-" + String(index + 1).padStart(2, "0") + ".mp4",
     );
-    const filter =
-      "[0:v]format=yuv420p[fixed];" +
-      "color=c=0x64d8cb:s=420x6:r=24,format=rgba[accent];" +
-      "[fixed][accent]overlay=x='-420+512*min(t/1.4,1)'" +
-      ":y=174:shortest=1:format=auto,format=yuv420p[finalv]";
-    const approvedClip = privateClips.get(index);
-    if (approvedClip) {
-      const overlaySvg = join(directory, "clip-overlay-" + String(index + 1) + ".svg");
-      const overlayPng = join(directory, "clip-overlay-" + String(index + 1) + ".png");
-      await writeFile(overlaySvg, createPrivateClipOverlaySvg({
-        title: approvedClip.title,
-        credit: approvedClip.credit,
-        captureDate: approvedClip.captureDate,
-      }), { mode: 0o600, flag: "wx" });
-      command("rsvg-convert", ["--output", overlayPng, overlaySvg], 30000);
-      await encodePrivateClipBeat({
-        assignment: approvedClip, overlayPng, output: encoded, frames,
+    if (span) {
+      assert.equal(
+        frameCounts.slice(span.start, span.end + 1).reduce((sum, n) => sum + n, 0),
+        span.durationFrames,
+      );
+      await encodeCinematicSpan({span, output: encoded, directory});
+    } else if (insert) {
+      const tailFrames = frameCounts[index] - insert.durationFrames;
+      assert.ok(tailFrames >= FPS,
+        "Short insert must leave a graphic remainder of at least one second");
+      // One source shot, played once. The rest of the narrated beat uses
+      // its original SVG scene rather than looping a short video.
+      await encodeCinematicSpan({span: insert, output: encoded, directory});
+      const media = probe(encoded);
+      assert.equal(Number(media.streams.find(stream =>
+        stream.codec_type === "video")?.nb_frames), insert.durationFrames);
+      encodedClips.push(encoded);
+      const tail = join(directory,
+        "scene-" + String(index + 1).padStart(2, "0") + "-graphic-tail.mp4");
+      await encodeGraphicTail({
+        imagePath: selected[index], output: tail, frames: tailFrames,
       });
+      encodedClips.push(tail);
+      console.log("VIDEO_SHORT_INSERT_BEAT=" + (index + 1) +
+        "; clip_frames=" + insert.durationFrames +
+        "; graphic_remainder_frames=" + tailFrames);
+      index += 1;
+      continue;
     } else {
-      command("ffmpeg", [
-        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-filter_complex_threads", "1", "-threads", "1",
-        "-loop", "1", "-framerate", String(FPS),
-        "-protocol_whitelist", "file,pipe", "-i", path,
-        "-filter_complex", filter,
-        "-map", "[finalv]", "-frames:v", String(frames),
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
-        "-threads:v", "1",
-        "-pix_fmt", "yuv420p", "-r", String(FPS),
-        "-an", "-movflags", "+faststart",
-        encoded,
-      ], 360000);
+      assert.ok(!cinematic?.occupied.has(index),
+        "A cinematic background may not be rendered as a duplicate still");
+      const path = selected[index];
+      const fadeSeconds = (10 / FPS).toFixed(6);
+      const fadeOutStart = ((frames - 10) / FPS).toFixed(6);
+      const fadeIn = cinematicEndBeats.has(index - 1)
+        ? ",fade=t=in:st=0:d=" + fadeSeconds : "";
+      const fadeOut = cinematic?.starts.has(index + 1)
+        ? ",fade=t=out:st=" + fadeOutStart + ":d=" + fadeSeconds : "";
+      const filter =
+        "[0:v]format=yuv420p[fixed];" +
+        "color=c=0x64d8cb:s=420x6:r=24,format=rgba[accent];" +
+        "[fixed][accent]overlay=x='-420+512*min(t/1.4,1)'" +
+        ":y=174:shortest=1:format=auto,format=yuv420p" +
+        fadeIn + fadeOut + "[finalv]";
+      const approvedClip = privateClips.get(index);
+      if (approvedClip) {
+        const overlaySvg = join(directory, "clip-overlay-" + String(index + 1) + ".svg");
+        const overlayPng = join(directory, "clip-overlay-" + String(index + 1) + ".png");
+        await writeFile(overlaySvg, createPrivateClipOverlaySvg({
+          title: approvedClip.title,
+          credit: approvedClip.credit,
+          captureDate: approvedClip.captureDate,
+        }), { mode: 0o600, flag: "wx" });
+        command("rsvg-convert", ["--output", overlayPng, overlaySvg], 30000);
+        await encodePrivateClipBeat({
+          assignment: approvedClip, overlayPng, output: encoded, frames,
+        });
+      } else {
+        command("ffmpeg", [
+          "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+          "-filter_complex_threads", "1", "-threads", "1",
+          "-loop", "1", "-framerate", String(FPS),
+          "-protocol_whitelist", "file,pipe", "-i", path,
+          "-filter_complex", filter,
+          "-map", "[finalv]", "-frames:v", String(frames),
+          "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+          "-threads:v", "1",
+          "-pix_fmt", "yuv420p", "-r", String(FPS),
+          "-an", "-movflags", "+faststart",
+          encoded,
+        ], 360000);
+      }
     }
     const clip = probe(encoded);
     const video = clip.streams.find((stream) => stream.codec_type === "video");
@@ -566,9 +628,11 @@ async function renderMovie(pngPaths, audioPath, plan, directory, smoke = false, 
     assert.equal(Number(video?.nb_frames), frames);
     encodedClips.push(encoded);
     console.log(
-      "VIDEO_SCENE_ENCODED=" + (index + 1) + "/" + selected.length +
-      "; frames=" + frames,
+      "VIDEO_SCENE_ENCODED=" + (index + 1) + "-" +
+      (span ? span.end + 1 : index + 1) + "/" + selected.length +
+      "; frames=" + frames + "; cinematic=" + Boolean(span),
     );
+    index = span ? span.end + 1 : index + 1;
   }
 
   // The encoded MP4 segments share encoder profile, dimensions, fps and
@@ -676,7 +740,25 @@ async function main() {
     console.log("ENGLISH_FULL_SECTIONS=7; ENGLISH_FULL_WORDS=" + totalWords +
       "; ENGLISH_VISUAL_BEATS=19");
     let privateClips = new Map();
+    let cinematic = null;
+    const cinematicPath = process.env.VNS_CINEMATIC_MEDIA_MANIFEST;
     const manifestPath = process.env.VNS_PRIVATE_MEDIA_MANIFEST;
+    assert.ok(!(cinematicPath && manifestPath),
+      "Specify only one reviewed private footage manifest");
+    if (cinematicPath !== undefined) {
+      assert.ok(LOCAL_PREVIEW,
+        "Cinematic media is forbidden in CI and other unapproved modes");
+      const beats = plan.sections.flatMap(section => section.visualBeats);
+      cinematic = await loadCinematicTimeline({
+        manifestPath: cinematicPath,
+        beatVisualAssets: BEAT_VISUAL_ASSET,
+        beatFrames: beats.map(beat => beat.frames),
+        beatVisuals: story.sections.flatMap(section => section.visuals),
+      });
+      console.log("CINEMATIC_BACKGROUND_SPANS=" + cinematic.starts.size +
+        "; SHORT_VIDEO_INSERTS=" + cinematic.inserts.size +
+        "; CINEMATIC_OVERLAY_BEATS=" + cinematic.occupied.size);
+    }
     if (manifestPath !== undefined) {
       assert.ok(LOCAL_PREVIEW,
         "Private media manifest is forbidden in CI and other unapproved modes");
@@ -701,7 +783,9 @@ async function main() {
       return;
     }
     const audio = await assembleAudio(paths, plan, directory);
-    const movie = await renderMovie(pngPaths, audio, plan, directory, false, privateClips);
+    const movie = await renderMovie(
+      pngPaths, audio, plan, directory, false, privateClips, cinematic,
+    );
     const sha256 = createHash("sha256").update(await readFile(movie.output)).digest("hex");
     const stamp = new Date().toISOString().replace(/[-:.]/g, "").replace("T", "-").slice(0, 15);
     const base = "earth-climate-explained-ozone-2026-piper-nasa-" +
@@ -726,7 +810,9 @@ async function main() {
     console.log("P3 FULL PRIVATE ENGLISH PIPER NASA VIDEO PASS: " +
       movie.duration.toFixed(3) + " seconds; " + totalWords + " words; " +
       pngPaths.length + " photo-backed original graphic beats; H264/AAC; bytes=" +
-      movie.size + "; reviewed_clip_beats=" + privateClips.size + "; SHA256=" + sha256);
+      movie.size + "; reviewed_clip_beats=" + privateClips.size +
+      "; cinematic_spans=" + (cinematic?.starts.size ?? 0) +
+      "; short_inserts=" + (cinematic?.inserts.size ?? 0) + "; SHA256=" + sha256);
     console.log("Editorial/publication: DENIED. Piper Lessac: private demo voice only.");
   } finally {
     if (directory) await rm(directory, { recursive: true, force: true });
