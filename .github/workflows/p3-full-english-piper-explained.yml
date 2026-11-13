@@ -18,6 +18,8 @@ on:
       - "docs/P3_FULL_ENGLISH_PIPER_EXPLAINED.md"
       - ".github/workflows/p3-full-english-piper-explained.yml"
       - "content/news/ozone-2026-explained-en.json"
+      - "scripts/p3_integrated_private_preview.test.mjs"
+      - "docs/P3_INTEGRATED_PRIVATE_PREVIEW_PROOF.md"
 permissions:
   contents: read
 jobs:
