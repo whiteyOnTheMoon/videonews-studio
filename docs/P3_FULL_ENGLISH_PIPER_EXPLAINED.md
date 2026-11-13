@@ -43,10 +43,13 @@ hardcoded chapter length or stretching the video with silence.
   independently at each visual-beat entrance. This remains an explainer
   prototype, not professionally sourced dynamic footage.
 - H264/AAC output at 1280x720, 24 fps, strict measured duration 480–600 s.
+- Each of the 19 scenes is now encoded **sequentially** in a bounded, single-threaded FFmpeg invocation; the identical H264 tracks are concatenated with stream-copy and the continuous narration is AAC-encoded once. This avoids one long, high-memory FFmpeg filter graph.
+- FFmpeg subprocess failures report exit status, signal, and error code, not just `null`. A vanished FFmpeg process can indicate a host resource limit; do not infer OOM without checking the kernel/host logs.
+- CI renders **only a disposable 3-second two-scene MP4** to verify encode, stream-copy stitch, AAC mux, duration and codec handling; it creates no full episode video.
 - The full MP4 is **created only by the operator on the VPS** and stored in
   `/home/ap/videonews-previews/`, not in the application webroot.
-  CI checks all seven real voice WAVs + all 19 NASA-composited frames, but
-  **never encodes or retains a full MP4**.
+  CI checks all seven real voice WAVs, all 19 NASA-composited frames
+  and a disposable 3-second encoding smoke test, but **never encodes or retains a full MP4**.
 
 ## VPS operator command (after merge)
 
