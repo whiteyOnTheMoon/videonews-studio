@@ -71,9 +71,46 @@ const VISUAL_ASSETS = Object.freeze([
   {
     filename: "ozone-2026-nasa.jpg",
     sha256: "22b83f5dab6248d401e5ac313f98a18626b8c1ca002e43b67209d56f69ce0c6d",
-    credit: "NASA Earth Observatory / Lauren Dauphin",
+    credit: "NASA Earth Observatory / Lauren Dauphin · ozone data 2026",
+    insetLabel: "NASA EO · ozone map · 2026",
+  },
+  {
+    filename: "PIA00117.jpg",
+    sha256: "18cced99e3516bf3720b7bb9040724cabcaf2fc1fe97da7754df69a0b303e70e",
+    credit: "NASA/JPL · Ross Ice Shelf · archive 1990",
+  },
+  {
+    filename: "PIA00728.jpg",
+    sha256: "53119b3ef93d47bb842cfa4e2df2e0253adc9f24b1836755b5ffab041023f50f",
+    credit: "NASA/JPL · Galileo Earth views · archive",
+  },
+  {
+    filename: "PIA20664.jpg",
+    sha256: "58aff245ac9f2b6c0c5af05829c6c21b03c59382cc44e9e092157cc76749b9e4",
+    credit: "NASA/JPL-Caltech · ozone vortex 2014 data",
+    insetLabel: "NASA/JPL-Caltech · vortex · 2014",
+  },
+  {
+    filename: "PIA00116.jpg",
+    sha256: "5a2fa81a95ec1bd03119fcc7ead8c162e061311705d964d92712fe0cc02166ab",
+    credit: "NASA/JPL · Antarctic limb mosaic · archive 1990",
   },
 ]);
+/** 19 source-matched backgrounds. Avoid misleading archival views as 2026 photos. */
+const BEAT_VISUAL_ASSET = Object.freeze([
+  1, 0,             // The Hook: 2026 ozone data, Earth
+  0, 2, 3,          // Basics: Earth / Antarctica / globe context
+  1, 1, 4,          // Measurements: actual 2026 map / archival vortex context
+  2, 4, 5,          // Why: ice shelf / vortex 2014 / atmosphere 1990
+  3, 0, 2,          // Why it matters: global archive / Earth / Antarctica
+  3, 1, 0,          // Next: historic Earth views / ozone monitoring / Earth
+  1, 0,             // Takeaway: the observed ozone hole / Earth
+]);
+const INSET_BY_BEAT = new Map([
+  [0, 1], [7, 4], [17, 1],
+]);
+assert.equal(BEAT_VISUAL_ASSET.length, 19);
+assert.equal(new Set(BEAT_VISUAL_ASSET).size, VISUAL_ASSETS.length);
 
 const SOURCE_HOSTS = Object.freeze({
   "noaa-2026": "www.noaa.gov",
@@ -159,7 +196,7 @@ async function prepareVisualAssets() {
     );
     const info = probe(path);
     const video = info.streams.find((stream) => stream.codec_type === "video");
-    assert.ok(video?.width >= 700 && video?.height >= 480,
+    assert.ok(video?.width >= 700 && video?.height >= 420,
       "Photo resolution is too small: " + asset.filename);
     images.push(path);
   }
@@ -226,17 +263,55 @@ async function synthesizeSections(story, directory) {
   const paths = [];
   const timings = [];
   for (const [index, section] of story.sections.entries()) {
-    const input = join(directory, "section-" + index + ".txt");
     const path = join(directory, "speech-" + index + ".wav");
-    await writeFile(input, section.narration, { mode: 0o600, flag: "wx" });
-    command(process.env.VNS_PIPER_PYTHON, [
-      "-m", "piper",
-      "-m", process.env.VNS_PIPER_MODEL,
-      "--length-scale", PIPER_LENGTH_SCALE,
-      "--sentence-silence", PIPER_SENTENCE_SILENCE,
-      "--input-file", input,
-      "-f", path,
-    ], 180000);
+    if (index === 0) {
+      // Isolate the first complete sentence so a long TTS input cannot
+      // corrupt the beginning of the whole narration. Retain every word.
+      const match = /^([^.!?]+[.!?])\s+([\s\S]+)$/.exec(section.narration);
+      assert.ok(match && match[1].length >= 30 && match[2].length > 30,
+        "Intro must split at the first full stop without losing text");
+      assert.equal(match[1] + " " + match[2], section.narration);
+      const shortWavs = [];
+      for (const [part, text] of [match[1], match[2]].entries()) {
+        const input = join(directory, "opening-" + part + ".txt");
+        const wave = join(directory, "opening-" + part + ".wav");
+        await writeFile(input, text, { mode: 0o600, flag: "wx" });
+        command(process.env.VNS_PIPER_PYTHON, [
+          "-m", "piper", "-m", process.env.VNS_PIPER_MODEL,
+          "--length-scale", PIPER_LENGTH_SCALE,
+          "--sentence-silence", PIPER_SENTENCE_SILENCE,
+          "--input-file", input, "-f", wave,
+        ], 180000);
+        const details = probe(wave);
+        assert.equal(details.streams.find(v => v.codec_type === "audio")?.channels, 1);
+        assert.ok(Number(details.format.duration) > 2.0);
+        shortWavs.push(wave);
+      }
+      // 180 ms clean pre-roll and a short fade-in prevent an abrupt opening
+      // sample edge; no word is trimmed, and the first sentence stays whole.
+      command("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-i", shortWavs[0], "-i", shortWavs[1],
+        "-filter_complex",
+        "[0:a]aresample=22050,adelay=180,afade=t=in:st=0.18:d=0.12[a0];" +
+          "[1:a]aresample=22050[a1];" +
+          "[a0][a1]concat=n=2:v=0:a=1[out]",
+        "-map", "[out]", "-c:a", "pcm_s16le", "-ar", "22050", "-ac", "1",
+        path,
+      ], 120000);
+      console.log("INTRO_CLEAN_ONSET=isolated_first_sentence; preroll_ms=180; fade_ms=120");
+    } else {
+      const input = join(directory, "section-" + index + ".txt");
+      await writeFile(input, section.narration, { mode: 0o600, flag: "wx" });
+      command(process.env.VNS_PIPER_PYTHON, [
+        "-m", "piper",
+        "-m", process.env.VNS_PIPER_MODEL,
+        "--length-scale", PIPER_LENGTH_SCALE,
+        "--sentence-silence", PIPER_SENTENCE_SILENCE,
+        "--input-file", input,
+        "-f", path,
+      ], 180000);
+    }
     const details = probe(path);
     const stream = details.streams.find((value) => value.codec_type === "audio");
     assert.equal(stream?.codec_name, "pcm_s16le");
@@ -276,7 +351,7 @@ async function prepareBackgrounds(images, directory) {
 async function renderGraphics(story, sources, images, directory) {
   const pngPaths = [];
   const backgrounds = await prepareBackgrounds(images, directory);
-  const insets = new Set([0, 7, 17]);
+  const sceneImagesUsed = new Set();
   for (const section of story.sections) {
     const sourceUrls = section.sourceIds.slice(0, 3).map((id) => sources.get(id).url);
     for (const visual of section.visuals) {
@@ -299,20 +374,25 @@ async function renderGraphics(story, sources, images, directory) {
       svg = svg.replace(opaque,
         '<rect x="0" y="0" width="1280" height="720" ' +
         'fill="#071420" fill-opacity="0.76"/>');
-      const credit = index % 2 === 0
-        ? "NASA / Suomi NPP · Earth composite"
-        : "NASA Earth Observatory / Lauren Dauphin · Oct 4, 2026";
+      const imageIndex = BEAT_VISUAL_ASSET[index];
+      assert.ok(Number.isInteger(imageIndex) && backgrounds[imageIndex],
+        "Each beat needs an approved NASA background");
+      sceneImagesUsed.add(imageIndex);
+      const credit = VISUAL_ASSETS[imageIndex].credit;
       svg = svg.replace("</svg>",
         '<text x="92" y="650" font-size="15" fill="#c9dbe7" ' +
         'font-family="Arial, sans-serif">' + credit + '</text></svg>');
-      const inset = insets.has(index);
+      const insetImageIndex = INSET_BY_BEAT.get(index);
+      const inset = insetImageIndex !== undefined;
       if (inset) {
         assert.equal(visual.kind, "text-card");
+        const label = VISUAL_ASSETS[insetImageIndex].insetLabel;
+        assert.ok(label && label.length <= 42);
         svg = svg.replace("</svg>",
           '<rect x="828" y="378" width="344" height="250" rx="9" ' +
           'fill="#0a1b29" stroke="#64d8cb" stroke-width="3"/>' +
           '<text x="841" y="646" font-size="17" fill="#c9e1f0" ' +
-          'font-family="Arial, sans-serif">Ozone map: NASA EO · Oct 4, 2026</text></svg>');
+          'font-family="Arial, sans-serif">' + label + '</text></svg>');
       }
       const label = String(index + 1).padStart(2, "0");
       const svgPath = join(directory, "visual-" + label + ".svg");
@@ -332,9 +412,9 @@ async function renderGraphics(story, sources, images, directory) {
       }
       command("ffmpeg", [
         "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-i", backgrounds[index % 2],
+        "-i", backgrounds[imageIndex],
         "-i", transparent,
-        ...(inset ? ["-i", images[1]] : []),
+        ...(inset ? ["-i", images[insetImageIndex]] : []),
         "-filter_complex", filters.join(";"),
         "-map", inset ? "[final]" : "[headlines]",
         "-frames:v", "1", png,
@@ -345,6 +425,8 @@ async function renderGraphics(story, sources, images, directory) {
     }
   }
   assert.equal(pngPaths.length, 19);
+  assert.equal(sceneImagesUsed.size, VISUAL_ASSETS.length);
+  console.log("NASA_DISTINCT_SCENE_BACKGROUNDS=" + sceneImagesUsed.size);
   return pngPaths;
 }
 

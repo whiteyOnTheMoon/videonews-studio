@@ -64,6 +64,19 @@ jobs:
           printf '%s  %s\n' \
             '22b83f5dab6248d401e5ac313f98a18626b8c1ca002e43b67209d56f69ce0c6d' \
             "$RUNNER_TEMP/nasa-visuals/ozone-2026-nasa.jpg" | sha256sum -c -
+          # Archive images are illustrative, never presented as 2026 footage.
+          for ID in PIA00117 PIA00728 PIA20664 PIA00116; do
+            curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+              -o "$RUNNER_TEMP/nasa-visuals/${ID}.jpg" \
+              "https://images-assets.nasa.gov/image/${ID}/${ID}~orig.jpg"
+          done
+          cd "$RUNNER_TEMP/nasa-visuals"
+          printf '%s  %s\n' \
+            '18cced99e3516bf3720b7bb9040724cabcaf2fc1fe97da7754df69a0b303e70e' 'PIA00117.jpg' \
+            '53119b3ef93d47bb842cfa4e2df2e0253adc9f24b1836755b5ffab041023f50f' 'PIA00728.jpg' \
+            '58aff245ac9f2b6c0c5af05829c6c21b03c59382cc44e9e092157cc76749b9e4' 'PIA20664.jpg' \
+            '5a2fa81a95ec1bd03119fcc7ead8c162e061311705d964d92712fe0cc02166ab' 'PIA00116.jpg' |
+            sha256sum -c -
           echo "VNS_VISUAL_ASSETS_DIR=$RUNNER_TEMP/nasa-visuals" >> "$GITHUB_ENV"
       - name: Refuse private full video save inside CI
         run: |

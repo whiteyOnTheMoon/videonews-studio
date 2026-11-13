@@ -74,3 +74,52 @@ are not cleared for monetized distribution. Treat this output only as a
 private prototype. Select a voice with suitable rights before publication.
 Server and GitHub Actions over-quota charges, if any, are separate from the
 free local tools.
+
+## Audience review: diversified visuals and clean opening
+
+The first complete private rendering succeeded (505.083 s) but the operator
+noticed a sound defect during approximately the first three seconds and
+repetition of two images during all 19 graphic beats. The original MP4 was
+not available to inspect, so the exact **cause of the audible defect is not
+confirmed**.
+
+For the next version the first entire sentence is synthesized as a separate
+Piper utterance, while the rest of the Hook is synthesized separately. Both
+outputs are joined without dropping words, with a 180-ms silent onset and a
+120-ms gentle fade-in. The format and factual script are unchanged.
+**Operator playback of the opening is still needed** to confirm the audible
+fault is actually resolved; this is not an automatic speech-quality proof.
+
+Images are now selected by 19-beat editorial mapping rather than alternating
+`index % 2`, for **six distinct NASA-sourced background images**. Both
+existing files are retained:
+
+- `earth-nasa.jpg`: PIA18033, Suomi-NPP Earth, NASA (2012).
+- `ozone-2026-nasa.jpg`: NASA Earth Observatory ozone data map, Oct 4, 2026
+  (NASA Earth Observatory / Lauren Dauphin).
+
+Four new NASA Photojournal files are manually downloaded *once* by the
+operator into the same private `VNS_VISUAL_ASSETS_DIR`:
+
+| Local file | NASA source / description | Original capture or data | Required SHA-256 |
+| --- | --- | --- | --- |
+| `PIA00117.jpg` | https://science.nasa.gov/photojournal/earth-ross-ice-shelf-antarctica/ — NASA/JPL Ross Ice Shelf | Dec 8, 1990 | `18cced99e3516bf3720b7bb9040724cabcaf2fc1fe97da7754df69a0b303e70e` |
+| `PIA00728.jpg` | https://science.nasa.gov/photojournal/global-images-of-earth/ — NASA/JPL Galileo Earth montage | Archival Galileo imagery (1990s) | `53119b3ef93d47bb842cfa4e2df2e0253adc9f24b1836755b5ffab041023f50f` |
+| `PIA20664.jpg` | https://science.nasa.gov/photojournal/ozone-hole-formation-over-south-pole-observed-by-nasas-airs/ — NASA/JPL-Caltech AIRS vortex visualization | 2014 data | `58aff245ac9f2b6c0c5af05829c6c21b03c59382cc44e9e092157cc76749b9e4` |
+| `PIA00116.jpg` | https://science.nasa.gov/photojournal/earth-antarctica-mosaic/ — NASA/JPL Antarctica / atmospheric limb mosaic | Dec 8, 1990 | `5a2fa81a95ec1bd03119fcc7ead8c162e061311705d964d92712fe0cc02166ab` |
+
+Exact direct-file URLs follow NASA's own Photojournal image format:
+`https://images-assets.nasa.gov/image/PIA00117/PIA00117~orig.jpg`, etc.
+They are fixed by SHA-256 and are not hotlinked at render time. The archival
+visuals and 2014 ozone-data image are **explicitly credited and dated in-frame**
+so they cannot be confused with observations taken in 2026. These are
+educational illustrations, not verification of contemporary measurements.
+NASA's media rules (including separate third-party-media and
+non-endorsement constraints) still apply:
+https://www.nasa.gov/nasa-brand-center/images-and-media/
+
+The same 19 original SVG foregrounds stay pixel-still. Graphic animation
+remains limited to isolated decorative elements, rather than moving type.
+The full 8–10-minute MP4 is only rendered manually on the VPS. The CI audio,
+six-image compositing and disposable 3-second mux smoke check do **not**
+establish subjective listening quality or YouTube publication clearance.
