@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import {createHash, randomBytes} from "node:crypto";
 import {constants as fsConstants} from "node:fs";
 import {chmod, copyFile, lstat, mkdir, mkdtemp, readFile, realpath,
-  rename, rm, stat, writeFile} from "node:fs/promises";
+  rename, rm, writeFile} from "node:fs/promises";
 import {basename, dirname, extname, isAbsolute, join, resolve} from "node:path";
 
 const SHA = /^[a-f0-9]{64}$/;
