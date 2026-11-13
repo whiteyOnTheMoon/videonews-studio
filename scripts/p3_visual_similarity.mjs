@@ -145,7 +145,8 @@ export function inspectEpisodeVisualDuplicates(fingerprints) {
       /^beat-(0[1-9]|1[0-9])$/.test(f.sceneId) &&
       SHA.test(f.sha256) &&
       (f.mediaType === "video" || f.mediaType === "photo") &&
-      Array.isArray(f.samples) && f.samples.length >= 1 && f.samples.length <= 3 &&
+      Array.isArray(f.samples) &&
+      (f.mediaType === "video" ? f.samples.length === 3 : f.samples.length === 1) &&
       f.samples.every(s =>
         typeof s.dhash === "string" && /^[a-f0-9]{16}$/.test(s.dhash) &&
         Number.isInteger(s.mean) && s.mean >= 0 && s.mean <= 255 &&
