@@ -12,6 +12,10 @@ on:
       - "scripts/p3_post_editorial_asset_handoff_cli.mjs"
       - "scripts/p3_post_editorial_asset_handoff.test.mjs"
       - "docs/P3_POST_EDITORIAL_MEDIA_HANDOFF.md"
+      - "scripts/p3_reviewed_media_selection.mjs"
+      - "scripts/p3_reviewed_media_selection_cli.mjs"
+      - "scripts/p3_reviewed_media_selection.test.mjs"
+      - "docs/P3_REVIEWED_MEDIA_SELECTION.md"
       - ".github/workflows/p3-episode-asset-library.yml"
 permissions:
   contents: read
@@ -35,7 +39,10 @@ jobs:
           node --check scripts/p3_episode_asset_research_cli.mjs
           node --check scripts/p3_post_editorial_asset_handoff.mjs
           node --check scripts/p3_post_editorial_asset_handoff_cli.mjs
+          node --check scripts/p3_reviewed_media_selection.mjs
+          node --check scripts/p3_reviewed_media_selection_cli.mjs
       - name: Prove bounded search and export-hash-gated cleanup without providers
         run: |
           env -u PEXELS_API_KEY node --test scripts/p3_episode_asset_library.test.mjs
           env -u PEXELS_API_KEY node --test scripts/p3_post_editorial_asset_handoff.test.mjs
+          env -u PEXELS_API_KEY node --test scripts/p3_reviewed_media_selection.test.mjs
