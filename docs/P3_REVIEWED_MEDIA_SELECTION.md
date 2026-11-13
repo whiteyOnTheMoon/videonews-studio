@@ -20,6 +20,15 @@ This implementation supports only:
 - Pexels videos/photos served by `videos.pexels.com` or
   `images.pexels.com`, provided their source and license are reviewed.
 
+**Important Pexels limitation:** the official Pexels API sometimes
+returns `video_files[].link` URLs on `player.vimeo.com` with signed
+query parameters. The strict P3-12 fixed-host downloader **rejects those
+links**, even when they appear in a genuine Pexels response. Do not strip
+tokens, circumvent signature checks or add broad arbitrary hosts. A future
+Pexels adapter must verify the exact selected URL against the official
+authenticated video-file metadata before a controlled download.
+References: https://www.pexels.com/api/documentation/
+
 There is **no Pixabay or Unsplash auto-downloader** in this slice.
 Unsplash API hotlink/download-tracking rules and Pixabay's bulk download
 and caching restrictions require distinct implementations.
