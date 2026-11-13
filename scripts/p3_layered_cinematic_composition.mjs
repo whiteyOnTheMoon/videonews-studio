@@ -147,7 +147,7 @@ export function createLayeredForegroundSvg({visual, sequence, backgroundCredit, 
   rows.push("</g>");
   if (hasMedia) {
     rows.push('<rect x="748" y="224" width="482" height="289" rx="12" ' +
-      'fill="#041623" fill-opacity=".45" stroke="#72dfd3" ' +
+      'fill="none" stroke="#72dfd3" ' +
       'stroke-opacity=".90" stroke-width="2"/>');
     rows.push(label(769, 215,
       foreground.role === "science-inset" ? "SCIENTIFIC VISUALIZATION" : "SOURCE IMAGE",

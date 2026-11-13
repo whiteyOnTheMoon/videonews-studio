@@ -6,7 +6,7 @@ Depends on [P3-16 PR #540](https://github.com/whiteyOnTheMoon/videonews-studio/p
 
 1. **Background video** fills 1280×720 at 24 fps. Background footage is atmospheric: it is allowed to be dimmed, cropped and partially obscured by text, graphics, and science cards. Original audio is discarded.
 2. **Gradient layer** is a transparent navy/teal SVG covering the canvas: stronger darkness to the left for the headline, lighter to the right to reveal the moving imagery, subtle lower vignette.
-3. **Foreground video/image cards** may overlay the moving background. Scientific videos are scaled to **fit without cropping** within a separate 448×252 inset at x=765, y=242; captions/credits live outside its pixel area. Optional reviewed photos use the same panel placement.
+3. **Foreground video/image cards** may overlay the moving background. Scientific videos are scaled to **fit without cropping** within a separate 448×252 inset at x=765, y=242; captions/credits live outside its pixel area. The border itself has no tinted fill, so it cannot dim the scientific inset after insertion. Optional reviewed photos use the same panel placement.
 4. **Beat overlays** are different SVG compositions with animated alpha fade and persistent source labels. They do not interrupt or restart the background video.
 5. **Private watermark** is independent and is always visible in the private test/export.
 

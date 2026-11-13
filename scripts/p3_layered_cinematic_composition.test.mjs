@@ -176,6 +176,12 @@ test("two full-bleed moving sources crossfade across five beats under text and r
     assert.ok(after[2] > after[0] + 50, "Second blue background not present " + after);
     assert.ok(mixed[0] > after[0] + 5 && mixed[2] > before[2] + 5,
       "No pixel evidence of a crossfade: " + [before, mixed, after]);
+    // The bright scientific source is inserted AFTER the global dim.
+    // The thin foreground card border must not darken its internal pixels.
+    const inset = pixel(output, 2.8, 985, 330);
+    assert.ok(inset[1] > 145 &&
+      inset[1] > inset[0] + 60 && inset[1] > inset[2] + 60,
+      "Scientific inset lost readable source colors: " + inset);
 
     const voice = join(root, "synthetic-voice.wav");
     run("ffmpeg", [
