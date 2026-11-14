@@ -141,8 +141,8 @@ test("60-second original synthetic documentary layout encodes 3 motion sources a
     const {story} = await loadOzonePilot();
     const candidates = [
       {id: "bg-1", role: "background", start: 1, end: 2, color: "0x122fd5", seconds: 21, kind: "video"},
-      {id: "bg-2", role: "background", start: 3, end: 4, color: "0x1eaac0", seconds: 21, kind: "video"},
-      {id: "bg-3", role: "background", start: 5, end: 6, color: "0xd17c20", seconds: 21, kind: "video"},
+      {id: "bg-2", role: "background", start: 3, end: 5, color: "0x1eaac0", seconds: 32, kind: "video"},
+      {id: "bg-3", role: "background", start: 6, end: 6, color: "0xd17c20", seconds: 12, kind: "video"},
       {id: "photo-map", role: "image-card", start: 5, end: 5, color: "0xf05530", kind: "photo"},
       {id: "scientific-motion", role: "science-inset", start: 4, end: 4, color: "0x00ee46", seconds: 11, kind: "video"},
     ];
@@ -182,7 +182,7 @@ test("60-second original synthetic documentary layout encodes 3 motion sources a
       beatFrames: Array(6).fill(240), beatVisuals: story.beats.map(b => b.visual)};
     const plan = await planLayeredTimeline(input);
     assert.equal(plan.timelineFrames, 1440);
-    assert.deepEqual(plan.backgrounds.map(b => b.sourceFrames), [486, 492, 486]);
+    assert.deepEqual(plan.backgrounds.map(b => b.sourceFrames), [486, 732, 246]);
     assert.equal(plan.foreground.length, 2);
     await assert.rejects(() => planLayeredTimeline({
       ...input, manifest: {schemaVersion: 1, assets: assets.map((a, index) =>

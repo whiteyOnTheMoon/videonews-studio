@@ -36,9 +36,9 @@ export const STORYBOARD_ASSIGNMENTS = Object.freeze([
   {beat: 3, background: "svs-earth-spheres-31365", frame: 2},
   {beat: 4, background: "svs-earth-spheres-31365", frame: 3,
     media: "nasa-ozone-video-2026", mediaFrame: 3},
-  {beat: 5, background: "svs-pace-31365", frame: 2,
+  {beat: 5, background: "svs-earth-spheres-31365", frame: 3,
     media: "nasa-ozone-map-2026", mediaFrame: 1},
-  {beat: 6, background: "svs-pace-31365", frame: 3},
+  {beat: 6, background: "svs-pace-31365", frame: 2},
 ]);
 
 function command(exe, args, timeout = 90000) {

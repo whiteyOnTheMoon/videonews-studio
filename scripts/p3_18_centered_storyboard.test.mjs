@@ -62,7 +62,7 @@ test("visual plan sequences distinct, independently colored scientific sources",
     STORYBOARD_ASSIGNMENTS.map(x => x.background),
     ["svs-earth-5570", "svs-earth-5570",
       "svs-earth-spheres-31365", "svs-earth-spheres-31365",
-      "svs-pace-31365", "svs-pace-31365"]);
+      "svs-earth-spheres-31365", "svs-pace-31365"]);
   assert.ok(story.beats[3].visual.paletteNote.includes("SOURCE PALETTE"));
   assert.ok(story.beats[4].visual.paletteNote.includes("DOBSON UNITS"));
   assert.ok(story.beats[4].visual.paletteNote.includes("RED = LOWER OZONE"));

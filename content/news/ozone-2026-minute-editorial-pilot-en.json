@@ -137,12 +137,12 @@
       {
         "role": "background",
         "sceneId": "beat-03",
-        "endSceneId": "beat-04",
+        "endSceneId": "beat-05",
         "candidateId": "svs-earth-spheres-31365"
       },
       {
         "role": "background",
-        "sceneId": "beat-05",
+        "sceneId": "beat-06",
         "endSceneId": "beat-06",
         "candidateId": "svs-pace-31365"
       }

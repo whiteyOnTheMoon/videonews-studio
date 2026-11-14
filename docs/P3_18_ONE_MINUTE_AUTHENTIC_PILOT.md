@@ -10,8 +10,8 @@ Respond to operator feedback that P3-17 information was too close to the four co
 | 10–20s | Large center metric | 25 million km² seasonal average | Same backdrop A |
 | 20–30s | Large center metric | 27.1 million km² single-day maximum | Crossfade to backdrop B |
 | 30–40s | **Large, undimmed 2026 Ozone Watch animation** (date bar intact) | Antarctic ozone changes through winter | Backdrop B remains concealed |
-| 40–50s | **Large, undimmed October 4 Earth Observatory Dobson map** | Source's original 100–500 DU scale | Crossfade to backdrop C behind map |
-| 50–60s | Spacious closing, centered typography | Montreal Protocol / recovery, no third tiny corner-card | Backdrop C visible |
+| 40–50s | **Large, undimmed October 4 Earth Observatory Dobson map** | Source's original 100–500 DU scale | Backdrop B continues behind map |
+| 50–60s | Spacious closing, centered typography | Montreal Protocol / recovery, no third tiny corner-card | Crossfade to backdrop C |
 
 Crossfades consume 12 input frames (0.5s) per boundary, with six extra source frames from each neighbor, so narration length is unchanged. Every background is independently SHA-verified, H264 and at least 20.25/20.5 seconds. No source audio passes through. Science photo/video is fit into a **1088×612** almost-full-frame stage at (96,82), never cropped, never dimmed by the atmospheric overlay. Its original source calendar, time bar and Dobson-unit scale stay within the source viewport. Header and source-specific key are positioned OUTSIDE that viewport. This is the actual requested background/gradient/foreground video style, not the P3-16 rigid side rail.
 
@@ -100,7 +100,11 @@ scientific source content. Sources remain the dominant center visual.
 Non-science scenes still use gradient-dimmed moving Earth B-roll and
 centered, large stats. The 3 Earth-background sources are **not**
 presented as three equally important consecutive shots: the two science
-scenes conceal nearly all of their background. Original P3-16/17 modes
+scenes conceal nearly all of their background. The background spans
+are beat-01..02 (A), beat-03..05 (B), and beat-06 (C), preventing a
+duplicate scene start between the original map at beat-05 and its
+background. This preserves existing scene-ID uniqueness checks and
+reduces an unnecessary third Earth crossfade behind the map. Original P3-16/17 modes
 are unchanged.
 
 The 2026 Ozone Watch source lasts about 15 seconds, but the voice-edited
