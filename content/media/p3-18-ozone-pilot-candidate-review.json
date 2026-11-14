@@ -61,8 +61,8 @@
     {
       "id": "nasa-ozone-map-2026",
       "role": "image-card",
-      "sceneId": "beat-04",
-      "endSceneId": "beat-04",
+      "sceneId": "beat-05",
+      "endSceneId": "beat-05",
       "type": "photo",
       "sourcePage": "https://science.nasa.gov/earth/earth-observatory/world-of-change/ozone-hole/",
       "fileUrl": "https://assets.science.nasa.gov/content/dam/science/esd/eo/woc/images/ozone/ozone_geos5_20261004.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg",
@@ -73,13 +73,13 @@
       "rightsApproved": false,
       "editorialApproved": false,
       "thirdPartyRightsCleared": false,
-      "evidenceNotes": "Image dates OCTOBER 4, 2026, not September 18 maximum. Do not imply it depicts the maximum. Verify exact rendition bytes and science credit."
+      "evidenceNotes": "Image dates OCTOBER 4, 2026, not September 18 maximum. Do not imply it depicts the maximum. Verify exact rendition bytes and science credit. Full scientific source and 100–500 Dobson-unit legend must remain visible; do not copy the animation's palette."
     },
     {
       "id": "nasa-ozone-video-2026",
       "role": "science-inset",
-      "sceneId": "beat-06",
-      "endSceneId": "beat-06",
+      "sceneId": "beat-04",
+      "endSceneId": "beat-04",
       "type": "video",
       "sourcePage": "https://ozonewatch.gsfc.nasa.gov/SH.html",
       "fileUrl": null,
@@ -92,7 +92,7 @@
       "rightsApproved": false,
       "editorialApproved": false,
       "thirdPartyRightsCleared": false,
-      "evidenceNotes": "EXISTING VPS FILE STATUS INSPECTED_UNAPPROVED. Its exact dates, license, ownership and third-party features must be verified, no automatic manifest approval. This is scientific foreground inset, never obscured background."
+      "evidenceNotes": "EXISTING VPS FILE STATUS INSPECTED_UNAPPROVED. Its exact dates, license, ownership and third-party features must be verified, no automatic manifest approval. This is scientific foreground inset, never obscured background. Visual placement is prominent 1088x612 source-preserving stage; its palette must never be equated with the Earth Observatory map."
     }
   ]
 }

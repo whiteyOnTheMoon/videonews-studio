@@ -9,15 +9,15 @@ Respond to operator feedback that P3-17 information was too close to the four co
 | 0–10s | Centered opener | "Antarctica's Ozone Hole" | Earth backdrop A |
 | 10–20s | Large center metric | 25 million km² seasonal average | Same backdrop A |
 | 20–30s | Large center metric | 27.1 million km² single-day maximum | Crossfade to backdrop B |
-| 30–40s | Large **unobscured** scientific image in the middle | Polar vortex / dated NASA ozone map | Still backdrop B |
-| 40–50s | Centered explanation | Hole area ≠ depth | Crossfade to backdrop C |
-| 50–60s | Large **unobscured** scientific moving inset | Recovery / 2026 observations | Still backdrop C |
+| 30–40s | **Large, undimmed 2026 Ozone Watch animation** (date bar intact) | Antarctic ozone changes through winter | Backdrop B remains concealed |
+| 40–50s | **Large, undimmed October 4 Earth Observatory Dobson map** | Source's original 100–500 DU scale | Crossfade to backdrop C behind map |
+| 50–60s | Spacious closing, centered typography | Montreal Protocol / recovery, no third tiny corner-card | Backdrop C visible |
 
-Crossfades consume 12 input frames (0.5s) per boundary, with six extra source frames from each neighbor, so narration length is unchanged. Every background is independently SHA-verified, H264 and at least 20.25/20.5 seconds. No source audio passes through. Science photo/video is fit into a **720×405** central window, never cropped, and not dimmed by the atmospheric overlay. This is the actual requested background/gradient/foreground video style, not the P3-16 rigid side rail.
+Crossfades consume 12 input frames (0.5s) per boundary, with six extra source frames from each neighbor, so narration length is unchanged. Every background is independently SHA-verified, H264 and at least 20.25/20.5 seconds. No source audio passes through. Science photo/video is fit into a **1088×612** almost-full-frame stage at (96,82), never cropped, never dimmed by the atmospheric overlay. Its original source calendar, time bar and Dobson-unit scale stay within the source viewport. Header and source-specific key are positioned OUTSIDE that viewport. This is the actual requested background/gradient/foreground video style, not the P3-16 rigid side rail.
 
 English script and per-scene sources are in:
 `content/news/ozone-2026-minute-editorial-pilot-en.json`.
-The editorial narrative is original (118 English words). It is an editorial **private review**, not published news.
+The revised editorial narrative is original (126 English words). It is an editorial **private review**, not published news.
 
 ### Sources for claims, not reuse permissions
 
@@ -78,7 +78,95 @@ node scripts/p3_18_create_media_draft.mjs \
 
 This reads local files and computes current file SHA-256 values, checks H264 and runtime, confirms pre-existing pinned NASA map/clip checksums and writes a **non-renderable** `INSPECTED_UNAPPROVED` draft with all rights flags false and mode 0600. It **does not** grant permission. The initial `captureDate` is an intake placeholder, not a scientific timestamp; a named reviewer must correct it according to each source record and document the exact observation/release distinction. A scientific inspector must also verify the 2026 Ozone Watch video's actual frame-date coverage. Document review separately.
 
-### Source-specific offline contact audit (P3-18 follow-up)
+### V2 operator-contact visual redesign: science first, no corner dashboard
+
+On the operator's 13 verified original NASA contact frames, the 2026
+Ozone Watch animation shows **July 7, August 18 and September 29, 2026**
+with a source-embedded date bar. The October 4 NASA Earth Observatory
+map shows a **100–500 Dobson-unit** color scale on a light source panel.
+
+**CRITICAL:** the Earth Observatory map uses **RED/ORANGE for low ozone**
+while the NASA Ozone Watch video has visually different **blue/purple**
+Antarctic colors. The Ozone Watch frame samples here do NOT include the
+same Dobson legend. Never assign one shared palette, infer exact quantities
+from the animation colors, recolor scientific source pixels, or assert the
+map is the September 18 maximum. Each piece has a truthful, separate
+source-specific text label and intact **original** scientific graphics.
+
+The renderer's P3-18-specific `science-stage` now places each scientific
+source at (96,82), 1088×612, approximately 82% of the entire 1280×720
+frame. Header (y=61) and source/date note (y=714) live *outside* the
+scientific source content. Sources remain the dominant center visual.
+Non-science scenes still use gradient-dimmed moving Earth B-roll and
+centered, large stats. The 3 Earth-background sources are **not**
+presented as three equally important consecutive shots: the two science
+scenes conceal nearly all of their background. Original P3-16/17 modes
+are unchanged.
+
+The 2026 Ozone Watch source lasts about 15 seconds, but the voice-edited
+beat is currently 10 seconds. The real film at ordinary playback speed
+will show only the **first 10 seconds** (not necessarily the September 29
+source frame). The static **storyboard** can deliberately select the
+September 29 contact as a *representative scientific illustration*; it
+must NOT be represented as a precisely time-aligned frame from the
+eventual 60-second film. Any future playback-speed adjustment would need
+its own explicit editorial decision, scientific correctness check and
+new end-to-end tests.
+
+**Existing intake manifest warning:** the original
+`ozone-pilot-UNAPPROVED.json` and source-audit receipt were created
+before this scene swap, so their scene IDs still refer to the earlier
+draft order. **Do not promote or use them as render-ready manifests.**
+They remain unchanged evidence. The future separately reviewed
+real-film manifest must match the V2 candidate catalog:
+`nasa-ozone-video-2026` = beat-04 and
+`nasa-ozone-map-2026` = beat-05.
+
+### Private six-frame real NASA contact storyboard (not a film)
+
+`scripts/p3_18_centered_storyboard.mjs --save-private` is an
+independent **ap-only offline, explicit opt-in** source-image study.
+It reads the existing, fully SHA-pinned
+`p3-18-real-source-audit/source-audit-receipt.json`, checks all five
+unchanged original NASA SHA values, checks all 13 already-audited
+contact JPEG SHA values and the original explicitly unapproved
+media intake manifest. It never edits the original media or receipt.
+
+It then builds **six static PNG layouts** (one per beat) using
+only the existing contact JPEGs, then creates a single
+**2×3 comparison sheet**. Beat 4 prominently stages an Ozone Watch
+sample; beat 5 the independent Earth Observatory map. Every image is
+stamped **"UNAPPROVED · PRIVATE STORYBOARD"**. A private SHA receipt
+records source contact names and scene-by-scene PNG checksums. There
+is no real NASA moving movie export, no Piper audio, no rights approval
+and no upload.
+
+The contact chosen for beat 4 is a visual reference, not an exact frame
+of the 10-second science-animation segment. Original native-resolution
+files need separate review to judge small source labels.
+
+After all exact-head GitHub Actions succeed, run in an isolated pinned
+worktree from the existing `ap` account:
+
+```bash
+VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY \
+  node scripts/p3_18_centered_storyboard.mjs --save-private
+```
+
+New private output only (refuses if already present):
+`/home/ap/videonews-previews/p3-18-centered-storyboard-v2/`
+with `storyboard-beat-01.png` through
+`storyboard-beat-06.png`,
+`p3-18-centered-visual-storyboard.jpg`, and
+`storyboard-receipt.json`. The output and original evidence
+are never published or promoted to rights-cleared status.
+
+CI tests use fully original **synthetic** stills, test large
+science-stage geometry, source-specific palette notes, preserved
+bright science/source colors over a darkened background, and the
+frame plan. No real NASA data or files are imported by CI.
+
+## Source-specific offline contact audit (P3-18 follow-up)
 
 The five files were downloaded by the operator and an explicitly
 **UNAPPROVED** manifest was produced on the VPS. Do not replace this intake

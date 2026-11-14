@@ -28,12 +28,15 @@ const lineWrap = (raw, maxChars, maxLines) => {
   return lines;
 };
 export const PILOT_PRESENTATIONS = Object.freeze([
-  "hero", "metric", "science-focus", "center-brief", "closing",
+  "hero", "metric", "science-focus", "science-stage", "center-brief", "closing",
 ]);
 
 export function minuteMediaPlacement(presentation) {
   switch (presentation) {
     case "science-focus": return {x: 280, y: 232, width: 720, height: 405};
+    // P3-18: stage the 2026 scientific source almost full-frame, retaining
+    // the native date strip, time axis and Dobson legend without cropping.
+    case "science-stage": return {x: 96, y: 82, width: 1088, height: 612};
     case "center-brief": return {x: 686, y: 241, width: 504, height: 284};
     default: return {x: 765, y: 242, width: 448, height: 252};
   }
@@ -51,13 +54,18 @@ export function createMinuteEditorialOverlaySvg({
   assert.ok(Number.isInteger(sequence) && sequence >= 1 && sequence <= 19);
   const presentation = visual.presentation;
   const media = foreground ? minuteMediaPlacement(presentation) : null;
+  const scienceStage = presentation === "science-stage";
   const lines = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">',
-    '<defs><clipPath id="copy"><rect x="76" y="100" width="1128" height="505"/></clipPath></defs>',
+    '<defs><clipPath id="copy"><rect x="76" y="' + (scienceStage ? "0" : "100") +
+      '" width="1128" height="' + (scienceStage ? "720" : "505") +
+      '"/></clipPath></defs>',
     '<g clip-path="url(#copy)">',
+  ];
+  if (!scienceStage) lines.push(
     txt(640, 118, "EARTH  /  CLIMATE  /  EXPLAINED", 18,
       'text-anchor="middle" font-weight="700" letter-spacing="3" fill="#93eee3"'),
-  ];
+  );
   if (presentation === "hero" || presentation === "closing") {
     lines.push('<rect x="210" y="216" width="860" height="258" rx="18" fill="#041725" fill-opacity=".30"/>');
     lineWrap(visual.title, 26, 3).forEach((line, i) => lines.push(
@@ -74,6 +82,21 @@ export function createMinuteEditorialOverlaySvg({
       'text-anchor="middle" font-weight="700" fill="#8feee0"'));
     lineWrap(visual.body, 78, 2).forEach((line, i) => lines.push(
       txt(640, 452 + 34 * i, line, 23, 'text-anchor="middle" fill="#e0f4f8"')));
+  } else if (scienceStage) {
+    assert.ok(foreground && media &&
+      ["science-inset", "image-card"].includes(foreground.role),
+      "Full scientific stage needs reviewed science video or complete source image");
+    assert.ok(["science-inset", "image-card"].includes(visual.scienceRole) &&
+      visual.scienceRole === foreground.role,
+      "Scientific stage media role must match the editorial source");
+    assert.ok(typeof visual.paletteNote === "string" &&
+      visual.paletteNote.length >= 12 && visual.paletteNote.length <= 90,
+      "Each scientific source requires its own truthful color/date note");
+    lines.push(txt(640, 61, visual.title, 34,
+      'text-anchor="middle" font-weight="700"'));
+    lines.push('<rect x="' + (media.x - 4) + '" y="' + (media.y - 4) +
+      '" width="' + (media.width + 8) + '" height="' + (media.height + 8) +
+      '" rx="8" fill="none" stroke="#d0ede8" stroke-opacity=".70" stroke-width="2"/>');
   } else if (presentation === "science-focus") {
     assert.ok(media && foreground, "Science focus requires reviewed media");
     lines.push(txt(640, 179, visual.title, 34,
@@ -96,12 +119,19 @@ export function createMinuteEditorialOverlaySvg({
       '" rx="12" fill="none" stroke="#87e0d5" stroke-opacity=".75" stroke-width="2"/>');
   }
   lines.push('</g>');
-  lines.push('<rect x="190" y="673" width="900" height="1" fill="#9feee4" fill-opacity=".45"/>');
-  lines.push(txt(640, 701, "VISUAL SOURCE: " +
-    backgroundCredit.slice(0, 74), 14,
-  'text-anchor="middle" fill="#cfebee"'));
-  if (foreground) lines.push(txt(640, 661, foreground.credit.slice(0, 92), 16,
-    'text-anchor="middle" fill="#e8ffff"'));
+  if (scienceStage) {
+    // Everything below the source viewport: never cover the actual scientific
+    // calendar, scale, globe or timeline with an editorial title/legend.
+    lines.push(txt(640, 714, visual.paletteNote, 15,
+      'text-anchor="middle" fill="#d2f9f1"'));
+  } else {
+    lines.push('<rect x="190" y="673" width="900" height="1" fill="#9feee4" fill-opacity=".45"/>');
+    lines.push(txt(640, 701, "VISUAL SOURCE: " +
+      backgroundCredit.slice(0, 74), 14,
+      'text-anchor="middle" fill="#cfebee"'));
+    if (foreground) lines.push(txt(640, 661, foreground.credit.slice(0, 92), 16,
+      'text-anchor="middle" fill="#e8ffff"'));
+  }
   lines.push('</svg>');
   return lines.join("");
 }

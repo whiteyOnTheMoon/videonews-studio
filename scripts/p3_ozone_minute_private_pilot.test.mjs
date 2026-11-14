@@ -29,6 +29,11 @@ test("the real editorial plan is factual, centrally laid out, and permanently pu
   const {story, catalog, words} = await loadOzonePilot();
   assert.equal(story.durationFrames, 1440);
   assert.equal(story.beats.length, 6);
+  assert.equal(story.visualDesignVersion, 2);
+  assert.deepEqual(story.mediaPlan.foreground.map(x => [x.sceneId, x.role]), [
+    ["beat-04", "science-inset"],
+    ["beat-05", "image-card"],
+  ]);
   assert.ok(words >= 105 && words <= 140);
   assert.equal(story.publicationAllowed, false);
   assert.ok(story.sources.every(x => x.url.startsWith("https://")));
@@ -55,10 +60,28 @@ test("the real editorial plan is factual, centrally laid out, and permanently pu
   const science = createLayeredForegroundSvg({
     visual: story.beats[3].visual, sequence: 4,
     backgroundCredit: "Synthetically produced background",
-    foreground: {credit: "Original synthetic source map"},
+    foreground: {role: "science-inset", credit: "Original synthetic Ozone Watch animation"},
   });
-  assert.match(science, /x="268" y="220" width="744" height="429"/);
+  assert.match(science, /x="92" y="78" width="1096" height="620"/);
   assert.match(science, /fill="none"/);
+  assert.match(science, /ORIGINAL DATES PRESERVED/);
+  assert.doesNotMatch(science, /VISUAL SOURCE/);
+  const map = createLayeredForegroundSvg({
+    visual: story.beats[4].visual, sequence: 5,
+    backgroundCredit: "Original moving Earth stand-in",
+    foreground: {role: "image-card", credit: "Original synthetic map"},
+  });
+  assert.match(map, /RED = LOWER OZONE/);
+  assert.match(map, /DOBSON/); // the script describes the original, not color equivalence
+  assert.throws(() => createLayeredForegroundSvg({
+    visual: story.beats[3].visual, sequence: 4,
+    backgroundCredit: "Synthetic atmosphere",
+    foreground: {role: "image-card", credit: "Wrong science media"},
+  }), /role must match/);
+  assert.throws(() => createLayeredForegroundSvg({
+    visual: story.beats[4].visual, sequence: 5,
+    backgroundCredit: "Synthetic atmosphere", foreground: null,
+  }), /needs reviewed science/);
 
   const draft = makeUnapprovedInventory({
     root: "/home/ap/ci-private-only",
@@ -120,8 +143,8 @@ test("60-second original synthetic documentary layout encodes 3 motion sources a
       {id: "bg-1", role: "background", start: 1, end: 2, color: "0x122fd5", seconds: 21, kind: "video"},
       {id: "bg-2", role: "background", start: 3, end: 4, color: "0x1eaac0", seconds: 21, kind: "video"},
       {id: "bg-3", role: "background", start: 5, end: 6, color: "0xd17c20", seconds: 21, kind: "video"},
-      {id: "photo-map", role: "image-card", start: 4, end: 4, color: "0x7bd04a", kind: "photo"},
-      {id: "scientific-motion", role: "science-inset", start: 6, end: 6, color: "0x00ee46", seconds: 11, kind: "video"},
+      {id: "photo-map", role: "image-card", start: 5, end: 5, color: "0xf05530", kind: "photo"},
+      {id: "scientific-motion", role: "science-inset", start: 4, end: 4, color: "0x00ee46", seconds: 11, kind: "video"},
     ];
     const assets = [];
     for (const c of candidates) {
@@ -179,6 +202,29 @@ test("60-second original synthetic documentary layout encodes 3 motion sources a
     assert.equal(info.streams[0].height, 720);
     assert.ok(Math.abs(Number(info.format.duration) - 60) < .08);
     assert.ok((await stat(output)).size > 120000);
+
+    // In the 30–40s science beat the supplied Ozone Watch-style video must
+    // remain bright and unaltered ABOVE the dark background gradient.
+    // In 40–50s, the differently-colored Dobson map must take its place.
+    function framePixel(seconds) {
+      const result = spawnSync("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin",
+        "-ss", String(seconds), "-i", output,
+        "-vf", "format=rgb24,crop=1:1:640:360:exact=1",
+        "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+      ], {encoding: null, timeout: 40000});
+      assert.equal(result.status, 0, String(result.stderr).slice(-500));
+      assert.equal(result.stdout.length, 3);
+      return [...result.stdout];
+    }
+    const ozonePixel = framePixel(35);
+    const mapPixel = framePixel(45);
+    assert.ok(ozonePixel[1] > ozonePixel[0] + 95 &&
+      ozonePixel[1] > ozonePixel[2] + 75,
+    "Large original science video was obscured/dimmed: " + ozonePixel);
+    assert.ok(mapPixel[0] > mapPixel[1] + 80 &&
+      mapPixel[0] > mapPixel[2] + 90,
+    "The separate Dobson map was obscured/dimmed: " + mapPixel);
 
     // Audio from any atmospheric/scientific source is never imported.
     const voice = join(root, "standin-voice.wav");

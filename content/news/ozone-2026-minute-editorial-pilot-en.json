@@ -79,46 +79,50 @@
     {
       "id": "beat-04",
       "seconds": 10,
-      "narration": "An unusually powerful polar vortex kept Antarctic air very cold, creating conditions where ozone-destroying chemicals became more effective.",
+      "narration": "This NASA animation follows changing ozone above Antarctica through the winter of twenty twenty-six. Watch the original dates as the colors shift.",
       "visual": {
-        "presentation": "science-focus",
+        "presentation": "science-stage",
         "kind": "text-card",
-        "title": "THE POLAR VORTEX",
-        "body": "2026 NASA ozone observations · dated scientific graphic"
+        "title": "OZONE ABOVE ANTARCTICA · 2026",
+        "body": "Original NASA Ozone Watch frames and date bar",
+        "scienceRole": "science-inset",
+        "paletteNote": "NASA OZONE WATCH · ORIGINAL DATES PRESERVED · SOURCE PALETTE"
       },
       "sources": [
         "nasa-nov-04",
-        "noaa-nov-04"
+        "nasa-world-change"
       ]
     },
     {
       "id": "beat-05",
       "seconds": 10,
-      "narration": "Still, the hole was not as deep as other large years. Long-term reductions in harmful chemicals are making a difference.",
+      "narration": "An October fourth map uses Dobson units and a different color scale. Red means lower ozone here; the two palettes aren't interchangeable.",
       "visual": {
-        "presentation": "center-brief",
+        "presentation": "science-stage",
         "kind": "text-card",
-        "title": "SIZE IS NOT DEPTH",
-        "body": "An unusually large area did not set a depletion-depth record."
+        "title": "THE OZONE MAP · OCTOBER 4",
+        "body": "Original NASA Earth Observatory scale",
+        "scienceRole": "image-card",
+        "paletteNote": "NASA EARTH OBSERVATORY · OCT 4, 2026 · DOBSON UNITS · RED = LOWER OZONE"
       },
       "sources": [
-        "nasa-nov-04",
-        "noaa-nov-04"
+        "nasa-world-change",
+        "nasa-nov-04"
       ]
     },
     {
       "id": "beat-06",
       "seconds": 10,
-      "narration": "Thanks in part to the Montreal Protocol, recovery remains on track, though full Antarctic recovery may take until the twenty-seventies.",
+      "narration": "The hole was large, yet recovery continues. Thanks to the Montreal Protocol, scientists still expect Antarctic ozone to recover around the twenty-seventies.",
       "visual": {
-        "presentation": "science-focus",
+        "presentation": "closing",
         "kind": "text-card",
-        "title": "RECOVERY TAKES TIME",
-        "body": "NASA data visualisation · editorial preview only"
+        "title": "RECOVERY CONTINUES",
+        "body": "Montreal Protocol · long-term recovery remains on track"
       },
       "sources": [
-        "nasa-nov-04",
-        "nasa-world-change"
+        "noaa-nov-04",
+        "nasa-nov-04"
       ]
     }
   ],
@@ -145,17 +149,19 @@
     ],
     "foreground": [
       {
-        "role": "image-card",
+        "role": "science-inset",
         "sceneId": "beat-04",
         "endSceneId": "beat-04",
-        "candidateId": "nasa-ozone-map-2026"
+        "candidateId": "nasa-ozone-video-2026"
       },
       {
-        "role": "science-inset",
-        "sceneId": "beat-06",
-        "endSceneId": "beat-06",
-        "candidateId": "nasa-ozone-video-2026"
+        "role": "image-card",
+        "sceneId": "beat-05",
+        "endSceneId": "beat-05",
+        "candidateId": "nasa-ozone-map-2026"
       }
     ]
-  }
+  },
+  "visualDesignVersion": 2,
+  "visualReviewEvidence": "13 operator-provided original NASA contact frames; map and animation palettes are source-specific and must not be equated"
 }

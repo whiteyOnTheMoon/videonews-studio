@@ -66,6 +66,13 @@ export async function loadOzonePilot() {
   assert.equal(story.fps, FPS);
   assert.equal(story.durationFrames, FRAMES);
   assert.equal(story.beats.length, 6);
+  assert.equal(story.visualDesignVersion, 2,
+    "P3-18 requires revised science-first center-stage editorial layout");
+  assert.equal(story.beats[3].visual?.presentation, "science-stage");
+  assert.equal(story.beats[3].visual?.scienceRole, "science-inset");
+  assert.equal(story.beats[4].visual?.presentation, "science-stage");
+  assert.equal(story.beats[4].visual?.scienceRole, "image-card");
+  assert.equal(story.beats[5].visual?.presentation, "closing");
   assert.equal(catalog.status, "INSPECTED_UNAPPROVED");
   assert.equal(catalog.publicationAllowed, false);
   assert.equal(catalog.candidates.length, 5);
@@ -97,6 +104,10 @@ export async function loadOzonePilot() {
     asset.editorialApproved === false), "Catalog must NEVER approve real sources");
   const media = [...story.mediaPlan.background, ...story.mediaPlan.foreground];
   assert.equal(media.length, 5);
+  assert.deepEqual(story.mediaPlan.foreground.map(x => [x.candidateId, x.sceneId]), [
+    ["nasa-ozone-video-2026", "beat-04"],
+    ["nasa-ozone-map-2026", "beat-05"],
+  ], "Scientific animation must precede the independently colored Dobson map");
   for (const assignment of media) {
     const candidate = candidates.get(assignment.candidateId);
     assert.ok(candidate, "Unknown real candidate");
