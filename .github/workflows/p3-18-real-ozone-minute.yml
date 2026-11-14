@@ -12,6 +12,8 @@ on:
       - "scripts/p3_18_audit_real_media.test.mjs"
       - "scripts/p3_18_centered_storyboard.mjs"
       - "scripts/p3_18_centered_storyboard.test.mjs"
+      - "scripts/p3_18_vps_moving_design_preview.mjs"
+      - "scripts/p3_18_vps_moving_design_preview.test.mjs"
       - "content/news/ozone-2026-minute-editorial-pilot-en.json"
       - "content/media/p3-18-ozone-pilot-candidate-review.json"
       - "docs/P3_18_ONE_MINUTE_AUTHENTIC_PILOT.md"
@@ -42,6 +44,8 @@ jobs:
           node --check scripts/p3_18_audit_real_media.test.mjs
           node --check scripts/p3_18_centered_storyboard.mjs
           node --check scripts/p3_18_centered_storyboard.test.mjs
+          node --check scripts/p3_18_vps_moving_design_preview.mjs
+          node --check scripts/p3_18_vps_moving_design_preview.test.mjs
           node scripts/p3_ozone_minute_private_pilot.mjs --check-editorial
       - name: Install offline FFmpeg test fixture encoder and SVG renderer
         run: |
@@ -67,6 +71,14 @@ jobs:
             echo "UNSAFE: real media storyboard must be refused in CI"
             exit 1
           fi
+      - name: Validate VPS-safe moving design and real NASA rights refusal
+        run: |
+          if VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY \
+            node scripts/p3_18_vps_moving_design_preview.mjs --save-private; then
+            echo "UNSAFE: NASA contact-still preview must be refused in CI"
+            exit 1
+          fi
+          node --test scripts/p3_18_vps_moving_design_preview.test.mjs
       - name: Render 60-second ORIGINAL SYNTHETIC stand-in with real editorial script
         run: |
           env -u PEXELS_API_KEY \

@@ -207,6 +207,75 @@ background; it also verifies the source graphic SVG for each science
 beat is completely transparent/empty. Previous P3-16 science-safe rail
 and P3-17 inset arrangements are preserved for other modes.
 
+## VPS PLAYABLE 60-second private moving demo from operator-audited stills
+
+The operator requested a real **playable MP4 on their VPS now**, not more
+separate contact images. This does **not** authorize use of unapproved
+original NASA movies or release of the commercial Piper voice. A new
+offline script provides the same **snapshot-derived** review category
+as the previously supplied conversation MP4, now rendered locally:
+
+`scripts/p3_18_vps_moving_design_preview.mjs --save-private`
+
+It requires the previously generated source-audit receipt,
+original `INSPECTED_UNAPPROVED` intake manifest, and V2 centered
+storyboard receipt, checks all five source SHAs and all 13 contact
+JPEG SHAs against their existing receipts, and checks the six
+storyboard PNG SHAs. No existing file or manifest is modified.
+
+Scene design: 60 seconds (1440 frames, 1280×720, 24fps).
+
+- Beats 1–3: subtle Ken Burns movement across operator-reviewed
+  *still* NASA Earth-derived editorial images, with a 0.5-second
+  crossfade at each of the 10s/20s editorial transitions.
+- Beat 4: three original NASA Ozone Watch **contact snapshots** with
+  their embedded **July 7 / August 18 / September 29, 2026**
+  dates, shown for ~3.33 seconds each, hard cut, no cinematic
+  background, dark overlay, extra graphics or pan/zoom. This is
+  deliberately a **dated-sample montage**, NOT the original continuous
+  source NASA animation or its true real-time progression.
+- Beat 5: original audited **Oct 4 Dobson map screenshot** for 10
+  seconds, fit-to-screen with undistorted scale/legend and **no**
+  background, dark overlay, source-mismatched colors or text additions.
+- Beat 6: moving editorial closing derived from original V2 PNG.
+
+The script produces a private **H264 MP4** and a SHA-256 receipt,
+always marked `publicationAllowed:false`,
+`actualNasaVideosUsed:false`,
+`genuineOzoneContinuousMotion:false`,
+`humanVisualApproval:false`. Media and any source audio are never
+used from the original NASA videos. No download, network request,
+service activation, publishing or merge occurs.
+
+**Audio**: When **both** `VNS_PIPER_PYTHON` and
+`VNS_PIPER_MODEL` are explicitly supplied, the script imports
+the P3-18's existing protected `synthesizeMinute` path, validates
+the exact private-demo Piper model SHA
+`5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f`
+and renders six synchronized 10-second original-English speech beats
+to the same 60-second AAC movie. No audio is truncated. Piper
+commercial rights **remain unconfirmed**. When neither Piper variable
+is provided, the generated MP4 is playable **without sound**. If only
+one variable is present, it fails rather than guessing paths.
+
+The script refuses CI, non-ap users, missing opt-in
+`VNS_VPS_PREVIEW_APPROVED=PRIVATE_REVIEW_ONLY`, modified original
+sources, mismatched report images, insufficient disk space, and
+inconsistent science source dates/roles, and does not touch original
+NASA MP4 or original intake. It writes into a uniquely named
+private directory inside `/home/ap/videonews-previews`.
+On failure, only its **own newly created temporary staging
+directory** is cleaned up. The private resulting movie and receipt
+persist for human inspection.
+
+The standalone CI test generates only **original synthetic**
+JPGs and a six-second H264 smoke movie; verifies moving composition,
+crossfade cut and science frame colors at a non-center point,
+unchanged input SHA-256 and no accidental source audio. The existing
+60-second editorial CI test separately proves the exact 1440-frame
+architecture. **Passing tests never promotes real NASA footage for
+use or commercial release.**
+
 ## Source-specific offline contact audit (P3-18 follow-up)
 
 The five files were downloaded by the operator and an explicitly

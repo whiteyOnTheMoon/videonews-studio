@@ -195,7 +195,7 @@ async function validateOfflineVoice() {
 }
 
 /** Every full sentence is spoken. No missing words or truncated TTS audio. */
-async function synthesizeMinute(story, root) {
+export async function synthesizeMinute(story, root) {
   const {python, model} = await validateOfflineVoice();
   const padded = [];
   const receipts = [];
