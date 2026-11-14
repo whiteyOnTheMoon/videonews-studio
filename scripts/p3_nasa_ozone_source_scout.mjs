@@ -74,6 +74,8 @@ export async function inspectNasaOzoneCandidate({candidateId, file}) {
       sha256: digest,
       sceneId: source.suggestedStart,
       endSceneId: source.suggestedStart,
+      scientificVisualization: true,
+      compositionMode: "science-safe",
       sourceUrl: source.page,
       creator: "NASA",
       credit: source.credit,

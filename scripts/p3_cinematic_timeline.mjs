@@ -12,6 +12,13 @@ import { spawnSync } from "node:child_process";
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { validateEpisodeMediaManifest } from "./check_episode_media_manifest.mjs";
+import {
+  SCIENCE_SAFE_MODE,
+  createScienceSafeBrandSvg,
+  createScienceSafeOverlaySvg,
+  requiresScienceSafeMode,
+  scienceSafeBaseGraph,
+} from "./p3_science_safe_composition.mjs";
 
 const FPS = 24;
 const BEATS = 19;
@@ -69,6 +76,14 @@ export async function planCinematicTimeline({
     assert.equal(asset.kind, "video", "Cinematic background requires a reviewed video");
     assert.ok(asset.path.endsWith(".mp4"), "Only local H264 MP4 is supported");
     assert.ok(typeof asset.endSceneId === "string", "Missing endSceneId");
+    if (Object.hasOwn(asset, "scientificVisualization"))
+      assert.equal(typeof asset.scientificVisualization, "boolean",
+        "scientificVisualization must be boolean");
+    const compositionMode = asset.compositionMode ?? "standard";
+    assert.ok(compositionMode === "standard" || compositionMode === SCIENCE_SAFE_MODE,
+      "Unknown cinematic composition mode");
+    assert.ok(!requiresScienceSafeMode(asset) || compositionMode === SCIENCE_SAFE_MODE,
+      "Scientific visualization requires science-safe canvas");
     const start = parseBeatId(asset.sceneId);
     const end = parseBeatId(asset.endSceneId);
     assert.ok(end >= start && end - start <= 2,
@@ -105,7 +120,7 @@ export async function planCinematicTimeline({
       path: asset.path, sha256: asset.sha256,
       credit: asset.credit, captureDate: asset.captureDate,
       visuals: beatVisuals.slice(start, end + 1),
-      motifId: asset.motifId,
+      compositionMode, motifId: asset.motifId,
     });
     if (isInsert) inserts.set(start, planned);
     else starts.set(start, planned);
@@ -214,6 +229,10 @@ export async function encodeCinematicSpan({span, output, directory}) {
     span.frames.length >= 1 && span.frames.length <= 3);
   assert.equal(span.frames.reduce((sum, n) => sum + n, 0), span.durationFrames);
   assert.ok(Number.isInteger(span.durationFrames) && span.durationFrames >= 24);
+  const compositionMode = span.compositionMode ?? "standard";
+  assert.ok(compositionMode === "standard" || compositionMode === SCIENCE_SAFE_MODE,
+    "Unsupported cinematic composition mode");
+  const scienceSafe = compositionMode === SCIENCE_SAFE_MODE;
   const digest = createHash("sha256").update(await readFile(span.path)).digest("hex");
   assert.equal(digest, span.sha256, "Cinematic source changed after preflight");
   await mkdir(directory, {recursive: true, mode: 0o700});
@@ -222,15 +241,19 @@ export async function encodeCinematicSpan({span, output, directory}) {
     const name = "cinematic-" + String(span.start + 1) + "-" + String(index + 1);
     const svg = join(directory, name + ".svg");
     const png = join(directory, name + ".png");
-    await writeFile(svg, createCinematicOverlaySvg(visual, span.start + index + 1),
-      {mode: 0o600, flag: "wx"});
+    await writeFile(svg, scienceSafe
+      ? createScienceSafeOverlaySvg(visual, span.start + index + 1)
+      : createCinematicOverlaySvg(visual, span.start + index + 1),
+    {mode: 0o600, flag: "wx"});
     command("rsvg-convert", ["--output", png, svg], 30000);
     overlayPaths.push(png);
   }
   const brandSvg = join(directory, "cinematic-" + String(span.start + 1) + "-brand.svg");
   const brandPng = join(directory, "cinematic-" + String(span.start + 1) + "-brand.png");
-  await writeFile(brandSvg, createCinematicBrandSvg(span.credit, span.captureDate),
-    {mode: 0o600, flag: "wx"});
+  await writeFile(brandSvg, scienceSafe
+    ? createScienceSafeBrandSvg(span.credit, span.captureDate)
+    : createCinematicBrandSvg(span.credit, span.captureDate),
+  {mode: 0o600, flag: "wx"});
   command("rsvg-convert", ["--output", brandPng, brandSvg], 30000);
   const allImages = [...overlayPaths, brandPng];
   const args = [
@@ -246,13 +269,15 @@ export async function encodeCinematicSpan({span, output, directory}) {
   const fadeSeconds = (fadeFrames / FPS).toFixed(6);
   const totalSeconds = (span.durationFrames / FPS).toFixed(6);
   const fadeOut = ((span.durationFrames - fadeFrames) / FPS).toFixed(6);
-  const graph = [
-    "[0:v:0]fps=24,scale=1280:720:force_original_aspect_ratio=increase," +
-      "crop=1280:720,setsar=1,trim=duration=" + totalSeconds +
-      ",setpts=PTS-STARTPTS,format=rgba," +
-      "fade=t=in:st=0:d=" + fadeSeconds + "," +
-      "fade=t=out:st=" + fadeOut + ":d=" + fadeSeconds + "[base]",
-  ];
+  const graph = scienceSafe
+    ? scienceSafeBaseGraph(totalSeconds, fadeSeconds, fadeOut)
+    : [
+      "[0:v:0]fps=24,scale=1280:720:force_original_aspect_ratio=increase," +
+        "crop=1280:720,setsar=1,trim=duration=" + totalSeconds +
+        ",setpts=PTS-STARTPTS,format=rgba," +
+        "fade=t=in:st=0:d=" + fadeSeconds + "," +
+        "fade=t=out:st=" + fadeOut + ":d=" + fadeSeconds + "[base]",
+    ];
   let prior = "[base]";
   let offsetFrames = 0;
   for (const [index, frames] of span.frames.entries()) {

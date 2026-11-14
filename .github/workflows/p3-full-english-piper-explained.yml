@@ -9,6 +9,13 @@ on:
       - "scripts/p3_private_clip_support.mjs"
       - "scripts/p3_private_clip_support.test.mjs"
       - "scripts/p3_cinematic_timeline.mjs"
+      - "scripts/p3_science_safe_composition.mjs"
+      - "scripts/p3_science_safe_composition.test.mjs"
+      - "scripts/p3_layered_cinematic_composition.mjs"
+      - "scripts/p3_layered_cinematic_composition.test.mjs"
+      - "scripts/p3_layered_visual_review.mjs"
+      - "docs/P3_LAYERED_CINEMATIC.md"
+      - "docs/P3_SCIENCE_SAFE_CINEMATIC.md"
       - "scripts/p3_cinematic_timeline.test.mjs"
       - "scripts/p3_cinematic_short_insert.test.mjs"
       - "docs/P3_CINEMATIC_TIMELINE.md"
@@ -45,6 +52,11 @@ jobs:
           node --check scripts/vps_p3_full_english_piper_preview.mjs
           node --check scripts/p3_private_clip_support.mjs
           node --check scripts/p3_cinematic_timeline.mjs
+          node --check scripts/p3_science_safe_composition.mjs
+          node --check scripts/p3_science_safe_composition.test.mjs
+          node --check scripts/p3_layered_cinematic_composition.mjs
+          node --check scripts/p3_layered_cinematic_composition.test.mjs
+          node --check scripts/p3_layered_visual_review.mjs
           node --check scripts/p3_nasa_ozone_source_scout.mjs
           node --test scripts/check_episode_media_manifest.test.mjs
       - name: Set up private offline voice and media tools
@@ -58,6 +70,10 @@ jobs:
         run: node --test scripts/p3_private_clip_support.test.mjs
       - name: Verify cinematic three-overlay continuous-clip pipeline
         run: node --test scripts/p3_cinematic_timeline.test.mjs
+      - name: Verify science-safe NASA-style source pixels and external overlays
+        run: node --test scripts/p3_science_safe_composition.test.mjs
+      - name: Verify synthetic full-screen multi-clip gradient, xfade and science inset
+        run: node --test scripts/p3_layered_cinematic_composition.test.mjs
       - name: Verify partial-beat motion fades into original graphic without looping
         run: node --test scripts/p3_cinematic_short_insert.test.mjs
       - name: Verify NASA candidate source scouting stays offline and unapproved

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "id": "ozone-2026-minute-editorial-pilot-en",
+  "language": "en-US",
+  "title": "Antarctica's 2026 Ozone Hole: Large, Yet Healing",
+  "date": "2026-11-13",
+  "durationFrames": 1440,
+  "fps": 24,
+  "editorialApproved": false,
+  "publicationAllowed": false,
+  "sources": [
+    {
+      "id": "nasa-nov-04",
+      "url": "https://science.nasa.gov/earth/2026-ozone-hole/",
+      "date": "2026-11-04",
+      "publisher": "NASA"
+    },
+    {
+      "id": "noaa-nov-04",
+      "url": "https://www.noaa.gov/news-release/noaa-nasa-release-measurements-of-2026-ozone-hole",
+      "date": "2026-11-04",
+      "publisher": "NOAA"
+    },
+    {
+      "id": "nasa-world-change",
+      "url": "https://science.nasa.gov/earth/earth-observatory/world-of-change/ozone-hole/",
+      "date": "2026-11-09",
+      "publisher": "NASA Earth Observatory"
+    }
+  ],
+  "beats": [
+    {
+      "id": "beat-01",
+      "seconds": 10,
+      "narration": "The Antarctic ozone hole grew unusually large in twenty twenty-six. Does that mean the ozone layer has stopped healing?",
+      "visual": {
+        "presentation": "hero",
+        "kind": "text-card",
+        "title": "ANTARCTICA'S OZONE HOLE",
+        "body": "2026: a large hole, but a more complex story"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-02",
+      "seconds": 10,
+      "narration": "NASA and NOAA report an average area of twenty-five million square kilometers during peak season: seventh largest in forty-eight years.",
+      "visual": {
+        "presentation": "metric",
+        "kind": "text-card",
+        "title": "2026 PEAK-SEASON AVERAGE",
+        "metric": "25 MILLION km²",
+        "body": "September 7–October 13 · 7th largest on record"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "noaa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-03",
+      "seconds": 10,
+      "narration": "On September eighteenth, the hole reached twenty-seven point one million square kilometers. Ozone hole means thinning, not an actual empty space.",
+      "visual": {
+        "presentation": "metric",
+        "kind": "text-card",
+        "title": "LARGEST SINGLE DAY",
+        "metric": "27.1 MILLION km²",
+        "body": "18 September 2026 · a threshold-based area"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "nasa-world-change"
+      ]
+    },
+    {
+      "id": "beat-04",
+      "seconds": 10,
+      "narration": "This NASA animation follows changing ozone above Antarctica through the winter of twenty twenty-six. Watch the original dates as the colors shift.",
+      "visual": {
+        "presentation": "science-stage",
+        "kind": "text-card",
+        "title": "OZONE ABOVE ANTARCTICA · 2026",
+        "body": "Original NASA Ozone Watch frames and date bar",
+        "scienceRole": "science-inset",
+        "paletteNote": "NASA OZONE WATCH · ORIGINAL DATES PRESERVED · SOURCE PALETTE"
+      },
+      "sources": [
+        "nasa-nov-04",
+        "nasa-world-change"
+      ]
+    },
+    {
+      "id": "beat-05",
+      "seconds": 10,
+      "narration": "An October fourth map uses Dobson units and a different color scale. Red means lower ozone here; the two palettes aren't interchangeable.",
+      "visual": {
+        "presentation": "science-stage",
+        "kind": "text-card",
+        "title": "THE OZONE MAP · OCTOBER 4",
+        "body": "Original NASA Earth Observatory scale",
+        "scienceRole": "image-card",
+        "paletteNote": "NASA EARTH OBSERVATORY · OCT 4, 2026 · DOBSON UNITS · RED = LOWER OZONE"
+      },
+      "sources": [
+        "nasa-world-change",
+        "nasa-nov-04"
+      ]
+    },
+    {
+      "id": "beat-06",
+      "seconds": 10,
+      "narration": "The hole was large, yet recovery continues. Thanks to the Montreal Protocol, scientists still expect Antarctic ozone to recover around the twenty-seventies.",
+      "visual": {
+        "presentation": "closing",
+        "kind": "text-card",
+        "title": "RECOVERY CONTINUES",
+        "body": "Montreal Protocol · long-term recovery remains on track"
+      },
+      "sources": [
+        "noaa-nov-04",
+        "nasa-nov-04"
+      ]
+    }
+  ],
+  "mediaPlan": {
+    "background": [
+      {
+        "role": "background",
+        "sceneId": "beat-01",
+        "endSceneId": "beat-02",
+        "candidateId": "svs-earth-5570"
+      },
+      {
+        "role": "background",
+        "sceneId": "beat-03",
+        "endSceneId": "beat-05",
+        "candidateId": "svs-earth-spheres-31365"
+      },
+      {
+        "role": "background",
+        "sceneId": "beat-06",
+        "endSceneId": "beat-06",
+        "candidateId": "svs-pace-31365"
+      }
+    ],
+    "foreground": [
+      {
+        "role": "science-inset",
+        "sceneId": "beat-04",
+        "endSceneId": "beat-04",
+        "candidateId": "nasa-ozone-video-2026"
+      },
+      {
+        "role": "image-card",
+        "sceneId": "beat-05",
+        "endSceneId": "beat-05",
+        "candidateId": "nasa-ozone-map-2026"
+      }
+    ]
+  },
+  "visualDesignVersion": 2,
+  "visualReviewEvidence": "13 operator-provided original NASA contact frames; map and animation palettes are source-specific and must not be equated"
+}
