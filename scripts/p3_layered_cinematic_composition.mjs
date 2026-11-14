@@ -376,17 +376,29 @@ export async function encodeLayeredSequence({plan, output, directory}) {
     const fade = Math.min(10, Math.floor(frames / 4));
     const mediaTag = "[fg-media" + i + "]";
     const presentation = plan.beatVisuals[a.start]?.presentation;
+    const fullScience = presentation === "science-stage";
+    if (fullScience) {
+      assert.equal(a.start, a.end, "Full-screen scientific media must match one beat");
+      assert.ok(["science-inset", "image-card"].includes(a.role));
+    }
     const placement = presentation
       ? minuteMediaPlacement(presentation)
       : {x: MEDIA_X, y: MEDIA_Y, width: MEDIA_WIDTH, height: MEDIA_HEIGHT};
+    // Scientific material replaces (and completely occludes) the dimmed
+    // atmospheric background in its assigned beat. No overlay fade to or
+    // from the underlying footage: original colors, dates and legends remain
+    // visible for the entire science interval. Other inset modes unchanged.
+    const mediaFades = fullScience ? "" :
+      ",fade=t=in:st=0:d=" + duration(fade) +
+      ":alpha=1,fade=t=out:st=" + duration(frames - fade) +
+      ":d=" + duration(fade) + ":alpha=1";
     g.push("[" + index + ":v:0]fps=24,trim=duration=" + duration(frames) +
       ",setpts=PTS-STARTPTS,scale=" + placement.width + ":" + placement.height +
       ":force_original_aspect_ratio=decrease," +
       "pad=" + placement.width + ":" + placement.height +
       ":(ow-iw)/2:(oh-ih)/2:color=0x06101c," +
-      "setsar=1,format=rgba,fade=t=in:st=0:d=" + duration(fade) +
-      ":alpha=1,fade=t=out:st=" + duration(frames - fade) +
-      ":d=" + duration(fade) + ":alpha=1,setpts=PTS-STARTPTS+" +
+      "setsar=1,format=rgba" + mediaFades +
+      ",setpts=PTS-STARTPTS+" +
       duration(offset) + "/TB" + mediaTag);
     const next = "[with-media" + i + "]";
     g.push(previous + mediaTag + "overlay=" + placement.x + ":" + placement.y +

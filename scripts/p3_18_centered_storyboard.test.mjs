@@ -123,8 +123,8 @@ test("actual still-only FFmpeg science stage stays bright and complete above gra
     const dim = await rasterize(root, "dim", createLayeredDimSvg());
     const stamp = await rasterize(root, "stamp", privateStoryboardStampSvg());
     const stage = minuteMediaPlacement("science-stage");
-    assert.deepEqual(stage, {x: 96, y: 82, width: 1088, height: 612});
-    assert.match(storyboardRenderGraph(true, stage), /overlay=96:82/);
+    assert.deepEqual(stage, {x: 0, y: 0, width: 1280, height: 720});
+    assert.match(storyboardRenderGraph(true, stage), /overlay=0:0/);
     assert.doesNotMatch(storyboardRenderGraph(false), /source-media/);
     for (const [index, media, role, expected] of [
       [3, science, "science-inset", "green"],
@@ -136,6 +136,10 @@ test("actual still-only FFmpeg science stage stays bright and complete above gra
         backgroundCredit: "Private synthetic sky",
         foreground: {role, credit: "Private CI synthetic science"},
       });
+      assert.equal(art,
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1280" ' +
+        'height="720" viewBox="0 0 1280 720"></svg>',
+        "Informational NASA sources must never have overlay text");
       const image = await rasterize(root, "editorial" + index, art);
       const output = join(root, "frame" + index + ".png");
       await renderFrame({background: bg, dim, media, placement: stage,

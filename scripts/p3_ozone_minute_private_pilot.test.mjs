@@ -62,17 +62,19 @@ test("the real editorial plan is factual, centrally laid out, and permanently pu
     backgroundCredit: "Synthetically produced background",
     foreground: {role: "science-inset", credit: "Original synthetic Ozone Watch animation"},
   });
-  assert.match(science, /x="92" y="78" width="1096" height="620"/);
-  assert.match(science, /fill="none"/);
-  assert.match(science, /ORIGINAL DATES PRESERVED/);
-  assert.doesNotMatch(science, /VISUAL SOURCE/);
+  // Informational source video plays alone, without dark scrim, title,
+  // container, source-note text or any editorial graphics over its pixels.
+  assert.equal(science,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1280" ' +
+    'height="720" viewBox="0 0 1280 720"></svg>');
   const map = createLayeredForegroundSvg({
     visual: story.beats[4].visual, sequence: 5,
     backgroundCredit: "Original moving Earth stand-in",
     foreground: {role: "image-card", credit: "Original synthetic map"},
   });
-  assert.match(map, /RED = LOWER OZONE/);
-  assert.match(map, /DOBSON/); // the script describes the original, not color equivalence
+  assert.equal(map, science, "Source-scale still must also play full screen without edits");
+  assert.match(story.beats[4].visual.paletteNote, /RED = LOWER OZONE/);
+  assert.match(story.beats[4].visual.paletteNote, /DOBSON/);
   assert.throws(() => createLayeredForegroundSvg({
     visual: story.beats[3].visual, sequence: 4,
     backgroundCredit: "Synthetic atmosphere",
@@ -81,7 +83,7 @@ test("the real editorial plan is factual, centrally laid out, and permanently pu
   assert.throws(() => createLayeredForegroundSvg({
     visual: story.beats[4].visual, sequence: 5,
     backgroundCredit: "Synthetic atmosphere", foreground: null,
-  }), /needs reviewed science/);
+  }), /must be explicitly present/);
 
   const draft = makeUnapprovedInventory({
     root: "/home/ap/ci-private-only",
@@ -217,14 +219,37 @@ test("60-second original synthetic documentary layout encodes 3 motion sources a
       assert.equal(result.stdout.length, 3);
       return [...result.stdout];
     }
+    // Full-screen science must cover the WHOLE frame, not merely the
+    // middle. At x=120 y=360 a darkened Earth was previously visible.
     const ozonePixel = framePixel(35);
     const mapPixel = framePixel(45);
-    assert.ok(ozonePixel[1] > ozonePixel[0] + 95 &&
+    assert.ok(ozonePixel[1] > 190 &&
+      ozonePixel[1] > ozonePixel[0] + 95 &&
       ozonePixel[1] > ozonePixel[2] + 75,
-    "Large original science video was obscured/dimmed: " + ozonePixel);
-    assert.ok(mapPixel[0] > mapPixel[1] + 80 &&
+    "Original science video was obscured/dimmed: " + ozonePixel);
+    assert.ok(mapPixel[0] > 180 &&
+      mapPixel[0] > mapPixel[1] + 80 &&
       mapPixel[0] > mapPixel[2] + 90,
-    "The separate Dobson map was obscured/dimmed: " + mapPixel);
+    "The original Dobson source map was obscured/dimmed: " + mapPixel);
+    const edgePixel = (at) => {
+      const r = spawnSync("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-nostdin",
+        "-ss", String(at), "-i", output,
+        "-vf", "format=rgb24,crop=1:1:120:360:exact=1",
+        "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+      ], {encoding: null, timeout: 40000});
+      assert.equal(r.status, 0, String(r.stderr).slice(-500));
+      assert.equal(r.stdout.length, 3);
+      return [...r.stdout];
+    };
+    const ozoneEdge = edgePixel(35);
+    const mapEdge = edgePixel(45);
+    assert.ok(ozoneEdge[1] > 190 &&
+      ozoneEdge[1] > ozoneEdge[0] + 95,
+      "Full-science source video must REPLACE background at frame edges: " + ozoneEdge);
+    assert.ok(mapEdge[0] > 180 &&
+      mapEdge[0] > mapEdge[1] + 85,
+      "The full-screen science map must REPLACE background at frame edges: " + mapEdge);
 
     // Audio from any atmospheric/scientific source is never imported.
     const voice = join(root, "standin-voice.wav");

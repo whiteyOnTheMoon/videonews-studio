@@ -34,9 +34,10 @@ export const PILOT_PRESENTATIONS = Object.freeze([
 export function minuteMediaPlacement(presentation) {
   switch (presentation) {
     case "science-focus": return {x: 280, y: 232, width: 720, height: 405};
-    // P3-18: stage the 2026 scientific source almost full-frame, retaining
-    // the native date strip, time axis and Dobson legend without cropping.
-    case "science-stage": return {x: 96, y: 82, width: 1088, height: 612};
+    // P3-18 v3: when a scientific source contains its own dates, scale or
+    // animation, it REPLACES the entire cinematic background, with NO
+    // dimming, text card, palette note, or border superimposed.
+    case "science-stage": return {x: 0, y: 0, width: 1280, height: 720};
     case "center-brief": return {x: 686, y: 241, width: 504, height: 284};
     default: return {x: 765, y: 242, width: 448, height: 252};
   }
@@ -55,6 +56,20 @@ export function createMinuteEditorialOverlaySvg({
   const presentation = visual.presentation;
   const media = foreground ? minuteMediaPlacement(presentation) : null;
   const scienceStage = presentation === "science-stage";
+  if (scienceStage) {
+    // Validate semantic provenance without drawing anything over the actual
+    // NASA science. The narration and receipt convey the source/date info.
+    assert.ok(foreground &&
+      ["science-inset", "image-card"].includes(foreground.role),
+      "Full scientific source must be explicitly present");
+    assert.ok(visual.scienceRole === foreground.role,
+      "Full scientific source role must match the editorial plan");
+    assert.ok(typeof visual.paletteNote === "string" &&
+      visual.paletteNote.length >= 12 && visual.paletteNote.length <= 90,
+      "Science palette/date note is required in the metadata");
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="1280" ' +
+      'height="720" viewBox="0 0 1280 720"></svg>';
+  }
   const lines = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">',
     '<defs><clipPath id="copy"><rect x="76" y="' + (scienceStage ? "0" : "100") +

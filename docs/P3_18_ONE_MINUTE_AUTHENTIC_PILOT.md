@@ -13,7 +13,7 @@ Respond to operator feedback that P3-17 information was too close to the four co
 | 40–50s | **Large, undimmed October 4 Earth Observatory Dobson map** | Source's original 100–500 DU scale | Backdrop B continues behind map |
 | 50–60s | Spacious closing, centered typography | Montreal Protocol / recovery, no third tiny corner-card | Crossfade to backdrop C |
 
-Crossfades consume 12 input frames (0.5s) per boundary, with six extra source frames from each neighbor, so narration length is unchanged. Every background is independently SHA-verified, H264 and at least 20.25/20.5 seconds. No source audio passes through. Science photo/video is fit into a **1088×612** almost-full-frame stage at (96,82), never cropped, never dimmed by the atmospheric overlay. Its original source calendar, time bar and Dobson-unit scale stay within the source viewport. Header and source-specific key are positioned OUTSIDE that viewport. This is the actual requested background/gradient/foreground video style, not the P3-16 rigid side rail.
+Crossfades consume 12 input frames (0.5s) per boundary, with six extra source frames from each neighbor, so narration length is unchanged. Every background is independently SHA-verified, H264 and at least 20.25/20.5 seconds. No source audio passes through. **P3-18 v3 clarification:** when a scientific source already contains its own information (animated date bar, legend, data), it **REPLACES the background for the entire assigned ten-second scene**. It is scaled-to-fit in an uncropped **1280×720** video frame, with letterboxing only if needed. No darkening gradient, editorial headline, numbers, source card, border, color reinterpretation, or opacity fades are drawn over the scientific content. The science source's OWN date/timeline and Dobson scale remain intact. The narration and SHA-pinned private provenance receipt carry the supporting citation. A tiny private-review watermark may remain on the non-published proof for traceability. Background-video/gradient/text composition resumes only AFTER the science scene ends. This is the actual requested background/gradient/foreground video style, not the P3-16 rigid side rail.
 
 English script and per-scene sources are in:
 `content/news/ozone-2026-minute-editorial-pilot-en.json`.
@@ -93,10 +93,15 @@ from the animation colors, recolor scientific source pixels, or assert the
 map is the September 18 maximum. Each piece has a truthful, separate
 source-specific text label and intact **original** scientific graphics.
 
-The renderer's P3-18-specific `science-stage` now places each scientific
-source at (96,82), 1088×612, approximately 82% of the entire 1280×720
-frame. Header (y=61) and source/date note (y=714) live *outside* the
-scientific source content. Sources remain the dominant center visual.
+The renderer's P3-18-specific `science-stage` now uses a TRUE
+FULL-SCREEN REPLACEMENT at (0,0) sized 1280×720 (not the former
+1088×612 panel). The information-bearing source entirely occludes the
+atmospheric background and any navy/teal gradient. It contains no
+editorial text, numbers, border or palette/date note added on top:
+the original embedded measurements and source date bar are preserved.
+The record of truthful source dates and differing palette semantics
+stays in the editorial JSON and the private source receipt, not printed
+over the scientific animation.
 Non-science scenes still use gradient-dimmed moving Earth B-roll and
 centered, large stats. The 3 Earth-background sources are **not**
 presented as three equally important consecutive shots: the two science
@@ -169,6 +174,38 @@ CI tests use fully original **synthetic** stills, test large
 science-stage geometry, source-specific palette notes, preserved
 bright science/source colors over a darkened background, and the
 frame plan. No real NASA data or files are imported by CI.
+
+## Private 60-second moving editorial proof from operator-supplied snapshots
+
+The operator asked to see a PLAYABLE FILM, not another series of
+contact frames, and clarified that information-bearing animation/video
+should REPLACE the cinematic background and run at its ORIGINAL
+brightness/scale. A 60-second H264/AAC design reference was assembled
+in the operator's chat workspace using their already uploaded NASA
+contact screenshots, subtle motion on atmospheric Earth backdrops, and
+a local automated English **test voice**. It plays the three original
+Ozone Watch date samples July 7, August 18, September 29 sequentially
+in the first science segment and the October 4 Dobson map in the next,
+at their original brightness **without** gradient/text overlays.
+
+This is an immediate, visually inspectable DESIGN REFERENCE: the three
+uploaded Ozone Watch frames are separate dated screenshots, NOT a
+render of the complete original 2026 NASA MP4 at real playback speed.
+The moving Earth is a subtle motion treatment of uploaded contact
+photos, NOT a real rotating NASA source video. The speaker is a
+non-Piper local placeholder. The design proof therefore cannot be
+represented as the eventual original-movie/Piper finished film or
+published/licensed project media, and its placeholder voice is NOT an
+endorsement/verification of the pinned Piper model. The actual
+licensed/gated pipeline is updated separately by the production
+renderer code in this PR.
+
+The full end-to-end CI regression now verifies actual H264 output
+and tests **both center AND edge pixels** in the ten-second science
+beats to prove the fullframe opaque source has replaced the darkened
+background; it also verifies the source graphic SVG for each science
+beat is completely transparent/empty. Previous P3-16 science-safe rail
+and P3-17 inset arrangements are preserved for other modes.
 
 ## Source-specific offline contact audit (P3-18 follow-up)
 
