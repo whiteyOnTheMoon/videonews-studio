@@ -65,6 +65,8 @@ test("locally generated sample frame is fitted, hashed and source video unchange
   try {
     const source = join(root, "synthetic-source-with-audio.mp4");
     const frame = join(root, "synthetic-contact.jpg");
+    const still = join(root, "single-frame-nasa-like-map.jpg");
+    const stillFrame = join(root, "single-frame-review-contact.jpg");
     command("ffmpeg", [
       "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
       "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=24",
@@ -86,6 +88,36 @@ test("locally generated sample frame is fitted, hashed and source video unchange
     assert.equal(meta.streams[0].width, 960);
     assert.equal(meta.streams[0].height, 540);
     assert.equal(meta.streams[0].codec_type, "video");
+
+    // Regression: real NASA map is one JPEG frame, not a timed video. With
+    // -ss 0 on a single-image source FFmpeg may return 0 but create no file.
+    command("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+      "-f", "lavfi", "-i", "color=c=0x147daa:s=1280x720:r=24",
+      "-frames:v", "1", "-q:v", "3", still,
+    ]);
+    const stillInfo = JSON.parse(command("ffprobe", [
+      "-v", "error", "-show_entries", "format=duration:stream=codec_name",
+      "-of", "json", still,
+    ]));
+    assert.equal(stillInfo.streams[0].codec_name, "mjpeg");
+    assert.ok(Number(stillInfo.format.duration) < 0.1);
+    const stillOriginal = createHash("sha256")
+      .update(await readFile(still)).digest("hex");
+    await makeReviewFrame(still, stillFrame, 0, true);
+    assert.ok((await stat(stillFrame)).size > 1000,
+      "Still-image contact missing despite successful FFmpeg exit");
+    const stillJpeg = JSON.parse(command("ffprobe", [
+      "-v", "error", "-show_entries", "stream=codec_name,width,height",
+      "-of", "json", stillFrame,
+    ]));
+    assert.equal(stillJpeg.streams[0].codec_name, "mjpeg");
+    assert.equal(stillJpeg.streams[0].width, 960);
+    assert.equal(stillJpeg.streams[0].height, 540);
+    assert.equal(createHash("sha256").update(await readFile(still)).digest("hex"),
+      stillOriginal, "Single-image audit must not alter original NASA-style map");
+    await assert.rejects(() => makeReviewFrame(still, stillFrame, 1, true),
+      /must use t=0/);
   } finally {
     await rm(root, {recursive: true, force: true});
   }

@@ -130,6 +130,25 @@ timestamps and third-party/music rights remain subject to human review.
 Offline synthetic regression:
 `node --test scripts/p3_18_audit_real_media.test.mjs`.
 
+**Still-image (NASA October 4 map) compatibility fix:** Input seeking
+(`-ss 0`) on a single JPEG can make some FFmpeg versions exit with
+status zero yet create no review image. The auditor now handles a
+`photo` input separately, using the image2 demuxer's `-loop 1`
+and `-framerate 1`, extracting **exactly one** contact JPEG
+(`-frames:v 1`). Video sources continue to use their exact sampling
+timestamps and do **not** loop. A dedicated regression test creates a
+real single-frame JPEG and asserts that the contact exists and retains
+960x540 dimensions while the original input SHA-256 remains unchanged.
+
+The original failed VPS run raised `ENOENT` for
+`nasa-ozone-map-2026-frame-01.jpg`. Because the script owns the
+newly-created private audit directory and catches this failure,
+it removes **only that incomplete private audit-output directory**.
+The five quarantined NASA sources and their unapproved manifest are
+never deleted or modified. Before retrying, verify that the output
+directory does not already exist; if it does, inspect it manually rather
+than deleting evidence automatically.
+
 After all workflows for **this exact last commit** are green, run in an
 SHA-pinned disposable git worktree:
 

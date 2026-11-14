@@ -145,11 +145,20 @@ export function createUnapprovedReviewChecklist(candidate) {
   };
 }
 
-export async function makeReviewFrame(file, output, second) {
+export async function makeReviewFrame(file, output, second, isStill = false) {
   assert.ok(Number.isFinite(second) && second >= 0);
+  assert.ok(typeof isStill === "boolean" && (!isStill || second === 0),
+    "Single-image audit frame must use t=0");
+  // Image2 JPEGs are single-frame inputs. Input-seeking with -ss 0 can cause
+  // FFmpeg to exit 0 with zero output frames on a genuine one-image source.
+  // Loop only still-image inputs long enough to output ONE review JPEG.
+  // Video sampling continues to use the exact original timestamp without looping.
+  const inputOptions = isStill
+    ? ["-loop", "1", "-framerate", "1"]
+    : ["-ss", second.toFixed(3)];
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    "-ss", second.toFixed(3), "-protocol_whitelist", "file,pipe", "-i", file,
+    ...inputOptions, "-protocol_whitelist", "file,pipe", "-i", file,
     "-vf", "scale=960:540:force_original_aspect_ratio=decrease," +
       "pad=960:540:(ow-iw)/2:(oh-ih)/2:color=0x06101b,setsar=1",
     "-frames:v", "1", "-q:v", "3", output,
@@ -233,7 +242,7 @@ async function inspectPrivate() {
       for (const [index, seconds] of times.entries()) {
         const name = candidate.id + "-frame-" + String(index + 1).padStart(2, "0") + ".jpg";
         const output = join(REVIEW_DIR, name);
-        await makeReviewFrame(asset.path, output, seconds);
+        await makeReviewFrame(asset.path, output, seconds, candidate.type === "photo");
         contacts.push({name, seconds, sha256: await sha256(output)});
       }
       assets.push({
