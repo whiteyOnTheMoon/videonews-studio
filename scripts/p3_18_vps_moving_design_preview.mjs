@@ -13,7 +13,7 @@ import {createReadStream} from "node:fs";
 import {spawnSync} from "node:child_process";
 import {userInfo} from "node:os";
 import {
-  lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, stat,
+  lstat, mkdir, mkdtemp, readFile, realpath, rename, rm,
   statfs, writeFile,
 } from "node:fs/promises";
 import {join, resolve} from "node:path";
